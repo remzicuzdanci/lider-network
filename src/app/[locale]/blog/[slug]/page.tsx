@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { setRequestLocale } from "next-intl/server";
 import { ArrowLeft, Calendar, Clock, Tag, ArrowRight } from "lucide-react";
 import { posts, categories, getPost, getRelatedPosts } from "@/data/blog";
 
@@ -8,7 +9,10 @@ const baseUrl = "https://www.lidernetwork.com.tr";
 const BLUE = "#0052ff";
 
 export async function generateStaticParams() {
-  return posts.map((p) => ({ slug: p.slug }));
+  return posts.flatMap((p) => [
+    { locale: "tr", slug: p.slug },
+    { locale: "en", slug: p.slug },
+  ]);
 }
 
 export async function generateMetadata({
@@ -17,6 +21,7 @@ export async function generateMetadata({
   params: Promise<{ locale: string; slug: string }>;
 }): Promise<Metadata> {
   const { slug, locale } = await params;
+  setRequestLocale(locale);
   const post = getPost(slug);
   if (!post) return {};
 
@@ -39,11 +44,16 @@ export async function generateMetadata({
 }
 
 function formatDate(dateStr: string) {
-  return new Date(dateStr).toLocaleDateString("tr-TR", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  });
+  try {
+    return new Date(dateStr).toLocaleDateString("tr-TR", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+  } catch {
+    const d = new Date(dateStr);
+    return `${d.getDate()}.${d.getMonth() + 1}.${d.getFullYear()}`;
+  }
 }
 
 export default async function BlogPostPage({
@@ -52,6 +62,7 @@ export default async function BlogPostPage({
   params: Promise<{ locale: string; slug: string }>;
 }) {
   const { slug, locale } = await params;
+  setRequestLocale(locale);
   const post = getPost(slug);
 
   if (!post) notFound();
