@@ -1,0 +1,211 @@
+{
+  "nav": {
+    "home": "Anasayfa",
+    "services": "Hizmetler",
+    "fortinet": "Fortinet",
+    "synology": "Synology",
+    "about": "Hakkımızda",
+    "contact": "İletişim",
+    "cta": "Ücretsiz Analiz"
+  },
+  "hero": {
+    "badge": "Fortinet Yetkili Partner",
+    "title": "Altyapınızı Güçlendirin.",
+    "titleHighlight": "Geleceğinizi Güvence Altına Alın.",
+    "subtitle": "Fortinet Yetkili Partner olarak enterprise düzeyde siber güvenlik, ağ altyapısı ve veri depolama çözümleri sunuyoruz.",
+    "ctaPrimary": "Ücretsiz İnfrastrüktür Analizi Al",
+    "ctaSecondary": "Hizmetleri İncele",
+    "stat1": "Tehdit Engelleme",
+    "stat2": "İşlem Gecikmesi",
+    "stat3": "Teknik Destek",
+    "stat4": "Proje"
+  },
+  "services": {
+    "title": "Hizmetlerimiz",
+    "subtitle": "Enterprise düzeyde altyapı çözümleriyle işletmenizi bir adım öne taşıyoruz.",
+    "items": {
+      "security": {
+        "title": "Siber Güvenlik",
+        "description": "NGFW, penetrasyon testi ve AI destekli tehdit analizi ile ağınızı en üst düzeyde koruyoruz."
+      },
+      "storage": {
+        "title": "Veri Depolama",
+        "description": "Yüksek performanslı depolama sistemleri ve felaket kurtarma çözümleriyle verilerinizi güvende tutuyoruz."
+      },
+      "cloud": {
+        "title": "Bulut Çözümler",
+        "description": "Azure ve AWS tabanlı hibrit ve özel bulut altyapısı tasarlayıp yönetiyoruz."
+      },
+      "network": {
+        "title": "Ağ Altyapısı",
+        "description": "Kablolu/kablosuz enterprise ağlar ve SD-WAN çözümleriyle kesintisiz bağlantı sağlıyoruz."
+      },
+      "integration": {
+        "title": "Sistem Entegrasyonu",
+        "description": "Uçtan uca anahtar teslim projelerle teknoloji sistemlerinizi sorunsuz entegre ediyoruz."
+      },
+      "consulting": {
+        "title": "BT Danışmanlığı",
+        "description": "Stratejik teknoloji planlaması ve altyapı denetimiyle işletmenizi geleceğe hazırlıyoruz."
+      },
+      "continuity": {
+        "title": "İş Sürekliliği",
+        "description": "Kritik süreçler için kapsamlı yedekleme ve kurtarma planları oluşturuyoruz."
+      },
+      "virtualization": {
+        "title": "Sanallaştırma",
+        "description": "Sunucu, masaüstü ve uygulama sanallaştırmayla kaynaklarınızı verimli kullanıyoruz."
+      },
+      "lowVoltage": {
+        "title": "Zayıf Akım Sistemleri",
+        "description": "Yapısal kablolama, güvenlik kameraları, erişim kontrol, yangın algılama ve bina otomasyonu dahil uçtan uca zayıf akım altyapı çözümleri."
+      }
+    }
+  },
+  "expertise": {
+    "title": "Neden Lider Network?",
+    "subtitle": "On yılı aşkın deneyimimiz ve sertifikalı uzman ekibimizle fark yaratıyoruz.",
+    "items": {
+      "team": {
+        "title": "Sertifikalı Uzman Ekip",
+        "description": "Fortinet NSE, VMware ve Microsoft sertifikalı mühendislerden oluşan uzman kadromuz."
+      },
+      "guarantee": {
+        "title": "Garantili Kurulum",
+        "description": "Her proje için yazılı garanti ve SLA taahhüdüyle kesintisiz hizmet sunuyoruz."
+      },
+      "support": {
+        "title": "7/24 Destek",
+        "description": "Yıl boyunca kesintisiz teknik destek ve izleme hizmetleriyle yanınızdayız."
+      },
+      "speed": {
+        "title": "Hızlı Entegrasyon",
+        "description": "Mevcut altyapınıza uyumlu, minimum kesinti süreli hızlı entegrasyon süreçleri."
+      }
+    }
+  },
+  "partners": {
+    "title": "Güvenilir Teknoloji Ekosistemi",
+    "subtitle": "Dünya lideri teknoloji markalarıyla stratejik ortaklıklar kurarak kurumsal altyapınız için en doğru çözümleri sunuyoruz."
+  },
+  "contact": {
+    "title": "Projenizi Konuşalım",
+    "subtitle": "Altyapınız için ücretsiz analiz ve teklif almak üzere bizimle iletişime geçin.",
+    "form": {
+      "name": "Ad Soyad",
+      "company": "Şirket Adı",
+      "email": "E-posta Adresi",
+      "phone": "Telefon Numarası",
+      "message": "Mesajınız",
+      "namePlaceholder": "Adınız ve soyadınız",
+      "companyPlaceholder": "Şirket adınız",
+      "emailPlaceholder": "ornek@sirket.com",
+      "phonePlaceholder": "+90 (555) 000 00 00",
+      "messagePlaceholder": "Projeniz veya ihtiyacınız hakkında bilgi verin...",
+      "submit": "Mesaj Gönder",
+      "sending": "Gönderiliyor...",
+      "success": "Mesajınız başarıyla iletildi! En kısa sürede size dönüş yapacağız.",
+      "error": "Mesaj gönderilemedi. Lütfen tekrar deneyin."
+    },
+    "info": {
+      "address": "Adres",
+      "addressValue": "Birlik Mh. 448. Cd No:119/2, 06610 Çankaya / Ankara",
+      "phone": "Telefon",
+      "phoneValue": "+90 312 232 02 88",
+      "email": "E-posta",
+      "emailValue": "info@lidernetwork.com.tr",
+      "hours": "Çalışma Saatleri",
+      "hoursValue": "Hft içi 08:30 – 17:30 | Cumartesi 08:30 – 13:00"
+    }
+  },
+  "footer": {
+    "description": "2006'dan bu yana Türkiye'nin köklü BT altyapı ve teknoloji danışmanlık firmalarından biri olarak; ağ güvenliği, veri yönetimi, bulut dönüşümü ve iş sürekliliği alanlarında kurumların stratejik teknoloji ortağıyız.",
+    "quickLinks": "Hızlı Linkler",
+    "solutions": "Çözümler",
+    "contactUs": "İletişim",
+    "allRights": "Tüm hakları saklıdır.",
+    "privacy": "Gizlilik Politikası",
+    "terms": "Kullanım Koşulları"
+  },
+  "about": {
+    "title": "Hakkımızda",
+    "subtitle": "2006'dan bu yana Türkiye'nin önde gelen BT altyapı çözüm sağlayıcısıyız.",
+    "story": {
+      "title": "Hikayemiz",
+      "content": "Lider Network, 2006 yılında kuruluşundan bu yana Türkiye'nin en güvenilir BT altyapı çözüm sağlayıcılarından biri olarak faaliyet göstermektedir. Fortinet Yetkili Partner olarak enterprise düzeyde siber güvenlik, ağ altyapısı ve veri depolama projelerinde 500'den fazla başarılı proje gerçekleştirdik."
+    },
+    "mission": {
+      "title": "Misyonumuz",
+      "content": "İşletmelerin dijital dönüşümlerini güvenli, verimli ve kesintisiz bir şekilde gerçekleştirmelerine yardımcı olmak. Her müşterimiz için en uygun teknoloji çözümlerini tasarlayarak uzun vadeli başarılarına katkı sağlamak."
+    },
+    "vision": {
+      "title": "Vizyonumuz",
+      "content": "Türkiye'nin en tercih edilen kurumsal BT altyapı çözüm partneri olmak ve bölgemizdeki işletmelerin teknoloji altyapılarını dünya standartlarına taşımak."
+    },
+    "values": {
+      "title": "Değerlerimiz",
+      "reliability": "Güvenilirlik",
+      "reliabilityDesc": "Her projede söz verdiğimizi yerine getiririz.",
+      "innovation": "Yenilikçilik",
+      "innovationDesc": "En güncel teknolojileri takip eder ve uygularız.",
+      "excellence": "Mükemmellik",
+      "excellenceDesc": "Her işi en yüksek kalite standartlarında yaparız.",
+      "partnership": "Ortaklık",
+      "partnershipDesc": "Müşterilerimizle uzun vadeli ilişkiler kurarız."
+    }
+  },
+  "fortinet": {
+    "title": "Fortinet Çözümleri",
+    "subtitle": "Fortinet Yetkili Partner olarak en kapsamlı ağ güvenliği çözümlerini sunuyoruz.",
+    "products": {
+      "title": "Fortinet Ürün Ailesi",
+      "fortigate": {
+        "title": "FortiGate NGFW",
+        "description": "Endüstrinin en yüksek performanslı yeni nesil güvenlik duvarı çözümü."
+      },
+      "fortianalyzer": {
+        "title": "FortiAnalyzer",
+        "description": "Merkezi log yönetimi ve güvenlik analitik platformu."
+      },
+      "fortisiem": {
+        "title": "FortiSIEM",
+        "description": "AI destekli güvenlik bilgisi ve olay yönetimi sistemi."
+      },
+      "fortiswitch": {
+        "title": "FortiSwitch",
+        "description": "Güvenli, yüksek performanslı ağ anahtarlama altyapısı."
+      },
+      "fortiwifi": {
+        "title": "FortiWiFi",
+        "description": "Enterprise düzeyde güvenli kablosuz ağ çözümleri."
+      },
+      "fortiedr": {
+        "title": "FortiEDR",
+        "description": "Gerçek zamanlı uç nokta koruma ve yanıt sistemi."
+      }
+    }
+  },
+  "synology": {
+    "title": "Synology Çözümleri",
+    "subtitle": "Synology Yetkili Partner olarak kurumsal veri depolama ve yönetim çözümleri sunuyoruz.",
+    "products": {
+      "title": "Synology Ürün Ailesi",
+      "nas": {
+        "title": "NAS Sistemleri",
+        "description": "Yüksek kapasiteli, yüksek erişilebilirlikli ağ bağlantılı depolama sistemleri."
+      },
+      "backup": {
+        "title": "Active Backup",
+        "description": "Kapsamlı yedekleme çözümleriyle verilerinizi koruyun."
+      },
+      "surveillance": {
+        "title": "Surveillance Station",
+        "description": "Merkezi IP kamera yönetimi ve güvenlik izleme platformu."
+      },
+      "office": {
+        "title": "Synology Office",
+        "description": "Kurumsal işbirliği ve dosya paylaşım platformu."
+      }
+    }
+  }
+}

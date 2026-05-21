@@ -1,0 +1,211 @@
+{
+  "nav": {
+    "home": "Home",
+    "services": "Services",
+    "fortinet": "Fortinet",
+    "synology": "Synology",
+    "about": "About Us",
+    "contact": "Contact",
+    "cta": "Free Analysis"
+  },
+  "hero": {
+    "badge": "Fortinet Authorized Partner",
+    "title": "Strengthen Your Infrastructure.",
+    "titleHighlight": "Secure Your Future.",
+    "subtitle": "As a Fortinet Authorized Partner, we deliver enterprise-grade cybersecurity, network infrastructure, and data storage solutions.",
+    "ctaPrimary": "Get Free Infrastructure Analysis",
+    "ctaSecondary": "Explore Services",
+    "stat1": "Threat Prevention",
+    "stat2": "Processing Latency",
+    "stat3": "Technical Support",
+    "stat4": "Projects"
+  },
+  "services": {
+    "title": "Our Services",
+    "subtitle": "We elevate your business with enterprise-grade infrastructure solutions.",
+    "items": {
+      "security": {
+        "title": "Cybersecurity",
+        "description": "We protect your network at the highest level with NGFW, penetration testing and AI-powered threat analysis."
+      },
+      "storage": {
+        "title": "Data Storage",
+        "description": "We keep your data safe with high-performance storage systems and disaster recovery solutions."
+      },
+      "cloud": {
+        "title": "Cloud Solutions",
+        "description": "We design and manage Azure and AWS-based hybrid and private cloud infrastructure."
+      },
+      "network": {
+        "title": "Network Infrastructure",
+        "description": "We provide uninterrupted connectivity with wired/wireless enterprise networks and SD-WAN solutions."
+      },
+      "integration": {
+        "title": "System Integration",
+        "description": "We seamlessly integrate your technology systems with end-to-end turnkey projects."
+      },
+      "consulting": {
+        "title": "IT Consulting",
+        "description": "We prepare your business for the future with strategic technology planning and infrastructure auditing."
+      },
+      "continuity": {
+        "title": "Business Continuity",
+        "description": "We create comprehensive backup and recovery plans for critical processes."
+      },
+      "virtualization": {
+        "title": "Virtualization",
+        "description": "We efficiently utilize your resources with server, desktop and application virtualization."
+      },
+      "lowVoltage": {
+        "title": "Low Voltage Systems",
+        "description": "End-to-end low voltage infrastructure solutions including structured cabling, security cameras, access control, fire detection and building automation."
+      }
+    }
+  },
+  "expertise": {
+    "title": "Why Lider Network?",
+    "subtitle": "We make a difference with over a decade of experience and our certified expert team.",
+    "items": {
+      "team": {
+        "title": "Certified Expert Team",
+        "description": "Our expert staff consists of Fortinet NSE, VMware and Microsoft certified engineers."
+      },
+      "guarantee": {
+        "title": "Guaranteed Installation",
+        "description": "We provide uninterrupted service with written guarantee and SLA commitment for every project."
+      },
+      "support": {
+        "title": "24/7 Support",
+        "description": "We are with you with uninterrupted technical support and monitoring services throughout the year."
+      },
+      "speed": {
+        "title": "Rapid Integration",
+        "description": "Fast integration processes compatible with your existing infrastructure with minimum downtime."
+      }
+    }
+  },
+  "partners": {
+    "title": "Trusted Technology Ecosystem",
+    "subtitle": "We forge strategic partnerships with world-leading technology brands to deliver the right solutions for your enterprise infrastructure."
+  },
+  "contact": {
+    "title": "Let's Talk About Your Project",
+    "subtitle": "Contact us for a free analysis and quote for your infrastructure.",
+    "form": {
+      "name": "Full Name",
+      "company": "Company Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "message": "Message",
+      "namePlaceholder": "Your first and last name",
+      "companyPlaceholder": "Your company name",
+      "emailPlaceholder": "example@company.com",
+      "phonePlaceholder": "+90 (555) 000 00 00",
+      "messagePlaceholder": "Tell us about your project or needs...",
+      "submit": "Send Message",
+      "sending": "Sending...",
+      "success": "Your message has been sent successfully! We will get back to you as soon as possible.",
+      "error": "Message could not be sent. Please try again."
+    },
+    "info": {
+      "address": "Address",
+      "addressValue": "Birlik Mh. 448. Cd No:119/2, 06610 Çankaya / Ankara",
+      "phone": "Phone",
+      "phoneValue": "+90 312 232 02 88",
+      "email": "Email",
+      "emailValue": "info@lidernetwork.com.tr",
+      "hours": "Working Hours",
+      "hoursValue": "Weekdays 08:30 – 17:30 | Saturday 08:30 – 13:00"
+    }
+  },
+  "footer": {
+    "description": "Since 2006, we have been one of Turkey's established IT infrastructure and technology consulting firms — a strategic technology partner for enterprises in network security, data management, cloud transformation and business continuity.",
+    "quickLinks": "Quick Links",
+    "solutions": "Solutions",
+    "contactUs": "Contact Us",
+    "allRights": "All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service"
+  },
+  "about": {
+    "title": "About Us",
+    "subtitle": "We have been Turkey's leading IT infrastructure solution provider since 2006.",
+    "story": {
+      "title": "Our Story",
+      "content": "Since its founding in 2006, Lider Network has been one of Turkey's most trusted IT infrastructure solution providers. As a Fortinet Authorized Partner, we have completed over 500 successful projects in enterprise cybersecurity, network infrastructure and data storage."
+    },
+    "mission": {
+      "title": "Our Mission",
+      "content": "To help businesses accomplish their digital transformation safely, efficiently and without interruption. To contribute to their long-term success by designing the most suitable technology solutions for each of our clients."
+    },
+    "vision": {
+      "title": "Our Vision",
+      "content": "To become Turkey's most preferred corporate IT infrastructure solution partner and to bring the technology infrastructure of businesses in our region to world standards."
+    },
+    "values": {
+      "title": "Our Values",
+      "reliability": "Reliability",
+      "reliabilityDesc": "We deliver on our promises in every project.",
+      "innovation": "Innovation",
+      "innovationDesc": "We follow and apply the latest technologies.",
+      "excellence": "Excellence",
+      "excellenceDesc": "We do every job to the highest quality standards.",
+      "partnership": "Partnership",
+      "partnershipDesc": "We build long-term relationships with our clients."
+    }
+  },
+  "fortinet": {
+    "title": "Fortinet Solutions",
+    "subtitle": "As a Fortinet Authorized Partner, we offer the most comprehensive network security solutions.",
+    "products": {
+      "title": "Fortinet Product Family",
+      "fortigate": {
+        "title": "FortiGate NGFW",
+        "description": "The industry's highest performance next-generation firewall solution."
+      },
+      "fortianalyzer": {
+        "title": "FortiAnalyzer",
+        "description": "Centralized log management and security analytics platform."
+      },
+      "fortisiem": {
+        "title": "FortiSIEM",
+        "description": "AI-powered security information and event management system."
+      },
+      "fortiswitch": {
+        "title": "FortiSwitch",
+        "description": "Secure, high-performance network switching infrastructure."
+      },
+      "fortiwifi": {
+        "title": "FortiWiFi",
+        "description": "Enterprise-grade secure wireless network solutions."
+      },
+      "fortiedr": {
+        "title": "FortiEDR",
+        "description": "Real-time endpoint protection and response system."
+      }
+    }
+  },
+  "synology": {
+    "title": "Synology Solutions",
+    "subtitle": "As a Synology Authorized Partner, we offer enterprise data storage and management solutions.",
+    "products": {
+      "title": "Synology Product Family",
+      "nas": {
+        "title": "NAS Systems",
+        "description": "High-capacity, highly available network-attached storage systems."
+      },
+      "backup": {
+        "title": "Active Backup",
+        "description": "Protect your data with comprehensive backup solutions."
+      },
+      "surveillance": {
+        "title": "Surveillance Station",
+        "description": "Centralized IP camera management and security monitoring platform."
+      },
+      "office": {
+        "title": "Synology Office",
+        "description": "Enterprise collaboration and file sharing platform."
+      }
+    }
+  }
+}
