@@ -5600,6 +5600,157 @@ diagnose sys session stat</code></pre>
     `,
   },
 
+  {
+    slug: "security-fabric-nedir-physical-logical-topology-security-rating",
+    title: "Fortinet Security Fabric: Physical Topology, Logical Topology, Security Rating ve Daha Fazlası",
+    excerpt:
+      "FortiGate'in Security Fabric menüsü altındaki Physical Topology, Logical Topology, Security Rating, Automation, Fabric Connectors, External Connectors ve Asset Identity Center ekranlarının tamamını açıklıyoruz. Her biri ne gösterir, nasıl kullanılır?",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["Security Fabric", "FortiGate", "Physical Topology", "Security Rating", "Automation", "Fabric Connectors"],
+    publishedAt: "2026-05-22",
+    readTime: 9,
+    content: `
+<h2>Security Fabric Nedir?</h2>
+<p><strong>Fortinet Security Fabric</strong>, Fortinet ürünlerinin (FortiGate, FortiSwitch, FortiAP, FortiClient, FortiAnalyzer vb.) tek bir merkezi platform altında birbirleriyle iletişim kurduğu ve koordineli çalıştığı entegrasyon mimarisidir. Her ürün ayrı ayrı değil, birbirini gören ve birbirini tamamlayan bir ekosistem olarak hareket eder.</p>
+<p>FortiGate GUI'deki <strong>Security Fabric</strong> menüsü, bu ekosistemin görünürlüğünü ve yönetimini sağlayan ekranları barındırır. Aşağıda her birini ayrıntılı ele alıyoruz.</p>
+
+<h2>Physical Topology — Fiziksel Topoloji</h2>
+<p><strong>Ne gösterir:</strong> Security Fabric'e dahil tüm cihazların fiziksel bağlantı haritasını otomatik olarak çizer. FortiGate, FortiSwitch, FortiAP ve bunlara bağlı son kullanıcı cihazları hiyerarşik bir ağaç yapısında görüntülenir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Ağ topolojisini belgeleye gerek kalmadan otomatik görselleştirme</li>
+  <li>Hangi cihazın hangi switch portuna, hangi AP'ye bağlı olduğunu anlık görmek</li>
+  <li>Yeni bağlanan veya yetkisiz cihazları tespit etmek</li>
+  <li>Fiber/kablo arızalarında hangi cihazların etkilendiğini görmek</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>En üstte FortiGate bulunur. Altında FortiSwitch'ler, onların altında FortiAP'ler ve son olarak istemci cihazlar yer alır. Her düğüme tıklayarak cihaz detaylarını (IP, MAC, model, firmware) görebilirsiniz. Sarı veya kırmızı ikonlar sorunlu bağlantıyı işaret eder.</p>
+<p><strong>Gereksinim:</strong> Physical Topology'nin çalışması için FortiSwitch ve FortiAP cihazlarının Security Fabric'e dahil edilmiş (authorize) ve LLDP'nin aktif olması gerekir.</p>
+
+<h2>Logical Topology — Mantıksal Topoloji</h2>
+<p><strong>Ne gösterir:</strong> Fiziksel bağlantı yerine ağın mantıksal katmanını gösterir. VLAN'lar, zone'lar, VPN tünelleri ve bunlar arasındaki trafik akışı görselleştirilir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Ağ segmentasyonunu (VLAN, zone) görsel olarak doğrulamak</li>
+  <li>VPN tünellerinin hangi ağları birbirine bağladığını anlamak</li>
+  <li>SD-WAN mantıksal akışını izlemek</li>
+  <li>Güvenlik politikalarının zone bazlı doğru uygulanıp uygulanmadığını kontrol etmek</li>
+</ul>
+
+<h3>Farkı nedir?</h3>
+<p>Physical Topology kablo ve port düzeyinde gösterirken, Logical Topology IP adresleme, VLAN ve zone düzeyinde gösterir. İkisi birbirini tamamlar: fiziksel sorunlar için Physical, politika ve segmentasyon sorunları için Logical kullanılır.</p>
+
+<h2>Security Rating — Güvenlik Puanı</h2>
+<p><strong>Ne gösterir:</strong> FortiGate ve Fabric'e bağlı cihazların güvenlik yapılandırmasını Fortinet'in en iyi pratiklerine göre otomatik olarak değerlendirir ve 0-100 arası bir puan verir.</p>
+
+<h3>Değerlendirme Kategorileri</h3>
+<ul>
+  <li><strong>Security Controls:</strong> Firewall politikaları, UTM özellikleri, SSL inspection durumu</li>
+  <li><strong>Fabric Coverage:</strong> Kaç Fortinet ürününün Fabric'e dahil olduğu</li>
+  <li><strong>Optimization:</strong> Kullanılmayan politikalar, gereksiz açık portlar, default şifreler</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Güvenlik açıklarını otomatik tespit etmek (örn. "Admin şifresi default bırakılmış")</li>
+  <li>ISO 27001, NIST gibi uyumluluk çerçevelerine hazırlık için referans almak</li>
+  <li>Yöneticilere ve üst yönetime güvenlik durumu raporu sunmak</li>
+  <li>Zaman içindeki güvenlik puanı değişimini takip etmek</li>
+</ul>
+
+<h3>Nasıl iyileştirilir?</h3>
+<p>Her başarısız kontrol için Security Rating, somut düzeltme adımı önerir. Örneğin "IPS imzaları güncel değil" uyarısı için direkt FortiGuard güncelleme linkine yönlendirir. Önerileri sırayla uygulayarak puanı artırabilirsiniz.</p>
+
+<h2>Automation — Otomasyon</h2>
+<p><strong>Ne gösterir:</strong> Belirli bir olay gerçekleştiğinde otomatik aksiyon tetikleyen kural tabanlı otomasyon motorudur. "Eğer X olursa, Y'yi yap" mantığıyla çalışır.</p>
+
+<h3>Otomasyon Örnekleri</h3>
+<ul>
+  <li>Bir IP 100'den fazla başarısız giriş denemesi yaparsa → o IP'yi otomatik engelle</li>
+  <li>FortiClient'sız bir cihaz ağa bağlanırsa → cihazı karantinaya al ve e-posta gönder</li>
+  <li>CPU %90'ı geçerse → Slack veya e-posta ile uyarı gönder</li>
+  <li>Yeni bir IoT cihazı tespit edilirse → güvenlik ekibine bildir</li>
+  <li>Kritik bir CVE tespit edilirse → otomatik imza güncellemesi başlat</li>
+</ul>
+
+<h3>Nasıl yapılandırılır?</h3>
+<ol>
+  <li><strong>Security Fabric → Automation → Create New</strong></li>
+  <li><strong>Trigger (Tetikleyici):</strong> Olay türünü seçin (FortiOS Event, FortiAnalyzer Alert, Scheduled vb.)</li>
+  <li><strong>Condition (Koşul):</strong> Tetikleyiciye ek filtre ekleyin</li>
+  <li><strong>Action (Aksiyon):</strong> Yapılacak işlemi seçin (IP Ban, Email, Webhook, AWS Lambda vb.)</li>
+</ol>
+<p><strong>İpucu:</strong> Webhook aksiyonu ile Slack, Teams veya özel sistemlerinize entegrasyon kurabilirsiniz.</p>
+
+<h2>Fabric Connectors — Fabric Bağlayıcıları</h2>
+<p><strong>Ne gösterir:</strong> FortiGate'i diğer Fortinet ürünleri ve üçüncü taraf platformlarla entegre eden bağlayıcılardır.</p>
+
+<h3>Dahili Fabric Connector'lar</h3>
+<ul>
+  <li><strong>FortiAnalyzer:</strong> Merkezi log ve raporlama entegrasyonu</li>
+  <li><strong>FortiManager:</strong> Merkezi yapılandırma yönetimi</li>
+  <li><strong>FortiClient EMS:</strong> Endpoint güvenlik ve ZTNA entegrasyonu</li>
+  <li><strong>FortiSandbox:</strong> Bilinmeyen dosyaları sandbox'ta analiz etme</li>
+  <li><strong>FortiMail:</strong> E-posta güvenliği entegrasyonu</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>FortiAnalyzer bağlantısı kurarak tüm logların merkezi toplanması</li>
+  <li>FortiClient EMS ile endpoint bilgilerini (kullanıcı, cihaz uyumluluk) politikalarda kullanma</li>
+  <li>FortiSandbox ile sıfır gün tehditlerine karşı dosya analizi</li>
+</ul>
+
+<h2>External Connectors — Dış Bağlayıcılar</h2>
+<p><strong>Ne gösterir:</strong> Fortinet ekosistemi dışındaki üçüncü taraf sistemlerle entegrasyon sağlayan bağlayıcılardır.</p>
+
+<h3>Desteklenen Platformlar</h3>
+<ul>
+  <li><strong>Bulut platformları:</strong> AWS, Microsoft Azure, Google Cloud, Oracle Cloud</li>
+  <li><strong>SDN çözümleri:</strong> VMware NSX, Cisco ACI, Nuage</li>
+  <li><strong>Tehdit istihbaratı:</strong> Threat Intelligence feeds (özel IP listelerini otomatik güncelleme)</li>
+  <li><strong>ITSM sistemleri:</strong> ServiceNow entegrasyonu</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>AWS ortamındaki sanal makinelerin IP adreslerini dinamik olarak FortiGate adres nesnesine çekme</li>
+  <li>Tehdit istihbarat servislerinden gelen kötü amaçlı IP listelerini otomatik engelleme</li>
+  <li>VMware NSX ile mikro segmentasyon politikalarını senkronize etme</li>
+</ul>
+
+<h2>Asset Identity Center — Varlık Kimlik Merkezi</h2>
+<p><strong>Ne gösterir:</strong> Security Fabric'e görünen tüm cihaz ve kullanıcıların kimlik bilgilerini, risk skorlarını ve davranışsal profillerini tek bir ekranda toplar.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li><strong>Cihaz envanteri:</strong> Ağdaki tüm cihazların OS, model, IP, MAC bilgilerini görme</li>
+  <li><strong>Kullanıcı kimliği:</strong> IP adresini Active Directory veya LDAP kullanıcısıyla eşleştirme</li>
+  <li><strong>Risk skoru:</strong> FortiClient uyumluluğu, güncel olmayan OS, eksik antivirus gibi riskleri puanlama</li>
+  <li><strong>ZTNA (Zero Trust):</strong> Her cihazın güven skoruna göre erişim politikası uygulama</li>
+  <li><strong>IoT cihaz tespiti:</strong> Yazıcı, kamera, IP telefon gibi cihazları otomatik sınıflandırma</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Her cihaz için risk seviyesi (Yüksek/Orta/Düşük) renkli ikonla gösterilir. Yüksek riskli cihaza tıklayarak nedenini (güncel olmayan FortiClient, zayıf OS sürümü vb.) ve önerilen aksiyonu görürsünüz. Buradan doğrudan karantina veya politika uygulama aksiyonu alınabilir.</p>
+
+<h2>Security Fabric Kurulumu için Gereksinimler</h2>
+<ul>
+  <li>Root FortiGate (Fabric'i yöneten ana cihaz) ve downstream FortiGate'ler aynı Fabric'te olmalı</li>
+  <li>Her cihazda <strong>Security Fabric Connection</strong> arayüz ayarı açık olmalı</li>
+  <li>FortiGate'ler arasında yönetim trafiğine izin veren firewall politikası bulunmalı</li>
+  <li>Tüm cihazlarda NTP senkronizasyonu yapılmış olmalı (log korelasyonu için kritik)</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Security Fabric menüsü, FortiGate'i sadece bir firewall olmaktan çıkarıp tüm ağın görünürlük ve yönetim merkezine dönüştürür. Physical Topology ile kabloyu, Logical Topology ile politikayı, Security Rating ile güvenlik açıklarını, Automation ile tekrarlayan işleri otomatize edebilir, Connector'larla ekosistemi genişletebilirsiniz. Lider Network olarak Security Fabric tasarımı, kurulumu ve optimizasyonu konularında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
