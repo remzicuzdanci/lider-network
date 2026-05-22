@@ -5751,6 +5751,238 @@ diagnose sys session stat</code></pre>
     `,
   },
 
+  {
+    slug: "fortigate-network-menusu-interfaces-dns-sdwan-routing-diagnostics",
+    title: "FortiGate Network Menüsü: Interfaces'tan BGP'ye Tüm Seçenekler",
+    excerpt:
+      "FortiGate'in Network menüsündeki Interfaces, DNS, IPAM, SD-WAN, Static Routes, Policy Routes, OSPF, BGP, Routing Objects ve Diagnostics ekranlarının tamamını açıklıyoruz. Hangisi ne zaman kullanılır, ne işe yarar?",
+    category: "ag-teknolojileri",
+    categoryColor: "#0052ff",
+    tags: ["FortiGate", "Network", "SD-WAN", "Static Routes", "OSPF", "BGP", "DNS", "Diagnostics", "Routing"],
+    publishedAt: "2026-05-22",
+    readTime: 12,
+    content: `
+<h2>Giriş</h2>
+<p>FortiGate'in <strong>Network</strong> menüsü, cihazın tüm ağ katmanı yapılandırmasını barındırır. Arayüz tanımlamalarından dinamik yönlendirme protokollerine, DNS ayarlarından ağ tanılama araçlarına kadar her şey bu menü altında toplanmıştır. Aşağıda her alt menü tek tek ele alınmıştır.</p>
+
+<h2>Interfaces — Arayüzler</h2>
+<p><strong>Ne gösterir:</strong> FortiGate üzerindeki tüm fiziksel ve sanal ağ arayüzlerinin listesini, IP adreslerini, durumlarını ve bağlı cihaz sayısını gösterir.</p>
+
+<h3>Arayüz Türleri</h3>
+<ul>
+  <li><strong>Physical:</strong> Fiziksel portlar (port1, port2, WAN1 vb.)</li>
+  <li><strong>VLAN:</strong> Bir fiziksel port üzerinde tanımlanan sanal arayüz (802.1Q)</li>
+  <li><strong>Aggregate (LAG):</strong> Birden fazla fiziksel portu birleştirerek bant genişliği artırma veya yedekleme</li>
+  <li><strong>Redundant:</strong> İki fiziksel portu active/standby modda birleştirme</li>
+  <li><strong>Loopback:</strong> Yönetim veya BGP/OSPF için sanal IP arayüzü</li>
+  <li><strong>Tunnel (IPsec, GRE):</strong> VPN tünellerinin arayüz temsili</li>
+  <li><strong>Software Switch:</strong> Birden fazla portu Layer 2 switch gibi birleştirme</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>WAN ve LAN arayüzlerine IP adresi atama</li>
+  <li>VLAN segmentasyonu oluşturma</li>
+  <li>Administrative Access ayarlarını yapılandırma (HTTPS, SSH, Security Fabric)</li>
+  <li>DHCP sunucusunu arayüz bazında etkinleştirme</li>
+  <li>MTU, speed/duplex ayarlarını manuel belirleme</li>
+</ul>
+
+<h2>DNS</h2>
+<p><strong>Ne gösterir:</strong> FortiGate'in kendi kullandığı DNS sunucularını ve isteğe bağlı olarak iç ağ istemcilerinin DNS sorgularını nasıl işleyeceğini yapılandırır.</p>
+
+<h3>DNS Modları</h3>
+<ul>
+  <li><strong>Forward to System DNS:</strong> Tüm DNS sorguları FortiGate'in tanımlı DNS sunucularına iletilir (varsayılan)</li>
+  <li><strong>Local DNS Database:</strong> FortiGate kendisi yerel DNS kaydı tutar — belirli hostname'leri statik IP ile eşleştirme</li>
+  <li><strong>DNS over TLS/HTTPS:</strong> Şifreli DNS sorguları için DoT/DoH desteği</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>ISP DNS yerine güvenilir DNS sunucusu tanımlamak (8.8.8.8, 1.1.1.1 veya kurumsal DNS)</li>
+  <li>İç ağ hostlarını dahili DNS ile çözmek</li>
+  <li>DNS filtreleme (FortiGuard DNS Filter) için DNS trafiğini FortiGate üzerinden geçirmek</li>
+  <li>DNS rebinding saldırılarına karşı koruma etkinleştirmek</li>
+</ul>
+
+<h2>IPAM — IP Adres Yönetimi</h2>
+<p><strong>Ne gösterir:</strong> FortiGate'in ağınızdaki IP adres havuzlarını merkezi olarak yönetmesini sağlar. Özellikle çok sayıda şube veya segment olan ortamlarda IP çakışmalarını önler.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Subnet havuzları oluşturmak ve kullanılan/boş IP'leri görselleştirmek</li>
+  <li>Şube FortiGate'lere otomatik subnet atamak (SD-WAN senaryolarında)</li>
+  <li>IP çakışması tespiti ve önlenmesi</li>
+</ul>
+<p><strong>Not:</strong> IPAM özelliği FortiOS 7.0 ve sonrasında geliştirilmiştir. Küçük ağlarda genellikle kullanılmaz; onlarca subnet'i olan kurumsal yapılar için değerlidir.</p>
+
+<h2>SD-WAN</h2>
+<p><strong>Ne gösterir:</strong> Birden fazla WAN bağlantısını (fiber, ADSL, LTE) tek bir mantıksal arayüz altında birleştirerek akıllı trafik yönetimi sağlar.</p>
+
+<h3>Temel Bileşenler</h3>
+<ul>
+  <li><strong>SD-WAN Members:</strong> WAN arayüzleri ve öncelikleri</li>
+  <li><strong>Performance SLA:</strong> Her bağlantının gecikme, jitter ve paket kaybı ölçümü</li>
+  <li><strong>SD-WAN Rules:</strong> Uygulamaya veya hedefe göre hangi WAN hattının kullanılacağı kuralları</li>
+</ul>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li><strong>Failover:</strong> Birincil hat koptuğunda trafiği otomatik yedek hatta taşıma</li>
+  <li><strong>Load Balancing:</strong> Trafiği birden fazla hat arasında dağıtma</li>
+  <li><strong>Uygulama bazlı yönlendirme:</strong> VoIP trafiğini düşük gecikmeli hattan, bulk veriyi ucuz hattan gönderme</li>
+  <li><strong>Bant genişliği optimizasyonu:</strong> En iyi performanslı hattı otomatik seçme</li>
+</ul>
+
+<h3>Örnek SD-WAN Kuralı</h3>
+<p>Microsoft Teams trafiğini her zaman fiber hattan geçirmek için:</p>
+<pre><code>config system sdwan
+    config service
+        edit 1
+            set name "Teams_Fiber"
+            set mode manual
+            set dst "Microsoft-Teams"
+            set priority-members 1
+        next
+    end
+end</code></pre>
+
+<h2>Static Routes — Statik Rotalar</h2>
+<p><strong>Ne gösterir:</strong> Manuel olarak tanımlanan ağ yollarını listeler. FortiGate, bir paketi nereye göndereceğini bilmediğinde bu tabloya bakar.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li><strong>Default route (0.0.0.0/0):</strong> İnternete çıkış için gateway tanımı — en temel rota</li>
+  <li><strong>İç ağ rotaları:</strong> Farklı subnette bulunan ağlara ulaşmak için next-hop tanımı</li>
+  <li><strong>VPN rotaları:</strong> Uzak sitelere tünel üzerinden erişim için statik rota</li>
+  <li><strong>Blackhole rota:</strong> Belirli trafiği düşürmek için null arayüze yönlendirme</li>
+</ul>
+
+<h3>Rota Önceliği (Distance ve Priority)</h3>
+<p>Aynı hedefe birden fazla rota varsa <strong>Administrative Distance</strong> düşük olan tercih edilir. Eşit distance'ta <strong>Priority</strong> devreye girer. Bu mekanizma failover rotaları oluşturmak için kullanılır:</p>
+<pre><code># Birincil rota (distance 10)
+dst: 0.0.0.0/0  gateway: 1.1.1.1  distance: 10
+
+# Yedek rota (distance 20 - yalnızca birincil düşünce aktif olur)
+dst: 0.0.0.0/0  gateway: 2.2.2.2  distance: 20</code></pre>
+
+<h2>Policy Routes — Politika Rotaları</h2>
+<p><strong>Ne gösterir:</strong> Kaynak IP, hedef IP, protokol veya gelen arayüze göre trafiği farklı gateway'lere yönlendirme kuralları. Statik rotadan daha granüler kontrol sağlar.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Belirli bir subnet'in trafiğini her zaman belirli bir WAN hattından çıkarmak</li>
+  <li>Yönetim trafiğini (SSH, HTTPS) farklı hattan geçirmek</li>
+  <li>Çok ISP'li ortamlarda gelişmiş trafik mühendisliği</li>
+</ul>
+<p><strong>Örnek:</strong> 192.168.10.0/24 subnet'indeki kullanıcıların trafiği her zaman ISP2'den çıksın — Policy Route ile tek kuralla sağlanır.</p>
+
+<h2>RIP — Routing Information Protocol</h2>
+<p>En eski dinamik yönlendirme protokollerinden biridir. Hop sayısını (maksimum 15) metrik olarak kullanır. <strong>Modern kurumsal ağlarda genellikle tercih edilmez</strong> — OSPF veya BGP daha güvenilirdir. Yalnızca eski altyapılarla uyumluluk için kullanılır.</p>
+
+<h2>OSPF — Open Shortest Path First</h2>
+<p><strong>Ne gösterir:</strong> Link-state tabanlı interior gateway protokolü. Ağ topolojisini tüm routerlar arasında paylaşarak en kısa yolu hesaplar.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Çok sayıda router içeren kurumsal ağlarda otomatik rota öğrenme</li>
+  <li>Şube-merkez topolojilerinde dinamik failover</li>
+  <li>Data center içi ağ yönlendirmesi</li>
+  <li>FortiGate'i mevcut OSPF ağına dahil etme</li>
+</ul>
+
+<h3>Temel Kavramlar</h3>
+<ul>
+  <li><strong>Area:</strong> OSPF ağını segmentlere böler. Area 0 (backbone) zorunludur.</li>
+  <li><strong>Hello paketi:</strong> Komşu routerları keşfetmek için periyodik gönderilir</li>
+  <li><strong>LSA (Link State Advertisement):</strong> Topoloji bilgisinin yayıldığı mesajlar</li>
+  <li><strong>DR/BDR:</strong> Multi-access ağlarda seçilen designated router</li>
+</ul>
+
+<h2>BGP — Border Gateway Protocol</h2>
+<p><strong>Ne gösterir:</strong> İnternetin omurgasını oluşturan exterior gateway protokolü. AS (Autonomous System) numaraları arasında rota değişimi yapar.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Birden fazla ISP bağlantısı olan kurumlar için çoklu uplink yönetimi (Multi-homing)</li>
+  <li>MPLS/leased line ile bağlı şubeler arasında rota öğrenme</li>
+  <li>Veri merkezi ve büyük kurumsal ağlarda trafik mühendisliği</li>
+  <li>SD-WAN overlay ağlarında underlay BGP kullanımı</li>
+</ul>
+<p><strong>Not:</strong> BGP, RIP ve OSPF'e göre daha karmaşık bir yapılandırma gerektirir. Yanlış yapılandırma ciddi routing sorunlarına yol açabilir — uzman desteği önerilir.</p>
+
+<h2>Routing Objects — Yönlendirme Nesneleri</h2>
+<p><strong>Ne gösterir:</strong> OSPF ve BGP yapılandırmalarında kullanılan route-map, prefix-list ve access-list gibi yardımcı nesneleri barındırır.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li><strong>Prefix List:</strong> Belirli ağ bloklarını filtrele veya izin ver</li>
+  <li><strong>Route Map:</strong> Rota özelliklerini (metric, next-hop, community) değiştir</li>
+  <li><strong>Access List:</strong> Dinamik yönlendirme protokollerinde rota filtreleme</li>
+</ul>
+<p>Bu nesneler tek başına işlev görmez; OSPF veya BGP yapılandırmalarında referans olarak kullanılır.</p>
+
+<h2>Multicast</h2>
+<p><strong>Ne gösterir:</strong> IP multicast trafiğinin yönetimi için PIM (Protocol Independent Multicast) ve IGMP (Internet Group Management Protocol) ayarlarını barındırır.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>IP TV ve video akış altyapıları</li>
+  <li>IPTV dağıtım ağları</li>
+  <li>Video konferans sistemlerinde multicast optimizasyonu</li>
+  <li>Finansal sistemlerde piyasa verisi (market data) dağıtımı</li>
+</ul>
+<p><strong>Not:</strong> Multicast, özel bir ihtiyaç olmadıkça kurumsal ağlarda aktif tutulmaz. Devre dışı bırakılmış bırakmak güvenlik açısından önerilir.</p>
+
+<h2>Diagnostics — Ağ Tanılama</h2>
+<p><strong>Ne gösterir:</strong> FortiGate GUI üzerinden çalıştırılabilen ağ tanılama araçlarını sunar. Komut satırına gerek kalmadan temel testler yapılabilir.</p>
+
+<h3>Araçlar</h3>
+<ul>
+  <li><strong>Ping:</strong> Hedef IP'ye ICMP echo testi. Kaynak arayüzü seçilebilir — bu özellikle çok arayüzlü ortamlarda kritiktir.</li>
+  <li><strong>Traceroute:</strong> Hedefe giden yol üzerindeki her atlamayı (hop) ve gecikmeyi gösterir.</li>
+  <li><strong>DNS Lookup:</strong> Belirli bir domain'in DNS çözümlemesini FortiGate üzerinden test eder.</li>
+  <li><strong>Sniffer (Packet Capture):</strong> Belirli bir arayüzdeki trafiği anlık yakalar — sorun gidermede en güçlü araç.</li>
+</ul>
+
+<h3>Packet Capture (Sniffer) Kullanımı</h3>
+<p>CLI üzerinden daha gelişmiş filtreleme mümkündür:</p>
+<pre><code># port1 arayüzünde tüm ICMP trafiğini yakala
+diagnose sniffer packet port1 "icmp" 4 10
+
+# Belirli bir IP'nin trafiğini izle
+diagnose sniffer packet any "host 192.168.1.100" 4
+
+# HTTP trafiğini izle
+diagnose sniffer packet any "port 80" 4 100</code></pre>
+
+<h3>Ping'de Kaynak Arayüzü Seçimi Neden Önemli?</h3>
+<p>FortiGate'de ping yaparken kaynak arayüzünü seçmezseniz, FortiGate en uygun arayüzü otomatik seçer ve bu test sonucunu yanıltabilir. Örneğin WAN üzerinden bir hedefe erişimi test etmek istiyorsanız kaynak olarak WAN arayüzünü seçmelisiniz.</p>
+
+<h2>Hangi Senaryo için Hangi Menü?</h2>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#0052ff20;">
+      <th style="padding:8px; border:1px solid #0052ff30; text-align:left;">Senaryo</th>
+      <th style="padding:8px; border:1px solid #0052ff30; text-align:left;">Kullanılacak Menü</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">WAN bağlantısı kurulamıyor</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Interfaces → WAN arayüzü, Static Routes → Default Route, Diagnostics → Ping</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">DNS çözümlenmiyor</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">DNS → DNS sunucusu, Diagnostics → DNS Lookup</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">İki WAN hattı var, failover isteniyorr</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">SD-WAN veya Static Routes → farklı distance ile</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Şube ağları otomatik öğrenilsin</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">OSPF veya BGP</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Belirli bir subnet farklı ISP'den çıksın</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Policy Routes</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Ağda paket kaybı var, nerede sorun?</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Diagnostics → Traceroute, Sniffer</td></tr>
+  </tbody>
+</table>
+
+<h2>Sonuç</h2>
+<p>FortiGate'in Network menüsü, basit bir arayüz IP atamasından BGP gibi karmaşık yönlendirme protokollerine kadar her ölçekteki ağ ihtiyacını karşılar. Günlük operasyonlarda en sık kullanılanlar Interfaces, Static Routes, DNS ve Diagnostics'tir. SD-WAN ise çok WAN hatlı ortamlarda vazgeçilmez hale gelmiştir. Lider Network olarak FortiGate ağ tasarımı, SD-WAN kurulumu ve yönlendirme protokolleri yapılandırmasında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
