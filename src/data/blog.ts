@@ -5983,6 +5983,551 @@ diagnose sniffer packet any "port 80" 4 100</code></pre>
     `,
   },
 
+  {
+    slug: "fortios-76-yenilikleri-neler-degisti",
+    title: "FortiOS 7.6 Yenilikleri: Neler Değişti, Ne Getirildi?",
+    excerpt:
+      "Fortinet'in en güncel işletim sistemi FortiOS 7.6, SD-WAN, ZTNA, AI destekli tehdit algılama ve yönetim arayüzünde önemli yenilikler getirdi. Öne çıkan özellikleri ve yükseltme öncesi dikkat edilmesi gerekenleri inceliyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiOS 7.6", "FortiGate", "Yeni Özellikler", "SD-WAN", "ZTNA", "AI Security"],
+    publishedAt: "2026-05-22",
+    readTime: 7,
+    content: `
+<h2>FortiOS 7.6 Neden Önemli?</h2>
+<p>Fortinet, her büyük FortiOS sürümünde güvenlik, performans ve kullanılabilirlik açısından köklü yenilikler getirir. <strong>FortiOS 7.6</strong>, özellikle AI destekli tehdit algılama, gelişmiş SD-WAN telemetrisi ve Zero Trust mimarisi entegrasyonu açısından önceki sürümlere göre önemli adımlar atmıştır.</p>
+<p>Bu makale FortiOS 7.6'nın öne çıkan özelliklerini, yükseltme öncesi dikkat edilmesi gerekenleri ve hangi donanımların desteklendiğini ele almaktadır.</p>
+
+<h2>Öne Çıkan Yenilikler</h2>
+
+<h3>1. AI/ML Destekli Tehdit Algılama</h3>
+<p>FortiOS 7.6 ile FortiGuard'ın AI tabanlı threat intelligence motoru daha derin entegrasyon kazandı. Makine öğrenmesi modelleri, sıfır gün saldırılarını imza güncellemesi gerekmeden davranışsal analiz ile tespit edebiliyor. Özellikle:</p>
+<ul>
+  <li>Bilinmeyen dosyalar için gerçek zamanlı sandbox önizleme</li>
+  <li>Kullanıcı davranış anormalliği tespiti (UEBA entegrasyonu)</li>
+  <li>Otomatik politika önerisi motoru — eksik güvenlik kontrollerini tespit edip öneri sunuyor</li>
+</ul>
+
+<h3>2. SD-WAN Uygulama Performans İzleme (APM)</h3>
+<p>SD-WAN'da uygulama bazlı SLA izleme artık çok daha granüler hale geldi:</p>
+<ul>
+  <li>Microsoft 365, Salesforce, Zoom gibi SaaS uygulamaları için önceden tanımlı APM profilleri</li>
+  <li>Uygulama bazlı gerçek zamanlı gecikme/jitter görselleştirmesi FortiView'de doğrudan gösterilmesi</li>
+  <li>Passive WAN Health Check — aktif probe göndermeden trafik analizi ile hat kalitesi ölçümü</li>
+</ul>
+
+<h3>3. ZTNA 2.0 Geliştirmeleri</h3>
+<p>Zero Trust Network Access tarafında FortiOS 7.6 şunları getirdi:</p>
+<ul>
+  <li>Cihaz durum (posture) kontrolü gerçek zamanlı güncelleniyor — oturum sırasında uyumsuz hale gelen cihaz otomatik erişim kaybediyor</li>
+  <li>SAML 2.0 ve OAuth 2.0 ile genişletilmiş kimlik sağlayıcı desteği</li>
+  <li>Inline CASB entegrasyonu ile SaaS uygulama görünürlüğü artırıldı</li>
+</ul>
+
+<h3>4. GUI Yenilikleri</h3>
+<ul>
+  <li>Dashboard widget'ları özelleştirilebilir hale geldi — sürükle-bırak düzeni</li>
+  <li>Policy yönetiminde arama ve filtreleme geliştirildi</li>
+  <li>Log görünümünde korelasyon motoru — ilişkili logları otomatik gruplama</li>
+  <li>Karanlık mod desteği (Dark mode)</li>
+</ul>
+
+<h3>5. IPsec VPN Performans İyileştirmeleri</h3>
+<p>NP7 ve NP6 işlemci destekli modellerde IPsec şifreleme/şifre çözme hızları %20-30 artırıldı. Özellikle büyük şube ağlarında hub-and-spoke VPN topolojilerinde fark hissedilir düzeyde.</p>
+
+<h3>6. FortiManager Cloud Entegrasyonu</h3>
+<p>FortiOS 7.6 ile FortiManager Cloud'a bağlantı daha basit hale getirildi. Sıfır dokunuşlu (zero-touch) provision ile yeni bir FortiGate'in seri numarası girilerek fabrika çıkışından doğrudan production konfigürasyonuna geçmesi sağlanabilir.</p>
+
+<h2>Hangi Donanımlar Destekleniyor?</h2>
+<p>FortiOS 7.6, belirli eski model FortiGate cihazlarında desteklenmeyebilir. Genel kural:</p>
+<ul>
+  <li><strong>Tam destek:</strong> FortiGate 40F ve üzeri, 2020 sonrası modeller</li>
+  <li><strong>Kısmi destek:</strong> Bazı eski 60D, 80D serileri — Release Notes'u kontrol edin</li>
+  <li><strong>Desteklenmiyor:</strong> FortiGate 30D ve öncesi modeller</li>
+</ul>
+<p>Yükseltme öncesi mutlaka <a href="https://docs.fortinet.com" style="color:#EE3124;">docs.fortinet.com</a> adresinden Release Notes'u inceleyin.</p>
+
+<h2>Yükseltme Öncesi Yapılması Gerekenler</h2>
+<ol>
+  <li><strong>Güncel backup alın:</strong> CLI'dan <code>execute backup full-config tftp</code></li>
+  <li><strong>Upgrade path'i doğrulayın:</strong> Bazı sürüm atlamalarında ara sürümden geçmek gerekir (Fortinet Upgrade Path Tool kullanın)</li>
+  <li><strong>Maintenance window belirleyin:</strong> Yükseltme sırasında kısa süreli kesinti yaşanır</li>
+  <li><strong>HA ortamında:</strong> Önce secondary, sonra primary güncelleyin</li>
+  <li><strong>Release Notes'u okuyun:</strong> Breaking change'leri ve deprecated özellikleri kontrol edin</li>
+</ol>
+
+<h2>Sonuç</h2>
+<p>FortiOS 7.6, AI tabanlı güvenlik, gelişmiş SD-WAN telemetrisi ve ZTNA 2.0 ile kurumsal güvenlik gereksinimlerini karşılama konusunda önemli adımlar atmaktadır. Yükseltme planlaması ve test süreçlerinde Lider Network NSE sertifikalı mühendisleri olarak destek sağlıyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "ssl-vpn-vs-ipsec-vpn-hangisini-secmeli",
+    title: "SSL VPN vs IPsec VPN: Hangisini Seçmeli? FortiGate Üzerinde Karşılaştırma",
+    excerpt:
+      "SSL VPN mi, IPsec VPN mi? Her ikisi de uzaktan erişim ve site-to-site bağlantı için kullanılır ancak mimari, performans ve kullanım senaryoları açısından önemli farklar vardır. FortiGate özelinde detaylı karşılaştırma.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["SSL VPN", "IPsec VPN", "FortiGate", "VPN", "Uzaktan Erişim", "Site-to-Site"],
+    publishedAt: "2026-05-22",
+    readTime: 8,
+    content: `
+<h2>VPN Türlerine Giriş</h2>
+<p>Kurumsal ağlarda VPN iki temel amaç için kullanılır: <strong>uzaktan kullanıcı erişimi</strong> (remote access) ve <strong>şubeler arası bağlantı</strong> (site-to-site). FortiGate her iki senaryoyu da hem SSL VPN hem IPsec VPN ile karşılayabilir — peki hangisi ne zaman tercih edilmeli?</p>
+
+<h2>SSL VPN Nedir?</h2>
+<p>SSL VPN, HTTPS protokolü üzerinden (TCP 443) çalışan bir VPN türüdür. Kullanıcı cihazına FortiClient kurularak tünel modu veya tarayıcı tabanlı web modu ile erişim sağlanır.</p>
+
+<h3>Avantajları</h3>
+<ul>
+  <li>Kurulum basitliği — son kullanıcı için kolay yapılandırma</li>
+  <li>TCP 443 portu kullandığı için çoğu ağda (otel, kafe WiFi) çalışır — firewall/NAT arkasında sorun yaşanmaz</li>
+  <li>Web modu ile istemci yazılımı gerekmeden tarayıcıdan erişim</li>
+  <li>Kullanıcı bazlı ince taneli erişim kontrolü</li>
+  <li>Çok faktörlü kimlik doğrulama (MFA) entegrasyonu kolaydır</li>
+</ul>
+
+<h3>Dezavantajları</h3>
+<ul>
+  <li>TCP üzerinde çalışması nedeniyle yüksek gecikme ve düşük performans (özellikle yoğun trafik için)</li>
+  <li>FortiGate CPU'sunu daha fazla kullanır — çok sayıda eş zamanlı bağlantıda performans düşer</li>
+  <li>Fortinet, FortiOS 7.4 ile SSL VPN'i <strong>deprecated</strong> ilan etti — yeni kurulumlar için ZTNA veya IPsec önerilmekte</li>
+</ul>
+
+<h2>IPsec VPN Nedir?</h2>
+<p>IPsec VPN, Layer 3 düzeyinde şifreli tünel oluşturan standart bir protokoldür. UDP 500 ve 4500 portlarını, ESP (Encapsulating Security Payload) protokolünü kullanır. FortiGate'de hem site-to-site hem remote access için kullanılabilir.</p>
+
+<h3>Avantajları</h3>
+<ul>
+  <li>Yüksek performans — NP işlemcisi ile donanım hızlandırma desteği</li>
+  <li>UDP tabanlı olduğu için gerçek zamanlı uygulamalar (VoIP, video) için düşük gecikme</li>
+  <li>Site-to-site bağlantılarda endüstri standardı</li>
+  <li>IKEv2 ile mobil istemcilerde hızlı bağlantı yeniden kurma (re-keying)</li>
+  <li>Fortinet'in uzun vadeli önerilen protokolü</li>
+</ul>
+
+<h3>Dezavantajları</h3>
+<ul>
+  <li>NAT arkasında bazı ağ ortamlarında sorun yaşanabilir (NAT-T ile genellikle çözülür)</li>
+  <li>İstemci yapılandırması SSL VPN'e göre biraz daha karmaşık</li>
+  <li>UDP 500/4500 portları bazı kısıtlı ağlarda engellenmiş olabilir</li>
+</ul>
+
+<h2>FortiGate Üzerinde Karşılaştırma Tablosu</h2>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#EE312420;">
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Özellik</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">SSL VPN</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">IPsec VPN</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Protokol</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">TLS/HTTPS (TCP 443)</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">IKE/ESP (UDP 500, 4500)</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Performans</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Orta (CPU yoğun)</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yüksek (NP hızlandırma)</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">NAT Uyumluluğu</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Mükemmel</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">İyi (NAT-T ile)</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Kurulum Kolaylığı</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Kolay</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Orta</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Site-to-Site</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Mümkün ama önerilmez</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Standart ve önerilen</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Remote Access</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yaygın (deprecated)</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">FortiClient ile mükemmel</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Fortinet Yol Haritası</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Deprecated (7.4+)</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Aktif geliştirme</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">MFA Desteği</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Mükemmel</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">IKEv2 ile iyi</td></tr>
+  </tbody>
+</table>
+
+<h2>Hangi Senaryoda Hangisini Seçmeli?</h2>
+
+<h3>Site-to-Site Bağlantı (Şube ↔ Merkez)</h3>
+<p>✅ <strong>IPsec VPN</strong> — performans, kararlılık ve ölçeklenebilirlik açısından standart tercih. IKEv2 ile modern, dinamik şube topolojileri için idealdir.</p>
+
+<h3>Uzaktan Çalışan Erişimi</h3>
+<p>✅ <strong>IPsec VPN + FortiClient</strong> (önerilen) veya <strong>ZTNA</strong> (en güncel yaklaşım). SSL VPN hâlâ çalışır ancak Fortinet'in uzun vadeli desteği IPsec ve ZTNA yönünde.</p>
+
+<h3>Kısıtlı Ağlardan Erişim (otel, havalimanı WiFi)</h3>
+<p>✅ <strong>SSL VPN</strong> — TCP 443 neredeyse hiçbir zaman engellenmez. Bu senaryoda SSL VPN hâlâ avantajlıdır.</p>
+
+<h3>Yüksek Performans Gerektiren Uygulamalar (VoIP, video)</h3>
+<p>✅ <strong>IPsec VPN</strong> — UDP tabanlı yapısı ve NP donanım hızlandırma desteği ile üstün performans.</p>
+
+<h2>SSL VPN Deprecated Mi Oldu?</h2>
+<p>Fortinet, FortiOS 7.4 sürümüyle birlikte SSL VPN'i resmi olarak <strong>deprecated</strong> (kullanım dışı bırakılacak) ilan etti. Bu, SSL VPN'in aniden ortadan kalkmayacağı ancak aktif olarak geliştirilmeyeceği anlamına gelir. Yeni kurulumlar için <strong>IPsec IKEv2 + FortiClient</strong> veya <strong>ZTNA</strong> geçişi planlanması önerilir.</p>
+
+<h2>Sonuç</h2>
+<p>İki protokolün de güçlü ve zayıf tarafları vardır. Kısa vadede SSL VPN çalışmaya devam edecek ancak uzun vadede IPsec VPN ve ZTNA'ya geçiş planlamak stratejik bir karardır. Lider Network olarak VPN tasarımı, migrasyon planlaması ve FortiClient EMS kurulumunda NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-high-availability-ha-kurulumu-active-passive",
+    title: "FortiGate High Availability (HA) Nedir? Active-Passive ve Active-Active Kurulumu",
+    excerpt:
+      "FortiGate HA, iki veya daha fazla cihazın birlikte çalışarak kesintisiz erişim sağlamasıdır. Active-Passive ve Active-Active modları, failover süresi, heartbeat bağlantısı ve HA kurulum adımlarını kapsamlı şekilde açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "High Availability", "HA", "Active-Passive", "Active-Active", "Failover"],
+    publishedAt: "2026-05-22",
+    readTime: 9,
+    content: `
+<h2>High Availability (HA) Nedir?</h2>
+<p><strong>High Availability (HA)</strong>, iki veya daha fazla FortiGate cihazının bir küme (cluster) oluşturarak kesintisiz hizmet sunmasıdır. Birincil cihaz arızalandığında ikincil cihaz saniyeler içinde devreye girerek ağ trafiğinin kesintisiz akmasını sağlar.</p>
+<p>HA, kurumsal ağlarda firewall'ın tek başarısızlık noktası (single point of failure) olmasını önleyen kritik bir mimarik unsurdur.</p>
+
+<h2>FortiGate HA Modları</h2>
+
+<h3>Active-Passive (A-P) Modu</h3>
+<p>En yaygın kullanılan HA modudur. Bir cihaz <strong>aktif</strong> olarak tüm trafiği işlerken, diğeri <strong>pasif</strong> konumda bekler ve heartbeat paketiyle aktif cihazı sürekli izler.</p>
+<ul>
+  <li><strong>Failover:</strong> Aktif cihaz arızalandığında pasif cihaz 1-3 saniye içinde devreye girer</li>
+  <li><strong>Performans:</strong> Pasif cihaz trafik işlemez, kapasite iki katına çıkmaz</li>
+  <li><strong>Avantaj:</strong> Basit yapılandırma, düşük karmaşıklık, kolay sorun giderme</li>
+  <li><strong>Dezavantaj:</strong> Pasif cihaz "boşa" çalışır — yatırım verimliliği düşer</li>
+</ul>
+
+<h3>Active-Active (A-A) Modu</h3>
+<p>Her iki cihaz da aktif olarak trafik işler. Master cihaz, gelen trafiği cluster üyeleri arasında dağıtır.</p>
+<ul>
+  <li><strong>Performans:</strong> İki cihazın UTM işleme kapasitesi birleşir — yüksek trafik ortamlarında avantajlı</li>
+  <li><strong>Failover:</strong> Bir cihaz düşerse diğeri tek başına devam eder</li>
+  <li><strong>Avantaj:</strong> Her iki cihaz da aktif kullanılır, UTM throughput iki katına çıkar</li>
+  <li><strong>Dezavantaj:</strong> Daha karmaşık yapılandırma, bazı özellikler A-A modda desteklenmez</li>
+</ul>
+
+<h2>HA Bileşenleri</h2>
+
+<h3>Heartbeat Arayüzü</h3>
+<p>Cluster üyeleri birbirini <strong>heartbeat paketleri</strong> ile izler. Heartbeat bağlantısı kopan veya yanıt vermeyen cihaz arızalı kabul edilir. En az bir, tercihen iki bağımsız heartbeat bağlantısı önerilir.</p>
+<p><strong>Bağlantı türleri:</strong></p>
+<ul>
+  <li>Doğrudan kablo bağlantısı (önerilen — en güvenilir)</li>
+  <li>Dedicated switch üzerinden bağlantı</li>
+</ul>
+
+<h3>Cluster Synchronization</h3>
+<p>Aktif ve pasif cihazlar arasında yapılandırma, oturum tablosu ve routing tablosu sürekli senkronize edilir. Bu sayede failover sırasında aktif TCP oturumları kesilmeden devam edebilir (session pickup).</p>
+
+<h3>Virtual MAC ve Virtual IP</h3>
+<p>HA cluster'ı ağa tek bir sanal MAC adresiyle görünür. Failover sırasında MAC adresi değişmediği için switch tabloları güncellenmez ve bağlantı kesintisi minimale iner.</p>
+
+<h2>FortiGate HA Kurulumu — Adım Adım</h2>
+
+<h3>Ön Gereksinimler</h3>
+<ul>
+  <li>Aynı FortiGate modeli (örn. her ikisi de FG-100F)</li>
+  <li>Aynı FortiOS sürümü</li>
+  <li>Aynı lisanslar (UTM, TP vb.)</li>
+  <li>En az 2 boş port heartbeat için ayrılmış</li>
+</ul>
+
+<h3>1. Primary (Master) Cihaz Yapılandırması</h3>
+<pre><code>config system ha
+    set mode a-p
+    set group-name "LiderNetwork-HA"
+    set group-id 1
+    set password "HA_Cluster_Pass123"
+    set priority 200
+    set hbdev "port3" 50
+    set hbdev "port4" 50
+    set session-pickup enable
+    set override enable
+end</code></pre>
+
+<h3>2. Secondary (Slave) Cihaz Yapılandırması</h3>
+<pre><code>config system ha
+    set mode a-p
+    set group-name "LiderNetwork-HA"
+    set group-id 1
+    set password "HA_Cluster_Pass123"
+    set priority 100
+    set hbdev "port3" 50
+    set hbdev "port4" 50
+    set session-pickup enable
+end</code></pre>
+<p>Priority değeri yüksek olan cihaz master seçilir. Secondary'de daha düşük priority verilir.</p>
+
+<h3>3. Cluster'ı Doğrulama</h3>
+<pre><code># Cluster durumunu görüntüle
+get system ha status
+
+# Beklenen çıktı:
+# Model: FortiGate-100F
+# Mode: HA A-P
+# Group: 1
+# Debug: 0
+# Master: FG100F-Master (prio=200, id=0)
+# Slave : FG100F-Slave  (prio=100, id=1)</code></pre>
+
+<h2>Failover Testi Nasıl Yapılır?</h2>
+<p>Üretime geçmeden önce failover testini mutlaka yapın:</p>
+<ol>
+  <li>Aktif trafik varken (ping, iperf vb.) master cihazın güç kablosunu çekin</li>
+  <li>Slave cihazın master olarak devreye girdiğini doğrulayın</li>
+  <li>Kesinti süresini ölçün (hedef: 3 saniye altı)</li>
+  <li>Master cihazı geri bağlayın — override enable ise master rolüne geri döner</li>
+</ol>
+
+<h2>HA Yönetimi: Her Cihaza Ayrı Erişim</h2>
+<p>HA kurulumunda her cihazın yönetim IP'si ayrı tanımlanmalıdır — aksi halde slave cihaza ayrı erişim mümkün olmaz:</p>
+<pre><code>config system ha
+    set ha-mgmt-status enable
+    config ha-mgmt-interfaces
+        edit 1
+            set interface "mgmt"
+            set gateway 192.168.100.1
+        next
+    end
+end</code></pre>
+<p>Master'a cluster IP'sinden, slave'e ise ha-mgmt arayüzünün IP'sinden erişilir.</p>
+
+<h2>Yaygın HA Sorunları ve Çözümleri</h2>
+<ul>
+  <li><strong>Split-brain:</strong> Her iki cihaz da kendini master sanıyor — heartbeat bağlantısı kesilmiş olabilir. İki bağımsız heartbeat arayüzü bu riski minimize eder.</li>
+  <li><strong>Senkronizasyon hatası:</strong> <code>diagnose sys ha showcsum</code> ile checksum karşılaştırması yapın</li>
+  <li><strong>Failover çok uzun sürüyor:</strong> heartbeat-interval ve dead-time değerlerini düşürün</li>
+  <li><strong>Session pickup çalışmıyor:</strong> Her iki cihazda da <code>session-pickup enable</code> olmalı</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>FortiGate HA, kurumsal ağlarda firewall katmanında kesintisizlik sağlamanın en güvenilir yoludur. Active-Passive mod çoğu senaryo için yeterli ve yönetimi kolaydır; yüksek UTM throughput gerektiren ortamlarda Active-Active değerlendirilebilir. Lider Network olarak FortiGate HA tasarımı, kurulumu ve failover testlerinde NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "zero-trust-nedir-fortigate-ile-ztna-uygulamasi",
+    title: "Zero Trust Nedir? FortiGate ile ZTNA Uygulaması",
+    excerpt:
+      "Zero Trust, 'kimseye güvenme, herkesi doğrula' prensibine dayalı modern ağ güvenliği yaklaşımıdır. FortiGate'in ZTNA çözümü nasıl çalışır, geleneksel VPN'den farkı nedir ve nasıl uygulanır? Kapsamlı rehber.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Zero Trust", "ZTNA", "FortiGate", "FortiClient", "Sıfır Güven", "Siber Güvenlik"],
+    publishedAt: "2026-05-22",
+    readTime: 8,
+    content: `
+<h2>Zero Trust Nedir?</h2>
+<p><strong>Zero Trust</strong> (Sıfır Güven), "hiçbir kullanıcıya, cihaza veya ağa varsayılan olarak güvenme — her erişim isteğini doğrula" prensibine dayalı güvenlik mimarisidir. Geleneksel güvenlik modellerindeki "iç ağ güvenlidir" varsayımını tamamen reddeder.</p>
+<p>Zero Trust'ın temel ilkeleri:</p>
+<ul>
+  <li><strong>Asla güvenme, her zaman doğrula:</strong> Ağ içinde bile her istek kimlik doğrulamadan geçer</li>
+  <li><strong>En az ayrıcalık:</strong> Kullanıcı yalnızca ihtiyacı olan kaynağa erişebilir</li>
+  <li><strong>Mikro segmentasyon:</strong> Ağ küçük segmentlere bölünerek lateral hareket engellenir</li>
+  <li><strong>Sürekli doğrulama:</strong> Oturum süresince cihaz ve kullanıcı güveni anlık değerlendirilir</li>
+</ul>
+
+<h2>Neden Zero Trust?</h2>
+<p>Geleneksel güvenlik modeli, kurumsal ağı bir kale gibi düşünür — dışarısı tehlikeli, içerisi güvenli. Ancak modern tehdit ortamında bu yaklaşım yetersiz kalır:</p>
+<ul>
+  <li>Uzaktan çalışma ile "iç ağ" kavramı bulanıklaştı</li>
+  <li>Bulut ve SaaS uygulamaları veriyi çevre dışına taşıdı</li>
+  <li>İç tehditler (insider threat) ve lateral movement saldırıları arttı</li>
+  <li>VPN tüneli açıldığında cihaz tüm ağa erişebiliyor — gereğinden fazla ayrıcalık</li>
+</ul>
+
+<h2>ZTNA Nedir?</h2>
+<p><strong>ZTNA (Zero Trust Network Access)</strong>, Zero Trust prensiplerini uzaktan erişim senaryolarına uygulayan teknolojidir. Kullanıcı VPN gibi tüm ağa bağlanmak yerine yalnızca erişim yetkisi olan uygulamaya bağlanır.</p>
+
+<h3>VPN vs ZTNA Farkı</h3>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#EE312420;">
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Özellik</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Geleneksel VPN</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">ZTNA</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Erişim kapsamı</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Tüm ağ segmenti</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yalnızca yetkili uygulama</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Cihaz kontrolü</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Bağlantı sonrası kontrol yok</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Sürekli cihaz posture kontrolü</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Lateral movement</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Mümkün</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Engellenir</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Kimlik doğrulama</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Bağlantı başında tek seferlik</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Sürekli ve granüler</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Uygulama görünürlüğü</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Sınırlı</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Tam görünürlük</td></tr>
+  </tbody>
+</table>
+
+<h2>FortiGate ZTNA Mimarisi</h2>
+<p>Fortinet'in ZTNA çözümü üç ana bileşenden oluşur:</p>
+<ul>
+  <li><strong>FortiClient:</strong> Son kullanıcı cihazında çalışan agent — kimlik, cihaz durumu ve bağlantıyı yönetir</li>
+  <li><strong>FortiClient EMS (Enterprise Management Server):</strong> FortiClient politikalarını merkezi yönetir, cihaz güven skorunu hesaplar</li>
+  <li><strong>FortiGate (ZTNA Access Proxy):</strong> Uygulama erişim noktası — kimlik ve cihaz bilgisine göre erişimi izin verir veya reddeder</li>
+</ul>
+
+<h2>ZTNA Erişim Akışı</h2>
+<ol>
+  <li>Kullanıcı korunan uygulamaya erişmek ister</li>
+  <li>FortiClient, kullanıcı kimliğini (AD/LDAP/SAML) ve cihaz durumunu (OS güncel mi? AV aktif mi? Disk şifreli mi?) FortiClient EMS'e bildirir</li>
+  <li>FortiClient EMS cihaza güven skoru atar ve FortiGate'e iletir</li>
+  <li>FortiGate, politikayı değerlendirir: kullanıcı yetkili mi? Cihaz uyumlu mu?</li>
+  <li>Her iki koşul da sağlanıyorsa FortiGate uygulamaya şifreli proxy tüneli açar</li>
+  <li>Oturum süresince cihaz durumu anlık izlenir — uyumsuz hale gelen cihazın erişimi kesilir</li>
+</ol>
+
+<h2>FortiGate'de ZTNA Yapılandırması</h2>
+
+<h3>1. ZTNA Server Tanımı</h3>
+<pre><code>config firewall access-proxy
+    edit "Internal-App-Proxy"
+        set vip "ZTNA-VIP"
+        set client-cert enable
+        config api-gateway
+            edit 1
+                set url-map "/app1"
+                set service tcp
+                set realservers
+                    edit 1
+                        set ip 10.0.0.100
+                        set port 443
+                    next
+                end
+            next
+        end
+    next
+end</code></pre>
+
+<h3>2. ZTNA Politikası</h3>
+<pre><code>config firewall policy
+    edit 100
+        set name "ZTNA-App-Access"
+        set srcintf "wan1"
+        set dstintf "internal"
+        set srcaddr "all"
+        set dstaddr "ZTNA-VIP"
+        set action accept
+        set ztna-status enable
+        set ztna-tags-match-logic and
+    next
+end</code></pre>
+
+<h2>Cihaz Posture Kontrolü Örnekleri</h2>
+<p>ZTNA'da cihazın güvenilir kabul edilmesi için örnek koşullar:</p>
+<ul>
+  <li>FortiClient güncel sürümde yüklü mü?</li>
+  <li>İşletim sistemi son yamalarla güncel mi?</li>
+  <li>Antivirüs aktif ve güncel mi?</li>
+  <li>Disk şifrelemesi (BitLocker/FileVault) etkin mi?</li>
+  <li>Cihaz domain'e kayıtlı mı?</li>
+  <li>Güvenlik duvarı aktif mi?</li>
+</ul>
+<p>Bu koşullardan herhangi biri sağlanmıyorsa kullanıcı kimlik doğrulaması başarılı olsa bile erişim reddedilir.</p>
+
+<h2>Zero Trust Yolculuğuna Nereden Başlanmalı?</h2>
+<ol>
+  <li><strong>Varlık envanteri:</strong> Ağınızdaki tüm kullanıcı, cihaz ve uygulamaları listeleyin</li>
+  <li><strong>Kritik uygulamaları belirleyin:</strong> ZTNA'yı önce en kritik uygulamalara uygulayın</li>
+  <li><strong>FortiClient EMS kurun:</strong> Endpoint yönetimini merkezi hale getirin</li>
+  <li><strong>Pilot grup oluşturun:</strong> Küçük bir kullanıcı grubuyla test edin</li>
+  <li><strong>Kademeli genişletin:</strong> Başarılı pilot sonrası tüm uygulamalara yayın</li>
+</ol>
+
+<h2>Sonuç</h2>
+<p>Zero Trust, "iç ağ güvenlidir" varsayımının geçerliliğini yitirdiği modern tehdit ortamında en doğru güvenlik yaklaşımıdır. Fortinet'in ZTNA çözümü, FortiGate, FortiClient ve EMS üçlüsüyle geleneksel VPN'e güçlü bir alternatif sunar. Lider Network olarak ZTNA mimari tasarımı, FortiClient EMS kurulumu ve Zero Trust yolculuğunuzda NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-ssl-deep-inspection-sifreli-trafik-tehdit-tespiti",
+    title: "FortiGate SSL Deep Inspection: Şifreli Trafikte Tehdit Tespiti",
+    excerpt:
+      "İnternet trafiğinin %90'ından fazlası artık HTTPS ile şifreli. Geleneksel güvenlik araçları bu trafiği inceleyemez. FortiGate'in SSL Deep Inspection özelliği şifreli trafiği nasıl açar, inceler ve tehditleri nasıl tespit eder?",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["SSL Inspection", "HTTPS", "Deep Inspection", "FortiGate", "UTM", "Sertifika"],
+    publishedAt: "2026-05-22",
+    readTime: 7,
+    content: `
+<h2>Sorun: Şifreli Trafik Görünmez</h2>
+<p>Günümüzde internet trafiğinin <strong>%90'ından fazlası HTTPS</strong> üzerinden iletiliyor. Bu şifreleme kullanıcı gizliliği için mükemmeldir; ancak firewall ve güvenlik cihazları için ciddi bir kör nokta oluşturur. Şifreli kanal içinde gelen zararlı yazılım, veri sızıntısı veya komuta-kontrol trafiği, SSL inspection olmadan tespit edilemez.</p>
+
+<h2>SSL Deep Inspection Nedir?</h2>
+<p><strong>SSL Deep Inspection</strong> (tam adıyla SSL/TLS Deep Packet Inspection), FortiGate'in şifreli HTTPS trafiğini "ortada adam" (man-in-the-middle) tekniğiyle şifresini çözdüğü, incelediği ve yeniden şifreleyerek hedefe ilettiği süreçtir.</p>
+<p>Bu süreç şu şekilde işler:</p>
+<ol>
+  <li>İstemci HTTPS isteği gönderir</li>
+  <li>FortiGate bağlantıyı keserek sunucuyla kendi adına yeni bir TLS oturumu kurar</li>
+  <li>Sunucudan gelen şifreli yanıtı çözer ve içeriği IPS, antivirüs, web filtre gibi UTM motorlarına gönderir</li>
+  <li>İçerik temizse yeniden şifreler ve istemciye iletir — istemci bağlantının kesildiğinden haberdar olmaz</li>
+</ol>
+
+<h2>SSL Certificate Inspection vs Deep Inspection Farkı</h2>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#EE312420;">
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Özellik</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Certificate Inspection</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Deep Inspection</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Trafik şifresi çözülür mü?</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Hayır</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Evet</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">İçerik taraması</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Hayır</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Evet (IPS, AV, Web Filter)</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Sertifika kontrolü</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Evet</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Evet</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">CPU yükü</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Düşük</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yüksek</td></tr>
+    <tr><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Sertifika uyarısı</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yok</td><td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">CA sertifikası dağıtılmazsa var</td></tr>
+  </tbody>
+</table>
+
+<h2>CA Sertifikası: Neden Kritik?</h2>
+<p>Deep Inspection'da FortiGate, orijinal sunucu sertifikasını kendi CA sertifikasıyla imzalanmış bir sertifikayla değiştirir. İstemciler bu sertifikaya güvenmezse tarayıcıda güvenlik uyarısı alırlar.</p>
+<p><strong>Çözüm:</strong> FortiGate'in CA sertifikasını tüm istemci cihazlara dağıtın:</p>
+<ul>
+  <li><strong>Domain ortamında:</strong> Group Policy (GPO) ile tüm bilgisayarlara otomatik push</li>
+  <li><strong>Mac cihazlarda:</strong> MDM (Mobile Device Management) ile dağıtım</li>
+  <li><strong>Mobil cihazlarda:</strong> Kurumsal MDM profili ile yükleme</li>
+</ul>
+
+<h3>CA Sertifikasını FortiGate'den İndirme</h3>
+<pre><code># GUI: System → Certificates → Local Certificates
+# "Fortinet_CA_SSL" sertifikasını export edin
+# veya CLI:
+execute vpn certificate local export tftp Fortinet_CA_SSL 192.168.1.100</code></pre>
+
+<h2>SSL Inspection Profili Yapılandırması</h2>
+<ol>
+  <li><strong>Security Profiles → SSL/SSH Inspection</strong>'a gidin</li>
+  <li><strong>Create New</strong> veya mevcut "deep-inspection" profilini düzenleyin</li>
+  <li><strong>SSL Inspection Method:</strong> "Full SSL Inspection" seçin</li>
+  <li><strong>CA Certificate:</strong> Fortinet_CA_SSL seçin</li>
+  <li>Profili firewall politikasına ekleyin</li>
+</ol>
+
+<h2>SSL Inspection İstisnalar (Exemptions)</h2>
+<p>Bazı uygulamalar ve web siteleri SSL inspection ile uyumsuz olabilir veya gizlilik nedeniyle muaf tutulmalıdır:</p>
+<ul>
+  <li><strong>Bankacılık siteleri:</strong> Sertifika pinning kullandıkları için inspection ile çakışabilir</li>
+  <li><strong>Windows Update:</strong> Microsoft altyapısı genellikle muaf tutulur</li>
+  <li><strong>HRMS/ERP sistemleri:</strong> Özel sertifika kullanan iç sistemler</li>
+  <li><strong>Video konferans:</strong> Zoom, Teams gibi uygulamalar için özel exemption gerekebilir</li>
+</ul>
+<pre><code>config firewall ssl-ssh-profile
+    edit "deep-inspection"
+        config ssl-exempt
+            edit 1
+                set type address
+                set address "Banking-Sites"
+            next
+        end
+    next
+end</code></pre>
+
+<h2>Performans Etkisi</h2>
+<p>SSL Deep Inspection CPU yoğun bir işlemdir. Dikkat edilmesi gerekenler:</p>
+<ul>
+  <li>NP7 veya NP6 işlemcili modellerde donanım hızlandırma desteği sınırlıdır — CPU'ya yük biner</li>
+  <li>Çok sayıda eş zamanlı HTTPS bağlantısı olan ortamlarda throughput düşebilir</li>
+  <li>Cihaz boyutlandırmasında SSL inspection throughput değerini (datasheet'teki NGFW throughput değil) referans alın</li>
+</ul>
+
+<h2>Hangi Trafik İncelenmeli?</h2>
+<p>Tüm HTTPS trafiğini inspect etmek her zaman gerekli veya pratik değildir. Önerilen yaklaşım:</p>
+<ul>
+  <li>✅ Genel internet çıkışı trafiği — mutlaka inspect edin</li>
+  <li>✅ İndirilen dosyalar — antivirüs için kritik</li>
+  <li>⚠️ Bankacılık ve finans siteleri — muaf tutun veya certificate inspection kullanın</li>
+  <li>❌ İç ağ HTTPS trafiği — genellikle inspect etmeye gerek yok</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>SSL Deep Inspection, modern siber güvenliğin vazgeçilmez bir bileşenidir. Şifreli trafik içinde gizlenen tehditleri tespit etmeden IPS, antivirüs ve web filtresi tam anlamıyla işlev göremez. Doğru yapılandırılmış CA sertifika dağıtımı ve istisnalar ile kullanıcı deneyimini bozmadan maksimum güvenlik sağlanabilir. Lider Network olarak SSL Inspection yapılandırması, CA sertifika dağıtımı ve UTM politika optimizasyonunda NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
