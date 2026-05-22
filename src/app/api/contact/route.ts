@@ -56,11 +56,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const errMsg = error instanceof Error ? error.message : String(error);
-    console.error("Contact form error:", errMsg);
+    console.error("Contact form error:", error);
 
     return NextResponse.json(
-      { error: "Internal server error", detail: errMsg },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

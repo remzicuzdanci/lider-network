@@ -39,7 +39,6 @@ export default function ContactForm() {
   const [submitStatus, setSubmitStatus] = useState<
     "idle" | "loading" | "success" | "error"
   >("idle");
-  const [errorDetail, setErrorDetail] = useState<string>("");
 
   const {
     register,
@@ -64,15 +63,12 @@ export default function ContactForm() {
         reset();
         setTimeout(() => setSubmitStatus("idle"), 6000);
       } else {
-        const json = await response.json().catch(() => ({}));
-        setErrorDetail(json.detail || json.error || `HTTP ${response.status}`);
         setSubmitStatus("error");
-        setTimeout(() => setSubmitStatus("idle"), 15000);
+        setTimeout(() => setSubmitStatus("idle"), 5000);
       }
-    } catch (e) {
-      setErrorDetail(e instanceof Error ? e.message : String(e));
+    } catch {
       setSubmitStatus("error");
-      setTimeout(() => setSubmitStatus("idle"), 15000);
+      setTimeout(() => setSubmitStatus("idle"), 5000);
     }
   };
 
@@ -298,7 +294,7 @@ export default function ContactForm() {
           }}
         >
           <AlertCircle className="w-4 h-4 shrink-0" aria-hidden="true" />
-          <span>{t("error")}{errorDetail ? ` — ${errorDetail}` : ""}</span>
+          {t("error")}
         </div>
       )}
 
