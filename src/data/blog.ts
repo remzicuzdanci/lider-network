@@ -5314,6 +5314,139 @@ diagnose debug enable</code></pre>
     `,
   },
 
+  {
+    slug: "fortiextender-nedir-lte-wan-yedekleme",
+    title: "FortiExtender Nedir? LTE/5G ile WAN Yedekleme ve Şube Bağlantısı",
+    excerpt:
+      "FortiExtender, Fortinet'in hücresel (LTE/5G) WAN çözümüdür. İnternet bağlantısının koptuğu anlarda devreye girerek kesintisiz WAN sağlar. FortiExtender'ın mimarisini, kurulum adımlarını ve kullanım senaryolarını inceliyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiExtender", "LTE", "5G", "WAN Yedekleme", "SD-WAN", "FortiGate"],
+    publishedAt: "2026-05-22",
+    readTime: 7,
+    content: `
+<h2>FortiExtender Nedir?</h2>
+<p><strong>FortiExtender</strong>, Fortinet tarafından geliştirilen hücresel WAN genişletme cihazıdır. 4G LTE veya 5G modem entegrasyonuyla birincil internet bağlantısının yedeği olarak veya tek başına WAN bağlantısı olarak kullanılır. FortiGate ile doğrudan entegre çalışır ve SD-WAN politikaları kapsamında yönetilebilir.</p>
+<p>Temel kullanım senaryoları şunlardır:</p>
+<ul>
+  <li>Fiber/ADSL bağlantısı olmayan şube veya saha ofisleri</li>
+  <li>Mevcut WAN bağlantısına LTE/5G yedek hat eklenmesi</li>
+  <li>Geçici konumlar (fuar, şantiye, mobil araç)</li>
+  <li>Afet ve acil durum ağları</li>
+</ul>
+
+<h2>FortiExtender Modelleri</h2>
+<p>Fortinet, farklı ihtiyaçlara yönelik birkaç FortiExtender modeli sunar:</p>
+<ul>
+  <li><strong>FortiExtender 100 Serisi:</strong> Masa üstü kullanım, küçük şubeler için LTE Cat-6/Cat-12 destek</li>
+  <li><strong>FortiExtender 200 Serisi:</strong> Outdoor montaj, saha ve taşıt uygulamaları, geniş sıcaklık aralığı</li>
+  <li><strong>FortiExtender 400 Serisi:</strong> 5G NR desteği, yüksek bant genişliği gerektiren uygulamalar</li>
+  <li><strong>FortiExtender VM:</strong> Sanal ortamlarda yazılım tabanlı genişletici</li>
+</ul>
+
+<h2>FortiExtender Mimarisi: Nasıl Çalışır?</h2>
+<p>FortiExtender iki farklı modda çalışabilir:</p>
+
+<h3>1. Standalone Mod</h3>
+<p>FortiExtender bağımsız bir modem/router olarak çalışır. FortiGate'e USB veya Ethernet üzerinden bağlanır ve NAT yaparak WAN bağlantısı sağlar. Küçük yapılandırmalar için uygundur ancak merkezi yönetim imkânı sınırlıdır.</p>
+
+<h3>2. FortiGate Managed Mod (Önerilen)</h3>
+<p>FortiExtender, FortiGate tarafından tamamen yönetilir. CAPWAP protokolü üzerinden FortiGate'e bağlanır ve şu avantajları sunar:</p>
+<ul>
+  <li>FortiGate GUI'den merkezi yapılandırma</li>
+  <li>SD-WAN politikalarına dahil edilebilme</li>
+  <li>FortiManager ile merkezi yönetim</li>
+  <li>Otomatik failover ve load balancing</li>
+  <li>FortiAnalyzer ile log ve raporlama entegrasyonu</li>
+</ul>
+
+<h2>FortiGate ile FortiExtender Kurulumu</h2>
+
+<h3>1. Adım: Fiziksel Bağlantı</h3>
+<p>FortiExtender'ı FortiGate'in WAN veya özel bir portuna Ethernet kablosuyla bağlayın. SIM kartı takın ve antenleri bağlayın.</p>
+
+<h3>2. Adım: FortiGate'te FortiExtender'ı Etkinleştirin</h3>
+<pre><code>config extender-controller extender
+    set admin enable
+end</code></pre>
+<p>Ya da GUI'den: <strong>Network → FortiExtender</strong> menüsü (FortiOS sürümüne göre konum değişebilir).</p>
+
+<h3>3. Adım: Authorize İşlemi</h3>
+<ol>
+  <li><strong>Network → FortiExtender</strong>'a gidin</li>
+  <li>Listelenen FortiExtender cihazını bulun</li>
+  <li><strong>Authorize</strong> butonuna tıklayın</li>
+  <li>Cihaz birkaç saniye içinde "Connected" durumuna geçecektir</li>
+</ol>
+
+<h3>4. Adım: Veri Planı (Data Plan) Yapılandırması</h3>
+<p>FortiGate GUI'den SIM kart ayarlarını yapılandırın:</p>
+<ul>
+  <li>APN (Access Point Name) — operatöre göre değişir: <code>internet</code>, <code>mgbs</code>, <code>web</code> vs.</li>
+  <li>PIN kodu (SIM kilidi varsa)</li>
+  <li>Kimlik doğrulama türü (PAP/CHAP — çoğu operatörde None)</li>
+  <li>Aylık veri limiti (opsiyonel uyarı eşiği)</li>
+</ul>
+
+<h3>5. Adım: SD-WAN'a Entegrasyon</h3>
+<p>FortiExtender bağlantısını SD-WAN member olarak ekleyerek fiber bağlantısıyla birlikte yönetebilirsiniz:</p>
+<ol>
+  <li><strong>Network → SD-WAN → SD-WAN Members</strong> → <strong>Create New</strong></li>
+  <li>Interface olarak FortiExtender WAN arayüzünü seçin</li>
+  <li>Gateway ve öncelik ayarlarını yapın</li>
+  <li>SD-WAN kurallarında failover veya load balancing politikası tanımlayın</li>
+</ol>
+
+<h2>WAN Yedekleme Senaryosu: Fiber + LTE</h2>
+<p>En yaygın kullanım senaryosu: birincil hat fiber, yedek hat LTE olan yapılandırmadır.</p>
+<ul>
+  <li><strong>Normal durum:</strong> Tüm trafik fiber üzerinden gider (düşük gecikme, yüksek bant genişliği)</li>
+  <li><strong>Fiber kesintisi:</strong> SD-WAN politikası otomatik olarak LTE'ye geçer (genellikle 3-5 saniye içinde)</li>
+  <li><strong>Fiber geri geldiğinde:</strong> Trafik otomatik olarak fiber'e döner</li>
+</ul>
+<p>SD-WAN performance SLA ile bağlantı kalitesi sürekli ölçülür. Paket kaybı veya gecikme eşiği aşıldığında failover tetiklenir.</p>
+
+<h2>FortiExtender ile SD-WAN SLA Yapılandırması</h2>
+<pre><code>config system sdwan
+    config health-check
+        edit "ISP_Check"
+            set server "8.8.8.8"
+            set interval 500
+            set failtime 5
+            set recoverytime 5
+            set members 1 2
+        next
+    end
+end</code></pre>
+<p>Bu yapılandırmada Google DNS'e 500ms aralıklarla ping gönderilir. 5 ardışık başarısız denemede failover tetiklenir.</p>
+
+<h2>FortiExtender Kullanım Alanları</h2>
+
+<h3>Şube Ofisler</h3>
+<p>Fiber altyapısı olmayan şube ofislere LTE bağlantısı sağlar. FortiGate SD-WAN ile merkez ofise güvenli VPN tüneli kurulur, tüm politikalar merkezi olarak yönetilir.</p>
+
+<h3>Şantiye ve Geçici Lokasyonlar</h3>
+<p>İnşaat şantiyeleri, fuar alanları, açık hava etkinlikleri gibi geçici lokasyonlarda hızlı kurulum imkânı sunar. Outdoor modeller (-40°C ile +70°C arasında çalışabilir) sert iklim koşullarına dayanıklıdır.</p>
+
+<h3>Araç ve Mobil Uygulamalar</h3>
+<p>Zırhlı araçlar, kargo kamyonları, mobil komuta araçları gibi taşıt uygulamalarında FortiExtender araç antenlerine bağlanarak sürekli bağlantı sağlar.</p>
+
+<h3>OT ve Endüstriyel Ağlar</h3>
+<p>Kablolu altyapı kurulamayan fabrika veya enerji tesislerinde hücresel bağlantı ile SCADA ve OT sistemleri internete güvenli şekilde bağlanabilir.</p>
+
+<h2>Lisanslama</h2>
+<p>FortiExtender'ın FortiGate tarafından yönetilebilmesi için:</p>
+<ul>
+  <li>FortiGate üzerinde <strong>FortiExtender lisansı</strong> gereklidir (cihaz başına)</li>
+  <li>Bazı FortiGate modellerinde belirli sayıda FortiExtender lisansı dahildir</li>
+  <li>Lisans durumunu kontrol etmek için: <strong>Dashboard → License Information</strong></li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>FortiExtender, Fortinet ekosisteminin WAN tarafını güçlendiren kritik bir bileşendir. Özellikle SD-WAN ile birleştiğinde; fiber kesintilerine karşı otomatik failover, şube bağlantısı ve mobil kullanım senaryolarında güvenilir ve merkezi yönetilebilir bir çözüm sunar. Lider Network olarak FortiExtender tasarımı, kurulumu ve SD-WAN entegrasyonunda NSE sertifikalı mühendislerimizle hizmetinizdeyiz.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
