@@ -4982,6 +4982,338 @@ export const posts: BlogPost[] = [
     `,
   },
 
+  // ── YENİ MAKALELER ──────────────────────────────────────────────────────
+
+  {
+    slug: "fortigate-administrative-access-ayarlari",
+    title: "FortiGate Administrative Access Ayarları: Her Seçenek Ne İşe Yarar?",
+    excerpt:
+      "FortiGate arayüzünde karşılaşılan Administrative Access bölümü; HTTPS, SSH, PING, FMG-Access, Security Fabric Connection, LLDP gibi onlarca seçenek barındırır. Bu seçeneklerin tamamını, ne zaman açılıp kapatılması gerektiğini adım adım açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Administrative Access", "Security Fabric", "HTTPS", "SSH", "LLDP"],
+    publishedAt: "2026-05-22",
+    readTime: 7,
+    content: `
+<h2>Administrative Access Nedir?</h2>
+<p>FortiGate'te her fiziksel veya sanal arayüze (interface) bağımsız olarak hangi yönetim protokollerinin erişebileceğini <strong>Administrative Access</strong> bölümünden belirlersiniz. Bu ayar; güvenliği doğrudan etkiler — gereksiz protokolleri kapatmak saldırı yüzeyini ciddi ölçüde azaltır.</p>
+<p>Aşağıda ekrandaki tüm seçenekler tek tek açıklanmıştır.</p>
+
+<h2>IPv4 Administrative Access Seçenekleri</h2>
+
+<h3>HTTPS</h3>
+<p>FortiGate'in web tabanlı yönetim arayüzüne (GUI) erişim için kullanılır. Varsayılan port 443'tür. <strong>Yönetim amacıyla kullanacağınız arayüzde mutlaka açık olmalıdır.</strong> WAN (internet) tarafına bakan arayüzde kapalı tutulması önerilir; yönetimi sadece iç ağ veya özel yönetim arayüzü üzerinden yapın.</p>
+
+<h3>HTTP</h3>
+<p>Şifresiz HTTP üzerinden GUI erişimidir. <strong>Güvenlik açısından kesinlikle önerilmez.</strong> Yalnızca özel test ortamlarında veya HTTPS yönlendirmesi için geçici olarak açılabilir. Üretim ortamında kapalı tutun.</p>
+
+<h3>PING</h3>
+<p>ICMP ping sorgularına yanıt verip vermeyeceğini belirler. Ağ bağlantısını test etmek ve arıza tespitinde kullanışlıdır. <strong>İç ağ arayüzlerinde açık tutmak normaldir;</strong> WAN tarafında açmak, cihazın internette "görünür" olmasına neden olur — genellikle kapalı tutulur.</p>
+
+<h3>FMG-Access</h3>
+<p>FortiManager'ın bu arayüz üzerinden FortiGate'e bağlanmasına izin verir. Merkezi yönetim için FortiManager kullanıyorsanız, FortiManager'ın bağlandığı arayüzde bu seçenek <strong>açık olmalıdır.</strong> FortiManager kullanmıyorsanız kapalı bırakın.</p>
+
+<h3>SSH</h3>
+<p>Komut satırı (CLI) üzerinden şifreli erişim sağlar. Güvenli olmasına karşın <strong>sadece yönetim arayüzünde açık tutulması önerilir.</strong> Brute-force saldırılarına karşı SSH portunu değiştirmek ve login attempt limit ayarlamak iyi bir pratiktir.</p>
+
+<h3>SNMP</h3>
+<p>Ağ izleme araçlarının (Zabbix, PRTG, SolarWinds vb.) FortiGate'den istatistik ve durum bilgisi çekmesi için kullanılır. SNMP kullanıyorsanız açın ve mutlaka <strong>SNMPv3 ile community string güvenliği</strong> uygulayın. Kullanmıyorsanız kapalı tutun.</p>
+
+<h3>FTM (FortiToken Mobile)</h3>
+<p>FortiToken Mobile ile iki faktörlü kimlik doğrulama (2FA) push bildirimlerinin bu arayüz üzerinden iletilmesini sağlar. FortiToken tabanlı VPN veya yönetici girişi kullanıyorsanız ilgili arayüzde açık olmalıdır.</p>
+
+<h3>RADIUS Accounting</h3>
+<p>RADIUS sunucusundan gelen accounting mesajlarını (kullanıcı oturum başlangıç/bitiş bilgileri) kabul eder. Captive portal veya 802.1X kimlik doğrulama kullanan yapılarda gereklidir. Kullanmıyorsanız kapalı bırakın.</p>
+
+<h3>Security Fabric Connection</h3>
+<p>Fortinet Security Fabric ekosisteminin en kritik ayarlarından biridir. <strong>FortiAP, FortiSwitch ve diğer Fabric cihazlarının FortiGate'i "root" olarak tanıyabilmesi için bu seçenek açık olmalıdır.</strong></p>
+<p>Security Fabric Connection kapalıysa:</p>
+<ul>
+  <li>FortiAP cihazları FortiGate'e bağlanıp authorize edilemez</li>
+  <li>FortiSwitch yönetimi FortiGate üzerinden yapılamaz</li>
+  <li>FortiAnalyzer log bağlantısı kurulmayabilir</li>
+</ul>
+<p><strong>Hangi arayüzde açık olmalı?</strong> FortiAP veya FortiSwitch'in bağlı olduğu iç ağ arayüzünde (örn. internal, lan, port2) mutlaka açık olmalıdır.</p>
+
+<h3>Speed Test</h3>
+<p>FortiGate GUI'sindeki dahili bant genişliği ölçüm aracının bu arayüz üzerinden çalışmasına izin verir. Genellikle WAN arayüzünde kullanılır; yönetim ve test amaçlıdır, üretimde opsiyoneldir.</p>
+
+<h2>Receive LLDP ve Transmit LLDP</h2>
+<p>LLDP (Link Layer Discovery Protocol), komşu cihazları otomatik olarak keşfetmek için kullanılan bir Layer 2 protokolüdür. Cisco'nun CDP'sine benzer, ancak vendor bağımsızdır.</p>
+
+<h3>Receive LLDP</h3>
+<p>Komşu cihazlardan gelen LLDP paketlerini dinler ve cihaz bilgilerini (hostname, port, capabilities) öğrenir. <strong>"Use VDOM Setting"</strong> seçeneği, VDOM genelindeki varsayılan ayarı kullanır. "Enable" ile bu arayüz için bağımsız olarak açılabilir.</p>
+
+<h3>Transmit LLDP</h3>
+<p>FortiGate'in kendi bilgilerini komşulara LLDP ile duyurmasını sağlar. Ağ haritalaması ve otomatik topoloji keşfi için kullanışlıdır. FortiSwitch ile entegre çalışırken LLDP'nin açık olması önerilir.</p>
+
+<h3>Use VDOM Setting</h3>
+<p>LLDP için "Use VDOM Setting" seçilirse, arayüz VDOM düzeyindeki genel LLDP yapılandırmasını miras alır. Her arayüz için ayrı ayrı ayar yapmak yerine merkezi yönetim sağlar.</p>
+
+<h2>Güvenlik Önerileri: Hangi Protokoller Nerede Açık Olmalı?</h2>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#EE312420;">
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Arayüz</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Önerilen Açık Protokoller</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Kapalı Tutulacaklar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">WAN (İnternet)</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">—</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Tümü kapalı (mümkünse)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">LAN / Internal</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">HTTPS, PING, Security Fabric, LLDP</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">HTTP, FTM (gerekmedikçe)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Yönetim (MGMT)</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">HTTPS, SSH, PING, FMG-Access</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">HTTP, SNMP (kullanılmıyorsa)</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">FortiAP / FortiSwitch</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Security Fabric Connection, LLDP</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">SSH, SNMP (gerekmedikçe)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Sonuç</h2>
+<p>Administrative Access ayarları, FortiGate güvenliğinin temel taşlarından biridir. "İhtiyacın kadar aç, geri kalanını kapat" prensibi ile hareket etmek, saldırı yüzeyini minimuma indirir. Lider Network NSE sertifikalı mühendisleri olarak FortiGate güvenlik denetimleri ve yapılandırma optimizasyonu konularında yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortiswitch-olmadan-fortiap-kurulumu-security-fabric",
+    title: "FortiSwitch Olmadan FortiAP Kurulumu: Security Fabric ile AP Nasıl Tanıtılır?",
+    excerpt:
+      "FortiSwitch olmadan doğrudan FortiGate'e bağlı FortiAP cihazlarını nasıl authorize edersiniz? Security Fabric Connection ayarının önemi, adım adım FortiAP kurulumu ve sık karşılaşılan sorunların çözümü.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiAP", "FortiGate", "Security Fabric", "Wireless", "WiFi Kurulumu"],
+    publishedAt: "2026-05-22",
+    readTime: 8,
+    content: `
+<h2>Giriş</h2>
+<p>Kurumsal ağlarda FortiAP cihazlarını yönetmek için genellikle FortiSwitch kullanılır. Ancak küçük ve orta ölçekli ortamlarda FortiSwitch olmadan, FortiAP'yi doğrudan FortiGate'in bir portuna bağlayarak da tam işlevsel kablosuz ağ kurabilirsiniz.</p>
+<p>Bu makalede FortiSwitch'siz FortiAP kurulumunun adımlarını, <strong>Security Fabric Connection'ın neden kritik olduğunu</strong> ve sık karşılaşılan sorunları ele alıyoruz.</p>
+
+<h2>Gereksinimler</h2>
+<ul>
+  <li>FortiGate (herhangi bir model — yazılımda AP Controller lisansı dahildir)</li>
+  <li>FortiAP cihazı (FortiAP-U veya FortiAP serisi)</li>
+  <li>FortiAP ile FortiGate arasında Layer 2 bağlantı (aynı VLAN veya doğrudan bağlantı)</li>
+  <li>FortiOS 6.4 veya üzeri (önerilir)</li>
+</ul>
+
+<h2>1. Adım: Arayüzde Security Fabric Connection'ı Açın</h2>
+<p>FortiAP'nin bağlandığı arayüzde (örn. <code>internal</code>, <code>port3</code>) <strong>Security Fabric Connection</strong> seçeneği açık olmalıdır. Bu ayar olmadan FortiGate, FortiAP'yi keşfetse bile authorize edemez.</p>
+<ol>
+  <li><strong>Network → Interfaces</strong>'e gidin</li>
+  <li>FortiAP'nin bağlı olduğu arayüzü düzenleyin</li>
+  <li><strong>Administrative Access</strong> bölümünde <strong>Security Fabric Connection</strong> kutucuğunu işaretleyin</li>
+  <li><strong>OK</strong> ile kaydedin</li>
+</ol>
+<p><strong>Not:</strong> Security Fabric Connection açık olmayan bir arayüze bağlı FortiAP, "Unauthorized" olarak listelenir ve authorize işlemi başarısız olur.</p>
+
+<h2>2. Adım: FortiAP'yi Fiziksel Olarak Bağlayın</h2>
+<p>FortiAP'yi PoE destekli bir switch portu veya PoE enjektör aracılığıyla FortiGate'in ilgili portuna bağlayın. FortiAP, DHCP ile IP alacaktır — FortiGate'in DHCP sunucusunun o arayüzde aktif olduğundan emin olun.</p>
+<p>FortiGate arayüzünde DHCP sunucusu yoksa:</p>
+<ol>
+  <li><strong>Network → Interfaces</strong> → ilgili arayüzü düzenleyin</li>
+  <li><strong>DHCP Server</strong> → Enable</li>
+  <li>IP aralığını belirleyin (örn. 192.168.10.100 – 192.168.10.200)</li>
+</ol>
+
+<h2>3. Adım: FortiAP'yi Authorize Edin</h2>
+<ol>
+  <li>FortiGate GUI'de <strong>WiFi &amp; Switch Controller → Managed FortiAPs</strong>'e gidin</li>
+  <li>FortiAP listede <strong>"Unauthorized"</strong> olarak görünecektir</li>
+  <li>Cihaza sağ tıklayın → <strong>Authorize</strong></li>
+  <li>Birkaç saniye içinde durum <strong>"Online"</strong> olarak değişecektir</li>
+</ol>
+<p>Eğer FortiAP listede görünmüyorsa Security Fabric Connection ayarını kontrol edin (1. Adım).</p>
+
+<h2>4. Adım: SSID Oluşturun</h2>
+<ol>
+  <li><strong>WiFi &amp; Switch Controller → SSIDs</strong> → <strong>Create New</strong></li>
+  <li>SSID adı, şifre ve güvenlik modunu belirleyin (WPA2/WPA3 önerilir)</li>
+  <li>IP/Ağ: Bridge modda veya tunnel modda çalışabilir
+    <ul>
+      <li><strong>Bridge Modu:</strong> Kablosuz istemciler kablolu ağla aynı subnet'te olur</li>
+      <li><strong>Tunnel Modu:</strong> Trafik FortiGate üzerinden geçer, ayrı bir subnet kullanılır</li>
+    </ul>
+  </li>
+</ol>
+
+<h2>5. Adım: AP Profiline SSID Atayın</h2>
+<ol>
+  <li><strong>WiFi &amp; Switch Controller → AP Profiles</strong>'e gidin</li>
+  <li>Mevcut profili düzenleyin veya yeni profil oluşturun</li>
+  <li>Radio 1 (2.4 GHz) ve/veya Radio 2 (5 GHz) için oluşturduğunuz SSID'yi ekleyin</li>
+  <li>Authorize ettiğiniz FortiAP'ye bu profili atayın</li>
+</ol>
+
+<h2>Sık Karşılaşılan Sorunlar</h2>
+
+<h3>FortiAP listede görünmüyor</h3>
+<ul>
+  <li>Security Fabric Connection açık mı? → En sık karşılaşılan neden</li>
+  <li>FortiAP DHCP'den IP alıyor mu? → FortiAP konsol veya DHCP lease tablosunu kontrol edin</li>
+  <li>Arayüzler arasında firewall politikası var mı? → CAPWAP portu (UDP 5246, 5247) açık olmalı</li>
+</ul>
+
+<h3>FortiAP "Unauthorized" kalıyor</h3>
+<ul>
+  <li>Authorize işlemi sonrası 1-2 dakika bekleyin</li>
+  <li>FortiAP'yi yeniden başlatın</li>
+  <li>FortiGate CLI'dan: <code>diagnose wireless-controller wlac -c sta-db</code> ile durumu kontrol edin</li>
+</ul>
+
+<h3>FortiAP Online ama SSID yayınlanmıyor</h3>
+<ul>
+  <li>AP Profili doğru atanmış mı?</li>
+  <li>Radio etkin mi? (disable durumunda olabilir)</li>
+  <li>Kanal ve güç ayarları otomatik modda mı?</li>
+</ul>
+
+<h2>CAPWAP Nedir ve Neden Önemlidir?</h2>
+<p>FortiAP ile FortiGate arasındaki iletişim <strong>CAPWAP (Control and Provisioning of Wireless Access Points)</strong> protokolü üzerinden gerçekleşir. CAPWAP, UDP 5246 (kontrol) ve UDP 5247 (veri) portlarını kullanır. FortiAP ile FortiGate arasında bir firewall politikası varsa bu portların açık olması zorunludur.</p>
+
+<h2>Sonuç</h2>
+<p>FortiSwitch olmadan FortiAP kurulumu, doğru adımlar izlendiğinde oldukça pratiktir. Sürecin en kritik noktası <strong>Security Fabric Connection</strong> ayarının doğru arayüzde etkinleştirilmesidir. Lider Network olarak FortiAP tasarımı, kurulumu ve sorun giderme konularında NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-ftp-helper-nedir-nasil-calisir",
+    title: "FortiGate FTP Helper Nedir? Pasif ve Aktif FTP Trafiğini Yönetme",
+    excerpt:
+      "FTP protokolü, NAT arkasındaki ortamlarda bağlantı sorunlarına yol açabilir. FortiGate'teki FTP Helper (ALG), bu sorunu otomatik olarak çözer. FTP Helper'ın ne yaptığını, nasıl çalıştığını ve ne zaman devre dışı bırakılması gerektiğini açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "FTP Helper", "ALG", "NAT", "FTP", "Firewall"],
+    publishedAt: "2026-05-22",
+    readTime: 6,
+    content: `
+<h2>FTP Protokolü ve NAT Sorunu</h2>
+<p>FTP (File Transfer Protocol), kontrol bağlantısı için TCP 21 portunu, veri aktarımı için ise ayrı bir port kullanır. Bu ikili port yapısı, NAT (Network Address Translation) arkasındaki ortamlarda ciddi sorunlara yol açar.</p>
+<p>İki FTP modu vardır:</p>
+<ul>
+  <li><strong>Aktif FTP:</strong> Sunucu, istemcinin belirttiği porta doğru veri bağlantısı kurar. NAT arkasındaki istemcilerde sunucu özel IP'ye erişemediği için bağlantı başarısız olur.</li>
+  <li><strong>Pasif FTP:</strong> İstemci, sunucunun belirttiği porta bağlanır. Modern FTP istemcilerinde varsayılandır ancak NAT ortamında hâlâ sorun yaşanabilir.</li>
+</ul>
+
+<h2>FTP Helper (ALG) Nedir?</h2>
+<p><strong>FTP Helper</strong>, FortiGate'in Application Layer Gateway (ALG) özelliğinin bir parçasıdır. FTP kontrol trafiğini (TCP 21) izleyerek, içindeki IP adresi ve port bilgilerini NAT çevirisine göre dinamik olarak günceller. Bu sayede FTP veri bağlantıları otomatik olarak kurulabilir hale gelir.</p>
+
+<p>FortiGate, FTP Helper sayesinde şunları yapar:</p>
+<ul>
+  <li>FTP PORT ve PASV komutlarını dinler</li>
+  <li>Paket içindeki özel IP adresini public IP ile değiştirir</li>
+  <li>Dinamik veri kanalı için geçici firewall politikası açar</li>
+  <li>Veri transferi tamamlandığında geçici politikayı kapatır</li>
+</ul>
+
+<h2>FortiGate'te FTP Helper Yapılandırması</h2>
+
+<h3>GUI Üzerinden Kontrol</h3>
+<p>FortiOS'ta FTP Helper varsayılan olarak etkindir. Durumu kontrol etmek için:</p>
+<ol>
+  <li><strong>Network → Helpers</strong> menüsüne gidin (bazı sürümlerde <strong>Policy &amp; Objects → Helper</strong>)</li>
+  <li>Listede <strong>ftp</strong> helper'ını bulun</li>
+  <li>Port 21 üzerinde aktif olduğunu doğrulayın</li>
+</ol>
+
+<h3>CLI Üzerinden Kontrol</h3>
+<pre><code>config system session-helper
+    show
+end</code></pre>
+<p>Çıktıda şuna benzer bir satır görmelisiniz:</p>
+<pre><code>edit 13
+    set name ftp
+    set protocol 6
+    set port 21
+next</code></pre>
+
+<h3>FTP Helper'ı Devre Dışı Bırakmak</h3>
+<p>Belirli durumlarda FTP Helper'ı devre dışı bırakmak gerekebilir:</p>
+<pre><code>config system session-helper
+    delete 13
+end</code></pre>
+<p><strong>Not:</strong> ID numarası (13) sisteme göre değişebilir. Önce <code>show</code> ile doğru ID'yi tespit edin.</p>
+
+<h2>FTP Helper Ne Zaman Sorun Çıkarır?</h2>
+
+<h3>1. FTPS (FTP over SSL) Kullananlar</h3>
+<p>FTP Helper, şifresiz FTP trafiğini parse eder. <strong>FTPS (implicit/explicit TLS)</strong> kullanılıyorsa trafik şifreli olduğundan Helper içeriği okuyamaz ve bağlantıyı bozabilir. Bu durumda FTP Helper'ı devre dışı bırakmak gerekir.</p>
+
+<h3>2. Standart Dışı Port Kullananlar</h3>
+<p>FTP sunucunuz 21 dışında bir port kullanıyorsa (örn. 2121), Helper bu trafiği yakalamaz. Helper'ı farklı porta taşıyabilirsiniz:</p>
+<pre><code>config system session-helper
+    edit 13
+        set port 2121
+    next
+end</code></pre>
+
+<h3>3. UTM/SSL İnceleme ile Çakışma</h3>
+<p>Bazı FortiGate sürümlerinde derin paket inceleme (DPI) ve FTP Helper aynı anda çalışırken çakışma yaşanabilir. Bu durumda loglarda "FTP bağlantısı kurulamadı" hatası görülür.</p>
+
+<h2>FTP Helper ve Firewall Politikası İlişkisi</h2>
+<p>FTP Helper aktif olduğunda, FortiGate veri kanalı için <strong>dinamik pinhole</strong> açar. Yani manuel olarak FTP veri portlarını (20 veya ephemeral portlar) firewall politikasına eklemenize gerek kalmaz.</p>
+<p>Eğer FTP Helper'ı devre dışı bıraktıysanız, firewall politikanızda:</p>
+<ul>
+  <li>Aktif FTP için: TCP 20 portunu inbound olarak açın</li>
+  <li>Pasif FTP için: Sunucunun kullandığı ephemeral port aralığını açın (genellikle 49152-65535)</li>
+</ul>
+
+<h2>Tanılama Komutları</h2>
+<pre><code># FTP oturumlarını izle
+diagnose sys session filter dport 21
+diagnose sys session list
+
+# FTP Helper loglarını gör
+diagnose debug application ftp -1
+diagnose debug enable</code></pre>
+
+<h2>Özet: FTP Helper Açık mı Kapalı mı Olmalı?</h2>
+<table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+  <thead>
+    <tr style="background:#EE312420;">
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">Senaryo</th>
+      <th style="padding:8px; border:1px solid #EE312430; text-align:left;">FTP Helper</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Standart FTP, NAT arkası</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">✅ Açık olmalı</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">FTPS (TLS şifreli)</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">❌ Kapalı olmalı</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">Standart dışı port</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">⚙️ Port ayarı güncellenmeli</td>
+    </tr>
+    <tr>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">SFTP (SSH üzerinden)</td>
+      <td style="padding:8px; border:1px solid rgba(255,255,255,0.1);">❌ Helper gerekmez (TCP 22)</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Sonuç</h2>
+<p>FTP Helper, NAT arkasındaki FTP bağlantılarını sorunsuz hale getiren FortiGate'in akıllı bir özelliğidir. Ancak FTPS veya standart dışı konfigürasyonlarda dikkatli yapılandırma gerektirir. Lider Network olarak FortiGate politika tasarımı, NAT yapılandırması ve uygulama katmanı sorunlarında NSE sertifikalı mühendislerimizle destek veriyoruz.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
