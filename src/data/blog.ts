@@ -5447,6 +5447,159 @@ end</code></pre>
     `,
   },
 
+  {
+    slug: "fortiview-nedir-nasil-kullanilir-trafik-analizi",
+    title: "FortiView Nedir? Sources, Destinations, Applications, Sessions ile Trafik Analizi",
+    excerpt:
+      "FortiGate'in dahili trafik izleme paneli olan FortiView; Sources, Destinations, Applications, Web Sites, Policies ve Sessions ekranlarıyla ağınızdaki her hareketi görünür kılar. Her sekmenin ne gösterdiğini ve nasıl kullanılacağını adım adım açıklıyoruz.",
+    category: "soc-yonetim",
+    categoryColor: "#f59e0b",
+    tags: ["FortiView", "FortiGate", "Trafik Analizi", "DHCP Monitor", "Network Monitoring", "SOC"],
+    publishedAt: "2026-05-22",
+    readTime: 8,
+    content: `
+<h2>FortiView Nedir?</h2>
+<p><strong>FortiView</strong>, FortiGate'in yerleşik gerçek zamanlı trafik analiz ve izleme panelidir. Harici bir araç gerektirmeden ağınızdaki tüm trafiği; kaynak, hedef, uygulama, web sitesi, politika ve oturum bazında anlık olarak görüntülemenizi sağlar.</p>
+<p>FortiView; güvenlik olaylarını tespit etmek, bant genişliği tüketen cihaz veya uygulamaları bulmak ve firewall politikalarının doğru çalışıp çalışmadığını doğrulamak için günlük olarak kullanılan bir araçtır.</p>
+<p>FortiGate GUI'de <strong>FortiView</strong> menüsü altında şu ekranlar bulunur:</p>
+<ul>
+  <li>FortiView Sources</li>
+  <li>FortiView Destinations</li>
+  <li>FortiView Applications</li>
+  <li>FortiView Web Sites</li>
+  <li>FortiView Policies</li>
+  <li>FortiView Sessions</li>
+  <li>DHCP Monitor</li>
+</ul>
+
+<h2>FortiView Sources — Kaynaklar</h2>
+<p><strong>Ne gösterir:</strong> Ağınızdaki hangi kaynak IP adreslerinin (cihazların) en fazla trafik ürettiğini listeler. Her kaynak için bant genişliği kullanımı, oturum sayısı ve tehdit durumu görüntülenir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>İnterneti en çok kullanan cihazı veya kullanıcıyı tespit etmek</li>
+  <li>Anormal miktarda trafik üreten bir cihazı (virüs, botnet vb.) bulmak</li>
+  <li>Mesai saatlerinde bant genişliği tüketen kaynakları izlemek</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Listede en üstteki IP en fazla trafik üreten cihazdır. IP adresine tıklayarak o cihazın hangi uygulamalara ve web sitelerine eriştiğini drilldown ile görüntüleyebilirsiniz.</p>
+<p><strong>İpucu:</strong> Sağ üstteki zaman filtresini "Son 1 Saat", "Son 24 Saat" veya özel aralıkta ayarlayabilirsiniz.</p>
+
+<h2>FortiView Destinations — Hedefler</h2>
+<p><strong>Ne gösterir:</strong> Ağınızdaki trafiğin hangi hedef IP adresleri veya ülkelere gittiğini gösterir. Coğrafi harita görünümüyle ülke bazlı trafik dağılımı da izlenebilir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Bilinmeyen veya şüpheli IP adresleriyle iletişim olup olmadığını kontrol etmek</li>
+  <li>Belirli bir ülkeyle (örn. Kuzey Kore, Rusya) trafik gidip gitmediğini görmek</li>
+  <li>C&amp;C (Command &amp; Control) sunucularına bağlantı tespiti</li>
+  <li>DNS veya NTP trafiğinin nereye gittiğini doğrulamak</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Hedef IP'ye tıklayarak hangi kaynak cihazların o adrese bağlandığını, hangi uygulamanın kullanıldığını görebilirsiniz. Şüpheli bir hedefe tıklayıp "Quarantine Source" ile kaynak cihazı hızla karantinaya alabilirsiniz.</p>
+
+<h2>FortiView Applications — Uygulamalar</h2>
+<p><strong>Ne gösterir:</strong> Ağınızda hangi uygulamaların kullanıldığını ve ne kadar bant genişliği tükettiğini listeler. FortiGate'in Uygulama Kontrolü (App Control) motoru, şifreli trafiği bile deep inspection ile tanımlayabilir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Onaylanmamış uygulamaları (shadow IT) tespit etmek — örn. kurumsal onay olmadan kullanılan bulut depolama</li>
+  <li>Yüksek bant genişliği tüketen uygulamaları (YouTube, Netflix, BitTorrent) bulmak</li>
+  <li>App Control politikasının etkin çalışıp çalışmadığını doğrulamak</li>
+  <li>Risk skoru yüksek uygulamaları izlemek</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Her uygulama için <strong>Risk Seviyesi</strong> (1-5 arası), oturum sayısı ve bant genişliği gösterilir. Risk 4-5 olan uygulamalar kırmızı ile işaretlenir. Uygulamaya tıklayarak hangi kullanıcıların veya cihazların kullandığını görebilirsiniz.</p>
+<p><strong>Örnek senaryo:</strong> BitTorrent veya TeamViewer gibi uygulamaların listede görünmesi, politika dışı kullanımın işaretidir.</p>
+
+<h2>FortiView Web Sites — Web Siteleri</h2>
+<p><strong>Ne gösterir:</strong> Ağınızdaki cihazların eriştiği web sitelerini, kategorileri ve bant genişliği kullanımını listeler. Web Filtreleme (Web Filter) modülüyle entegre çalışır.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>En çok ziyaret edilen web sitelerini görmek</li>
+  <li>Engellenen sitelere erişim denemelerini izlemek</li>
+  <li>Zararlı veya phishing sitelerine erişim tespiti</li>
+  <li>Web Filter politikasını tune etmek için kullanım verisi toplamak</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Listede her alan adı için kategori, erişim sayısı ve bant genişliği görünür. "Blocked" olarak işaretlenenler kırmızı renkte gösterilir. Bir site adına tıklayarak hangi kullanıcıların erişmeye çalıştığını ve kaç kez engellendiğini görebilirsiniz.</p>
+<p><strong>İpucu:</strong> Sık engellenen ama zararsız bir siteyi burada tespit edip Web Filter politikasına whitelist olarak ekleyebilirsiniz.</p>
+
+<h2>FortiView Policies — Politikalar</h2>
+<p><strong>Ne gösterir:</strong> Her firewall politikasının ne kadar trafik işlediğini, kaç oturum oluşturduğunu ve bant genişliği kullanımını gösterir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Hiç trafik geçmeyen (kullanılmayan) politikaları tespit etmek ve temizlemek</li>
+  <li>En yoğun kullanılan politikaları belirlemek</li>
+  <li>Yanlış politikaya düşen trafiği yakalamak</li>
+  <li>Politika optimizasyonu ve güvenlik denetimi için kanıt toplamak</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Her politika satırında ID, kaynak/hedef zone, servis ve trafik istatistikleri görünür. "0 oturum" olan bir politika ya gereksizdir ya da beklenmedik bir şekilde çalışmıyordur. Politikaya tıklayarak hangi kaynakların ve hedeflerin o politikadan geçtiğini görebilirsiniz.</p>
+<p><strong>İyi pratik:</strong> Aylık düzenli FortiView Policies incelemesi yaparak kullanılmayan kuralları kaldırın — bu hem performansı artırır hem de güvenlik riskini azaltır.</p>
+
+<h2>FortiView Sessions — Aktif Oturumlar</h2>
+<p><strong>Ne gösterir:</strong> FortiGate üzerinden geçen tüm aktif TCP/UDP oturumlarını gerçek zamanlı olarak listeler. En granüler FortiView ekranıdır.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Belirli bir IP'nin şu an hangi bağlantıları açık tuttuğunu görmek</li>
+  <li>Port tarama veya DDoS saldırısı sırasında anormal oturum sayısını tespit etmek</li>
+  <li>Bir uygulamanın gerçekte hangi IP ve porta bağlandığını doğrulamak</li>
+  <li>VPN oturumlarını izlemek</li>
+  <li>Şüpheli bir oturumu anında sonlandırmak</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Her oturum satırında kaynak IP:port, hedef IP:port, protokol, politika ve veri transferi görünür. Bir oturuma sağ tıklayarak <strong>"Block Source"</strong> veya <strong>"Terminate Session"</strong> seçenekleriyle anında müdahale edebilirsiniz.</p>
+<p><strong>Örnek senaryo:</strong> Bir sunucunun binlerce eş zamanlı oturumu varsa port tarama veya botnet aktivitesi olabilir — Sessions ekranı bunu anında gösterir.</p>
+
+<h3>CLI ile Oturum Sorgusu</h3>
+<p>Daha detaylı filtreler için CLI kullanılabilir:</p>
+<pre><code># Belirli bir IP'nin oturumlarını filtrele
+diagnose sys session filter src 192.168.1.100
+diagnose sys session list
+
+# Tüm aktif oturum sayısını gör
+diagnose sys session stat</code></pre>
+
+<h2>DHCP Monitor</h2>
+<p><strong>Ne gösterir:</strong> FortiGate'in DHCP sunucusundan IP adresi almış tüm cihazları listeler. IP, MAC adresi, hostname ve lease süresi görüntülenir.</p>
+
+<h3>Ne için kullanılır?</h3>
+<ul>
+  <li>Ağa bağlanan tüm cihazların envanterini görmek</li>
+  <li>Bilinmeyen MAC adresine sahip cihazları tespit etmek (yetkisiz cihaz bağlantısı)</li>
+  <li>Bir cihazın IP adresini hostname'den bulmak (veya tersi)</li>
+  <li>IP çakışmalarını önlemek için lease durumunu kontrol etmek</li>
+  <li>FortiAP üzerinden bağlanan kablosuz istemcileri görmek</li>
+</ul>
+
+<h3>Nasıl okunur?</h3>
+<p>Listede her cihaz için IP adresi, MAC adresi, hostname (mümkünse), arayüz ve lease bitiş zamanı görünür. Bilinmeyen bir MAC adresi görürseniz fiziksel ağınızda yetkisiz bir cihaz var demektir.</p>
+<p><strong>İpucu:</strong> DHCP Monitor'dan bir cihaza sağ tıklayarak o IP için statik DHCP rezervasyonu oluşturabilirsiniz — bu sayede cihaz her zaman aynı IP'yi alır.</p>
+
+<h2>FortiView'i Etkin Kullanmak için 5 İpucu</h2>
+<ol>
+  <li><strong>Zaman filtresini kullanın:</strong> Olayları doğru zaman dilimiyle ilişkilendirmek için "Son 5 Dakika", "Son 1 Saat" veya özel aralık seçin.</li>
+  <li><strong>Drilldown yapın:</strong> Her ekranda satıra tıklayarak bir alt katmana (kaynak → uygulama → oturum) inin.</li>
+  <li><strong>Log'ları etkin tutun:</strong> FortiView verileri log kayıtlarına dayanır. Politikalarınızda loglama kapalıysa FortiView boş görünür.</li>
+  <li><strong>FortiAnalyzer ile genişletin:</strong> FortiView 7 günlük veri gösterir. Daha uzun geçmişe erişmek için FortiAnalyzer kullanın.</li>
+  <li><strong>Düzenli inceleme alışkanlığı edinin:</strong> Her sabah 5 dakika FortiView Sources ve Applications ekranını kontrol etmek, anormallikleri erken yakalamanızı sağlar.</li>
+</ol>
+
+<h2>Sonuç</h2>
+<p>FortiView, FortiGate'in en güçlü yerleşik araçlarından biridir. Ek bir yazılım veya lisans gerektirmeden ağınızdaki trafiği tam görünürlükle izlemenizi sağlar. Kaynak, hedef, uygulama, web sitesi, politika ve oturum katmanlarında birbirini tamamlayan bu ekranlar, hem günlük operasyon hem de olay müdahalesi için vazgeçilmezdir. Lider Network olarak FortiGate izleme, SOC kurulumu ve güvenlik denetimi konularında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
