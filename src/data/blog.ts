@@ -6528,6 +6528,272 @@ end</code></pre>
     `,
   },
 
+  {
+    slug: "fortigate-yapilandirmasinda-yapilan-10-yaygin-hata",
+    title: "FortiGate Yapılandırmasında Yapılan 10 Yaygın Hata ve Çözümleri",
+    excerpt:
+      "Yıllarca FortiGate kuran mühendislerin bile düştüğü tuzaklar var. Default şifre bırakmaktan yanlış SSL inspection yapılandırmasına, gereksiz açık portlardan log'u kapalı tutmaya kadar en sık yapılan 10 hatayı ve nasıl düzeltileceğini derledi.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Yapılandırma Hataları", "Güvenlik", "Best Practices", "Firewall"],
+    publishedAt: "2026-05-22",
+    readTime: 9,
+    content: `
+<p>FortiGate güçlü bir platform — ama bu güç, yanlış yapılandırıldığında güvenlik açığına dönüşür. Sahada yüzlerce kurulum yapan mühendislerimizin en sık karşılaştığı 10 hatayı ve çözümlerini derledik.</p>
+
+<h2>Hata 1: Admin Şifresini Default Bırakmak</h2>
+<p><strong>Ne oluyor:</strong> Fabrika çıkışında FortiGate'in varsayılan admin şifresi boş veya "admin"dir. Kurulum aceleye gelince şifre değiştirilmeden bırakılır.</p>
+<p><strong>Risk:</strong> İnternete açık management portunda brute-force ile dakikalar içinde ele geçirilebilir. Fortinet'in güvenlik raporlarında en yaygın saldırı vektörlerinden biri.</p>
+<p><strong>Çözüm:</strong></p>
+<pre><code>config system admin
+    edit admin
+        set password "KompleksB1rSifre!2026"
+    next
+end</code></pre>
+<p>Minimum 12 karakter, büyük/küçük harf + rakam + özel karakter. Tercihen FortiToken ile MFA ekleyin.</p>
+
+<h2>Hata 2: WAN Arayüzünde Administrative Access Açık Bırakmak</h2>
+<p><strong>Ne oluyor:</strong> HTTPS, SSH veya ping WAN tarafında açık kalıyor. Yönetim kolaylığı için yapılır ama unutulur.</p>
+<p><strong>Risk:</strong> Cihaz internetten erişilebilir hale gelir. Fortinet CVE'leri keşfedildiğinde saldırganlar interneti tarayarak açık management port'larını hedef alır.</p>
+<p><strong>Çözüm:</strong> WAN arayüzünde tüm Administrative Access seçeneklerini kapatın. Yönetimi yalnızca iç ağ veya özel management arayüzü üzerinden yapın. Uzaktan yönetim gerekiyorsa VPN üzerinden erişin.</p>
+
+<h2>Hata 3: "Any/Any/Accept" Politikası Oluşturmak</h2>
+<p><strong>Ne oluyor:</strong> "Şimdilik açalım, sonra kısıtlarız" düşüncesiyle her şeye izin veren geniş politika oluşturulur. Sonrası gelmez.</p>
+<p><strong>Risk:</strong> Firewall'ın tüm değeri yok olur. Zararlı trafik, veri sızıntısı ve lateral movement engellenmez.</p>
+<p><strong>Çözüm:</strong> En az ayrıcalık prensibi. Politikalar kaynak IP, hedef IP, port ve uygulama bazında olabildiğince dar tanımlanmalı. "İhtiyaç duyulduğunda aç, her şeyi kapalı bırak" anlayışı.</p>
+
+<h2>Hata 4: Log'u Kapatmak veya Hiç Yapılandırmamak</h2>
+<p><strong>Ne oluyor:</strong> Disk dolmasın diye veya performans kaygısıyla log'lama devre dışı bırakılır ya da hiç yapılandırılmaz.</p>
+<p><strong>Risk:</strong> Saldırı tespit edilemez. Olay sonrası inceleme (forensics) yapılamaz. Uyumluluk gereksinimleri karşılanamaz.</p>
+<p><strong>Çözüm:</strong> En azından kritik politikalarda log'u açın. FortiAnalyzer veya Syslog sunucusuna log gönderin — böylece FortiGate diski dolmaz, loglar kaybolmaz.</p>
+<pre><code>config log setting
+    set resolve-ip enable
+    set log-user-in-upper enable
+end
+
+config log fortianalyzer setting
+    set status enable
+    set server "192.168.1.10"
+end</code></pre>
+
+<h2>Hata 5: FortiGuard Lisanslarını Yenilememeк</h2>
+<p><strong>Ne oluyor:</strong> IPS, Antivirüs, Web Filter lisansları süresi dolduğunda uyarı çıkar ama atlanır. "Yine de çalışıyor" sanılır.</p>
+<p><strong>Risk:</strong> İmzalar güncellenmez. Yeni zararlı yazılımlar ve CVE'ler tespit edilemez. Cihaz var görünür ama gerçek koruma sağlamaz.</p>
+<p><strong>Çözüm:</strong> Dashboard'da lisans durumunu düzenli kontrol edin. Fortinet'in otomatik yenileme bildirimleri için e-posta uyarısı kurun. En az 1 yıllık lisans önceden yenileyin.</p>
+
+<h2>Hata 6: SSL Inspection'ı Hiç Aktif Etmemek</h2>
+<p><strong>Ne oluyor:</strong> IPS ve antivirüs aktif görünür ama SSL inspection kapalıdır. İnternet trafiğinin %90'ı HTTPS olduğu için UTM motorları aslında kör çalışmaktadır.</p>
+<p><strong>Risk:</strong> Şifreli kanal içinde gelen zararlı yazılımlar, ransomware indirmeleri ve veri sızıntıları tespit edilemez.</p>
+<p><strong>Çözüm:</strong> SSL Deep Inspection profilini aktif edin, CA sertifikasını GPO ile tüm istemcilere dağıtın ve internet çıkışı politikalarına ekleyin.</p>
+
+<h2>Hata 7: Firmware'i Hiç Güncellememek</h2>
+<p><strong>Ne oluyor:</strong> "Çalışan sisteme dokunma" prensibiyle FortiOS yıllarca güncellenmez. Bazı cihazlarda 5-6 yıl önceki firmware görüyoruz.</p>
+<p><strong>Risk:</strong> Kritik CVE'ler açıkta kalır. Fortinet, özellikle SSL VPN ve management arayüzünde zaman zaman kritik güvenlik yamaları yayınlar. Güncellenmeyen cihazlar saldırılara açık hedef olur.</p>
+<p><strong>Çözüm:</strong> Yılda en az 2 kez firmware güncellemesi planlayın. Kritik güvenlik yamaları (PSIRT advisory) için acil güncelleme yapın. Güncelleme öncesi backup almayı unutmayın.</p>
+
+<h2>Hata 8: HA Kurulumunda Heartbeat'i Tek Hat Üzerinden Geçirmek</h2>
+<p><strong>Ne oluyor:</strong> HA cluster kurulur ama heartbeat bağlantısı tek bir kablo veya switch üzerinden sağlanır.</p>
+<p><strong>Risk:</strong> O kablo veya switch arızalandığında her iki cihaz da kendini master sanır (split-brain). İki cihaz çakışarak ağ kesintisi yaşanır — HA'nın kendisi sorun kaynağı olur.</p>
+<p><strong>Çözüm:</strong> En az iki bağımsız heartbeat bağlantısı kullanın. Tercihen farklı fiziksel yollar üzerinden — doğrudan kablo bağlantısı en güvenilir seçenektir.</p>
+
+<h2>Hata 9: Yedek Almadan Değişiklik Yapmak</h2>
+<p><strong>Ne oluyor:</strong> "Küçük bir değişiklik yapacağım" deniyor, backup alınmıyor. Bir hata tüm konfigürasyonu bozuyor.</p>
+<p><strong>Risk:</strong> Yanlış bir politika veya rota değişikliği tüm ağın internetten kopmasına yol açabilir. Geri dönmek için saatler harcanabilir.</p>
+<p><strong>Çözüm:</strong> Her değişiklik öncesi backup alın:</p>
+<pre><code>execute backup full-config tftp 192.168.1.100 backup_20260522.conf</code></pre>
+<p>Otomatik zamanlanmış backup için FortiManager kullanın veya script ile düzenli yedekleme yapın.</p>
+
+<h2>Hata 10: Kullanılmayan Politikaları ve Nesneleri Temizlememek</h2>
+<p><strong>Ne oluyor:</strong> Yıllar içinde politika listesi şişer. Kullanılmayan adres nesneleri, servis grupları ve politikalar birikir. "Belki lazım olur" diye silinmez.</p>
+<p><strong>Risk:</strong> Karmaşık politika tablosu yönetimi zorlaştırır. Gizli bir "allow all" politikası gözden kaçabilir. Performans etkilenebilir.</p>
+<p><strong>Çözüm:</strong> Üç ayda bir FortiView Policies ekranına bakın — sıfır oturumlu politikaları tespit edin. Security Rating'deki "unused policies" uyarılarını takip edin. Yıllık politika denetimi alışkanlığı edinin.</p>
+
+<h2>Özet Kontrol Listesi</h2>
+<ul>
+  <li>☐ Admin şifresi değiştirildi mi?</li>
+  <li>☐ WAN'da management access kapalı mı?</li>
+  <li>☐ "Any/Any/Accept" politikası yok mu?</li>
+  <li>☐ Log'lama aktif ve merkezi log sunucusu var mı?</li>
+  <li>☐ FortiGuard lisansları güncel mi?</li>
+  <li>☐ SSL Deep Inspection açık mı?</li>
+  <li>☐ Firmware güncel mi? (son 6 ay içinde kontrol edildi mi?)</li>
+  <li>☐ HA'da çift heartbeat var mı?</li>
+  <li>☐ Düzenli backup alınıyor mu?</li>
+  <li>☐ Politika temizliği yapıldı mı?</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Bu hataların büyük bölümü tecrübesizlikten değil, zaman baskısı ve "sonra hallederim" ertelemesinden kaynaklanır. Düzenli güvenlik denetimleri bu riskleri minimuma indirir. Lider Network olarak FortiGate güvenlik denetimi, yapılandırma revizyonu ve best-practice uygulamaları konusunda NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "kurumsal-ag-guvenliginde-yapilan-7-kritik-hata",
+    title: "Kurumsal Ağ Güvenliğinde Yapılan 7 Kritik Hata",
+    excerpt:
+      "Büyük ölçekli siber saldırıların büyük çoğunluğu sıfır gün açıklarından değil, temel güvenlik hatalarından kaynaklanıyor. Kurumsal ağlarda en sık yapılan 7 hatayı ve bunların nasıl önleneceğini gerçek senaryolarla ele alıyoruz.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Ağ Güvenliği", "Siber Güvenlik", "Best Practices", "Kurumsal", "Güvenlik Hataları"],
+    publishedAt: "2026-05-22",
+    readTime: 8,
+    content: `
+<p>Verizon'un yıllık Data Breach raporuna göre büyük siber saldırıların <strong>%82'si insan hatası veya temel güvenlik eksikliği</strong> ile başlıyor. Çığır açan sıfır gün açıkları değil, fark edilmemiş basit hatalar şirketleri çökertir. İşte kurumsal ağlarda en sık karşılaştığımız 7 kritik hata.</p>
+
+<h2>Hata 1: Yaması Yapılmamış Sistemler</h2>
+<p><strong>Gerçek senaryo:</strong> 2017'de WannaCry fidye yazılımı, dünyanın dört bir yanındaki şirketleri felç etti. Saldırı, Microsoft'un 2 ay önce yamasını yayınladığı EternalBlue açığını kullanıyordu. Güncellemeyi erteleyen on binlerce sistem çöktü.</p>
+<p><strong>Neden yapılmıyor?</strong> "Çalışan sisteme dokunma" kültürü, test ortamı yokluğu, güncellemenin kesinti yaratacağı endişesi.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>Kritik yamalar (CVSS 9.0+) için 72 saat içinde uygulama kuralı koyun</li>
+  <li>Patch yönetimi için WSUS, SCCM veya üçüncü taraf araç kullanın</li>
+  <li>Test → Staging → Production pipeline'ı oluşturun</li>
+  <li>Güncelleme penceresi (maintenance window) takvimini önceden planlayın</li>
+</ul>
+
+<h2>Hata 2: Zayıf ve Tekrar Kullanılan Şifreler</h2>
+<p><strong>Gerçek senaryo:</strong> Bir şirketin VPN'i ele geçirildi. Saldırgan tek bir çalışanın şifresini (başka bir sitede sızdırılmış) credential stuffing ile denedi. Şifre "Sifre123!" idi ve aynı zamanda kurumsal hesapta da kullanılıyordu.</p>
+<p><strong>İstatistik:</strong> HaveIBeenPwned veri tabanında 12 milyardan fazla sızdırılmış şifre bulunuyor. Saldırganlar bu listeleri otomatik deniyor.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>Kurumsal parola politikası: minimum 14 karakter, karmaşıklık zorunlu, 90 günde bir değişim</li>
+  <li>Tüm kritik sistemlerde MFA (çok faktörlü kimlik doğrulama) zorunlu kılın</li>
+  <li>Parola yöneticisi kullanımını teşvik edin (Bitwarden, 1Password vb.)</li>
+  <li>Active Directory'de "Password Spray" saldırısına karşı account lockout politikası uygulayın</li>
+</ul>
+
+<h2>Hata 3: Ağ Segmentasyonu Yapmamak</h2>
+<p><strong>Gerçek senaryo:</strong> Bir hastane ağında muhasebe bilgisayarı zararlı yazılım kaptı. Ağ düz (flat) yapıda olduğu için zararlı yazılım hasta kayıt sistemlerine, tıbbi cihazlara ve sunuculara yayıldı. Otel Wi-Fi'ına bağlanan misafirler de kurumsal sunuculara erişebiliyordu.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>VLAN segmentasyonu: Sunucular, istemciler, misafirler, IoT cihazları ayrı segmentlerde</li>
+  <li>Her segment arası trafik firewall politikasından geçmeli</li>
+  <li>Kritik sistemler (ERP, finansal, tıbbi) izole segment veya DMZ'de</li>
+  <li>Misafir WiFi kesinlikle kurumsal ağdan ayrı</li>
+</ul>
+
+<h2>Hata 4: Aşırı Geniş Erişim Yetkileri</h2>
+<p><strong>Gerçek senaryo:</strong> Bir şirkette her çalışan aynı domain admin yetkisine sahipti — "kolaylık olsun diye." Bir çalışanın phishing e-postasına tıklaması tüm domain'in ele geçirilmesiyle sonuçlandı.</p>
+<p><strong>İlke:</strong> En Az Ayrıcalık (Least Privilege) — her kullanıcı ve sistem yalnızca işini yapabilmesi için gereken minimum yetkiye sahip olmalı.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>Domain Admin hesabı sayısını minimuma indirin (2-3 kişi, günlük işler için kullanılmasın)</li>
+  <li>Günlük işler için standart kullanıcı hesabı, yönetimsel işler için ayrı admin hesabı</li>
+  <li>Dosya sunucularında klasör bazlı yetki revizyonu yapın</li>
+  <li>Servis hesaplarına minimum yetki, belirli IP kısıtlaması</li>
+  <li>PAM (Privileged Access Management) çözümü değerlendirin</li>
+</ul>
+
+<h2>Hata 5: Yedek Almak ama Test Etmemek</h2>
+<p><strong>Gerçek senaryo:</strong> Bir firma 3 yıldır düzenli yedek alıyordu. Fidye yazılımı saldırısından sonra restore etmeye çalıştılar — yedekler bozuktu. Yedek sistemi kurulmuş ama hiç test edilmemişti.</p>
+<p><strong>İstatistik:</strong> Gartner'a göre yedeklerini test etmeyen kurumların %23'ü kurtarma sırasında başarısız oluyor.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>3-2-1 kuralı: 3 kopya, 2 farklı medya, 1 offsite (uzak lokasyon)</li>
+  <li>Ayda en az bir kez restore testi yapın</li>
+  <li>Yedekler ağdan izole edilmeli — fidye yazılımı yedeklere de bulaşabilir</li>
+  <li>RTO (Recovery Time Objective) ve RPO (Recovery Point Objective) hedefleri belirleyin ve test edin</li>
+</ul>
+
+<h2>Hata 6: Kullanıcı Güvenlik Farkındalığı Eğitimi Vermemek</h2>
+<p><strong>Gerçek senaryo:</strong> Bir şirkete yapılan phishing simülasyonunda çalışanların %67'si sahte giriş sayfasına kullanıcı adı ve şifresini girdi. BT altyapısı mükemmeldi ama insanlar en zayıf halkaydı.</p>
+<p><strong>İstatistik:</strong> IBM Security'e göre veri ihlallerinin %95'inde insan hatası faktör olarak yer alıyor.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>Yılda en az 2 kez güvenlik farkındalığı eğitimi</li>
+  <li>Phishing simülasyon testleri — tıklayan kullanıcılar otomatik eğitime yönlendirilsin</li>
+  <li>Şüpheli e-posta raporlama butonu (Outlook eklentisi)</li>
+  <li>CEO fraud / BEC (Business Email Compromise) senaryoları için özel eğitim</li>
+</ul>
+
+<h2>Hata 7: Güvenlik Olaylarını İzlememek</h2>
+<p><strong>Gerçek senaryo:</strong> Bir şirkette saldırgan ağda <strong>287 gün</strong> boyunca fark edilmeden kaldı. Bu sürede veriyi yavaş yavaş sızdırdı. Log'lar vardı ama kimse bakmıyordu.</p>
+<p><strong>İstatistik:</strong> IBM Security'nin 2023 raporuna göre bir veri ihlalinin tespit edilmesi ortalama 204 gün sürüyor.</p>
+<p><strong>Çözüm:</strong></p>
+<ul>
+  <li>Merkezi log yönetimi: FortiAnalyzer, SIEM veya ELK Stack</li>
+  <li>Temel alert kuralları: başarısız giriş denemeleri, gece saatlerinde admin erişimi, büyük veri transferleri</li>
+  <li>Güvenlik ekibinin log'lara günlük bakma alışkanlığı</li>
+  <li>Bütçe varsa MDR (Managed Detection & Response) servisi veya SOC hizmeti</li>
+</ul>
+
+<h2>Sonuç: Temel Doğru Yapıldığında %80 Korunulur</h2>
+<p>Siber güvenlik karmaşık görünür ama gerçekte büyük saldırıların çoğu temel önlemlerle önlenebilirdi. Yamalar, güçlü şifreler, segmentasyon, en az ayrıcalık, test edilmiş yedek, kullanıcı eğitimi ve izleme — bu 7 temel uygulandığında kurumlar saldırıların büyük bölümüne karşı korunmuş olur. Lider Network olarak kurumsal ağ güvenliği denetimi, sızma testi ve güvenlik politikası tasarımında yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "siber-saldiriya-ugramadan-once-yapilan-5-hata",
+    title: "Siber Saldırıya Uğramadan Önce Yapılan 5 Hata — Çoğu Şirket Bunları Biliyor ama Yapmıyor",
+    excerpt:
+      "Siber saldırıya uğrayan şirketlerin büyük bölümü sonradan şunu söyler: 'Biliyorduk ama yapmadık.' İşte saldırı öncesinde yapılan ve saldırıyı mümkün kılan 5 kritik ihmal.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Siber Saldırı", "Güvenlik İhmali", "Ransomware", "Siber Güvenlik", "IT Güvenliği"],
+    publishedAt: "2026-05-22",
+    readTime: 6,
+    content: `
+<p>"Bize olmaz" — siber saldırıya uğrayan şirketlerin büyük çoğunluğunun olaydan önce kurumsal tutumu bu cümleyle özetlenebilir. Ancak saldırı sonrası incelemeler aynı tabloyu ortaya koyuyor: teknik bilgi eksikliği değil, <strong>bilinen risklerin ertelenmiş olması</strong> şirketleri çökertiyor.</p>
+
+<h2>1. "Fidye Yazılımına Karşı Antivirus Yeterlidir" Yanılgısı</h2>
+<p><strong>Ne oluyor:</strong> Şirket antivirüs lisansı var, firewall var. IT müdürü "korunuyoruz" diyor. Ancak modern fidye yazılımları (Ransomware-as-a-Service modeli) geleneksel antivirüsü kolayca atlatacak şekilde tasarlanıyor — imzasız, polimorfik, fileless teknikler kullanıyor.</p>
+<p><strong>Gerçek:</strong> 2023-2024 Fortinet Threat Intelligence raporuna göre fidye yazılımı saldırılarının <strong>%68'i antivirüs aktif olan sistemlerde</strong> gerçekleşti.</p>
+<p><strong>Ne yapılmalı:</strong></p>
+<ul>
+  <li>EDR (Endpoint Detection & Response) — davranış tabanlı tehdit tespiti</li>
+  <li>NDR (Network Detection & Response) — ağ içi anormal hareketi izleme</li>
+  <li>Email güvenliği — phishing ve zararlı ek engelleme</li>
+  <li>Uygulama beyaz listesi — sadece onaylı yazılımların çalışmasına izin verme</li>
+</ul>
+
+<h2>2. IT Personelinin Güvenlik Konusunda Yetkilendirilmemesi</h2>
+<p><strong>Ne oluyor:</strong> IT ekibi güvenlik risklerini biliyor, üst yönetime bildiriyor. "Bütçe yok, şimdi değil, daha acil işler var" yanıtını alıyor. Güvenlik yatırımı bir maliyet kalemi olarak görülüp erteleniyor.</p>
+<p><strong>Gerçek maliyet karşılaştırması:</strong></p>
+<ul>
+  <li>Kurumsal güvenlik denetimi: 50.000 - 150.000 TL</li>
+  <li>Ortalama fidye yazılımı saldırısı maliyeti (IBM Security 2024): <strong>1.35 milyon USD</strong> — kesinti, kurtarma, itibar kaybı dahil</li>
+</ul>
+<p><strong>Ne yapılmalı:</strong> Güvenliği "maliyet" değil "sigorta" olarak konumlandırın. Yönetim kuruluna risk bazlı raporlama yapın: "Bu güvenlik açığı kapatılmazsa beklenen kayıp X TL'dir."</p>
+
+<h2>3. Tedarikçi ve Üçüncü Taraf Erişimini Denetlememek</h2>
+<p><strong>Gerçek senaryo:</strong> 2020'deki SolarWinds saldırısı, doğrudan hedefleri değil tedarik zincirini vurdu. Yazılım güncellemesine yerleştirilen zararlı kod, 18.000 kurumun sistemine bulaştı — aralarında ABD hükümeti kurumları da vardı.</p>
+<p><strong>Küçük ölçekte benzer senaryo:</strong> Teknik servis firmanız uzaktan erişim için TeamViewer veya AnyDesk kullanıyor. O firmanın sistemleri ele geçirilirse sizin ağınıza da giriş sağlanır.</p>
+<p><strong>Ne yapılmalı:</strong></p>
+<ul>
+  <li>Tedarikçilere sadece ihtiyaç duydukları sistemlere, ihtiyaç duydukları süre kadar erişim verin</li>
+  <li>Uzaktan erişimleri loglayin ve kayıt altına alın</li>
+  <li>Tedarikçi erişimleri için ayrı, izole ağ segmenti</li>
+  <li>Kritik tedarikçilerden yıllık güvenlik sertifikasyonu isteyin</li>
+</ul>
+
+<h2>4. Olay Müdahale Planı Hazırlamamak</h2>
+<p><strong>Ne oluyor:</strong> Saldırı gerçekleşiyor. Ağ kapatılsın mı? Sistemi izole mi edelim? Yedekten mi dönsek? Polisi mi arasak? Müşterilere ne söyleyelim? Sigorta şirketini kim arayacak? Hiç düşünülmemiş, hiç pratik yapılmamış.</p>
+<p><strong>Panik kararları maliyeti ikiye katlar.</strong> Yanlış karar (ağı kapatmadan önce yedeğe bakmamak, fidyeyi ödemeden sistemi silmek) kurtarılabilir durumu kurtarılamaz hale getirebilir.</p>
+<p><strong>Ne yapılmalı:</strong> Incident Response (IR) Planı hazırlayın:</p>
+<ul>
+  <li>Olay tespiti → kim bilgilendirilecek, kim karar verecek?</li>
+  <li>İzolasyon prosedürü — hangi sistem nasıl izole edilir?</li>
+  <li>İletişim planı — çalışanlara, müşterilere, basına ne söylenecek?</li>
+  <li>Yasal yükümlülükler — KVKK bildirimi (72 saat), sigorta bildirimi</li>
+  <li>Yılda en az bir kez masa başı tatbikat (tabletop exercise) yapın</li>
+</ul>
+
+<h2>5. Güvenliği Proje Olarak Değil Süreç Olarak Yönetmemek</h2>
+<p><strong>Ne oluyor:</strong> Firewall alındı, kuruldu, "güvenlik tamam" dendi. 3 yıl sonra hiç dokunulmadı. Tehdit ortamı değişti, altyapı büyüdü, eski çalışanların hesapları hâlâ aktif, firmware güncellenmedi, politikalar gözden geçirilmedi.</p>
+<p><strong>Gerçek:</strong> Siber güvenlik bir ürün değil, süregelen bir süreçtir. Bir kez yapılıp biten bir proje değildir.</p>
+<p><strong>Ne yapılmalı:</strong></p>
+<ul>
+  <li><strong>Aylık:</strong> Log gözden geçirme, hesap envanteri, patch durumu kontrolü</li>
+  <li><strong>Üç aylık:</strong> Politika revizyonu, kullanılmayan hesapları kapatma, firewall kural temizliği</li>
+  <li><strong>Yıllık:</strong> Sızma testi, güvenlik denetimi, IR planı tatbikatı, yetki matrisi revizyonu</li>
+  <li><strong>Sürekli:</strong> Tehdit istihbaratı takibi, güvenlik haberleri, vendor advisory'leri</li>
+</ul>
+
+<h2>Son Söz</h2>
+<p>Bu 5 hatanın ortak paydası ertelemedir. "Sonra yaparız" denen her güvenlik önlemi, saldırganlar için açık kapı bırakır. Siber güvenlik yatırımının geri dönüşü, hiçbir saldırı yaşanmadığında "görünmez" kalır — ta ki bir saldırı olana kadar. Lider Network olarak kurumsal güvenlik denetimi, zafiyet tespiti ve proaktif güvenlik danışmanlığı hizmetlerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
