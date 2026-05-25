@@ -2,14 +2,24 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import type { Ticket } from "./supabase";
 
+// Ticket sistemi için ayrı SMTP hesabı (destek@lidernetwork.com.tr)
+// İletişim formu remzi.cuzdanci@... kullanır, bunlar çakışmaz
 function createTransporter() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: process.env.SMTP_SECURE === "true",
-    auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS },
+    auth: {
+      user: process.env.SMTP_DESTEK_USER || process.env.SMTP_USER,
+      pass: process.env.SMTP_DESTEK_PASS || process.env.SMTP_PASS,
+    },
   });
 }
+
+const DESTEK_FROM = process.env.SMTP_DESTEK_FROM
+  || process.env.SMTP_FROM
+  || process.env.SMTP_DESTEK_USER
+  || process.env.SMTP_USER;
 
 function esc(s: string): string {
   return s
@@ -90,7 +100,7 @@ export async function sendTicketCreatedEmail(ticket: Ticket): Promise<void> {
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: ticket.customer_email,
     subject: `Destek Talebiniz Oluşturuldu — ${formatTicketNo(ticket.ticket_number)}: ${ticket.subject}`,
     html,
@@ -136,7 +146,7 @@ export async function sendNewTicketAdminEmail(ticket: Ticket): Promise<void> {
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: process.env.SMTP_TO || process.env.SMTP_USER,
     subject: `[Yeni Talep] ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
     html,
@@ -177,7 +187,7 @@ export async function sendReplyEmail(
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: ticket.customer_email,
     replyTo: process.env.SMTP_TO || process.env.SMTP_USER,
     subject: `Re: ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
@@ -238,7 +248,7 @@ export async function sendNewRegistrationEmail(opts: {
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: process.env.SMTP_TO || process.env.SMTP_USER,
     subject: `[Kayıt Talebi] ${opts.fullName} — ${opts.email}`,
     html,
@@ -277,7 +287,7 @@ export async function sendAccountApprovedEmail(opts: {
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: opts.email,
     subject: "Destek Portalı Hesabınız Onaylandı — Lider Network",
     html,
@@ -316,7 +326,7 @@ export async function sendRegistrationReceivedEmail(opts: {
   `);
 
   await createTransporter().sendMail({
-    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    from: DESTEK_FROM,
     to: opts.email,
     subject: "Kayıt Talebiniz Alındı — Lider Network Destek",
     html,
