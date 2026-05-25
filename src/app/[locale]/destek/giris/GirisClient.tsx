@@ -33,9 +33,11 @@ export default function GirisClient() {
       return;
     }
 
-    const { data: profile } = await sb.from("customer_profiles").select("approved").eq("id", data.user.id).single();
+    // Check approval via server API (uses service role key — bypasses all permission issues)
+    const profileRes = await fetch("/api/destek/me");
+    const profileData = await profileRes.json();
 
-    if (!profile?.approved) {
+    if (!profileData.approved) {
       await sb.auth.signOut();
       setPending(true);
       setLoading(false);
