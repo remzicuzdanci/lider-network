@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import crypto from "crypto";
 import type { Ticket } from "./supabase";
 
 function createTransporter() {
@@ -180,6 +181,144 @@ export async function sendReplyEmail(
     to: ticket.customer_email,
     replyTo: process.env.SMTP_TO || process.env.SMTP_USER,
     subject: `Re: ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
+    html,
+  });
+}
+
+// ── Approval emails ───────────────────────────────────────────────────────────
+
+export function generateApproveToken(userId: string): string {
+  const secret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || "secret";
+  return crypto.createHmac("sha256", secret).update(userId).digest("hex");
+}
+
+export function validateApproveToken(userId: string, token: string): boolean {
+  return token === generateApproveToken(userId);
+}
+
+/** Email to admin: new registration awaiting approval */
+export async function sendNewRegistrationEmail(opts: {
+  userId: string;
+  fullName: string;
+  company?: string | null;
+  email: string;
+  phone?: string | null;
+}): Promise<void> {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+
+  const token = generateApproveToken(opts.userId);
+  const approveUrl = `${siteUrl}/api/destek/approve?uid=${opts.userId}&token=${token}`;
+  const rejectUrl  = `${siteUrl}/api/destek/approve?uid=${opts.userId}&token=${token}&action=reject`;
+
+  const html = shell(`
+    <div class="hd">
+      <h1>LİDER NETWORK</h1>
+      <p>Yeni Müşteri Kayıt Talebi</p>
+    </div>
+    <div class="bd">
+      <span class="badge badge-orange">Onay Bekliyor</span>
+      <p style="font-size:15px;color:#334155;margin-bottom:20px">
+        Yeni bir müşteri destek portalına kayıt olmak istiyor. Lütfen onaylayın veya reddedin.
+      </p>
+      <div class="lbl">Ad Soyad</div>
+      <div class="val"><strong>${esc(opts.fullName)}</strong></div>
+      <div class="lbl">E-posta</div>
+      <div class="val"><a href="mailto:${esc(opts.email)}" style="color:#0052ff">${esc(opts.email)}</a></div>
+      ${opts.company ? `<div class="lbl">Şirket</div><div class="val">${esc(opts.company)}</div>` : ""}
+      ${opts.phone   ? `<div class="lbl">Telefon</div><div class="val">${esc(opts.phone)}</div>` : ""}
+      <div style="display:flex;gap:12px;margin-top:24px;flex-wrap:wrap">
+        <a href="${approveUrl}" class="btn" style="background:#16a34a">✓ Onayla</a>
+        <a href="${rejectUrl}"  class="btn" style="background:#dc2626">✕ Reddet</a>
+      </div>
+      <p style="margin-top:16px;font-size:12px;color:#94a3b8">
+        Bu linkler bir kez kullanılabilir ve güvenli şekilde imzalanmıştır.
+      </p>
+    </div>
+    <div class="ft"><p>Lider Network Admin Paneli</p></div>
+  `);
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: process.env.SMTP_TO || process.env.SMTP_USER,
+    subject: `[Kayıt Talebi] ${opts.fullName} — ${opts.email}`,
+    html,
+  });
+}
+
+/** Email to customer: account approved */
+export async function sendAccountApprovedEmail(opts: {
+  fullName: string;
+  email: string;
+}): Promise<void> {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+
+  const loginUrl = `${siteUrl}/tr/destek/giris`;
+
+  const html = shell(`
+    <div class="hd">
+      <h1>LİDER NETWORK</h1>
+      <p>Hesabınız Onaylandı</p>
+    </div>
+    <div class="bd">
+      <span class="badge badge-green">Onaylandı</span>
+      <p style="font-size:15px;color:#334155;margin-bottom:24px">
+        Sayın <strong>${esc(opts.fullName)}</strong>,<br>
+        Destek portalı hesabınız onaylandı. Artık giriş yapabilirsiniz.
+      </p>
+      <a href="${loginUrl}" class="btn">Destek Paneline Giriş Yap →</a>
+      <p style="margin-top:20px;font-size:13px;color:#64748b">
+        Sorularınız için: <a href="mailto:info@lidernetwork.com.tr" style="color:#0052ff">info@lidernetwork.com.tr</a>
+      </p>
+    </div>
+    <div class="ft">
+      <p>Lider Network · info@lidernetwork.com.tr · +90 312 232 02 88</p>
+      <p>&copy; ${new Date().getFullYear()} Lider Network. Tüm hakları saklıdır.</p>
+    </div>
+  `);
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: opts.email,
+    subject: "Destek Portalı Hesabınız Onaylandı — Lider Network",
+    html,
+  });
+}
+
+/** Email to customer: registration received, awaiting approval */
+export async function sendRegistrationReceivedEmail(opts: {
+  fullName: string;
+  email: string;
+}): Promise<void> {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
+
+  const html = shell(`
+    <div class="hd">
+      <h1>LİDER NETWORK</h1>
+      <p>Kayıt Talebiniz Alındı</p>
+    </div>
+    <div class="bd">
+      <span class="badge badge-blue">İşlemde</span>
+      <p style="font-size:15px;color:#334155;margin-bottom:20px">
+        Sayın <strong>${esc(opts.fullName)}</strong>,<br>
+        Destek portalı kayıt talebiniz alındı. Ekibimiz hesabınızı inceleyip en kısa sürede onaylayacak.
+        Onaylandığında e-posta ile bilgilendirileceksiniz.
+      </p>
+      <p style="font-size:13px;color:#64748b">
+        Acil destek için:<br>
+        📞 <a href="tel:+903122320288" style="color:#0052ff">+90 312 232 02 88</a><br>
+        ✉️ <a href="mailto:info@lidernetwork.com.tr" style="color:#0052ff">info@lidernetwork.com.tr</a>
+      </p>
+    </div>
+    <div class="ft">
+      <p>Lider Network · info@lidernetwork.com.tr · +90 312 232 02 88</p>
+      <p>&copy; ${new Date().getFullYear()} Lider Network. Tüm hakları saklıdır.</p>
+    </div>
+  `);
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
+    to: opts.email,
+    subject: "Kayıt Talebiniz Alındı — Lider Network Destek",
     html,
   });
 }

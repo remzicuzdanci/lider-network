@@ -9,6 +9,7 @@ import { getAdminSession } from "@/lib/admin-auth";
 
 const createSchema = z.object({
   subject: z.string().min(5, "Konu en az 5 karakter olmalıdır").max(200),
+  user_id: z.string().uuid().optional(),
   description: z
     .string()
     .min(20, "Açıklama en az 20 karakter olmalıdır")
