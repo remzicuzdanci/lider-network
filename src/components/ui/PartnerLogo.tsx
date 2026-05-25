@@ -15,9 +15,15 @@ interface PartnerLogoProps {
   color: string;
   /** Square size in px (default 48) */
   size?: number;
+  /**
+   * Card background colour override.
+   * Use "#ffffff" (default) for light logos, a dark hex for white/light SVG logos
+   * so they remain visible (e.g. "#1a3050" for Pantech).
+   */
+  bgColor?: string;
 }
 
-export function PartnerLogo({ url, slug, abbr, color, size = 48 }: PartnerLogoProps) {
+export function PartnerLogo({ url, slug, abbr, color, size = 48, bgColor = "#ffffff" }: PartnerLogoProps) {
   const [failed, setFailed] = useState(false);
 
   const r   = Math.round(size * 0.22);
@@ -45,12 +51,12 @@ export function PartnerLogo({ url, slug, abbr, color, size = 48 }: PartnerLogoPr
     );
   }
 
-  /* ── White card + image ─────────────────────────────────────────────────── */
+  /* ── Card + image ───────────────────────────────────────────────────────── */
   return (
     <div
       style={{
         width: size, height: size, minWidth: size, flexShrink: 0,
-        backgroundColor: "#ffffff", borderRadius: r,
+        backgroundColor: bgColor, borderRadius: r,
         border: `1.5px solid ${color}45`,
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: pad, boxSizing: "border-box",

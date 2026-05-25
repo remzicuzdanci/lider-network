@@ -11,7 +11,8 @@ const WIX = "https://static.wixstatic.com/media";
 const wix = (h: string) => `${WIX}/${h}~mv2.png`;
 
 /* ─── Tüm müşteri logoları — kullanıcının premium sıralamasına göre ──────── */
-const clients = [
+// logoBg: dark hex string → card bg rengi (beyaz SVG logoları için)
+const clients: { name: string; logo: string | null; logoBg?: string }[] = [
   { name: "RocheBobois",               logo: wix("27bac0_228f6d4e4fee4a2ab020647ee3e48676") },
   { name: "Ankara Valiliği",           logo: wix("27bac0_7b6c905d2d9d446fa9ce2c721a84a9c5") },
   { name: "Jandarma",                  logo: wix("27bac0_89e4399b82a8467b9da820a1c435a5fe") },
@@ -62,10 +63,12 @@ const clients = [
   { name: "Mezzaluna",                 logo: wix("27bac0_69c54261a28b4bc0a5587b21a1906edd") },
   { name: "Siber Suçlarla Mücadele",   logo: wix("27bac0_fd93ebf27976414c8c80a517ddfa0aad") },
   /* ─── Yeni referanslar ──────────────────────────────────────────────────── */
-  { name: "Gala Sahne",    logo: null }, // site bot-engelliyor, initials fallback
-  { name: "Pantech",       logo: "https://pantechalu.com.tr/uploads/images/logos/large/1774521249_pantech-aluminyum-logo.svg" },
-  { name: "Pancast",       logo: "https://www.pancast.com.tr/uploads/images/home-logos/large/1774519597_pancast-aluminium.svg" },
-  { name: "Panab",         logo: "https://www.panabenerji.com/uploads/images/logos/large/1774523391_panab-enerji-logo.svg" },
+  // Gala Sahne: logo TIM delegasyon sayfasından (resmi jpg)
+  { name: "Gala Sahne",    logo: "https://delegations.tim.org.tr/storage/uploads/company/7287/conversions/SN6HcwoGs3epXILgNEnBnHlVsTMDXjZYKLKXAgBR-thumb.jpg" },
+  // Pantech, Pancast, Panab: beyaz SVG logoları → koyu arkaplan gerekli
+  { name: "Pantech",       logo: "https://pantechalu.com.tr/uploads/images/logos/large/1774521249_pantech-aluminyum-logo.svg",  logoBg: "#1a3254" },
+  { name: "Pancast",       logo: "https://www.pancast.com.tr/uploads/images/home-logos/large/1774519597_pancast-aluminium.svg", logoBg: "#2c3320" },
+  { name: "Panab",         logo: "https://www.panabenerji.com/uploads/images/logos/large/1774523391_panab-enerji-logo.svg",     logoBg: "#0e0e0e" },
   { name: "MND Gıda",      logo: "https://www.mndgida.com.tr/wp-content/themes/v1/img/mnd-gida-logo.svg" },
   { name: "ATC-Mateks",    logo: "https://www.atc-mateks.com/img/logo.png" },
   { name: "DGN Sigorta",   logo: "https://www.dgnsigorta.com/image/cache/catalog/001/logo.fw-3171x833.png" },
@@ -214,7 +217,7 @@ export default async function ReferencesPage({
 
           {/* Logo grid */}
           <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7 gap-3">
-            {clients.map(({ name, logo }) => (
+            {clients.map(({ name, logo, logoBg }) => (
               <div
                 key={name}
                 className="group flex flex-col items-center gap-2.5 p-4 rounded-2xl cursor-default transition-all duration-200 hover:-translate-y-1 hover:shadow-xl"
@@ -223,7 +226,7 @@ export default async function ReferencesPage({
                   border: "1px solid rgba(255,255,255,0.09)",
                 }}
               >
-                <PartnerLogo url={logo} abbr={initials(name)} color="#64748b" size={64} />
+                <PartnerLogo url={logo} abbr={initials(name)} color="#64748b" size={64} bgColor={logoBg} />
                 <span
                   className="text-[10px] font-semibold text-center leading-tight w-full"
                   style={{ color: "var(--color-on-surface-variant)", fontFamily: "var(--font-family-label)" }}

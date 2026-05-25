@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Hero from "@/components/home/Hero";
 import Stats from "@/components/home/Stats";
-import PartnerBadges from "@/components/home/PartnerBadges";
 import ClientMarquee from "@/components/home/ClientMarquee";
 import FortinetHighlight from "@/components/home/FortinetHighlight";
 import FortinetProducts from "@/components/home/FortinetProducts";
@@ -56,7 +55,6 @@ export default async function HomePage() {
     <>
       <Hero />
       <Stats />
-      <PartnerBadges />
       <ClientMarquee />
       <FortinetHighlight />
       <FortinetProducts />
