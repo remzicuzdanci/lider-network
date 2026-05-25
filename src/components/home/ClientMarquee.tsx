@@ -3,15 +3,17 @@
 import { useLocale } from "next-intl";
 
 const row1 = [
-  "Roche", "Ankara Valiliği", "Jandarma Genel Komutanlığı", "Türk Deniz Kuvvetleri",
+  "RocheBobois", "Ankara Valiliği", "Jandarma Genel Komutanlığı", "Türk Deniz Kuvvetleri",
   "Gazi Üniversitesi", "KIA Türkiye", "Ulusoy Enerji", "Fransız Kültür Merkezi",
   "Kırıkkale Üniversitesi", "Vilayetler Hizmet Birliği", "Alo Sigortam",
+  "Ankamall", "Siber Suçlarla Mücadele",
 ];
 
 const row2 = [
   "Ulusoy Raylı Sistemler", "Gıpta Grup", "Panda Alüminyum", "Midi Hotel",
   "Koza İnşaat", "Usta İnşaat", "ETS Grup", "MySilo", "AKNET",
   "Universal Mine", "KSE Maden", "Karamehmetler",
+  "Natuzzi", "Reynardglobal", "Akış Enerji", "Elektromekanik",
 ];
 
 function MarqueeRow({
@@ -82,7 +84,7 @@ export default function ClientMarquee() {
       {/* Footer */}
       <div className="text-center mt-8 px-6">
         <p className="text-xs" style={{ color: "var(--color-outline)" }}>
-          {isTr ? "ve 50+ kurum daha →" : "and 50+ more organizations →"}{" "}
+          {isTr ? "ve 60+ kurum daha →" : "and 60+ more organizations →"}{" "}
           <a
             href={`/${locale}/referanslar`}
             className="underline underline-offset-2 hover:text-white transition-colors"

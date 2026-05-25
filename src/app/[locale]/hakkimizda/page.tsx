@@ -12,6 +12,7 @@ import {
   Award,
   Users,
   Shield,
+  Zap,
 } from "lucide-react";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
