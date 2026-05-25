@@ -55,6 +55,7 @@ export default async function TalepDetayPage({
       messages={(messages || []) as TicketMessage[]}
       userEmail={user.email!}
       fullName={profile.full_name}
+      company={profile.company}
     />
   );
 }
