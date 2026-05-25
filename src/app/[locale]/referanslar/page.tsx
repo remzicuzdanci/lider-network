@@ -27,7 +27,7 @@ const clients: { name: string; logo: string | null; logoBg?: string }[] = [
   { name: "KSE Maden",                 logo: wix("27bac0_292f256949c6410da34f4e3e137bd7f3") },
   { name: "Universal Mine",            logo: wix("27bac0_b5f5b038565a4a3094bbb912f5c9f90a") },
   { name: "Uğur Makina",               logo: wix("27bac0_922c8bf36670403fbe5a8a5f0763de67") },
-  { name: "Dsgnon",                    logo: null },
+  { name: "Dsgnon",                    logo: "/logos/dsgnon.PNG" },
   { name: "Dürümle",                   logo: wix("27bac0_70e67dee7738443abb077661162e9e81") },
   { name: "Sami Ulus",                 logo: wix("27bac0_f7b66211f7594ff3b75b52de076b7655") },
   { name: "Büyükhanlı",                logo: wix("27bac0_49e16aa7ed024f91aa2d7f97c791147b") },
