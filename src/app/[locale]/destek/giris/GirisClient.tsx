@@ -69,8 +69,8 @@ export default function GirisClient() {
         <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,.04)", bottom: -80, left: -80 }} />
 
         <div style={{ position: "relative", zIndex: 1, textAlign: "center" }}>
-          <div style={{ background: "rgba(255,255,255,.15)", borderRadius: "20px", padding: "20px 28px", display: "inline-block", marginBottom: "32px", backdropFilter: "blur(10px)" }}>
-            <Image src="/logo.png" alt="Lider Network" width={160} height={48} style={{ objectFit: "contain", filter: "brightness(0) invert(1)" }} />
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "16px 28px", display: "inline-block", marginBottom: "32px", boxShadow: "0 4px 24px rgba(0,0,0,.18)" }}>
+            <Image src="/logo.png" alt="Lider Network" width={160} height={48} style={{ objectFit: "contain", display: "block" }} />
           </div>
           <h2 style={{ fontFamily: "var(--font-family-headline)", fontSize: "26px", fontWeight: 800, color: "#fff", margin: "0 0 12px", lineHeight: 1.2 }}>
             Destek Portalı

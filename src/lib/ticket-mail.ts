@@ -252,7 +252,7 @@ export async function sendAccountApprovedEmail(opts: {
 }): Promise<void> {
   if (!process.env.SMTP_USER || !process.env.SMTP_PASS) return;
 
-  const loginUrl = `${siteUrl}/tr/destek/giris`;
+  const loginUrl = "https://destek.lidernetwork.com.tr/giris";
 
   const html = shell(`
     <div class="hd">
