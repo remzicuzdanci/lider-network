@@ -25,10 +25,14 @@ export default function BlogPage() {
   const locale = useLocale();
   const [activeCategory, setActiveCategory] = useState("tumu");
 
+  const sortedPosts = [...posts].sort(
+    (a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime()
+  );
+
   const filtered =
     activeCategory === "tumu"
-      ? posts
-      : posts.filter((p) => p.category === activeCategory);
+      ? sortedPosts
+      : sortedPosts.filter((p) => p.category === activeCategory);
 
   const featured = posts.find((p) => p.featured);
 
