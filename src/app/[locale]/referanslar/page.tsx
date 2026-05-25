@@ -50,7 +50,7 @@ const clients: { name: string; logo: string | null; logoBg?: string }[] = [
   { name: "UCI",                       logo: wix("27bac0_deef590367e04af8887b45973e1e006c") },
   { name: "AKNET",                     logo: wix("27bac0_7f25f7f393dc472c88ac741dd4b30b30") },
   { name: "CDM",                       logo: wix("27bac0_5b1c26913feb4cb5bb8f13f805d96916") },
-  { name: "SO Design",                 logo: wix("27bac0_5bd5a52ee2bb457e92f9be62dde19537") },
+  { name: "DesignOn",                  logo: "https://static.wixstatic.com/media/96eab6_928f408b2e894f2f8c3c9e307c6e039c~mv2.png" },
   { name: "ENNE",                      logo: wix("27bac0_817d729a43674edb94ce21cdc8037211") },
   { name: "ARGİS",                     logo: wix("27bac0_b05f2b6b2eec4fecabd413f008df6fc9") },
   { name: "TÜMDEF",                    logo: wix("27bac0_b74fb1f8ba3b487584cc720b3f4ef2dd") },
