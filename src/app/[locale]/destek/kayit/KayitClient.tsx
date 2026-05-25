@@ -3,13 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
-import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import { useDestekPaths } from "@/lib/destek-path";
 import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 export default function KayitClient() {
   const locale = useLocale();
-  const paths = useDestekPaths(locale);
+  const paths  = useDestekPaths(locale);
   const [form, setForm] = useState({
     fullName: "", company: "", phone: "", email: "", password: "", confirm: "",
   });
@@ -41,56 +40,24 @@ export default function KayitClient() {
 
     setLoading(true);
 
-    const sb = createSupabaseBrowser();
-    const { data, error: signUpErr } = await sb.auth.signUp({
-      email: form.email,
-      password: form.password,
-      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
-    });
-
-    if (signUpErr) {
-      setError(
-        signUpErr.message.includes("already registered")
-          ? "Bu e-posta zaten kayıtlı. Giriş yapmayı deneyin."
-          : signUpErr.message
-      );
-      setLoading(false);
-      return;
-    }
-
-    const userId = data.user?.id;
-    if (!userId) {
-      setError("Kayıt tamamlanamadı. Lütfen tekrar deneyin.");
-      setLoading(false);
-      return;
-    }
-
-    // Create profile (approved: false by default)
-    await sb.from("customer_profiles").insert({
-      id: userId,
-      full_name: form.fullName,
-      company: form.company || null,
-      phone: form.phone || null,
-      approved: false,
-    });
-
-    // Sign out immediately — they need admin approval first
-    await sb.auth.signOut();
-
-    // Send emails via API
-    await fetch("/api/destek/notify-registration", {
+    const res = await fetch("/api/destek/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        userId,
         fullName: form.fullName,
-        company: form.company,
-        phone: form.phone,
-        email: form.email,
+        company:  form.company,
+        phone:    form.phone,
+        email:    form.email,
+        password: form.password,
       }),
     });
 
-    setDone(true);
+    const data = await res.json();
+    if (res.ok) {
+      setDone(true);
+    } else {
+      setError(data.error || "Bir hata oluştu. Lütfen tekrar deneyin.");
+    }
     setLoading(false);
   }
 
@@ -105,7 +72,7 @@ export default function KayitClient() {
   if (done) {
     return (
       <div style={{
-        minHeight: "calc(100vh - 80px)",
+        minHeight: "100vh",
         display: "flex", alignItems: "center", justifyContent: "center",
         padding: "40px 20px",
       }}>
@@ -159,7 +126,7 @@ export default function KayitClient() {
   // ── Form ──────────────────────────────────────────────────────
   return (
     <div style={{
-      minHeight: "calc(100vh - 80px)",
+      minHeight: "100vh",
       display: "flex", alignItems: "center", justifyContent: "center",
       padding: "40px 20px",
       background: "radial-gradient(ellipse 60% 50% at 50% 0%, rgba(0,82,255,.08) 0%, transparent 70%)",
@@ -227,9 +194,7 @@ export default function KayitClient() {
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "14px" }}>
               <div>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#c3c5d9", marginBottom: "7px" }}>
-                  Telefon
-                </label>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#c3c5d9", marginBottom: "7px" }}>Telefon</label>
                 <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)}
                   placeholder="+90 5xx xxx xx xx" style={inputBase}
                   onFocus={(e) => (e.target.style.borderColor = "#0052ff")}
