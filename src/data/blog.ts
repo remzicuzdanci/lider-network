@@ -6794,6 +6794,214 @@ end</code></pre>
     `,
   },
 
+  {
+    slug: "fortios-7412-surum-notlari-guncelleme-rehberi",
+    title: "FortiOS 7.4.12 Sürüm Notları: Güvenlik Yamaları ve Dikkat Edilmesi Gerekenler",
+    excerpt:
+      "Fortinet, 7.4.x bakım dalında 7.4.12 sürümünü yayınladı. Kritik güvenlik yamaları, hata düzeltmeleri ve yükseltme öncesinde mutlaka dikkat edilmesi gereken noktaları adım adım inceliyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "FortiOS 7.4.12", "Güvenlik Yaması", "CVE", "Firmware Güncelleme"],
+    publishedAt: "2026-05-25",
+    readTime: 9,
+    featured: false,
+    content: `
+<h2>FortiOS 7.4.12 Nedir?</h2>
+<p>FortiOS 7.4.12, Fortinet'in uzun vadeli bakım (maintenance) dalı olan <strong>7.4.x serisinin</strong> en güncel sürümüdür. 7.6 Feature Branch'ın aksine 7.4 serisi yeni özellik eklememekte; bunun yerine <strong>güvenlik yamaları, kararlılık iyileştirmeleri ve kritik hata düzeltmeleri</strong> ile odak noktasını üretim ortamlarının güvenliğine ve sürekliliğine bırakmaktadır.</p>
+<p>Kurumsal ortamlarda <strong>"Eğer çalışıyorsa dokunma"</strong> prensibiyle çalışan FortiGate yöneticileri için bu güncelleme, özellikle önemli CVE düzeltmeleri ve SSL VPN stabilite iyileştirmeleri içerdiğinden mutlaka değerlendirilmelidir.</p>
+
+<div style="background:rgba(238,49,36,0.07);border:1px solid rgba(238,49,36,0.25);border-radius:12px;padding:18px 22px;margin:24px 0;">
+  <strong style="color:#EE3124;">⚠️ Önemli Hatırlatma</strong><br/>
+  Yükseltme öncesinde mutlaka güncel Fortinet Release Notes ve PSIRT Advisory belgelerini resmi <a href="https://support.fortinet.com" target="_blank" rel="noopener noreferrer" style="color:#EE3124;">support.fortinet.com</a> adresinden kontrol edin. Bu makale genel rehberlik amacıyla hazırlanmıştır.
+</div>
+
+<h2>7.4.x Dalını Kimler Kullanmalı?</h2>
+<p>7.4.x bakım dalı, <strong>üretim ortamında kararlılığı ön planda tutan</strong> kurumlar için tercih edilen güncelleme kanalıdır. Yeni özellik gerektirmeyen ve sistemi çalışır halde tutmayı öncelikleyen yapılar için idealdir.</p>
+
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.92em;">
+  <thead>
+    <tr style="background:rgba(238,49,36,0.1);">
+      <th style="padding:10px 14px;text-align:left;border:1px solid rgba(255,255,255,0.1);">Dal</th>
+      <th style="padding:10px 14px;text-align:left;border:1px solid rgba(255,255,255,0.1);">Amaç</th>
+      <th style="padding:10px 14px;text-align:left;border:1px solid rgba(255,255,255,0.1);">Tavsiye Edilen Kullanım</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);"><strong>7.4.x</strong></td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">Bakım (Maintenance)</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">Üretim — güvenlik odaklı, kararlı</td>
+    </tr>
+    <tr style="background:rgba(255,255,255,0.02);">
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);"><strong>7.6.x</strong></td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">Özellik (Feature)</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">Yeni özellik gerektiren ortamlar</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>7.4.12'de Öne Çıkan Güvenlik Düzeltmeleri</h2>
+<p>Her bakım sürümünün kalbi güvenlik yamalarıdır. 7.4.12 sürümü aşağıdaki kategorilerde kritik düzeltmeler içermektedir:</p>
+
+<h3>SSL VPN — Süregelen Odak Noktası</h3>
+<p>Fortinet, son iki yılda SSL VPN bileşeninde birden fazla kritik zafiyet yayımladı (CVE-2023-27997, CVE-2024-21762 vb.). 7.4.12 bu bileşende yeni bulunan bellek yönetimi ve kimlik doğrulama bypass zafiyetlerini kapatmaktadır. SSL VPN kullanan tüm kurumların bu güncellemeyi <strong>aciliyet derecesine</strong> göre değerlendirmesi gerekir:</p>
+<ul>
+  <li>İnternete açık SSL VPN portali olan cihazlar → <strong>Yüksek öncelikli güncelleme</strong></li>
+  <li>Yalnızca IPsec VPN kullanan cihazlar → Planlanmış bakım penceresinde güncellenebilir</li>
+  <li>SSL VPN devre dışı olan cihazlar → Normal güncelleme takvimi yeterli</li>
+</ul>
+
+<h3>HTTP/HTTPS Yönetim Arayüzü</h3>
+<p>Web GUI üzerinden erişilebilecek belirli güvenlik açıkları 7.4.12 ile kapatılmıştır. Bu durum özellikle yönetim arayüzünü internete açmış olan kurumlar için kritiktir. <strong>Yönetim arayüzü asla internete açılmamalıdır</strong> — ancak açık olan yapılar varsa derhal güncelleme yapılmalıdır.</p>
+
+<h3>FortiGuard Servisleri Entegrasyonu</h3>
+<p>FortiGuard Web Filtering, IPS ve Antivirus imza güncelleme kanallarında yaşanan bağlantı tutarsızlıkları giderilmiştir. Özellikle lisans sunucularıyla zaman zaman kopukluk yaşayan cihazlarda bu düzeltme fark yaratacaktır.</p>
+
+<h3>IPsec VPN Stabilite İyileştirmeleri</h3>
+<p>Yüksek oturumlu IPsec VPN ortamlarında, özellikle <strong>IKEv2 ile birden fazla tünel</strong> açık olduğunda yaşanan oturum düşme sorunları 7.4.12 ile giderilmiştir. Dial-up VPN ve Site-to-Site tünellerde IKE SA rekey sırasında yaşanan kesintiler azaltılmıştır.</p>
+
+<h2>Önemli Hata Düzeltmeleri</h2>
+
+<h3>HA (High Availability) Cluster</h3>
+<ul>
+  <li>Active-Passive cluster'da belirli trafik yoğunluklarında yaşanan heartbeat kaybı sorunu düzeltildi</li>
+  <li>Failover sonrası secondary ünitenin primary rolüne geçişinde gecikme azaltıldı</li>
+  <li>HA senkronizasyon sırasında session table tutarsızlığına yol açan race condition giderildi</li>
+</ul>
+
+<h3>SD-WAN</h3>
+<ul>
+  <li>SLA link monitoring'in, pasif WAN hatlarını yanlışlıkla "up" olarak değerlendirdiği hata düzeltildi</li>
+  <li>Performance SLA probe paketlerinin belirli durumlarda çoğaltılması sorunu giderildi</li>
+  <li>SD-WAN rule override'larının policy yeniden yüklenmesinde sıfırlanması hatası düzeltildi</li>
+</ul>
+
+<h3>GUI / Dashboard</h3>
+<ul>
+  <li>FortiView "Sources" sekmesinin yoğun oturum sayısında donduğu durum çözüldü</li>
+  <li>Büyük policy tablolarında sayfalama hatası giderildi</li>
+  <li>Certificate yönetim ekranında expired sertifikaların listelenmeme sorunu düzeltildi</li>
+</ul>
+
+<h3>DHCP Sunucu</h3>
+<ul>
+  <li>DHCP lease database'inin sürekli büyüyerek bellek tükettiği hafıza sızıntısı (memory leak) giderildi</li>
+  <li>VLAN arayüzlerinde DHCP relay loopback durumu düzeltildi</li>
+</ul>
+
+<h2>Yükseltme Öncesi Dikkat Edilmesi Gerekenler</h2>
+
+<div style="background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:18px 22px;margin:24px 0;">
+  <strong style="color:#f59e0b;">📋 Yükseltme Kontrol Listesi</strong>
+</div>
+
+<h3>1. Desteklenen Yükseltme Yolunu Doğrulayın</h3>
+<p>Fortinet, doğrudan yükseltme yapılabilecek sürümler için <strong>Upgrade Path Tool</strong> sunar. Her sürüm her sürümden doğrudan yükseltilemez. Özellikle:</p>
+<ul>
+  <li><strong>7.2.x → 7.4.12:</strong> Doğrudan destekleniyor (7.2.5+ önerilir)</li>
+  <li><strong>7.0.x → 7.4.12:</strong> Ara sürüm gerekebilir — Upgrade Path Tool kontrol edin</li>
+  <li><strong>6.4.x → 7.4.12:</strong> Kesinlikle ara sürüm üzerinden geçilmeli</li>
+</ul>
+<p>Resmi araç: <strong>support.fortinet.com → Product Life Cycle → Upgrade Path Tool</strong></p>
+
+<h3>2. Konfigürasyon Yedeği Alın</h3>
+<p>Yükseltme öncesi mutlaka tam konfigürasyon yedeği alınmalıdır:</p>
+<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;overflow-x:auto;font-size:0.85em;"><code># CLI üzerinden yedek alma
+execute backup config ftp &lt;dosya_adı&gt; &lt;ftp_ip&gt;
+
+# TFTP ile yedek alma
+execute backup config tftp &lt;dosya_adı&gt; &lt;tftp_ip&gt;
+
+# Ayrıca GUI → Dashboard → System Information → Backup Config</code></pre>
+
+<h3>3. HA Ortamında Sıralı Yükseltme</h3>
+<p>HA cluster'da yükseltme yaparken dikkat:</p>
+<ul>
+  <li>Önce <strong>Secondary (Slave)</strong> üniteyi yükseltin</li>
+  <li>Secondary yükseltme tamamlanıp tekrar senkronize olduğundan emin olun</li>
+  <li>Ardından <strong>Primary (Master)</strong> üniteyi yükseltin — bu aşamada kısa failover yaşanır</li>
+  <li>FortiManager kullanıyorsanız: FortiManager → FortiGate yükseltmesini destekleyen versiyonda olduğundan emin olun</li>
+</ul>
+
+<h3>4. SSL VPN Kullanıcılarını Bilgilendirin</h3>
+<p>Yükseltme sırasında SSL VPN oturumları kesilecektir. Bakım penceresini mesai dışı saatlere alın ve kullanıcıları önceden bilgilendirin. Yükseltme sonrası FortiClient versiyonunun 7.4.x ile uyumlu olduğunu doğrulayın.</p>
+
+<h3>5. VDOM Yapılandırması Kontrolü</h3>
+<p>VDOM kullanan ortamlarda her VDOM'un politikaları ve route tablolarının yükseltme sonrası değişmediğini ayrı ayrı kontrol edin. Özellikle inter-VDOM link yapılandırmalarında davranış değişikliği yaşanabilir.</p>
+
+<h3>6. Lisans Durumunu Kontrol Edin</h3>
+<p>Yükseltme sonrası FortiGuard servislerinin aktif göründüğünü doğrulayın:</p>
+<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;overflow-x:auto;font-size:0.85em;"><code>get system fortiguard-service status
+diagnose autoupdate status</code></pre>
+
+<h2>Bilinen Kısıtlamalar ve Geçici Çözümler</h2>
+<p>7.4.12 sürümünde bazı bilinen davranışlar mevcuttur:</p>
+<ul>
+  <li><strong>FortiToken Mobile 2FA:</strong> Belirli iOS sürümlerinde push bildirimi gecikmesi yaşanabilir. Geçici çözüm: TOTP modu kullanımı</li>
+  <li><strong>BGP Graceful Restart:</strong> 4-baytlık ASN kullanan ortamlarda graceful restart timer davranışı tutarsız olabilir — log takibi önerilir</li>
+  <li><strong>Web Filter Override:</strong> LDAP group bazlı override kuralları yükseltme sonrası yeniden uygulanmalıdır</li>
+</ul>
+
+<h2>Yükseltme Sonrası Doğrulama Adımları</h2>
+<p>Yükseltme tamamlandıktan sonra şu kontrolleri mutlaka gerçekleştirin:</p>
+
+<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:14px;overflow-x:auto;font-size:0.85em;"><code># Versiyon ve build doğrulama
+get system status
+
+# HA senkronizasyon kontrolü
+get system ha status
+
+# Interface durumu
+get system interface physical
+
+# Routing tablosu bütünlüğü
+get router info routing-table all
+
+# FortiGuard bağlantısı
+execute ping guard.fortinet.net
+
+# IPsec tünel durumu
+get vpn ipsec tunnel summary
+
+# SSL VPN durumu
+get vpn ssl monitor</code></pre>
+
+<h2>7.4.12'ye Geçmeli miyim, Yoksa 7.6.x'e mi?</h2>
+<p>Bu sorunun cevabı kurumun ihtiyacına göre değişir:</p>
+
+<table style="width:100%;border-collapse:collapse;margin:16px 0;font-size:0.92em;">
+  <thead>
+    <tr style="background:rgba(238,49,36,0.1);">
+      <th style="padding:10px 14px;text-align:left;border:1px solid rgba(255,255,255,0.1);">Durum</th>
+      <th style="padding:10px 14px;text-align:left;border:1px solid rgba(255,255,255,0.1);">Öneri</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">7.4.x kullanıyorum, kararlılık önceliğim</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);"><strong>7.4.12'ye geç</strong></td>
+    </tr>
+    <tr style="background:rgba(255,255,255,0.02);">
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">7.4.x kullanıyorum, ZTNA/AI/yeni özellik istiyorum</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">Test sonrası <strong>7.6.x'e planla</strong></td>
+    </tr>
+    <tr>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">7.2.x veya daha eski kullanıyorum</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);"><strong>7.4.12 ara geçiş</strong> sonra 7.6'yı değerlendir</td>
+    </tr>
+    <tr style="background:rgba(255,255,255,0.02);">
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">7.6.x kullanıyorum</td>
+      <td style="padding:9px 14px;border:1px solid rgba(255,255,255,0.08);">7.6 dalındaki son sürümü takip et</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Sonuç</h2>
+<p>FortiOS 7.4.12, özellikle <strong>SSL VPN güvenlik yamaları ve HA kararlılık iyileştirmeleri</strong> nedeniyle üretim ortamları için önemli bir güncelleme niteliği taşımaktadır. "Sonra yaparız" mantığıyla ertelenen firmware güncellemeleri, bugün yamalanan zafiyetlerin yarın exploit edilmesi anlamına gelir.</p>
+<p>Yükseltme planlaması, yedek alma, HA sıralama ve doğrulama adımlarını eksiksiz uygulayarak bu güncellemeyi güvenli şekilde gerçekleştirebilirsiniz. Lider Network olarak FortiGate firmware yükseltme planlaması ve uygulamasında NSE sertifikalı mühendislerimizle destek sunuyoruz.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
