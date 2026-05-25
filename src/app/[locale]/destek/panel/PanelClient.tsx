@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import { useDestekPaths } from "@/lib/destek-path";
 import type { Ticket } from "@/lib/supabase";
 import {
   Plus, LogOut, TicketCheck, Clock, CheckCircle,
@@ -41,6 +42,7 @@ export default function PanelClient({
 }) {
   const router = useRouter();
   const locale = useLocale();
+  const paths  = useDestekPaths(locale);
   const [tickets, setTickets]       = useState<Ticket[]>([]);
   const [loading, setLoading]       = useState(true);
   const [statusFilter, setFilter]   = useState("all");
@@ -61,7 +63,7 @@ export default function PanelClient({
   async function logout() {
     const sb = createSupabaseBrowser();
     await sb.auth.signOut();
-    router.push(`/${locale}/destek`);
+    router.push(paths.landing);
     router.refresh();
   }
 
@@ -116,7 +118,7 @@ export default function PanelClient({
               Destek taleplerinizi bu panel üzerinden yönetebilirsiniz.
             </p>
           </div>
-          <Link href={`/${locale}/destek/panel/yeni`}
+          <Link href={paths.yeni}
             style={{
               display: "inline-flex", alignItems: "center", gap: "8px",
               padding: "11px 22px", background: "#0052ff",
@@ -194,7 +196,7 @@ export default function PanelClient({
                 {tickets.length === 0 ? "Henüz destek talebiniz bulunmuyor." : "Sonuç bulunamadı."}
               </p>
               {tickets.length === 0 && (
-                <Link href={`/${locale}/destek/panel/yeni`}
+                <Link href={paths.yeni}
                   style={{ display: "inline-block", marginTop: "16px", padding: "10px 20px", background: "#0052ff", color: "#fff", borderRadius: "8px", textDecoration: "none", fontSize: "14px", fontWeight: 700 }}>
                   İlk Talebi Oluştur
                 </Link>
@@ -212,7 +214,7 @@ export default function PanelClient({
                 const st  = STATUS[t.status] || STATUS.open;
                 const pri = PRI[t.priority]  || PRI.medium;
                 return (
-                  <Link key={t.id} href={`/${locale}/destek/panel/${t.id}`}
+                  <Link key={t.id} href={paths.ticket(t.id)}
                     style={{ display: "grid", gridTemplateColumns: "80px 1fr 90px 80px 100px 80px 24px", gap: "12px", padding: "14px 20px", borderBottom: "1px solid rgba(67,70,86,.4)", textDecoration: "none", transition: "background .1s", alignItems: "center" }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = "#272a2c")}
                     onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}

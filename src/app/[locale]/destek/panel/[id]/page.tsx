@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { supabase } from "@/lib/supabase";
 import type { Ticket, TicketMessage } from "@/lib/supabase";
@@ -11,10 +12,14 @@ export default async function TalepDetayPage({
 }: {
   params: Promise<{ id: string; locale: string }>;
 }) {
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const loginPath = host.startsWith("destek.") ? "/giris" : "/tr/destek/giris";
+
   const { id } = await params;
   const sb = await createSupabaseServer();
   const { data: { user } } = await sb.auth.getUser();
-  if (!user) redirect("/tr/destek/giris");
+  if (!user) redirect(loginPath);
 
   const { data: profile } = await supabase
     .from("customer_profiles")
@@ -22,7 +27,7 @@ export default async function TalepDetayPage({
     .eq("id", user.id)
     .single();
 
-  if (!profile?.approved) redirect("/tr/destek/giris");
+  if (!profile?.approved) redirect(loginPath);
 
   const { data: ticket } = await supabase
     .from("tickets")

@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
+import { useDestekPaths } from "@/lib/destek-path";
 import type { Ticket, TicketMessage } from "@/lib/supabase";
 import { ArrowLeft, Send, Clock, CheckCircle, Activity, XCircle } from "lucide-react";
 
@@ -39,6 +40,7 @@ export default function TalepDetayClient({
 }) {
   const router = useRouter();
   const locale = useLocale();
+  const paths  = useDestekPaths(locale);
   const [messages, setMessages] = useState(initialMessages);
   const [reply, setReply]       = useState("");
   const [sending, setSending]   = useState(false);
@@ -86,7 +88,7 @@ export default function TalepDetayClient({
     <div style={{ background: "var(--color-background)", minHeight: "calc(100vh - 80px)" }}>
       {/* Panel header */}
       <div style={{ background: "#1d2022", borderBottom: "1px solid #434656", padding: "0 32px", height: "56px", display: "flex", alignItems: "center", gap: "10px" }}>
-        <Link href={`/${locale}/destek/panel`}
+        <Link href={paths.panel}
           style={{ display: "flex", alignItems: "center", gap: "5px", color: "#8d90a2", textDecoration: "none", fontSize: "13px" }}>
           <ArrowLeft size={14} /> Taleplerim
         </Link>
@@ -185,7 +187,7 @@ export default function TalepDetayClient({
               Bu talep {ticket.status === "resolved" ? "çözüldü" : "kapatıldı"}
             </p>
             <p style={{ color: "#8d90a2", fontSize: "13px", margin: "0 0 14px" }}>Yeni bir sorun için yeni talep oluşturun</p>
-            <Link href={`/${locale}/destek/panel/yeni`}
+            <Link href={paths.yeni}
               style={{ padding: "9px 20px", background: "#0052ff", color: "#fff", borderRadius: "8px", textDecoration: "none", fontSize: "13px", fontWeight: 700 }}>
               Yeni Talep
             </Link>

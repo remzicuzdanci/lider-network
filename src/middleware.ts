@@ -7,15 +7,42 @@ const intl = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get("host") || "";
+
+  // ── destek.lidernetwork.com.tr subdomain ──────────────────────
+  if (hostname.startsWith("destek.")) {
+    const isPanelRoute = pathname.startsWith("/panel");
+    const isAuthRoute  = pathname === "/giris" || pathname === "/kayit";
+
+    // Auth guard for panel + auth pages on subdomain
+    if (isPanelRoute || isAuthRoute) {
+      const sb = createServerClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+        { cookies: { getAll: () => request.cookies.getAll(), setAll: () => {} } }
+      );
+      const { data: { session } } = await sb.auth.getSession();
+
+      if (isPanelRoute && !session)
+        return NextResponse.redirect(new URL("/giris", request.url));
+      if (isAuthRoute && session)
+        return NextResponse.redirect(new URL("/panel", request.url));
+    }
+
+    // Rewrite short path → /tr/destek/...
+    const destekPath =
+      pathname === "/" ? "/tr/destek" : `/tr/destek${pathname}`;
+    return NextResponse.rewrite(new URL(destekPath, request.url));
+  }
 
   // ── Admin routes: skip intl ────────────────────────────────────
   if (pathname.startsWith("/admin")) {
     return NextResponse.next();
   }
 
-  // ── Customer panel: auth guard ─────────────────────────────────
+  // ── Customer panel: auth guard (main domain) ───────────────────
   const isPanelRoute = /\/(tr|en)\/destek\/panel/.test(pathname);
-  const isAuthRoute = /\/(tr|en)\/destek\/(giris|kayit)$/.test(pathname);
+  const isAuthRoute  = /\/(tr|en)\/destek\/(giris|kayit)$/.test(pathname);
 
   if (isPanelRoute || isAuthRoute) {
     const supabase = createServerClient(
@@ -24,21 +51,18 @@ export async function middleware(request: NextRequest) {
       {
         cookies: {
           getAll: () => request.cookies.getAll(),
-          setAll: () => {}, // session refresh handled client-side
+          setAll: () => {},
         },
       }
     );
 
-    // getSession reads from cookie (no network) — sufficient for redirect guard
     const { data: { session } } = await supabase.auth.getSession();
     const locale = pathname.split("/")[1] || "tr";
 
-    if (isPanelRoute && !session) {
+    if (isPanelRoute && !session)
       return NextResponse.redirect(new URL(`/${locale}/destek/giris`, request.url));
-    }
-    if (isAuthRoute && session) {
+    if (isAuthRoute && session)
       return NextResponse.redirect(new URL(`/${locale}/destek/panel`, request.url));
-    }
   }
 
   // ── Intl routing for all other routes ─────────────────────────

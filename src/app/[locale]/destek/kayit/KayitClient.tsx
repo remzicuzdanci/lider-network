@@ -4,10 +4,12 @@ import { useState } from "react";
 import Link from "next/link";
 import { useLocale } from "next-intl";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import { useDestekPaths } from "@/lib/destek-path";
 import { Eye, EyeOff, UserPlus, AlertCircle, CheckCircle, Clock } from "lucide-react";
 
 export default function KayitClient() {
   const locale = useLocale();
+  const paths = useDestekPaths(locale);
   const [form, setForm] = useState({
     fullName: "", company: "", phone: "", email: "", password: "", confirm: "",
   });
@@ -137,7 +139,7 @@ export default function KayitClient() {
               ⏱ Onay süresi genellikle birkaç saattir (mesai saatleri içinde).
             </p>
           </div>
-          <Link href={`/${locale}/destek`}
+          <Link href={paths.landing}
             style={{
               display: "inline-block", padding: "11px 24px",
               border: "1px solid #434656", borderRadius: "8px",
@@ -305,7 +307,7 @@ export default function KayitClient() {
 
         <p style={{ textAlign: "center", marginTop: "20px", fontSize: "14px", color: "#8d90a2" }}>
           Zaten hesabınız var mı?{" "}
-          <Link href={`/${locale}/destek/giris`} style={{ color: "#b7c4ff", textDecoration: "none", fontWeight: 600 }}>
+          <Link href={paths.giris} style={{ color: "#b7c4ff", textDecoration: "none", fontWeight: 600 }}>
             Giriş Yapın
           </Link>
         </p>

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
+import { useDestekPaths } from "@/lib/destek-path";
 import { Eye, EyeOff, LogIn, AlertCircle, Clock } from "lucide-react";
 
 export default function GirisClient() {
   const router = useRouter();
   const locale = useLocale();
+  const paths = useDestekPaths(locale);
   const [email, setEmail]       = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw]     = useState(false);
@@ -50,7 +52,7 @@ export default function GirisClient() {
       return;
     }
 
-    router.push(`/${locale}/destek/panel`);
+    router.push(paths.panel);
     router.refresh();
   }
 
@@ -183,7 +185,7 @@ export default function GirisClient() {
         {/* Register link */}
         <p style={{ textAlign: "center", marginTop: "20px", fontSize: "14px", color: "#8d90a2" }}>
           Henüz hesabınız yok mu?{" "}
-          <Link href={`/${locale}/destek/kayit`} style={{ color: "#b7c4ff", textDecoration: "none", fontWeight: 600 }}>
+          <Link href={paths.kayit} style={{ color: "#b7c4ff", textDecoration: "none", fontWeight: 600 }}>
             Kayıt Olun
           </Link>
         </p>

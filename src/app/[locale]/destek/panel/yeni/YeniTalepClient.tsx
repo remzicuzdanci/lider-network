@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useLocale } from "next-intl";
+import { useDestekPaths } from "@/lib/destek-path";
 import { ArrowLeft, Send, CheckCircle } from "lucide-react";
 
 type Category = "technical" | "billing" | "general" | "feature_request";
@@ -29,6 +30,7 @@ export default function YeniTalepClient({
 }) {
   const router = useRouter();
   const locale = useLocale();
+  const paths  = useDestekPaths(locale);
   const [category, setCategory] = useState<Category>("technical");
   const [priority, setPriority] = useState<Priority>("medium");
   const [subject, setSubject]   = useState("");
@@ -89,7 +91,7 @@ export default function YeniTalepClient({
           <p style={{ color: "#8d90a2", fontSize: "13px", margin: "0 0 24px" }}>
             Onay e-postası {userEmail} adresinize gönderildi.
           </p>
-          <Link href={`/${locale}/destek/panel`}
+          <Link href={paths.panel}
             style={{ display: "inline-block", padding: "11px 24px", background: "#0052ff", color: "#fff", borderRadius: "8px", textDecoration: "none", fontWeight: 700, fontSize: "14px" }}>
             Panele Dön
           </Link>
@@ -102,7 +104,7 @@ export default function YeniTalepClient({
     <div style={{ background: "var(--color-background)", padding: "0 0 48px" }}>
       {/* Panel header */}
       <div style={{ background: "#1d2022", borderBottom: "1px solid #434656", padding: "0 32px", height: "56px", display: "flex", alignItems: "center", gap: "12px" }}>
-        <Link href={`/${locale}/destek/panel`}
+        <Link href={paths.panel}
           style={{ display: "flex", alignItems: "center", gap: "6px", color: "#8d90a2", textDecoration: "none", fontSize: "13px" }}>
           <ArrowLeft size={15} /> Panele Dön
         </Link>
@@ -188,7 +190,7 @@ export default function YeniTalepClient({
           </div>
 
           <div style={{ display: "flex", gap: "12px" }}>
-            <Link href={`/${locale}/destek/panel`}
+            <Link href={paths.panel}
               style={{ padding: "12px 20px", border: "1px solid #434656", borderRadius: "9px", color: "#8d90a2", textDecoration: "none", fontSize: "14px" }}>
               İptal
             </Link>
