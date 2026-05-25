@@ -376,3 +376,17 @@
   color: var(--color-primary);
 }
 .blog-content hr { border: none; border-top: 1px solid rgba(255,255,255,0.08); margin: 2rem 0; }
+
+/* ── Marquee animation ────────────────────────────────────────────────── */
+@keyframes marquee-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.marquee-left  { animation: marquee-left  32s linear infinite; }
+.marquee-right { animation: marquee-right 28s linear infinite; }
+.marquee-wrap:hover .marquee-left,
+.marquee-wrap:hover .marquee-right { animation-play-state: paused; }

@@ -7,6 +7,8 @@ import {
   Clock,
   Zap,
 } from "lucide-react";
+import CountUp from "@/components/ui/CountUp";
+import AnimatedBar from "@/components/ui/AnimatedBar";
 
 const expertiseIcons = [BadgeCheck, ShieldCheck, Clock, Zap];
 const expertiseKeys = ["team", "guarantee", "support", "speed"] as const;
@@ -119,15 +121,15 @@ export default function Expertise() {
                   color: "var(--color-primary)",
                 }}
               >
-                98%
+                <CountUp end={98} suffix="%" />
               </div>
 
               {/* Progress bars */}
               {[
-                { label: "Müşteri Memnuniyeti", value: 98 },
-                { label: "Zamanında Teslim", value: 96 },
-                { label: "SLA Uyum Oranı", value: 99.9 },
-                { label: "Tekrar Eden Müşteri", value: 85 },
+                { label: "Müşteri Memnuniyeti", value: 98, delay: 0 },
+                { label: "Zamanında Teslim", value: 96, delay: 150 },
+                { label: "SLA Uyum Oranı", value: 99, delay: 300 },
+                { label: "Tekrar Eden Müşteri", value: 85, delay: 450 },
               ].map((item) => (
                 <div key={item.label} className="mb-4">
                   <div className="flex justify-between mb-1">
@@ -147,18 +149,7 @@ export default function Expertise() {
                       {item.value}%
                     </span>
                   </div>
-                  <div
-                    className="h-1.5 rounded-full overflow-hidden"
-                    style={{ backgroundColor: "var(--color-outline-variant)" }}
-                  >
-                    <div
-                      className="h-full rounded-full"
-                      style={{
-                        width: `${item.value}%`,
-                        backgroundColor: "var(--color-primary-container)",
-                      }}
-                    />
-                  </div>
+                  <AnimatedBar value={item.value} delay={item.delay} />
                 </div>
               ))}
 

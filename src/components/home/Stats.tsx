@@ -2,6 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { TrendingUp, Zap, HeadphonesIcon, Award } from "lucide-react";
+import CountUp from "@/components/ui/CountUp";
 
 const icons = [TrendingUp, Zap, HeadphonesIcon, Award];
 
@@ -10,28 +11,28 @@ export default function Stats() {
 
   const stats = [
     {
-      value: "99.9%",
       label: t("stat1"),
       icon: icons[0],
       description: "Yıllık uptime garantisi",
+      countUp: <CountUp end={99.9} suffix="%" decimals={1} />,
     },
     {
-      value: "<1ms",
       label: t("stat2"),
       icon: icons[1],
       description: "Ultra düşük gecikme",
+      countUp: <span>&lt;1ms</span>,
     },
     {
-      value: "7/24",
       label: t("stat3"),
       icon: icons[2],
       description: "Kesintisiz hizmet",
+      countUp: <span>7/24</span>,
     },
     {
-      value: "500+",
       label: t("stat4"),
       icon: icons[3],
       description: "Başarıyla tamamlanan",
+      countUp: <CountUp end={500} suffix="+" />,
     },
   ];
 
@@ -73,7 +74,7 @@ export default function Stats() {
                     color: "var(--color-primary)",
                   }}
                 >
-                  {stat.value}
+                  {stat.countUp}
                 </div>
                 <div
                   className="text-sm font-medium mb-1"

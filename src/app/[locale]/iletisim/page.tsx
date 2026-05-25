@@ -512,6 +512,83 @@ export default async function ContactPage({
         </div>
       </section>
 
+      {/* ── FAQ ─────────────────────────────────────────────────────── */}
+      <section
+        className="py-16 px-5 lg:px-20"
+        style={{ backgroundColor: "var(--color-surface)", borderTop: "1px solid var(--color-outline-variant)" }}
+      >
+        <div className="max-w-[1280px] mx-auto">
+          <div className="max-w-3xl mx-auto">
+            <div className="text-center mb-10">
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4"
+                style={{
+                  backgroundColor: `${isTr ? "rgba(0,82,255,0.1)" : "rgba(0,82,255,0.1)"}`,
+                  border: "1px solid rgba(0,82,255,0.25)",
+                  color: "#0052ff",
+                  fontFamily: "var(--font-family-label)",
+                }}
+              >
+                {isTr ? "Sık Sorulan Sorular" : "Frequently Asked Questions"}
+              </div>
+              <h2
+                className="text-2xl font-black"
+                style={{ fontFamily: "var(--font-family-headline)", color: "var(--color-on-surface)" }}
+              >
+                {isTr ? "Merak Ettikleriniz" : "Common Questions"}
+              </h2>
+            </div>
+
+            <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
+              {(isTr ? [
+                { q: "Ücretsiz altyapı analizi nasıl işliyor?", a: "Formu doldurmanızın ardından NSE sertifikalı mühendisimiz 1 iş günü içinde sizi arar. Mevcut altyapınızı değerlendirir, açık noktaları ve iyileştirme alanlarını ücretsiz raporlar." },
+                { q: "Fortinet lisansı ve donanım satışı yapıyor musunuz?", a: "Evet. Fortinet Yetkili Partner olarak FortiGate, FortiSwitch, FortiAP ve tüm Fortinet ürün gamı için resmi lisans ve donanım satışı yapıyoruz. Rekabetçi fiyat ve orijinal garanti sunuyoruz." },
+                { q: "SLA garantiniz nedir?", a: "Kurumsal destek anlaşmalarımızda kritik arızalar için 4 saat, standart talepler için 8 saat yanıt süresi garantisi veriyoruz. 7/24 teknik destek hattımız aktiftir." },
+                { q: "Proje süresi ne kadar?", a: "Kapsama göre değişir. Tek cihaz kurulumu 1 gün, orta ölçekli ağ projeleri 1-4 hafta, büyük kurumsal altyapı projeleri ise 1-6 ay sürebilir. Proje başlangıcında kesin takvim sunulur." },
+                { q: "Hangi şehirlerde hizmet veriyorsunuz?", a: "Ankara merkezli olmakla birlikte İstanbul, İzmir ve tüm Türkiye genelinde saha hizmeti sunuyoruz. Uzaktan yönetim ve danışmanlık için coğrafi sınır yoktur." },
+                { q: "Mevcut altyapımı değiştirmeden entegrasyon yapabilir misiniz?", a: "Evet. Mevcut altyapınızı koruyarak kademeli geçiş planı hazırlıyoruz. FortiGate, mevcut switch/router ile birlikte çalışabilir — sıfırdan başlamak zorunda değilsiniz." },
+              ] : [
+                { q: "How does the free infrastructure analysis work?", a: "After submitting the form, our NSE-certified engineer will contact you within 1 business day. We evaluate your existing infrastructure and provide a free report on gaps and improvement areas." },
+                { q: "Do you sell Fortinet licenses and hardware?", a: "Yes. As a Fortinet Authorized Partner, we sell official licenses and hardware for FortiGate, FortiSwitch, FortiAP and the full Fortinet product range, with competitive pricing and genuine warranty." },
+                { q: "What is your SLA guarantee?", a: "Our enterprise support agreements guarantee a 4-hour response for critical faults and 8 hours for standard requests. 24/7 technical support line is always active." },
+                { q: "How long does a project take?", a: "It depends on scope. Single device installation takes 1 day, mid-scale network projects 1-4 weeks, large enterprise infrastructure projects 1-6 months. A precise timeline is provided at project kickoff." },
+                { q: "Which cities do you serve?", a: "Ankara-based, but we provide on-site service throughout Turkey including Istanbul and Izmir. Remote management and consulting have no geographic limitation." },
+                { q: "Can you integrate without replacing our existing infrastructure?", a: "Yes. We prepare phased migration plans that preserve your existing infrastructure. FortiGate works alongside existing switches and routers — you don't need to start from scratch." },
+              ]).map((item, i) => (
+                <details
+                  key={i}
+                  className="group py-5"
+                >
+                  <summary
+                    className="flex items-center justify-between cursor-pointer list-none text-sm font-semibold"
+                    style={{ color: "var(--color-on-surface)", fontFamily: "var(--font-family-label)" }}
+                  >
+                    {item.q}
+                    <span
+                      className="ml-4 shrink-0 w-6 h-6 rounded-full flex items-center justify-center transition-transform duration-200 group-open:rotate-45"
+                      style={{
+                        backgroundColor: "rgba(0,82,255,0.1)",
+                        color: "#0052ff",
+                        fontSize: "18px",
+                        lineHeight: 1,
+                      }}
+                    >
+                      +
+                    </span>
+                  </summary>
+                  <p
+                    className="mt-3 text-sm leading-relaxed"
+                    style={{ color: "var(--color-on-surface-variant)" }}
+                  >
+                    {item.a}
+                  </p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── TRUST STRIP ─────────────────────────────────────────────── */}
       <section
         className="py-12 px-5 lg:px-20"

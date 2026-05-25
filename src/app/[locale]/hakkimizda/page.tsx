@@ -466,6 +466,67 @@ export default async function AboutPage({
         </div>
       </section>
 
+      {/* ─── TİMELINE ─────────────────────────────────────────────────────── */}
+      <section
+        className="py-20"
+        style={{ backgroundColor: "var(--color-surface)", borderTop: "1px solid rgba(255,255,255,0.05)" }}
+      >
+        <div className="max-w-4xl mx-auto px-6">
+          <div className="text-center mb-14">
+            <div
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold mb-4"
+              style={{
+                backgroundColor: `${BLUE}12`,
+                border: `1px solid ${BLUE}28`,
+                color: BLUE,
+                fontFamily: "var(--font-family-label)",
+              }}
+            >
+              <Zap className="w-3 h-3" />
+              {isTr ? "18 Yıllık Yolculuk" : "18-Year Journey"}
+            </div>
+            <h2
+              className="text-3xl font-black"
+              style={{ fontFamily: "var(--font-family-headline)", color: "var(--color-on-surface)" }}
+            >
+              {isTr ? "Büyüme " : "Our "}<span style={{ color: BLUE }}>{isTr ? "Hikayemiz" : "Growth Story"}</span>
+            </h2>
+          </div>
+
+          <div className="relative">
+            <div className="absolute left-8 top-0 bottom-0 w-px" style={{ backgroundColor: "rgba(255,255,255,0.07)" }} />
+            <div className="flex flex-col gap-8">
+              {[
+                { year: "2006", color: FN_RED, tr: { title: "Kuruluş", desc: "Lider Network Teknoloji Danışmanlık, Ankara'da kuruldu. İlk yıldan itibaren kurumsal ağ ve güvenlik altyapısına odaklanıldı." }, en: { title: "Founded", desc: "Lider Network established in Ankara, focusing on enterprise network and security infrastructure from day one." } },
+                { year: "2008", color: BLUE, tr: { title: "Fortinet Partnerliği", desc: "Fortinet Yetkili Partner statüsü kazanıldı. İlk FortiGate kurulumları Kamu ve Savunma sektöründe gerçekleştirildi." }, en: { title: "Fortinet Partnership", desc: "Achieved Fortinet Authorized Partner status. First FortiGate deployments completed in public sector and defence." } },
+                { year: "2012", color: "#10b981", tr: { title: "NSE Sertifikasyonu", desc: "Mühendis kadrosu Fortinet NSE sertifikaları aldı. Microsoft ve VMware partnerlik programlarına katılım sağlandı." }, en: { title: "NSE Certification", desc: "Engineering team obtained Fortinet NSE certifications. Joined Microsoft and VMware partner programmes." } },
+                { year: "2016", color: "#f59e0b", tr: { title: "100. Proje & Veeam Gold", desc: "100. kurumsal proje teslim edildi. Veeam Gold Partner statüsü kazanıldı. SOC ve FortiAnalyzer hizmetleri portföye eklendi." }, en: { title: "100th Project & Veeam Gold", desc: "100th enterprise project delivered. Achieved Veeam Gold Partner. SOC and FortiAnalyzer services added." } },
+                { year: "2020", color: "#8b5cf6", tr: { title: "500+ Proje & SD-WAN", desc: "500+ başarılı proje hedefine ulaşıldı. SD-WAN ve SASE mimarileri hizmet portföyüne entegre edildi." }, en: { title: "500+ Projects & SD-WAN", desc: "Reached 500+ successful projects. SD-WAN and SASE architectures integrated into service portfolio." } },
+                { year: "2024", color: BLUE, tr: { title: "WiFi 7 & Zero Trust", desc: "WiFi 7 (FortiAP) kurulumları başladı. Zero Trust / ZTNA danışmanlık hizmetleri eklendi. FortiOS 7.x NSE güncellemeleri tamamlandı." }, en: { title: "WiFi 7 & Zero Trust", desc: "WiFi 7 (FortiAP) deployments commenced. Zero Trust / ZTNA consulting services added. FortiOS 7.x NSE updated." } },
+              ].map((item) => {
+                const d = isTr ? item.tr : item.en;
+                return (
+                  <div key={item.year} className="relative flex gap-6 pl-16">
+                    <div className="absolute left-0 w-16 flex items-center justify-center">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center text-xs font-black z-10" style={{ backgroundColor: `${item.color}18`, border: `2px solid ${item.color}50`, color: item.color, fontFamily: "var(--font-family-label)" }}>
+                        {item.year.slice(2)}
+                      </div>
+                    </div>
+                    <div className="flex-1 p-5 rounded-2xl" style={{ backgroundColor: `${item.color}07`, border: `1px solid ${item.color}18` }}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-xs font-black" style={{ color: item.color, fontFamily: "var(--font-family-label)" }}>{item.year}</span>
+                        <h3 className="text-sm font-black" style={{ fontFamily: "var(--font-family-headline)", color: "var(--color-on-surface)" }}>{d.title}</h3>
+                      </div>
+                      <p className="text-sm leading-relaxed" style={{ color: "var(--color-on-surface-variant)" }}>{d.desc}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA ──────────────────────────────────────────────────────────── */}
       <section
         className="py-20"

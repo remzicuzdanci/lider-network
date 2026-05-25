@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { getTranslations } from "next-intl/server";
 import Hero from "@/components/home/Hero";
 import Stats from "@/components/home/Stats";
+import PartnerBadges from "@/components/home/PartnerBadges";
+import ClientMarquee from "@/components/home/ClientMarquee";
 import FortinetHighlight from "@/components/home/FortinetHighlight";
 import FortinetProducts from "@/components/home/FortinetProducts";
 import Services from "@/components/home/Services";
+import Industries from "@/components/home/Industries";
 import Expertise from "@/components/home/Expertise";
 import LatestPosts from "@/components/home/LatestPosts";
 import ContactCTA from "@/components/home/ContactCTA";
@@ -53,9 +56,12 @@ export default async function HomePage() {
     <>
       <Hero />
       <Stats />
+      <PartnerBadges />
+      <ClientMarquee />
       <FortinetHighlight />
       <FortinetProducts />
       <Services />
+      <Industries />
       <Expertise />
       <LatestPosts />
       <ContactCTA />
