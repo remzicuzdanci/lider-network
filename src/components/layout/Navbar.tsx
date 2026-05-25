@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useTranslations, useLocale } from "next-intl";
 import {
@@ -116,6 +117,12 @@ export default function Navbar() {
   const pathname = usePathname();
   const otherLocaleHref = pathname.replace(`/${locale}`, `/${otherLocale}`);
 
+  const isActive = (href: string) => {
+    const full = `/${locale}/${href}`;
+    if (href === "") return pathname === `/${locale}` || pathname === `/${locale}/`;
+    return pathname === full || pathname.startsWith(full + "/");
+  };
+
   return (
     <header
       className="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
@@ -147,11 +154,13 @@ export default function Navbar() {
                 alignItems: "center",
               }}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              <Image
                 src="/logo.png"
                 alt="Lider Network"
+                width={120}
+                height={44}
                 style={{ height: 44, width: "auto", objectFit: "contain", display: "block" }}
+                priority
               />
             </div>
           </Link>
@@ -166,17 +175,23 @@ export default function Navbar() {
                 className="px-4 py-2 text-sm rounded transition-colors duration-200"
                 style={{
                   fontFamily: "var(--font-family-label)",
-                  fontWeight: 500,
-                  color: "var(--color-on-surface-variant)",
+                  fontWeight: 600,
+                  color: isActive("") ? "var(--color-primary)" : "var(--color-on-surface-variant)",
+                  backgroundColor: isActive("") ? "rgba(0,82,255,0.08)" : "transparent",
+                  borderBottom: isActive("") ? "2px solid var(--color-primary)" : "2px solid transparent",
                 }}
                 onMouseEnter={(e) => {
                   closeAll();
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  if (!isActive("")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  if (!isActive("")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  }
                 }}
               >
                 {t("home")}
@@ -527,17 +542,23 @@ export default function Navbar() {
                 className="px-4 py-2 text-sm rounded transition-colors duration-200"
                 style={{
                   fontFamily: "var(--font-family-label)",
-                  fontWeight: 500,
-                  color: "var(--color-on-surface-variant)",
+                  fontWeight: 600,
+                  color: isActive("blog") ? "var(--color-primary)" : "var(--color-on-surface-variant)",
+                  backgroundColor: isActive("blog") ? "rgba(0,82,255,0.08)" : "transparent",
+                  borderBottom: isActive("blog") ? "2px solid var(--color-primary)" : "2px solid transparent",
                 }}
                 onMouseEnter={(e) => {
                   closeAll();
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  if (!isActive("blog")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  if (!isActive("blog")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  }
                 }}
               >
                 Blog
@@ -551,17 +572,23 @@ export default function Navbar() {
                 className="px-4 py-2 text-sm rounded transition-colors duration-200"
                 style={{
                   fontFamily: "var(--font-family-label)",
-                  fontWeight: 500,
-                  color: "var(--color-on-surface-variant)",
+                  fontWeight: 600,
+                  color: isActive("iletisim") ? "var(--color-primary)" : "var(--color-on-surface-variant)",
+                  backgroundColor: isActive("iletisim") ? "rgba(0,82,255,0.08)" : "transparent",
+                  borderBottom: isActive("iletisim") ? "2px solid var(--color-primary)" : "2px solid transparent",
                 }}
                 onMouseEnter={(e) => {
                   closeAll();
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  if (!isActive("iletisim")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(183, 196, 255, 0.05)";
+                  }
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  if (!isActive("iletisim")) {
+                    (e.currentTarget as HTMLElement).style.color = "var(--color-on-surface-variant)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  }
                 }}
               >
                 {t("contact")}

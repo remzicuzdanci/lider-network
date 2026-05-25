@@ -6,6 +6,7 @@ import { Hanken_Grotesk, Inter, Geist } from "next/font/google";
 import { routing } from "@/i18n/routing";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import WhatsAppButton from "@/components/ui/WhatsAppButton";
 import "../globals.css";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -196,6 +197,7 @@ export default async function LocaleLayout({
           <Navbar />
           <main id="main-content">{children}</main>
           <Footer />
+          <WhatsAppButton />
         </NextIntlClientProvider>
       </body>
     </html>

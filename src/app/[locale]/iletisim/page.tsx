@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { MapPin, Phone, Mail, Clock, ShoppingCart, Headphones, Linkedin } from "lucide-react";
 import ContactForm from "@/components/ui/ContactForm";
@@ -95,13 +96,15 @@ export default async function ContactPage({
       <section className="relative min-h-[72vh] flex items-end overflow-hidden">
         {/* Background */}
         <div className="absolute inset-0 z-0">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="https://images.unsplash.com/photo-1497366216548-37526070297c?auto=format&fit=crop&w=1920&q=80"
             alt=""
-            aria-hidden="true"
-            className="w-full h-full object-cover"
+            aria-hidden={true}
+            fill
+            className="object-cover"
+            sizes="100vw"
             style={{ opacity: 0.25 }}
+            priority
           />
           <div
             className="absolute inset-0"

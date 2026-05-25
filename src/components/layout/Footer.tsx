@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
 import {
   MapPin,
@@ -61,10 +62,11 @@ export default function Footer() {
                   alignItems: "center",
                 }}
               >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+                <Image
                   src="/logo.png"
                   alt="Lider Network"
+                  width={130}
+                  height={52}
                   style={{ height: 52, width: "auto", objectFit: "contain", display: "block" }}
                 />
               </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useLocale } from "next-intl";
 import {
   ArrowRight,
@@ -20,6 +21,7 @@ export default function Hero() {
   const locale = useLocale();
   const isTr = locale === "tr";
   const [active, setActive] = useState(0);
+  const isPaused = useRef(false);
 
   const slides = [
     {
@@ -128,10 +130,12 @@ export default function Hero() {
 
   useEffect(() => {
     const t = setInterval(() => {
-      setActive((s) => (s + 1) % slides.length);
+      if (!isPaused.current) {
+        setActive((s) => (s + 1) % slides.length);
+      }
     }, 5500);
     return () => clearInterval(t);
-  }, []);
+  }, [slides.length]);
 
   const slide = slides[active];
   const Icon  = slide.productIcon;
@@ -141,6 +145,8 @@ export default function Hero() {
     <section
       className="relative min-h-[90vh] flex items-center pt-24 overflow-hidden"
       aria-label="Hero bölümü"
+      onMouseEnter={() => { isPaused.current = true; }}
+      onMouseLeave={() => { isPaused.current = false; }}
     >
       {/* ── Background images ───────────────────────────────────────────── */}
       <div className="absolute inset-0 z-0">
@@ -150,11 +156,13 @@ export default function Hero() {
             className="absolute inset-0 transition-opacity duration-1000 ease-in-out"
             style={{ opacity: i === active ? 1 : 0 }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+            <Image
               src={s.bg}
               alt={s.product}
-              className="w-full h-full object-cover"
+              fill
+              className="object-cover"
+              sizes="100vw"
+              priority={i === 0}
             />
           </div>
         ))}

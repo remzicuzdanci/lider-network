@@ -6,6 +6,7 @@ import FortinetHighlight from "@/components/home/FortinetHighlight";
 import FortinetProducts from "@/components/home/FortinetProducts";
 import Services from "@/components/home/Services";
 import Expertise from "@/components/home/Expertise";
+import LatestPosts from "@/components/home/LatestPosts";
 import ContactCTA from "@/components/home/ContactCTA";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
@@ -56,6 +57,7 @@ export default async function HomePage() {
       <FortinetProducts />
       <Services />
       <Expertise />
+      <LatestPosts />
       <ContactCTA />
     </>
   );
