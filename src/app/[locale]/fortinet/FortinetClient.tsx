@@ -30,10 +30,10 @@ interface ProductCard {
 
 /* ─── Constants ───────────────────────────────────────────────────────────── */
 
-/* Official Fortinet product images from fortinet.com CDN */
-const IMG_DC   = "https://www.fortinet.com/content/dam/fortinet/images/icons/ngfw/img-model-data-center.png";
-const IMG_ENT  = "https://www.fortinet.com/content/dam/fortinet/images/icons/ngfw/img-model-campus.png";
-const IMG_SMB  = "https://www.fortinet.com/content/dam/fortinet/images/icons/ngfw/img-model-branch.png";
+/* FortiGate G-Series hardware images */
+const IMG_DC   = "https://www.enbitcon.com/media/c7/b4/5e/1734956055/900GHA.png";
+const IMG_ENT  = "https://www.enbitcon.com/media/b3/10/64/1735037842/FG%20200G.PNG";
+const IMG_SMB  = "https://www.enbitcon.com/media/7a/46/4c/1732015927/FG-70G.png";
 
 const productCards: ProductCard[] = [
   {
@@ -86,26 +86,30 @@ const productCards: ProductCard[] = [
   },
 ];
 
+/* ── FortiGate G-Serisi Karşılaştırma Tablosu ──────────────────────────────
+   Kaynak: Fortinet resmi datasheet'leri + avfirewalls.com doğrulaması
+   70G: branch/SMB  |  120G: kampüs/KOBİ  |  200G: enterprise  |  900G: DC
+   ─────────────────────────────────────────────────────────────────────── */
 const comparisonRows: Array<{
   spec: string;
-  f40: string;
-  f60: string;
-  f100: string;
-  f200: string;
+  g70: string;
+  g120: string;
+  g200: string;
+  g900: string;
   highlight?: boolean;
 }> = [
-  { spec: "Firewall Throughput", f40: "5 Gbps", f60: "10 Gbps", f100: "20 Gbps", f200: "27 Gbps" },
-  { spec: "NGFW Throughput", f40: "600 Mbps", f60: "1 Gbps", f100: "1.6 Gbps", f200: "3 Gbps" },
-  { spec: "Threat Protection", f40: "600 Mbps", f60: "700 Mbps", f100: "1 Gbps", f200: "2 Gbps" },
-  { spec: "VPN (IPsec)", f40: "4.4 Gbps", f60: "6.5 Gbps", f100: "11.5 Gbps", f200: "13 Gbps" },
-  { spec: "Max Oturum", f40: "700K", f60: "1.3M", f100: "2M", f200: "3M" },
-  { spec: "Yeni Oturum/sn", f40: "35K", f60: "45K", f100: "56K", f200: "100K" },
+  { spec: "Firewall Throughput",  g70: "10 Gbps",  g120: "39 Gbps",  g200: "39 Gbps",  g900: "164 Gbps" },
+  { spec: "NGFW Throughput",      g70: "1.5 Gbps", g120: "3.1 Gbps", g200: "7 Gbps",   g900: "22 Gbps"  },
+  { spec: "Threat Protection",    g70: "1.3 Gbps", g120: "2.8 Gbps", g200: "6 Gbps",   g900: "20 Gbps"  },
+  { spec: "VPN (IPsec)",          g70: "7.1 Gbps", g120: "35 Gbps",  g200: "36 Gbps",  g900: "55 Gbps"  },
+  { spec: "Max Oturum",           g70: "1.4M",     g120: "3M",       g200: "11M",      g900: "16M"      },
+  { spec: "Yeni Oturum/sn",       g70: "100K",     g120: "140K",     g200: "400K",     g900: "720K"     },
   {
     spec: "Kullanım Alanı",
-    f40: "Küçük Ofis",
-    f60: "KOBİ",
-    f100: "Kurumsal Şube",
-    f200: "Büyük İşletme",
+    g70: "Şube / SMB",
+    g120: "KOBİ / Kampüs",
+    g200: "Kurumsal",
+    g900: "Enterprise HQ / DC",
     highlight: true,
   },
 ];
@@ -280,13 +284,13 @@ function HeroSection() {
               }}
             />
 
-            {/* Enterprise: FortiGate 601F */}
+            {/* Enterprise: FortiGate 200G */}
             <div className="relative z-10 w-full">
               <div
                 className="text-[10px] font-semibold mb-1.5 ml-1"
                 style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
               >
-                ENTERPRISE — FortiGate 600F Serisi
+                ENTERPRISE — FortiGate 200G Serisi
               </div>
               <div
                 className="rounded-xl overflow-hidden p-3"
@@ -297,7 +301,7 @@ function HeroSection() {
               >
                 <Image
                   src={IMG_ENT}
-                  alt="FortiGate 601F — Enterprise NGFW"
+                  alt="FortiGate 200G — Enterprise NGFW"
                   width={560}
                   height={120}
                   unoptimized
@@ -307,13 +311,13 @@ function HeroSection() {
               </div>
             </div>
 
-            {/* Data Center: Large chassis */}
+            {/* Data Center: FortiGate 900G */}
             <div className="relative z-10 w-full">
               <div
                 className="text-[10px] font-semibold mb-1.5 ml-1"
                 style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
               >
-                DATA CENTER — FortiGate 7000 Serisi
+                DATA CENTER — FortiGate 900G Serisi
               </div>
               <div
                 className="rounded-xl overflow-hidden p-3"
@@ -324,7 +328,7 @@ function HeroSection() {
               >
                 <Image
                   src={IMG_DC}
-                  alt="FortiGate 7000 — Data Center Chassis"
+                  alt="FortiGate 900G — Data Center NGFW"
                   width={560}
                   height={140}
                   unoptimized
@@ -333,13 +337,13 @@ function HeroSection() {
               </div>
             </div>
 
-            {/* SMB: FortiGate 71F */}
+            {/* SMB: FortiGate 70G */}
             <div className="relative z-10 w-full">
               <div
                 className="text-[10px] font-semibold mb-1.5 ml-1"
                 style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
               >
-                SMB / ŞUBE OFİS — FortiGate 70F Serisi
+                SMB / ŞUBE OFİS — FortiGate 70G Serisi
               </div>
               <div
                 className="rounded-xl overflow-hidden p-3"
@@ -350,7 +354,7 @@ function HeroSection() {
               >
                 <Image
                   src={IMG_SMB}
-                  alt="FortiGate 71F — SMB & Branch Office"
+                  alt="FortiGate 70G — SMB & Branch Office"
                   width={560}
                   height={100}
                   unoptimized
@@ -1005,14 +1009,14 @@ function ComparisonTable() {
           className="text-3xl font-bold mb-3"
           style={{ color: "var(--color-on-surface)" }}
         >
-          Model Karşılaştırma Tablosu
+          G-Serisi Model Karşılaştırma Tablosu
         </h2>
         <p
           className="text-sm mb-10"
           style={{ color: "var(--color-on-surface-variant)" }}
         >
-          İhtiyaçlarınıza en uygun donanımı seçmek için teknik verileri
-          karşılaştırın.
+          FortiGate G-Serisi — ihtiyaçlarınıza en uygun modeli seçin.
+          Veriler Fortinet resmi datasheet'lerinden alınmıştır.
         </p>
 
         <div
@@ -1024,10 +1028,10 @@ function ComparisonTable() {
               <tr style={{ backgroundColor: "var(--color-surface)" }}>
                 {[
                   "Teknik Özellik",
-                  "FortiGate 40F",
-                  "FortiGate 60F",
-                  "FortiGate 100F",
-                  "FortiGate 200F",
+                  "FortiGate 70G",
+                  "FortiGate 120G",
+                  "FortiGate 200G",
+                  "FortiGate 900G",
                 ].map((col, i) => (
                   <th
                     key={col}
@@ -1072,25 +1076,25 @@ function ComparisonTable() {
                     className="px-5 py-3.5"
                     style={{ color: "var(--color-on-surface)" }}
                   >
-                    {row.f40}
+                    {row.g70}
                   </td>
                   <td
                     className="px-5 py-3.5"
                     style={{ color: "var(--color-on-surface)" }}
                   >
-                    {row.f60}
+                    {row.g120}
                   </td>
                   <td
                     className="px-5 py-3.5"
                     style={{ color: "var(--color-on-surface)" }}
                   >
-                    {row.f100}
+                    {row.g200}
                   </td>
                   <td
                     className="px-5 py-3.5 font-semibold"
                     style={{ color: "var(--color-secondary-container)" }}
                   >
-                    {row.f200}
+                    {row.g900}
                   </td>
                 </tr>
               ))}
