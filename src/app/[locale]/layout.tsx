@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { Hanken_Grotesk, Inter, Geist } from "next/font/google";
@@ -168,6 +169,11 @@ export default async function LocaleLayout({
 
   const messages = await getMessages({ locale });
 
+  // Hide main site chrome on the destek subdomain
+  const headersList = await headers();
+  const host = headersList.get("host") || "";
+  const isDestekSubdomain = host.startsWith("destek.");
+
   return (
     <html lang={locale} className={`${hankenGrotesk.variable} ${inter.variable} ${geist.variable}`}>
       <head>
@@ -178,30 +184,40 @@ export default async function LocaleLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#101415" />
-        <link rel="alternate" hrefLang="tr" href={`${baseUrl}/tr`} />
-        <link rel="alternate" hrefLang="en" href={`${baseUrl}/en`} />
-        <link rel="alternate" hrefLang="x-default" href={`${baseUrl}/tr`} />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(organizationSchema),
-          }}
-        />
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{
-            __html: JSON.stringify(localBusinessSchema),
-          }}
-        />
+        {!isDestekSubdomain && (
+          <>
+            <link rel="alternate" hrefLang="tr" href={`${baseUrl}/tr`} />
+            <link rel="alternate" hrefLang="en" href={`${baseUrl}/en`} />
+            <link rel="alternate" hrefLang="x-default" href={`${baseUrl}/tr`} />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationSchema) }}
+            />
+            <script
+              type="application/ld+json"
+              dangerouslySetInnerHTML={{ __html: JSON.stringify(localBusinessSchema) }}
+            />
+          </>
+        )}
       </head>
       <body>
         <NextIntlClientProvider locale={locale} messages={messages}>
-          <Navbar />
-          <main id="main-content">{children}</main>
-          <Footer />
-          <WhatsAppButton />
-          <BackToTop />
-          <CookieBanner />
+          {isDestekSubdomain ? (
+            /* Destek subdomain: clean layout, no site chrome */
+            <main id="main-content" style={{ minHeight: "100vh", background: "var(--color-background)" }}>
+              {children}
+            </main>
+          ) : (
+            /* Main site: full layout with Navbar + Footer */
+            <>
+              <Navbar />
+              <main id="main-content">{children}</main>
+              <Footer />
+              <WhatsAppButton />
+              <BackToTop />
+              <CookieBanner />
+            </>
+          )}
         </NextIntlClientProvider>
       </body>
     </html>
