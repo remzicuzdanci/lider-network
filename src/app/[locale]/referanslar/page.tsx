@@ -63,8 +63,7 @@ const clients: { name: string; logo: string | null; logoBg?: string }[] = [
   { name: "Mezzaluna",                 logo: wix("27bac0_69c54261a28b4bc0a5587b21a1906edd") },
   { name: "Siber Suçlarla Mücadele",   logo: wix("27bac0_fd93ebf27976414c8c80a517ddfa0aad") },
   /* ─── Yeni referanslar ──────────────────────────────────────────────────── */
-  // Gala Sahne: logo TIM delegasyon sayfasından (resmi jpg)
-  { name: "Gala Sahne",    logo: "https://delegations.tim.org.tr/storage/uploads/company/7287/conversions/SN6HcwoGs3epXILgNEnBnHlVsTMDXjZYKLKXAgBR-thumb.jpg" },
+  { name: "Gala Sahne",    logo: "/logos/galasahne.PNG" },
   // Pantech, Pancast, Panab: beyaz SVG logoları → koyu arkaplan gerekli
   { name: "Pantech",       logo: "https://pantechalu.com.tr/uploads/images/logos/large/1774521249_pantech-aluminyum-logo.svg",  logoBg: "#1a3254" },
   { name: "Pancast",       logo: "https://www.pancast.com.tr/uploads/images/home-logos/large/1774519597_pancast-aluminium.svg", logoBg: "#2c3320" },
