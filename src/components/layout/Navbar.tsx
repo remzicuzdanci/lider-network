@@ -157,9 +157,9 @@ export default function Navbar() {
               <Image
                 src="/logo.png"
                 alt="Lider Network"
-                width={120}
-                height={44}
-                style={{ height: 44, width: "auto", objectFit: "contain", display: "block" }}
+                width={160}
+                height={58}
+                style={{ height: 58, width: "auto", objectFit: "contain", display: "block" }}
                 priority
               />
             </div>
@@ -609,7 +609,7 @@ export default function Navbar() {
               <div style={{
                 background: "#fff",
                 borderRadius: "9px",
-                padding: "6px 12px",
+                padding: "3px 8px",
                 display: "flex",
                 alignItems: "center",
                 boxShadow: "0 2px 10px rgba(0,0,0,.28)",
@@ -617,10 +617,10 @@ export default function Navbar() {
                 <Image
                   src="/fort-removebg-preview.png"
                   alt="Fortinet Authorized Partner"
-                  width={160}
-                  height={50}
+                  width={200}
+                  height={64}
                   quality={100}
-                  style={{ objectFit: "contain", display: "block", height: 44, width: "auto" }}
+                  style={{ objectFit: "contain", display: "block", height: 58, width: "auto" }}
                 />
               </div>
             </Link>
