@@ -480,6 +480,10 @@ export async function sendTicketResolvedEmail(
   if (!process.env.SMTP_USER && !process.env.SMTP_DESTEK_USER) return;
   const to   = contactEmail || ticket.customer_email;
   const name = contactName  || ticket.customer_name;
+  const ratingSecret = process.env.ADMIN_SESSION_SECRET || process.env.ADMIN_PASSWORD || "please-set-ADMIN_SESSION_SECRET-in-env";
+  function makeRatingToken(score: number): string {
+    return crypto.createHmac("sha256", ratingSecret).update(`${ticket.id}:${score}`).digest("hex");
+  }
 
   // Çözüm süresi hesapla
   let duration = "";
@@ -580,6 +584,31 @@ export async function sendTicketResolvedEmail(
       </table>
     </div>
 
+    <!-- Memnuniyet Anketi -->
+    <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:16px 20px;margin-top:16px;text-align:center">
+      <div style="font-size:13px;font-weight:700;color:#92400e;margin-bottom:12px">Hizmetimizi değerlendirin</div>
+      <table align="center" cellpadding="0" cellspacing="0">
+        <tr>
+          ${[
+            { score: 1, emoji: "😞", label: "Çok Kötü",  color: "#dc2626", bg: "#fef2f2" },
+            { score: 2, emoji: "😐", label: "Kötü",      color: "#ea580c", bg: "#fff7ed" },
+            { score: 3, emoji: "🙂", label: "Orta",      color: "#d97706", bg: "#fffbeb" },
+            { score: 4, emoji: "😊", label: "İyi",       color: "#16a34a", bg: "#f0fdf4" },
+            { score: 5, emoji: "😄", label: "Mükemmel",  color: "#0052ff", bg: "#eff6ff" },
+          ].map(s => `
+            <td style="padding:0 4px">
+              <a href="${siteUrl}/api/tickets/${ticket.id}/rate?score=${s.score}&token=${makeRatingToken(s.score)}" style="display:block;text-decoration:none">
+                <div style="background:${s.bg};border:1px solid ${s.color}30;border-radius:10px;padding:10px 12px;text-align:center;min-width:52px">
+                  <div style="font-size:22px;line-height:1;margin-bottom:4px">${s.emoji}</div>
+                  <div style="font-size:10px;font-weight:700;color:${s.color}">${s.label}</div>
+                </div>
+              </a>
+            </td>
+          `).join("")}
+        </tr>
+      </table>
+    </div>
+
     <p style="margin-top:24px;font-size:13px;color:#94a3b8;line-height:1.6;text-align:center">
       Lider Network olarak kesintisiz bilişim desteği sunmak önceliğimizdir.<br>
       Güveniniz için teşekkür ederiz.
@@ -591,6 +620,188 @@ export async function sendTicketResolvedEmail(
     to,
     subject: `Destek Talebiniz Tamamlandı — ${formatTicketNo(ticket.ticket_number)}`,
     html: shell("approved", body),
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 5. SLA Uyarısı — Personele / Admine
+// ═══════════════════════════════════════════════════════════════════════════════
+export async function sendSLAWarningEmail(
+  ticket: Ticket,
+  toEmail: string,
+  remainingMinutes: number
+): Promise<void> {
+  if (!process.env.SMTP_USER && !process.env.SMTP_DESTEK_USER) return;
+
+  const adminUrl = `${siteUrl}/admin/destek/${ticket.id}`;
+
+  const body = `
+    <!-- Red Warning Banner -->
+    <div style="background:#fef2f2;border:2px solid #fecaca;border-radius:12px;padding:20px 24px;margin-bottom:24px;text-align:center">
+      <div style="font-size:40px;margin-bottom:8px">⚠️</div>
+      <div style="font-size:20px;font-weight:900;color:#dc2626;margin-bottom:6px">SLA SÜRESİ DOLMAK ÜZERE</div>
+      <div style="font-size:28px;font-weight:900;color:#dc2626;font-family:monospace">${remainingMinutes} dakika kaldı</div>
+    </div>
+
+    <p style="font-size:15px;color:#1e293b;margin:0 0 20px;line-height:1.6">
+      Aşağıdaki destek talebinin SLA süresi <strong style="color:#dc2626">${remainingMinutes} dakika</strong> içinde dolacak. Lütfen acil olarak ilgilenin.
+    </p>
+
+    ${sectionTitle("Talep Bilgileri")}
+
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:10px;padding:16px 20px;margin-bottom:20px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <div style="font-size:10px;color:#9a3412;text-transform:uppercase;letter-spacing:1px;font-weight:700">Talep No</div>
+            <div style="font-size:28px;font-weight:900;color:#dc2626;letter-spacing:-1px">${formatTicketNo(ticket.ticket_number)}</div>
+          </td>
+          <td align="right">
+            <div style="font-size:10px;color:#9a3412;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:4px">Öncelik</div>
+            <span style="background:${priColors[ticket.priority]};color:#fff;padding:5px 14px;border-radius:20px;font-size:12px;font-weight:800">${priLabels[ticket.priority] || ticket.priority}</span>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    ${field("Konu", `<strong>${esc(ticket.subject)}</strong>`)}
+    ${field("Müşteri", `${esc(ticket.customer_name)}${ticket.company ? ` — ${esc(ticket.company)}` : ""}`)}
+    ${field("Oluşturulma", formatDate(ticket.created_at))}
+    ${ticket.assigned_to ? field("Atanan Personel", esc(ticket.assigned_to)) : ""}
+
+    <div style="margin-top:24px">
+      ${btn("Talebi Hemen Görüntüle →", adminUrl, "#dc2626")}
+    </div>
+  `;
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${DESTEK_FROM}>`,
+    to: toEmail,
+    subject: `[SLA Uyarısı] ${formatTicketNo(ticket.ticket_number)} — ${remainingMinutes} dakika kaldı`,
+    html: shell("info", body),
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// 6. Şirkete: Aylık Özet Rapor
+// ═══════════════════════════════════════════════════════════════════════════════
+export async function sendMonthlySummaryEmail(opts: {
+  companyName: string;
+  contactName: string;
+  contactEmail: string;
+  tickets: Ticket[];
+  stats: { total: number; resolved: number; open: number; avgMinutes: number | null };
+}): Promise<void> {
+  if (!process.env.SMTP_USER && !process.env.SMTP_DESTEK_USER) return;
+
+  const now = new Date();
+  const monthYear = now.toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+
+  const { total, resolved, open, avgMinutes } = opts.stats;
+  const resolvePct = total ? Math.round((resolved / total) * 100) : 0;
+
+  let avgTimeStr = "—";
+  if (avgMinutes !== null) {
+    if (avgMinutes < 60) avgTimeStr = `${avgMinutes} dakika`;
+    else if (avgMinutes < 1440) avgTimeStr = `${Math.round(avgMinutes / 60)} saat`;
+    else avgTimeStr = `${Math.round(avgMinutes / 1440)} gün`;
+  }
+
+  const ticketRows = opts.tickets
+    .slice(0, 20)
+    .map((t, i) => {
+      const statusColors: Record<string, string> = {
+        open: "#1d4ed8", in_progress: "#7c3aed", resolved: "#15803d", closed: "#475569"
+      };
+      const statusLabels: Record<string, string> = {
+        open: "Açık", in_progress: "İşlemde", resolved: "Çözüldü", closed: "Kapalı"
+      };
+      return `<tr style="background:${i % 2 === 0 ? "#f8fafc" : "#fff"}">
+        <td style="padding:8px 12px;font-size:12px;font-weight:800;color:#0052ff">${formatTicketNo(t.ticket_number)}</td>
+        <td style="padding:8px 12px;font-size:12px;color:#1e293b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(t.subject)}</td>
+        <td style="padding:8px 12px;font-size:12px;color:#64748b">${formatDate(t.created_at).split(",")[0]}</td>
+        <td style="padding:8px 12px">
+          <span style="font-size:11px;font-weight:700;color:${statusColors[t.status] || "#64748b"}">${statusLabels[t.status] || t.status}</span>
+        </td>
+      </tr>`;
+    })
+    .join("");
+
+  const body = `
+    <p style="font-size:16px;color:#1e293b;margin:0 0 6px">Sayın <strong>${esc(opts.contactName)}</strong>,</p>
+    <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.7">
+      <strong>${esc(opts.companyName)}</strong> hesabınıza ait <strong>${monthYear}</strong> dönemi destek hizmet raporunuzu aşağıda bulabilirsiniz.
+    </p>
+
+    ${sectionTitle("Dönem Özeti")}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px">
+      <tr>
+        <td width="25%" style="padding:4px">
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:32px;font-weight:900;color:#0052ff;font-family:monospace">${total}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Toplam</div>
+          </div>
+        </td>
+        <td width="25%" style="padding:4px">
+          <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:32px;font-weight:900;color:#15803d;font-family:monospace">${resolved}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Çözülen</div>
+          </div>
+        </td>
+        <td width="25%" style="padding:4px">
+          <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:32px;font-weight:900;color:#d97706;font-family:monospace">${open}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Açık</div>
+          </div>
+        </td>
+        <td width="25%" style="padding:4px">
+          <div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:12px;padding:16px;text-align:center">
+            <div style="font-size:22px;font-weight:900;color:#7c3aed;font-family:monospace">%${resolvePct}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:4px;font-weight:700;text-transform:uppercase;letter-spacing:.5px">Çözüm Oranı</div>
+          </div>
+        </td>
+      </tr>
+    </table>
+
+    ${field("Ortalama Çözüm Süresi", avgTimeStr)}
+
+    ${opts.tickets.length > 0 ? `
+    ${sectionTitle(`Bu Dönemin Talepleri (${Math.min(opts.tickets.length, 20)}/${opts.tickets.length})`)}
+    <div style="overflow-x:auto;margin-bottom:20px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #e2e8f0;border-radius:10px;overflow:hidden">
+        <thead>
+          <tr style="background:#f8fafc">
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">No</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Konu</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Tarih</th>
+            <th style="padding:10px 12px;text-align:left;font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px">Durum</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${ticketRows}
+        </tbody>
+      </table>
+    </div>` : `<p style="color:#64748b;font-size:14px;text-align:center;padding:20px">Bu dönemde kayıt bulunamadı.</p>`}
+
+    <div style="background:#f8faff;border:1px solid #c7d7ff;border-left:4px solid #0052ff;border-radius:0 10px 10px 0;padding:16px 20px;margin-top:16px;margin-bottom:8px">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0038c7">Lider Network Desteği</p>
+      <p style="margin:0;font-size:13px;color:#374151;line-height:1.7">
+        Teknik destek ekibimiz iş günleri 08:00–18:00 saatleri arasında hizmetinizdedir.
+        Acil durumlarda <a href="tel:+903122320288" style="color:#0052ff">+90 312 232 02 88</a> numaralı hattımızı arayabilirsiniz.
+      </p>
+    </div>
+
+    <p style="margin-top:24px;font-size:13px;color:#94a3b8;line-height:1.6;text-align:center">
+      Güvenilir ve kesintisiz bilişim desteği için Lider Network'ü tercih ettiğiniz için teşekkür ederiz.
+    </p>
+  `;
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${DESTEK_FROM}>`,
+    to: opts.contactEmail,
+    subject: `Lider Network — ${opts.companyName} Aylık Destek Raporu — ${monthYear}`,
+    html: shell("info", body),
   });
 }
 

@@ -9,6 +9,7 @@ import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { sendNewTicketAdminEmail } from "@/lib/ticket-mail";
+import { sendWhatsAppUrgentAlert } from "@/lib/whatsapp";
 import type { Ticket } from "@/lib/supabase";
 
 const schema = z.object({
@@ -68,6 +69,16 @@ export async function POST(req: NextRequest) {
 
     // Notify all admins (same as external tickets)
     sendNewTicketAdminEmail(ticket as Ticket).catch(console.error);
+
+    // WhatsApp urgent alert
+    if (body.priority === "urgent") {
+      sendWhatsAppUrgentAlert({
+        ticket_number: (ticket as Ticket).ticket_number,
+        subject: (ticket as Ticket).subject,
+        priority: (ticket as Ticket).priority,
+        company: (ticket as Ticket).company,
+      }).catch(console.error);
+    }
 
     return NextResponse.json({ success: true, ticket_id: ticket.id, ticket_number: ticket.ticket_number }, { status: 201 });
   } catch (err) {
