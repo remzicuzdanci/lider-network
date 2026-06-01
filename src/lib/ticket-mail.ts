@@ -55,7 +55,17 @@ const catLabels: Record<string, string> = {
 };
 
 // ── Shared shell ─────────────────────────────────────────────────────────────
-function shell(content: string) {
+type BadgeType = "new-ticket" | "reply" | "approval" | "approved" | "info";
+
+const BADGES: Record<BadgeType, string> = {
+  "new-ticket": `<span style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Yeni Talep</span>`,
+  "reply":      `<span style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Yanıt Geldi</span>`,
+  "approval":   `<span style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Onay Bekliyor</span>`,
+  "approved":   `<span style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Onaylandı</span>`,
+  "info":       `<span style="background:#eff6ff;color:#0052ff;border:1px solid #bfdbfe;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Bildirim</span>`,
+};
+
+function shell(badge: BadgeType, body: string) {
   return `<!DOCTYPE html>
 <html lang="tr" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -69,7 +79,7 @@ function shell(content: string) {
     <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
 
       <!-- TOP ACCENT BAR -->
-      <tr><td style="background:linear-gradient(90deg,#0040cc,#0052ff,#1a6fff);height:5px;border-radius:10px 10px 0 0"></td></tr>
+      <tr><td style="background:#0052ff;height:5px;border-radius:10px 10px 0 0"></td></tr>
 
       <!-- HEADER -->
       <tr>
@@ -84,16 +94,7 @@ function shell(content: string) {
                 <div style="margin-top:6px;color:#64748b;font-size:12px;letter-spacing:1px;text-transform:uppercase">Destek Portalı</div>
               </td>
               <td align="right" style="vertical-align:top">
-                ${content.includes("badge-orange") || content.includes("badge-admin")
-                  ? `<span style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Yeni Talep</span>`
-                  : content.includes("badge-green")
-                  ? `<span style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Yanıt Geldi</span>`
-                  : content.includes("badge-approval")
-                  ? `<span style="background:#fff7ed;color:#ea580c;border:1px solid #fed7aa;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Onay Bekliyor</span>`
-                  : content.includes("badge-approved")
-                  ? `<span style="background:#f0fdf4;color:#16a34a;border:1px solid #bbf7d0;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Onaylandı</span>`
-                  : `<span style="background:#eff6ff;color:#0052ff;border:1px solid #bfdbfe;padding:5px 14px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:0.5px;text-transform:uppercase">Bildirim</span>`
-                }
+                ${BADGES[badge]}
               </td>
             </tr>
           </table>
@@ -106,7 +107,7 @@ function shell(content: string) {
       <!-- BODY -->
       <tr>
         <td style="background:#ffffff;padding:28px 36px;border-left:1px solid #e2e8f0;border-right:1px solid #e2e8f0">
-          ${content}
+          ${body}
         </td>
       </tr>
 
@@ -117,8 +118,8 @@ function shell(content: string) {
             <tr>
               <td style="color:#94a3b8;font-size:12px;line-height:1.6">
                 <strong style="color:#64748b">Lider Network Bilişim Hizmetleri</strong><br>
-                📞 <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none">+90 312 232 02 88</a> &nbsp;|&nbsp;
-                ✉️ <a href="mailto:destek@lidernetwork.com.tr" style="color:#0052ff;text-decoration:none">destek@lidernetwork.com.tr</a><br>
+                <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none">+90 312 232 02 88</a> &nbsp;|&nbsp;
+                <a href="mailto:destek@lidernetwork.com.tr" style="color:#0052ff;text-decoration:none">destek@lidernetwork.com.tr</a><br>
                 <a href="https://www.lidernetwork.com.tr" style="color:#0052ff;text-decoration:none">www.lidernetwork.com.tr</a>
               </td>
               <td align="right" style="color:#cbd5e1;font-size:11px;vertical-align:bottom">
@@ -216,7 +217,7 @@ export async function sendTicketCreatedEmail(ticket: Ticket): Promise<void> {
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to: ticket.customer_email,
     subject: `[Destek ${formatTicketNo(ticket.ticket_number)}] Talebiniz Alındı — ${ticket.subject}`,
-    html: shell("badge-blue " + body),
+    html: shell("info", body),
   });
 }
 
@@ -295,7 +296,7 @@ export async function sendNewTicketAdminEmail(ticket: Ticket): Promise<void> {
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to: adminTo,
     subject: `[Yeni Talep] ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
-    html: shell("badge-orange badge-admin " + body),
+    html: shell("new-ticket", body),
   });
 }
 
@@ -335,7 +336,7 @@ export async function sendReplyEmail(
     to: ticket.customer_email,
     replyTo: process.env.ADMIN_NOTIFY_EMAIL || process.env.SMTP_TO || process.env.SMTP_USER,
     subject: `Re: [Destek ${formatTicketNo(ticket.ticket_number)}] ${ticket.subject}`,
-    html: shell("badge-green " + body),
+    html: shell("reply", body),
   });
 }
 
@@ -426,7 +427,7 @@ export async function sendNewRegistrationEmail(opts: {
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to: adminTo,
     subject: `[Kayıt Talebi] ${opts.fullName}${opts.company ? ` — ${opts.company}` : ""} — ${opts.email}`,
-    html: shell("badge-approval " + body),
+    html: shell("approval", body),
   });
 }
 
@@ -464,7 +465,7 @@ export async function sendAccountApprovedEmail(opts: {
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to: opts.email,
     subject: "Destek Portalı Hesabınız Onaylandı — Lider Network",
-    html: shell("badge-approved " + body),
+    html: shell("approved", body),
   });
 }
 
@@ -512,6 +513,6 @@ export async function sendRegistrationReceivedEmail(opts: {
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to: opts.email,
     subject: "Kayıt Talebiniz Alındı — Lider Network Destek Portalı",
-    html: shell("badge-blue " + body),
+    html: shell("info", body),
   });
 }
