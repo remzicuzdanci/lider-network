@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useLocale } from "next-intl";
 import { CheckCircle2, ArrowRight, Zap, Shield, Wifi, Monitor, Lock } from "lucide-react";
 
@@ -98,18 +99,16 @@ export default function FortinetHighlight() {
 
           {/* LEFT — Text */}
           <div>
-            {/* Brand mark */}
+            {/* Brand mark — official Fortinet logo */}
             <div className="mb-6">
-              <div
-                className="text-6xl sm:text-7xl font-black tracking-tight leading-none mb-1"
-                style={{
-                  fontFamily: "var(--font-family-headline)",
-                  color: FN_RED,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                FORTINET
-              </div>
+              <Image
+                src="/Fortinet-logo-rgb-white-red.png"
+                alt="Fortinet"
+                width={280}
+                height={68}
+                style={{ objectFit: "contain", display: "block", marginBottom: "8px" }}
+                priority
+              />
               <div
                 className="text-xs font-semibold tracking-[0.35em] uppercase"
                 style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
