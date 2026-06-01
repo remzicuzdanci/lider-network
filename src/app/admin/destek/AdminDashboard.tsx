@@ -529,6 +529,84 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   }
 
+  function printPDF() {
+    const dateStr = new Date().toLocaleDateString("tr-TR", { day:"2-digit", month:"long", year:"numeric" });
+    const rows = rptTickets.map((t, i) => `
+      <tr style="background:${i % 2 === 0 ? "#f8fafc" : "#fff"}">
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;color:#0052ff;white-space:nowrap">#${String(t.ticket_number).padStart(4,"0")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;max-width:200px;word-break:break-word">${t.subject.replace(/</g,"&lt;")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${STATUS_LABEL[t.status] || t.status}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${PRI_LABEL[t.priority] || t.priority}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0">${CAT_LABEL[t.category] || t.category}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0">${(t.customer_name || "").replace(/</g,"&lt;")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0">${(t.company || "—").replace(/</g,"&lt;")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${t.created_by_staff?.split("@")[0] || "—"}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${new Date(t.created_at).toLocaleDateString("tr-TR")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${t.resolved_at ? new Date(t.resolved_at).toLocaleDateString("tr-TR") : "—"}</td>
+      </tr>`).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Lider Network — Destek Raporu</title>
+  <style>
+    body { margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1e293b; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #0052ff; }
+    .logo-area h1 { margin: 0; font-size: 22px; color: #0052ff; letter-spacing: -0.5px; }
+    .logo-area p { margin: 4px 0 0; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
+    .meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.7; }
+    .stats { display: flex; gap: 12px; margin-bottom: 20px; }
+    .stat { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
+    .stat .val { font-size: 22px; font-weight: 900; color: #0052ff; }
+    .stat .lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; }
+    thead tr { background: #0052ff; }
+    thead th { padding: 9px 10px; text-align: left; color: #fff; font-size: 11px; font-weight: 700; border: 1px solid #0041cc; letter-spacing: .3px; }
+    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
+    @media print { body { padding: 12px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo-area">
+      <h1>LİDER NETWORK</h1>
+      <p>Destek Yönetim Sistemi — Rapor</p>
+    </div>
+    <div class="meta">
+      Oluşturulma: ${dateStr}<br>
+      Toplam: <strong>${rptTickets.length} talep</strong>
+    </div>
+  </div>
+  <div class="stats">
+    <div class="stat"><div class="val">${rptTickets.length}</div><div class="lbl">Toplam Talep</div></div>
+    <div class="stat" style="border-color:#bbf7d0"><div class="val" style="color:#15803d">${rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length}</div><div class="lbl">Çözülen</div></div>
+    <div class="stat" style="border-color:#fde68a"><div class="val" style="color:#d97706">${rptTickets.filter(t=>t.status==="open").length}</div><div class="lbl">Açık</div></div>
+    <div class="stat" style="border-color:#ddd6fe"><div class="val" style="color:#7c3aed">${rptTickets.filter(t=>t.status==="in_progress").length}</div><div class="lbl">İşlemde</div></div>
+    <div class="stat" style="border-color:#bfdbfe"><div class="val">${rptTickets.length ? Math.round((rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length/rptTickets.length)*100) : 0}%</div><div class="lbl">Çözüm Oranı</div></div>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        ${["No","Konu","Durum","Öncelik","Kategori","Müşteri","Şirket","Personel","Tarih","Çözüm"].map(h=>`<th>${h}</th>`).join("")}
+      </tr>
+    </thead>
+    <tbody>${rows}</tbody>
+  </table>
+  <div class="footer">
+    <span>Lider Network Bilişim Hizmetleri — destek@lidernetwork.com.tr — +90 312 232 02 88</span>
+    <span>www.lidernetwork.com.tr</span>
+  </div>
+  <script>window.onload = () => { window.print(); }</script>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank", "width=1100,height=800");
+    if (!win) { alert("Pop-up engelleyicisini kapatın ve tekrar deneyin."); return; }
+    win.document.write(html);
+    win.document.close();
+  }
+
   // ── Staff Performance ─────────────────────────────────────────────────────
   const rptStaffPerf = useMemo(() => {
     const map = new Map<string, { name: string; total: number; resolved: number; totalMinutes: number }>();
@@ -1201,7 +1279,7 @@ export default function AdminDashboard() {
                   <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>{rptTotal} talep listelendi</p>
                 </div>
                 <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={() => window.print()} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                  <button onClick={printPDF} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
                     📄 PDF İndir
                   </button>
                   <button onClick={downloadCSV} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 16px", background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: "10px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
@@ -1211,40 +1289,6 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            {/* Hidden Print Report */}
-            <div id="print-report" style={{ display: "none" }}>
-              <style>{`@media print { body > * { display: none !important; } #print-report { display: block !important; } }`}</style>
-              <div style={{ padding: "20px", fontFamily: "Arial, sans-serif" }}>
-                <h2 style={{ color: "#0052ff", marginBottom: "4px" }}>Lider Network — Destek Raporu</h2>
-                <p style={{ color: "#6b7280", marginBottom: "20px", fontSize: "12px" }}>
-                  Oluşturulma: {new Date().toLocaleDateString("tr-TR")} — {rptTotal} talep
-                </p>
-                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "12px" }}>
-                  <thead>
-                    <tr style={{ background: "#eff6ff" }}>
-                      {["No","Konu","Durum","Öncelik","Kategori","Müşteri","Şirket","Personel","Tarih"].map(h => (
-                        <th key={h} style={{ padding: "8px", textAlign: "left", border: "1px solid #e2e8f0", fontWeight: 700 }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rptTickets.map((t, i) => (
-                      <tr key={t.id} style={{ background: i % 2 === 0 ? "#f8fafc" : "#fff" }}>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0", fontWeight: 700, color: "#0052ff" }}>#{String(t.ticket_number).padStart(4,"0")}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0", maxWidth: "180px" }}>{t.subject}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{STATUS_LABEL[t.status]}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{PRI_LABEL[t.priority]}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{CAT_LABEL[t.category]}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{t.customer_name}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{t.company || "—"}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0" }}>{t.created_by_staff?.split("@")[0] || "—"}</td>
-                        <td style={{ padding: "6px 8px", border: "1px solid #e2e8f0", whiteSpace: "nowrap" }}>{new Date(t.created_at).toLocaleDateString("tr-TR")}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
           </>
         )}
       </main>
