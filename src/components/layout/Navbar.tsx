@@ -608,8 +608,8 @@ export default function Navbar() {
             >
               <div style={{
                 background: "#fff",
-                borderRadius: "9px",
-                padding: "3px 8px",
+                borderRadius: "8px",
+                padding: "2px 4px",
                 display: "flex",
                 alignItems: "center",
                 boxShadow: "0 2px 10px rgba(0,0,0,.28)",
@@ -617,10 +617,10 @@ export default function Navbar() {
                 <Image
                   src="/fort-removebg-preview.png"
                   alt="Fortinet Authorized Partner"
-                  width={200}
-                  height={64}
+                  width={180}
+                  height={52}
                   quality={100}
-                  style={{ objectFit: "contain", display: "block", height: 58, width: "auto" }}
+                  style={{ objectFit: "contain", display: "block", height: 48, width: "auto" }}
                 />
               </div>
             </Link>
