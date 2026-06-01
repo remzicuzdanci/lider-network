@@ -34,6 +34,23 @@ export interface Ticket {
   resolved_at: string | null;
   created_at: string;
   updated_at: string;
+  // Internal ticket fields
+  ticket_source: "internal" | "external";
+  created_by_staff: string | null;
+  company_id: string | null;
+  company_contact_email: string | null;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  contact_name: string;
+  contact_email: string;
+  phone: string | null;
+  sector: string | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
 }
 
 export interface TicketMessage {

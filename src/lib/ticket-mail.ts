@@ -469,6 +469,65 @@ export async function sendAccountApprovedEmail(opts: {
   });
 }
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// 4. Şirket müdürüne / müşteriye: Talep çözüldü
+// ═══════════════════════════════════════════════════════════════════════════════
+export async function sendTicketResolvedEmail(
+  ticket: Ticket,
+  contactEmail?: string,
+  contactName?: string
+): Promise<void> {
+  if (!process.env.SMTP_USER && !process.env.SMTP_DESTEK_USER) return;
+  const to = contactEmail || ticket.customer_email;
+  const name = contactName || ticket.customer_name;
+
+  const body = `
+    <p style="font-size:16px;color:#1e293b;margin:0 0 6px">Sayın <strong>${esc(name)}</strong>,</p>
+    <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.6">
+      <strong>${formatTicketNo(ticket.ticket_number)}</strong> numaralı destek talebiniz başarıyla çözüme kavuşturulmuştur.
+      Hizmetinizde olduğumuz için memnuniyet duyuyoruz.
+    </p>
+
+    <!-- Resolved Banner -->
+    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:22px 28px;margin-bottom:24px;text-align:center">
+      <div style="font-size:42px;margin-bottom:8px">✅</div>
+      <div style="font-size:20px;font-weight:900;color:#15803d;margin-bottom:4px">Talep Çözüldü</div>
+      <div style="font-size:13px;color:#16a34a">${formatTicketNo(ticket.ticket_number)} — ${esc(ticket.subject)}</div>
+    </div>
+
+    ${sectionTitle("Talep Özeti")}
+
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="50%" style="padding-right:8px;vertical-align:top">
+          ${field("Talep No", formatTicketNo(ticket.ticket_number))}
+        </td>
+        <td width="50%" style="padding-left:8px;vertical-align:top">
+          ${fieldAccent("Öncelik", priLabels[ticket.priority] || ticket.priority, priColors[ticket.priority] || "#64748b")}
+        </td>
+      </tr>
+    </table>
+
+    ${field("Konu", esc(ticket.subject))}
+    ${field("Oluşturulma Tarihi", formatDate(ticket.created_at))}
+    ${ticket.resolved_at ? field("Çözüm Tarihi", formatDate(ticket.resolved_at)) : ""}
+
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 20px;margin-top:20px">
+      <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.6">
+        Talebinizle ilgili ek sorularınız için <a href="mailto:destek@lidernetwork.com.tr" style="color:#0052ff;text-decoration:none;font-weight:700">destek@lidernetwork.com.tr</a>
+        adresine yazabilir ya da <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none;font-weight:700">+90 312 232 02 88</a> numaralı hattımızı arayabilirsiniz.
+      </p>
+    </div>
+  `;
+
+  await createTransporter().sendMail({
+    from: `"Lider Network Destek" <${DESTEK_FROM}>`,
+    to,
+    subject: `[Çözüldü] ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
+    html: shell("approved", body),
+  });
+}
+
 // ─── Müşteriye: Kayıt alındı, onay bekleniyor ────────────────────────────────
 export async function sendRegistrationReceivedEmail(opts: {
   fullName: string;

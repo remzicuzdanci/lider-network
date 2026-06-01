@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { getAdminSession } from "@/lib/admin-auth";
+import { sendTicketResolvedEmail } from "@/lib/ticket-mail";
+import type { Ticket } from "@/lib/supabase";
 
 const updateSchema = z.object({
-  status: z
-    .enum(["open", "in_progress", "resolved", "closed"])
-    .optional(),
-  priority: z.enum(["low", "medium", "high", "urgent"]).optional(),
+  status:      z.enum(["open", "in_progress", "resolved", "closed"]).optional(),
+  priority:    z.enum(["low", "medium", "high", "urgent"]).optional(),
   assigned_to: z.string().max(100).nullable().optional(),
 });
 
@@ -55,6 +55,7 @@ export async function PATCH(
   try {
     const body = await request.json();
     const updates = updateSchema.parse(body);
+    const prevStatus = body._prevStatus as string | undefined; // optional hint from client
 
     const updateData: Record<string, unknown> = {
       ...updates,
@@ -73,6 +74,17 @@ export async function PATCH(
       .single();
 
     if (error) return NextResponse.json({ error: "Güncelleme hatası" }, { status: 500 });
+
+    // ── Auto-email when ticket is resolved ─────────────────────────────────────
+    if (updates.status === "resolved" && prevStatus !== "resolved") {
+      const t = ticket as Ticket;
+      // Internal ticket → use company_contact_email + company contact name
+      // External ticket → use customer_email + customer_name
+      const contactEmail = t.company_contact_email || t.customer_email;
+      const contactName  = t.customer_name;
+      sendTicketResolvedEmail(t, contactEmail, contactName).catch(console.error);
+    }
+
     return NextResponse.json({ ticket });
   } catch (err) {
     if (err instanceof z.ZodError)

@@ -1,35 +1,56 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   generateSessionToken,
+  generateNamedToken,
   validateSessionToken,
+  validateNamedToken,
+  findStaffByEmail,
+  verifyPassword,
   COOKIE_NAME,
 } from "@/lib/admin-auth";
 
-// POST — login
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  maxAge: 60 * 60 * 48, // 48h
+  path: "/",
+};
+
+// POST — login (email + password  OR  legacy master password)
 export async function POST(request: NextRequest) {
   try {
-    const { password } = await request.json();
+    const body = await request.json();
+    const { email, password } = body as { email?: string; password?: string };
 
-    if (!process.env.ADMIN_PASSWORD) {
-      return NextResponse.json(
-        { error: "Admin şifresi yapılandırılmamış" },
-        { status: 500 }
-      );
+    if (!password) return NextResponse.json({ error: "Şifre gerekli" }, { status: 400 });
+
+    // ── Named staff login ──────────────────────────────────────────────────────
+    if (email && email.trim()) {
+      const staff = await findStaffByEmail(email.trim());
+      if (!staff) {
+        return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
+      }
+      const ok = verifyPassword(password, staff.password_hash);
+      if (!ok) {
+        return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
+      }
+      const token = generateNamedToken(staff.email, staff.role, staff.name);
+      const res = NextResponse.json({ success: true, name: staff.name, role: staff.role });
+      res.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);
+      return res;
     }
 
+    // ── Legacy master password (backward compat) ───────────────────────────────
+    if (!process.env.ADMIN_PASSWORD) {
+      return NextResponse.json({ error: "Lütfen e-posta ile giriş yapın" }, { status: 400 });
+    }
     if (password !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: "Hatalı şifre" }, { status: 401 });
     }
-
     const token = generateSessionToken();
-    const res = NextResponse.json({ success: true });
-    res.cookies.set(COOKIE_NAME, token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 48, // 48 hours
-      path: "/",
-    });
+    const res = NextResponse.json({ success: true, role: "super_admin" });
+    res.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);
     return res;
   } catch {
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
@@ -46,6 +67,10 @@ export async function DELETE() {
 // GET — check session
 export async function GET(request: NextRequest) {
   const token = request.cookies.get(COOKIE_NAME)?.value;
-  const valid = token ? validateSessionToken(token) : false;
-  return NextResponse.json({ authenticated: valid });
+  if (!token) return NextResponse.json({ authenticated: false });
+  const legacy = validateSessionToken(token);
+  if (legacy) return NextResponse.json({ authenticated: true, role: "super_admin" });
+  const named = validateNamedToken(token);
+  if (named) return NextResponse.json({ authenticated: true, role: named.role, name: named.name });
+  return NextResponse.json({ authenticated: false });
 }
