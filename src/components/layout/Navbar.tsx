@@ -599,42 +599,29 @@ export default function Navbar() {
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
 
-            {/* Fortinet Authorized Partner Badge */}
+            {/* Fortinet Partner Badge — resmi logo */}
             <Link
               href={`/${locale}/fortinet`}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-lg transition-all duration-200 hover:scale-105"
-              style={{
-                background: "linear-gradient(135deg, rgba(238,49,36,.12) 0%, rgba(200,16,46,.08) 100%)",
-                border: "1px solid rgba(238,49,36,.35)",
-                textDecoration: "none",
-              }}
-              title="Fortinet Authorized Partner"
+              className="transition-all duration-200 hover:scale-105 hover:opacity-90"
+              style={{ textDecoration: "none", display: "flex", alignItems: "center" }}
+              title="Fortinet Partner"
             >
-              {/* Fortinet "F" shield icon */}
-              <div
-                className="flex items-center justify-center rounded font-black text-white text-xs shrink-0"
-                style={{
-                  width: 22, height: 22,
-                  background: "linear-gradient(135deg, #EE3124, #C8102E)",
-                  fontSize: 11,
-                  boxShadow: "0 2px 6px rgba(238,49,36,.4)",
-                }}
-              >
-                F
-              </div>
-              <div className="flex flex-col leading-none">
-                <span
-                  className="font-black tracking-tight"
-                  style={{ fontSize: 10, color: "#EE3124", fontFamily: "var(--font-family-label)", letterSpacing: ".02em" }}
-                >
-                  FORTINET
-                </span>
-                <span
-                  className="font-semibold"
-                  style={{ fontSize: 9, color: "rgba(238,49,36,.75)", fontFamily: "var(--font-family-label)", letterSpacing: ".04em" }}
-                >
-                  PARTNER
-                </span>
+              <div style={{
+                background: "#fff",
+                borderRadius: "8px",
+                padding: "5px 10px",
+                display: "flex",
+                alignItems: "center",
+                boxShadow: "0 2px 8px rgba(0,0,0,.25)",
+              }}>
+                <Image
+                  src="/fortinet-partner.JPG"
+                  alt="Fortinet Partner"
+                  width={110}
+                  height={36}
+                  quality={100}
+                  style={{ objectFit: "contain", display: "block", height: 32, width: "auto" }}
+                />
               </div>
             </Link>
 
