@@ -15,11 +15,22 @@ function createTransporter() {
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: process.env.SMTP_SECURE === "true",
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      user: process.env.SMTP_USER || process.env.SMTP_DESTEK_USER,
+      pass: process.env.SMTP_PASS || process.env.SMTP_DESTEK_PASS,
     },
   });
 }
+
+const CONTACT_FROM =
+  process.env.SMTP_FROM ||
+  process.env.SMTP_DESTEK_FROM ||
+  process.env.SMTP_USER ||
+  process.env.SMTP_DESTEK_USER;
+
+const CONTACT_TO =
+  process.env.SMTP_TO ||
+  process.env.SMTP_USER ||
+  process.env.SMTP_DESTEK_USER;
 
 export async function sendContactEmail(data: ContactMailData): Promise<void> {
   const transporter = createTransporter();
@@ -105,8 +116,8 @@ export async function sendContactEmail(data: ContactMailData): Promise<void> {
   `.trim();
 
   const mailOptions = {
-    from: `"Lider Network Web" <${process.env.SMTP_FROM || process.env.SMTP_USER}>`,
-    to: process.env.SMTP_TO || process.env.SMTP_USER,
+    from: `"Lider Network Web" <${CONTACT_FROM}>`,
+    to: CONTACT_TO,
     replyTo: data.email,
     subject,
     html: htmlContent,

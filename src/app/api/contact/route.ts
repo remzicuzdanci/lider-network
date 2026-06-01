@@ -25,8 +25,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const data = contactSchema.parse(body);
 
-    // Check if SMTP is configured
-    if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    // Check if SMTP is configured (support either SMTP_USER or SMTP_DESTEK_USER)
+    const smtpUser = process.env.SMTP_USER || process.env.SMTP_DESTEK_USER;
+    const smtpPass = process.env.SMTP_PASS || process.env.SMTP_DESTEK_PASS;
+
+    if (!smtpUser || !smtpPass) {
       console.warn("SMTP credentials not configured. Email not sent.");
       // Return success in dev without SMTP
       if (process.env.NODE_ENV === "development") {
