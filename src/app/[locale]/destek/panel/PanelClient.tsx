@@ -41,7 +41,7 @@ const CAT: Record<string, string> = {
   technical: "Teknik", billing: "Fatura", general: "Genel", feature_request: "Özellik",
 };
 
-type ActivePage = "panel" | "profil";
+type ActivePage = "panel" | "profil" | "sla" | "bildirimler";
 
 export default function PanelClient({
   userId, userEmail, fullName, company,
@@ -115,8 +115,8 @@ export default function PanelClient({
           <SideLink
             icon={<LayoutDashboard size={15} />}
             label="Kontrol Paneli"
-            active={activePage === "panel"}
-            onClick={() => setActivePage("panel")}
+            active={activePage === "panel" && statusFilter === "all"}
+            onClick={() => { setActivePage("panel"); setFilter("all"); }}
           />
           <SideLink
             href={paths.yeni}
@@ -157,7 +157,7 @@ export default function PanelClient({
             badge={counts.total || undefined}
             badgeColor="#64748b"
             onClick={() => { setActivePage("panel"); setFilter("all"); }}
-            active={activePage === "panel" && statusFilter === "all" && activePage === "panel"}
+            active={activePage === "panel" && statusFilter === "all"}
           />
 
           {/* Hesabım */}
@@ -173,12 +173,14 @@ export default function PanelClient({
             label="Bildirimler"
             badge={counts.open > 0 ? counts.open : undefined}
             badgeColor="#ef4444"
-            onClick={() => { setActivePage("panel"); setFilter("open"); }}
+            active={activePage === "bildirimler"}
+            onClick={() => setActivePage("bildirimler")}
           />
           <SideLink
             icon={<ShieldCheck size={15} />}
             label="SLA & Öncelikler"
-            onClick={() => {}}
+            active={activePage === "sla"}
+            onClick={() => setActivePage("sla")}
           />
 
           {/* Hızlı İletişim */}
@@ -231,15 +233,29 @@ export default function PanelClient({
 
         {activePage === "profil" ? (
           <ProfilPage fullName={fullName} userEmail={userEmail} company={company} initials={initials} />
+        ) : activePage === "sla" ? (
+          <SlaPage />
+        ) : activePage === "bildirimler" ? (
+          <BildirimlerPage tickets={tickets} counts={counts} paths={paths} />
         ) : (
           <>
-            {/* Header */}
+            {/* Header — dinamik başlık */}
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px", flexWrap: "wrap", gap: "12px" }}>
               <div>
                 <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 4px" }}>
-                  Hoş geldiniz, {fullName.split(" ")[0]}! 👋
+                  {statusFilter === "open" ? "Açık Talepler" :
+                   statusFilter === "in_progress" ? "İşlemdeki Talepler" :
+                   statusFilter === "resolved" ? "Çözülen Talepler" :
+                   statusFilter === "closed" ? "Kapalı Talepler" :
+                   `Hoş geldiniz, ${fullName.split(" ")[0]}! 👋`}
                 </h1>
-                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Destek taleplerinizi buradan yönetebilir ve takip edebilirsiniz.</p>
+                <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+                  {statusFilter === "open" ? `${counts.open} açık talep — yanıt bekleniyor` :
+                   statusFilter === "in_progress" ? `${counts.in_progress} talep işlemde` :
+                   statusFilter === "resolved" ? `${counts.resolved} talep çözüldü` :
+                   statusFilter === "closed" ? "Kapatılmış talepler" :
+                   "Destek taleplerinizi buradan yönetebilir ve takip edebilirsiniz."}
+                </p>
               </div>
               <Link href={paths.yeni} style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "11px 22px", background: "#0052ff", color: "#fff", borderRadius: "10px", textDecoration: "none", fontWeight: 700, fontSize: "14px", fontFamily: "var(--font-family-headline)", boxShadow: "0 4px 12px rgba(0,82,255,.3)" }}>
                 <Plus size={16} /> Yeni Talep
@@ -382,6 +398,107 @@ export default function PanelClient({
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// ── SLA Sayfası ────────────────────────────────────────────────────────────
+function SlaPage() {
+  const slaData = [
+    { pri: "ACİL",    color: "#dc2626", bg: "#fef2f2", border: "#fecaca", response: "2 saat",     resolve: "8 saat",      desc: "Sistem tamamen çöktü, iş durdu" },
+    { pri: "Yüksek",  color: "#ea580c", bg: "#fff7ed", border: "#fed7aa", response: "4 saat",     resolve: "24 saat",     desc: "Kritik işlevler etkilendi" },
+    { pri: "Orta",    color: "#d97706", bg: "#fffbeb", border: "#fde68a", response: "1 iş günü",  resolve: "3 iş günü",   desc: "Kısmi etki, geçici çözüm mevcut" },
+    { pri: "Düşük",   color: "#64748b", bg: "#f8fafc", border: "#e2e8f0", response: "2 iş günü",  resolve: "5 iş günü",   desc: "Küçük sorun veya bilgi talebi" },
+  ];
+
+  return (
+    <div style={{ maxWidth: "680px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+          SLA & Öncelik Seviyeleri
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+          Talep önceliğine göre garanti edilen yanıt ve çözüm sürelerimiz.
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px" }}>
+        {slaData.map((s) => (
+          <div key={s.pri} style={{ background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: "14px", padding: "20px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "10px" }}>
+              <span style={{ fontSize: "14px", fontWeight: 800, color: s.color, background: "#fff", border: `1px solid ${s.border}`, borderRadius: "20px", padding: "3px 14px" }}>{s.pri}</span>
+              <span style={{ fontSize: "12px", color: "#6b7280" }}>{s.desc}</span>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
+              <div style={{ background: "#fff", borderRadius: "8px", padding: "12px 16px", border: `1px solid ${s.border}` }}>
+                <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "4px" }}>İlk Yanıt</div>
+                <div style={{ fontSize: "20px", fontWeight: 900, color: s.color }}>{s.response}</div>
+              </div>
+              <div style={{ background: "#fff", borderRadius: "8px", padding: "12px 16px", border: `1px solid ${s.border}` }}>
+                <div style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: "0.8px", marginBottom: "4px" }}>Çözüm Süresi</div>
+                <div style={{ fontSize: "20px", fontWeight: 900, color: s.color }}>{s.resolve}</div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "12px", padding: "16px 20px" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: 700, color: "#1d4ed8" }}>📌 Önemli Notlar</p>
+        <ul style={{ margin: "8px 0 0", paddingLeft: "18px", color: "#3b82f6", fontSize: "13px", lineHeight: 1.7 }}>
+          <li>Süreler mesai saatleri içinde geçerlidir (Pzt–Cum 09:00–18:00).</li>
+          <li>Acil talepler 7/24 izlenmektedir.</li>
+          <li>SLA ihlali durumunda <a href="mailto:destek@lidernetwork.com.tr" style={{ color: "#0052ff" }}>destek@lidernetwork.com.tr</a> adresine yazın.</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// ── Bildirimler Sayfası ────────────────────────────────────────────────────
+function BildirimlerPage({ tickets, counts, paths }: { tickets: Ticket[]; counts: { open: number; in_progress: number }; paths: ReturnType<typeof useDestekPaths> }) {
+  const openTickets = tickets.filter((t) => t.status === "open");
+  const inProgress  = tickets.filter((t) => t.status === "in_progress");
+
+  return (
+    <div style={{ maxWidth: "680px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+          Bildirimler
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Dikkat gerektiren talepleriniz.</p>
+      </div>
+
+      {counts.open === 0 && counts.in_progress === 0 ? (
+        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", padding: "32px", textAlign: "center" }}>
+          <div style={{ fontSize: "36px", marginBottom: "8px" }}>✅</div>
+          <p style={{ fontWeight: 700, color: "#15803d", margin: "0 0 4px" }}>Tüm talepler güncel</p>
+          <p style={{ fontSize: "13px", color: "#16a34a", margin: 0 }}>Bekleyen bildiriminiz bulunmuyor.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {openTickets.map((t) => (
+            <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #bfdbfe", borderRadius: "12px", textDecoration: "none" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", flexShrink: 0, marginTop: 6 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · Yanıt bekleniyor</p>
+              </div>
+              <span style={{ flexShrink: 0, background: "#eff6ff", color: "#1d4ed8", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>Açık</span>
+            </Link>
+          ))}
+          {inProgress.map((t) => (
+            <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #ddd6fe", borderRadius: "12px", textDecoration: "none" }}>
+              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#8b5cf6", flexShrink: 0, marginTop: 6 }} />
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · İşlemde</p>
+              </div>
+              <span style={{ flexShrink: 0, background: "#f5f3ff", color: "#7c3aed", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>İşlemde</span>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
