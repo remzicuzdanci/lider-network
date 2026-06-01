@@ -496,8 +496,10 @@ export async function sendTicketResolvedEmail(
     <p style="font-size:16px;color:#1e293b;margin:0 0 6px">Sayın <strong>${esc(name)}</strong>,</p>
     <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.7">
       Lider Network teknik ekibi olarak bildirmek isteriz ki
-      <strong style="color:#1e293b">${formatTicketNo(ticket.ticket_number)}</strong> numaralı destek talebiniz
-      başarıyla sonuçlandırılmıştır.
+      <strong style="color:#1e293b">${formatTicketNo(ticket.ticket_number)}</strong> numaralı,
+      <strong style="color:#1e293b">&ldquo;${esc(ticket.subject)}&rdquo;</strong> konulu destek talebiniz
+      teknik uzmanlarımız tarafından incelenmiş ve başarıyla çözüme kavuşturulmuştur.
+      Yaşanan sorununun giderilmesi için gerekli teknik müdahaleler tamamlanmıştır.
     </p>
 
     <!-- Çözüldü Bandı -->
@@ -533,6 +535,25 @@ export async function sendTicketResolvedEmail(
         </td>
       </tr>
     </table>
+
+    ${(() => {
+      // Yapılandırılmış description satırlarını parse et
+      if (!ticket.description) return "";
+      const rows = ticket.description.split("\n")
+        .filter((l: string) => l.startsWith("📋") || l.startsWith("👤") || l.startsWith("👥") || l.startsWith("🔧") || l.startsWith("🕐"))
+        .map((l: string) => {
+          const [label, ...rest] = l.split(": ");
+          return `<tr>
+            <td style="padding:7px 12px;font-size:12px;color:#6b7280;border-bottom:1px solid #f0f2f8;width:40%">${esc(label)}</td>
+            <td style="padding:7px 12px;font-size:13px;color:#1e293b;font-weight:600;border-bottom:1px solid #f0f2f8">${esc(rest.join(": "))}</td>
+          </tr>`;
+        });
+      if (!rows.length) return "";
+      return `${sectionTitle("Destek Detayları")}
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:16px">
+        ${rows.join("")}
+      </table>`;
+    })()}
 
     <!-- Bilgi Notu -->
     <div style="background:#f8faff;border:1px solid #c7d7ff;border-left:4px solid #0052ff;border-radius:0 10px 10px 0;padding:16px 20px;margin-top:20px;margin-bottom:8px">

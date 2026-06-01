@@ -144,18 +144,24 @@ export default function AdminDashboard() {
   const [staffSetupDone, setStaffSetupDone] = useState(false);
 
   // Internal ticket modal
-  const [newTicketModal, setNewTicketModal] = useState(false);
-  const [ntCompanyId, setNtCompanyId]       = useState("");
-  const [ntCategory, setNtCategory]         = useState("internet_ag");
-  const [ntIssueType, setNtIssueType]       = useState("");
+  const [newTicketModal, setNewTicketModal]   = useState(false);
+  const [ntCompanyId, setNtCompanyId]         = useState("");
+  const [ntCategory, setNtCategory]           = useState("internet_ag");
+  const [ntIssueType, setNtIssueType]         = useState("");
   const [ntCustomSubject, setNtCustomSubject] = useState("");
-  const [ntPriority, setNtPriority]         = useState("medium");
-  const [ntStartedAt, setNtStartedAt]       = useState("");
-  const [ntAffected, setNtAffected]         = useState("1");
-  const [ntSupportType, setNtSupportType]   = useState("remote");
-  const [ntNotes, setNtNotes]               = useState("");
-  const [ntSaving, setNtSaving]             = useState(false);
-  const [ntError, setNtError]               = useState("");
+  const [ntPriority, setNtPriority]           = useState("medium");
+  const [ntStartedAt, setNtStartedAt]         = useState("");
+  const [ntAffected, setNtAffected]           = useState("1_kisi");
+  const [ntAffectedName, setNtAffectedName]   = useState("");
+  const [ntSupportType, setNtSupportType]     = useState("remote");
+  const [ntNotes, setNtNotes]                 = useState("");
+  const [ntSaving, setNtSaving]               = useState(false);
+  const [ntError, setNtError]                 = useState("");
+
+  // Reports extra filters
+  const [rptCompanyId, setRptCompanyId] = useState("all");
+  const [rptSource, setRptSource]       = useState("all");
+  const [rptStaff, setRptStaff]         = useState("all");
 
   // Reports
   const now = new Date();
@@ -234,14 +240,82 @@ export default function AdminDashboard() {
   }
 
   // ── Internal ticket ────────────────────────────────────────────────────────
-  const NT_ISSUES: Record<string, { label: string; items: string[] }> = {
-    internet_ag:  { label: "İnternet & Ağ", items: ["İnternet bağlantısı yok / çalışmıyor","İnternet yavaş / kesintili","Wi-Fi bağlantı sorunu","VPN bağlantı sorunu","Ağ cihazı arızası (switch / router)","Diğer ağ sorunu"] },
-    donanim:      { label: "Donanım & Cihaz", items: ["Bilgisayar açılmıyor","Bilgisayar çok yavaş / donuyor","Ekran / monitör sorunu","Yazıcı çalışmıyor","Tarayıcı (scanner) sorunu","UPS / güç kaynağı arızası","Diğer donanım sorunu"] },
-    yazilim:      { label: "Yazılım & Program", items: ["Program açılmıyor / hata veriyor","Windows / işletim sistemi sorunu","Office / Microsoft 365 sorunu","Muhasebe yazılımı sorunu","ERP / kurumsal uygulama sorunu","Antivirüs / güvenlik yazılımı sorunu","Diğer yazılım sorunu"] },
-    eposta:       { label: "E-posta & İletişim", items: ["E-posta gönderilmiyor","E-posta gelmiyor","Outlook kurulum / ayar sorunu","Spam / şüpheli e-posta","Diğer e-posta sorunu"] },
-    sunucu:       { label: "Sunucu & Sistem", items: ["Sunucuya erişilemiyor","Dosya paylaşımı sorunu","Yedekleme hatası / veri kaybı","Diğer sunucu sorunu"] },
-    guvenlik:     { label: "Güvenlik", items: ["Virüs / fidye yazılımı şüphesi","Şifre sıfırlama / erişim sorunu","Yetkisiz erişim şüphesi","Diğer güvenlik sorunu"] },
-    diger:        { label: "Diğer", items: ["Genel teknik destek","Diğer (aşağıya açıklayın)"] },
+  const NT_ISSUES: Record<string, { label: string; emoji: string; items: string[] }> = {
+    internet_ag: { label: "İnternet & Ağ", emoji: "🌐", items: [
+      "İnternet bağlantısı tamamen yok",
+      "İnternet bağlantısı yavaş / kesintili",
+      "Wi-Fi ağına bağlanamıyor",
+      "Wi-Fi şifre / erişim sorunu",
+      "VPN bağlantısı kurulamıyor",
+      "VPN bağlantısı düşüyor",
+      "Ağ cihazı arızası (switch / router)",
+      "Yerel ağ (LAN) erişim sorunu",
+      "IP / DNS yapılandırma sorunu",
+      "Diğer ağ sorunu",
+    ]},
+    donanim: { label: "Donanım & Cihaz", emoji: "🖥️", items: [
+      "Bilgisayar açılmıyor / başlamıyor",
+      "Bilgisayar çok yavaş / donuyor / kasıyor",
+      "Bilgisayar beklenmedik şekilde kapanıyor",
+      "Ekran / monitör görüntü vermiyor",
+      "Klavye veya fare çalışmıyor",
+      "Yazıcı bağlanamıyor / yazdırmıyor",
+      "Yazıcı kağıt sıkışması / mekanik arıza",
+      "Tarayıcı (scanner) çalışmıyor",
+      "UPS / güç kaynağı arızası",
+      "Harici disk / USB cihaz tanınmıyor",
+      "Diğer donanım sorunu",
+    ]},
+    yazilim: { label: "Yazılım & Program", emoji: "💻", items: [
+      "Program açılmıyor veya hata veriyor",
+      "Program yavaş çalışıyor / donuyor",
+      "Windows / işletim sistemi sorunu",
+      "Windows güncelleme hatası",
+      "Microsoft Office açılmıyor / hata",
+      "Microsoft 365 lisans / aktivasyon sorunu",
+      "Muhasebe yazılımı sorunu (ETA / Logo / Zirve)",
+      "ERP / kurumsal uygulama sorunu",
+      "Antivirüs / güvenlik yazılımı sorunu",
+      "Sürücü / driver güncelleme",
+      "Yeni program kurulumu",
+      "Diğer yazılım sorunu",
+    ]},
+    eposta: { label: "E-posta & İletişim", emoji: "📧", items: [
+      "E-posta gönderilemiyor",
+      "E-posta gelmiyor / alınamıyor",
+      "Outlook açılmıyor veya hata veriyor",
+      "Outlook hesap / profil kurulumu",
+      "E-posta şifresi sıfırlama",
+      "Şüpheli / spam e-posta sorunu",
+      "Toplantı / takvim senkronizasyonu",
+      "İmza / otomatik yanıt ayarı",
+      "Diğer e-posta sorunu",
+    ]},
+    sunucu: { label: "Sunucu & Sistem", emoji: "🗄️", items: [
+      "Sunucuya erişilemiyor",
+      "Paylaşımlı klasöre / ağ sürücüsüne erişilemiyor",
+      "Yedekleme hatası / yedek alınamıyor",
+      "Veri kaybı / kurtarma talebi",
+      "Uzak masaüstü (RDP) bağlantı sorunu",
+      "Sunucu performans sorunu",
+      "Disk doluluk uyarısı",
+      "Diğer sunucu sorunu",
+    ]},
+    guvenlik: { label: "Güvenlik", emoji: "🔒", items: [
+      "Virüs / fidye yazılımı (ransomware) şüphesi",
+      "Yetkisiz erişim / hesap ele geçirme şüphesi",
+      "Şüpheli e-posta / phishing girişimi",
+      "Şifre sıfırlama / erişim yetkilendirme",
+      "Kullanıcı hesabı kilitleme / açma",
+      "Yetki / izin tanımlama sorunu",
+      "Diğer güvenlik sorunu",
+    ]},
+    diger: { label: "Diğer", emoji: "🔧", items: [
+      "Genel teknik destek ve bakım",
+      "Yazıcı / cihaz sarf malzeme talebi",
+      "Teknik danışmanlık",
+      "Diğer (aşağıya açıklayın)",
+    ]},
   };
   const NT_CAT_MAP: Record<string, string> = {
     internet_ag: "technical", donanim: "technical", yazilim: "technical",
@@ -252,7 +326,7 @@ export default function AdminDashboard() {
     donanim: "medium", yazilim: "medium", eposta: "medium", diger: "low",
   };
   const NT_AFFECTED_LABELS: Record<string, string> = {
-    "1": "1 kişi", "2-5": "2–5 kişi", "6-10": "6–10 kişi", "tum_ofis": "Tüm ofis",
+    "1_kisi": "1 kişi", "2-5": "2–5 kişi", "6-10": "6–10 kişi", "tum_ofis": "Tüm ofis",
   };
 
   async function createInternalTicket() {
@@ -261,13 +335,19 @@ export default function AdminDashboard() {
     if (!finalSubject) { setNtError("Lütfen sorun türünü seçin veya yazın."); return; }
     setNtSaving(true); setNtError("");
 
-    // Yapılandırılmış açıklama oluştur
+    const supportLabel = ntSupportType === "remote" ? "Uzaktan" : "Yerinde";
+    const affectedLabel = NT_AFFECTED_LABELS[ntAffected] || ntAffected;
+    const catLabel = NT_ISSUES[ntCategory]?.label || "Teknik";
+
+    // Yapılandırılmış açıklama — mailde de kullanılır
     const lines: string[] = [];
-    lines.push(`📋 Sorun: ${finalSubject}`);
-    lines.push(`👥 Etkilenen: ${NT_AFFECTED_LABELS[ntAffected] || ntAffected}`);
-    lines.push(`🔧 Destek türü: ${ntSupportType === "remote" ? "Uzaktan" : "Yerinde"}`);
-    if (ntStartedAt) lines.push(`🕐 Sorun başlangıcı: ${new Date(ntStartedAt).toLocaleString("tr-TR")}`);
-    if (ntNotes.trim()) { lines.push(""); lines.push("📝 Ek notlar:"); lines.push(ntNotes.trim()); }
+    lines.push(`📋 Sorun Kategorisi: ${catLabel}`);
+    lines.push(`📌 Sorun Türü: ${finalSubject}`);
+    if (ntAffectedName.trim()) lines.push(`👤 Etkilenen Kullanıcı: ${ntAffectedName.trim()}`);
+    lines.push(`👥 Etkilenen Kişi Sayısı: ${affectedLabel}`);
+    lines.push(`🔧 Destek Türü: ${supportLabel}`);
+    if (ntStartedAt) lines.push(`🕐 Sorun Başlangıcı: ${new Date(ntStartedAt).toLocaleString("tr-TR")}`);
+    if (ntNotes.trim()) { lines.push(""); lines.push("📝 Ek Notlar:"); lines.push(ntNotes.trim()); }
     const description = lines.join("\n");
 
     const r = await fetch("/api/admin/internal-ticket", {
@@ -285,7 +365,7 @@ export default function AdminDashboard() {
       setNewTicketModal(false);
       setNtCompanyId(""); setNtCategory("internet_ag"); setNtIssueType("");
       setNtCustomSubject(""); setNtPriority("medium"); setNtStartedAt("");
-      setNtAffected("1"); setNtSupportType("remote"); setNtNotes("");
+      setNtAffected("1_kisi"); setNtAffectedName(""); setNtSupportType("remote"); setNtNotes("");
       fetchTickets(); fetchStats();
       router.push(`/admin/destek/${json.ticket_id}`);
     } else {
@@ -308,6 +388,9 @@ export default function AdminDashboard() {
   const rptTickets = useMemo(() => {
     let list = allTickets;
     if (rptCustomer !== "all") list = list.filter((t) => t.customer_email === rptCustomer);
+    if (rptCompanyId !== "all") list = list.filter((t) => t.company_id === rptCompanyId);
+    if (rptSource !== "all") list = list.filter((t) => (t.ticket_source || "external") === rptSource);
+    if (rptStaff !== "all") list = list.filter((t) => t.assigned_to === rptStaff || t.created_by_staff === rptStaff);
     if (rptDateMode === "preset") {
       const cutoff = new Date();
       if (rptPreset === "today")   { cutoff.setHours(0,0,0,0); list = list.filter((t) => new Date(t.created_at) >= cutoff); }
@@ -323,7 +406,7 @@ export default function AdminDashboard() {
       list = list.filter((t) => { const d=new Date(t.created_at); return d>=from && d<=to; });
     }
     return list;
-  }, [allTickets,rptCustomer,rptDateMode,rptPreset,rptMonth,rptYear,rptFrom,rptTo]);
+  }, [allTickets,rptCustomer,rptCompanyId,rptSource,rptStaff,rptDateMode,rptPreset,rptMonth,rptYear,rptFrom,rptTo]);
 
   const rptCatCounts = ["technical","billing","general","feature_request"].map((cat) => ({ cat, label: CAT_LABEL[cat], count: rptTickets.filter((t) => t.category===cat).length }));
   const rptMaxCat = Math.max(...rptCatCounts.map(c=>c.count),1);
@@ -342,6 +425,17 @@ export default function AdminDashboard() {
   }, [rptTickets,rptDateMode,rptMonth,rptYear]);
   const rptMaxDay = Math.max(...rptDays.map(d=>d.count),1);
   const uniqueCustomers = useMemo(() => { const map=new Map<string,string>(); allTickets.forEach(t=>{if(!map.has(t.customer_email))map.set(t.customer_email,`${t.customer_name}${t.company ? ` — ${t.company}` : ""}`)}); return Array.from(map.entries()); }, [allTickets]);
+  const uniqueStaff = useMemo(() => { const s=new Set<string>(); allTickets.forEach(t=>{ if(t.created_by_staff) s.add(t.created_by_staff); if(t.assigned_to) s.add(t.assigned_to); }); return Array.from(s); }, [allTickets]);
+  const rptCompanyCounts = useMemo(() => {
+    const map = new Map<string, { name: string; total: number; resolved: number }>();
+    rptTickets.filter(t => t.company_id && t.ticket_source === "internal").forEach(t => {
+      const co = companies.find(c => c.id === t.company_id);
+      const name = co?.name || t.company || "—";
+      const prev = map.get(t.company_id!) || { name, total: 0, resolved: 0 };
+      map.set(t.company_id!, { name, total: prev.total + 1, resolved: prev.resolved + (t.status === "resolved" || t.status === "closed" ? 1 : 0) });
+    });
+    return Array.from(map.values()).sort((a,b) => b.total - a.total);
+  }, [rptTickets, companies]);
   const rptResolved = rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length;
   const rptTotal = rptTickets.length;
   const pending = customers.filter(c=>!c.approved).length;
@@ -728,14 +822,40 @@ export default function AdminDashboard() {
                 <BarChart2 size={16} color="#0052ff" />
                 <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>Rapor Filtreleri</h3>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", alignItems: "start" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "16px", alignItems: "start", marginBottom: "16px" }}>
                 <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>Müşteri</label>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>🏢 Şirket (İç Talep)</label>
+                  <select value={rptCompanyId} onChange={e=>setRptCompanyId(e.target.value)} style={inpS}>
+                    <option value="all">Tüm Şirketler</option>
+                    {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>📋 Talep Kaynağı</label>
+                  <select value={rptSource} onChange={e=>setRptSource(e.target.value)} style={inpS}>
+                    <option value="all">Tümü</option>
+                    <option value="internal">🏢 İç Talep (Sözleşmeli)</option>
+                    <option value="external">👥 Dış Talep (Self-servis)</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>👤 Personel</label>
+                  <select value={rptStaff} onChange={e=>setRptStaff(e.target.value)} style={inpS}>
+                    <option value="all">Tüm Personel</option>
+                    {uniqueStaff.map(s => <option key={s} value={s}>{s.split("@")[0].replace("."," ").replace(/\b\w/g,c=>c.toUpperCase())}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>👤 Müşteri (Dış)</label>
                   <select value={rptCustomer} onChange={e=>setRptCustomer(e.target.value)} style={inpS}>
                     <option value="all">Tüm Müşteriler</option>
                     {uniqueCustomers.map(([email,label]) => <option key={email} value={email}>{label}</option>)}
                   </select>
                 </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "20px", alignItems: "start" }}>
+                <div style={{ gridColumn: "1 / -1", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px" }}>
+                <div>
                 <div>
                   <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>Tarih</label>
                   <div style={{ display: "flex", gap: "4px", marginBottom: "10px" }}>
@@ -764,6 +884,7 @@ export default function AdminDashboard() {
                     </div>
                   )}
                 </div>
+                </div>
                 <div>
                   <label style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "8px" }}>Dönem Özeti</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px" }}>
@@ -780,8 +901,51 @@ export default function AdminDashboard() {
                     ))}
                   </div>
                 </div>
+                </div>
               </div>
             </div>
+
+            {/* Şirket bazında kırılım */}
+            {rptCompanyCounts.length > 0 && (
+              <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 24px", marginBottom: "14px" }}>
+                <h4 style={{ margin: "0 0 14px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "6px" }}>
+                  🏢 Şirket Bazında İç Talep Kırılımı
+                </h4>
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "2px solid #e5e7ef" }}>
+                        {["Şirket", "Toplam", "Çözülen", "Açık", "Çözüm %"].map(h => (
+                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rptCompanyCounts.map((c, i) => {
+                        const open = c.total - c.resolved;
+                        const pct = c.total ? Math.round((c.resolved / c.total) * 100) : 0;
+                        return (
+                          <tr key={i} style={{ borderBottom: "1px solid #f0f2f8" }}>
+                            <td style={{ padding: "10px 12px", fontWeight: 600, color: "#1a1d2e" }}>{c.name}</td>
+                            <td style={{ padding: "10px 12px", fontWeight: 800, color: "#0052ff" }}>{c.total}</td>
+                            <td style={{ padding: "10px 12px", color: "#15803d", fontWeight: 700 }}>{c.resolved}</td>
+                            <td style={{ padding: "10px 12px", color: open > 0 ? "#d97706" : "#9ca3af", fontWeight: 700 }}>{open}</td>
+                            <td style={{ padding: "10px 12px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                <div style={{ flex: 1, height: "6px", background: "#f0f2f8", borderRadius: "3px", overflow: "hidden", minWidth: 60 }}>
+                                  <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444", borderRadius: "3px" }} />
+                                </div>
+                                <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a1d2e", minWidth: 32 }}>%{pct}</span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "14px", marginBottom: "14px" }}>
               <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 22px" }}>
@@ -886,7 +1050,7 @@ export default function AdminDashboard() {
                   {Object.entries(NT_ISSUES).map(([key, cat]) => (
                     <button key={key} onClick={() => { setNtCategory(key); setNtIssueType(""); setNtPriority(NT_PRI_SUGGEST[key] || "medium"); }}
                       style={{ padding: "6px 14px", borderRadius: "20px", border: `1.5px solid ${ntCategory === key ? "#0052ff" : "#e5e7ef"}`, background: ntCategory === key ? "#eff6ff" : "#fff", color: ntCategory === key ? "#0052ff" : "#6b7280", fontSize: "12px", fontWeight: ntCategory === key ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap" }}>
-                      {cat.label}
+                      {cat.emoji} {cat.label}
                     </button>
                   ))}
                 </div>
@@ -934,21 +1098,27 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Etkilenen kullanıcı + Sorun saati */}
+              {/* Etkilenen kullanıcı adı */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                 <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>👥 Etkilenen Kişi</label>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>👤 Etkilenen Kullanıcı Ad Soyad</label>
+                  <input value={ntAffectedName} onChange={e => setNtAffectedName(e.target.value)} placeholder="Ahmet Yılmaz" style={inpS} />
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>👥 Etkilenen Kişi Sayısı</label>
                   <select value={ntAffected} onChange={e => setNtAffected(e.target.value)} style={inpS}>
-                    <option value="1">1 kişi</option>
+                    <option value="1_kisi">1 kişi</option>
                     <option value="2-5">2–5 kişi</option>
                     <option value="6-10">6–10 kişi</option>
                     <option value="tum_ofis">Tüm ofis</option>
                   </select>
                 </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🕐 Sorun Başlangıcı</label>
-                  <input type="datetime-local" value={ntStartedAt} onChange={e => setNtStartedAt(e.target.value)} style={inpS} />
-                </div>
+              </div>
+
+              {/* Sorun saati */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🕐 Sorun Başlangıç Saati <span style={{ fontWeight: 400, color: "#9ca3af", textTransform: "none" }}>(opsiyonel)</span></label>
+                <input type="datetime-local" value={ntStartedAt} onChange={e => setNtStartedAt(e.target.value)} style={inpS} />
               </div>
 
               {/* Ek Notlar (opsiyonel) */}
