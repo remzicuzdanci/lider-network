@@ -35,8 +35,23 @@ export async function middleware(request: NextRequest) {
     return NextResponse.rewrite(new URL(destekPath, request.url));
   }
 
-  // ── Admin routes: skip intl ────────────────────────────────────
+  // ── Admin routes: IP kısıtlaması + gizli URL ──────────────────
   if (pathname.startsWith("/admin")) {
+    // İzin verilen IP'ler — Vercel'de ALLOWED_ADMIN_IPS env değişkenine
+    // virgülle ayrılmış IP listesi yaz: "1.2.3.4,5.6.7.8"
+    // Boş bırakılırsa kısıtlama uygulanmaz (geliştirme ortamı için)
+    const allowedIPs = process.env.ALLOWED_ADMIN_IPS;
+    if (allowedIPs && allowedIPs.trim()) {
+      const allowed = allowedIPs.split(",").map(ip => ip.trim()).filter(Boolean);
+      const clientIP =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "";
+      if (!allowed.includes(clientIP)) {
+        // IP listede yok → 404 döndür (admin paneli varmış gibi görünmesin)
+        return new NextResponse(null, { status: 404 });
+      }
+    }
     return NextResponse.next();
   }
 

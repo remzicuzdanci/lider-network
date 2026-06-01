@@ -96,19 +96,19 @@ export default function LoginForm() {
         {/* İçerik */}
         <div style={{ position: "relative", textAlign: "center", color: "#fff" }}>
           <div style={{
-            background: "rgba(255,255,255,.15)",
-            borderRadius: "20px",
-            padding: "16px 24px",
+            background: "#ffffff",
+            borderRadius: "16px",
+            padding: "14px 28px",
             marginBottom: "32px",
             display: "inline-block",
-            backdropFilter: "blur(8px)",
+            boxShadow: "0 4px 24px rgba(0,0,0,.18)",
           }}>
             <Image
               src="/logo.png"
               alt="Lider Network"
               width={160}
               height={48}
-              style={{ objectFit: "contain", filter: "brightness(0) invert(1)" }}
+              style={{ objectFit: "contain", display: "block" }}
             />
           </div>
 
