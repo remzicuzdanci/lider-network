@@ -599,29 +599,50 @@ export default function Navbar() {
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
 
-            {/* Fortinet Partner Badge — resmi logo */}
+            {/* Fortinet Partner Badge */}
             <Link
               href={`/${locale}/fortinet`}
-              className="transition-all duration-200 hover:scale-105 hover:opacity-90"
+              className="transition-all duration-200 hover:scale-105"
               style={{ textDecoration: "none", display: "flex", alignItems: "center" }}
               title="Fortinet Partner"
             >
               <div style={{
                 background: "#fff",
-                borderRadius: "8px",
-                padding: "5px 10px",
+                borderRadius: "9px",
+                padding: "6px 14px 7px",
                 display: "flex",
+                flexDirection: "column",
                 alignItems: "center",
-                boxShadow: "0 2px 8px rgba(0,0,0,.25)",
+                justifyContent: "center",
+                boxShadow: "0 2px 10px rgba(0,0,0,.28)",
+                lineHeight: 1,
+                gap: "3px",
+                minWidth: "108px",
               }}>
-                <Image
-                  src="/fortinet-partner.JPG"
-                  alt="Fortinet Partner"
-                  width={110}
-                  height={36}
-                  quality={100}
-                  style={{ objectFit: "contain", display: "block", height: 32, width: "auto" }}
-                />
+                {/* Fortinet wordmark — bold italic red */}
+                <span style={{
+                  fontSize: "15px",
+                  fontWeight: 900,
+                  fontStyle: "italic",
+                  color: "#EE3124",
+                  fontFamily: "'Arial Black', 'Arial Bold', Gadget, sans-serif",
+                  letterSpacing: "-0.3px",
+                  display: "block",
+                  lineHeight: 1,
+                }}>FORTINET</span>
+                {/* Thin red rule */}
+                <span style={{ display: "block", width: "100%", height: "1.5px", background: "#EE3124", borderRadius: "1px" }} />
+                {/* PARTNER label */}
+                <span style={{
+                  fontSize: "8.5px",
+                  fontWeight: 700,
+                  color: "#444",
+                  fontFamily: "var(--font-family-label)",
+                  letterSpacing: "3px",
+                  display: "block",
+                  lineHeight: 1,
+                  textTransform: "uppercase",
+                }}>PARTNER</span>
               </div>
             </Link>
 
