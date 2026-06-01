@@ -131,29 +131,11 @@ export default function Industries() {
 
                 {/* Desc */}
                 <p
-                  className="text-xs leading-relaxed mb-3"
+                  className="text-xs leading-relaxed"
                   style={{ color: "var(--color-on-surface-variant)" }}
                 >
                   {data.desc}
                 </p>
-
-                {/* Reference chips */}
-                <div className="flex flex-wrap gap-1">
-                  {ind.refs.map((r) => (
-                    <span
-                      key={r}
-                      className="text-[10px] px-1.5 py-0.5 rounded"
-                      style={{
-                        backgroundColor: `${ind.color}12`,
-                        color: ind.color,
-                        border: `1px solid ${ind.color}20`,
-                        fontFamily: "var(--font-family-label)",
-                      }}
-                    >
-                      {r}
-                    </span>
-                  ))}
-                </div>
               </div>
             );
           })}
