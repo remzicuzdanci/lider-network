@@ -609,40 +609,20 @@ export default function Navbar() {
               <div style={{
                 background: "#fff",
                 borderRadius: "9px",
-                padding: "6px 14px 7px",
+                padding: "6px 12px",
                 display: "flex",
-                flexDirection: "column",
                 alignItems: "center",
-                justifyContent: "center",
                 boxShadow: "0 2px 10px rgba(0,0,0,.28)",
-                lineHeight: 1,
-                gap: "3px",
-                minWidth: "108px",
               }}>
-                {/* Fortinet wordmark — bold italic red */}
-                <span style={{
-                  fontSize: "15px",
-                  fontWeight: 900,
-                  fontStyle: "italic",
-                  color: "#EE3124",
-                  fontFamily: "'Arial Black', 'Arial Bold', Gadget, sans-serif",
-                  letterSpacing: "-0.3px",
-                  display: "block",
-                  lineHeight: 1,
-                }}>FORTINET</span>
-                {/* Thin red rule */}
-                <span style={{ display: "block", width: "100%", height: "1.5px", background: "#EE3124", borderRadius: "1px" }} />
-                {/* PARTNER label */}
-                <span style={{
-                  fontSize: "8.5px",
-                  fontWeight: 700,
-                  color: "#444",
-                  fontFamily: "var(--font-family-label)",
-                  letterSpacing: "3px",
-                  display: "block",
-                  lineHeight: 1,
-                  textTransform: "uppercase",
-                }}>PARTNER</span>
+                <Image
+                  src="/fortinet-partner.JPG"
+                  alt="Fortinet Partner"
+                  width={130}
+                  height={44}
+                  quality={100}
+                  unoptimized
+                  style={{ objectFit: "contain", display: "block", height: 40, width: "auto" }}
+                />
               </div>
             </Link>
 
