@@ -146,10 +146,14 @@ export default function AdminDashboard() {
   // Internal ticket modal
   const [newTicketModal, setNewTicketModal] = useState(false);
   const [ntCompanyId, setNtCompanyId]       = useState("");
-  const [ntSubject, setNtSubject]           = useState("");
-  const [ntDesc, setNtDesc]                 = useState("");
-  const [ntCategory, setNtCategory]         = useState("technical");
+  const [ntCategory, setNtCategory]         = useState("internet_ag");
+  const [ntIssueType, setNtIssueType]       = useState("");
+  const [ntCustomSubject, setNtCustomSubject] = useState("");
   const [ntPriority, setNtPriority]         = useState("medium");
+  const [ntStartedAt, setNtStartedAt]       = useState("");
+  const [ntAffected, setNtAffected]         = useState("1");
+  const [ntSupportType, setNtSupportType]   = useState("remote");
+  const [ntNotes, setNtNotes]               = useState("");
   const [ntSaving, setNtSaving]             = useState(false);
   const [ntError, setNtError]               = useState("");
 
@@ -230,20 +234,62 @@ export default function AdminDashboard() {
   }
 
   // ── Internal ticket ────────────────────────────────────────────────────────
+  const NT_ISSUES: Record<string, { label: string; items: string[] }> = {
+    internet_ag:  { label: "İnternet & Ağ", items: ["İnternet bağlantısı yok / çalışmıyor","İnternet yavaş / kesintili","Wi-Fi bağlantı sorunu","VPN bağlantı sorunu","Ağ cihazı arızası (switch / router)","Diğer ağ sorunu"] },
+    donanim:      { label: "Donanım & Cihaz", items: ["Bilgisayar açılmıyor","Bilgisayar çok yavaş / donuyor","Ekran / monitör sorunu","Yazıcı çalışmıyor","Tarayıcı (scanner) sorunu","UPS / güç kaynağı arızası","Diğer donanım sorunu"] },
+    yazilim:      { label: "Yazılım & Program", items: ["Program açılmıyor / hata veriyor","Windows / işletim sistemi sorunu","Office / Microsoft 365 sorunu","Muhasebe yazılımı sorunu","ERP / kurumsal uygulama sorunu","Antivirüs / güvenlik yazılımı sorunu","Diğer yazılım sorunu"] },
+    eposta:       { label: "E-posta & İletişim", items: ["E-posta gönderilmiyor","E-posta gelmiyor","Outlook kurulum / ayar sorunu","Spam / şüpheli e-posta","Diğer e-posta sorunu"] },
+    sunucu:       { label: "Sunucu & Sistem", items: ["Sunucuya erişilemiyor","Dosya paylaşımı sorunu","Yedekleme hatası / veri kaybı","Diğer sunucu sorunu"] },
+    guvenlik:     { label: "Güvenlik", items: ["Virüs / fidye yazılımı şüphesi","Şifre sıfırlama / erişim sorunu","Yetkisiz erişim şüphesi","Diğer güvenlik sorunu"] },
+    diger:        { label: "Diğer", items: ["Genel teknik destek","Diğer (aşağıya açıklayın)"] },
+  };
+  const NT_CAT_MAP: Record<string, string> = {
+    internet_ag: "technical", donanim: "technical", yazilim: "technical",
+    eposta: "technical", sunucu: "technical", guvenlik: "technical", diger: "general",
+  };
+  const NT_PRI_SUGGEST: Record<string, string> = {
+    guvenlik: "urgent", sunucu: "high", internet_ag: "high",
+    donanim: "medium", yazilim: "medium", eposta: "medium", diger: "low",
+  };
+  const NT_AFFECTED_LABELS: Record<string, string> = {
+    "1": "1 kişi", "2-5": "2–5 kişi", "6-10": "6–10 kişi", "tum_ofis": "Tüm ofis",
+  };
+
   async function createInternalTicket() {
-    if (!ntCompanyId || !ntSubject || !ntDesc) { setNtError("Şirket, konu ve açıklama zorunlu."); return; }
+    const finalSubject = ntIssueType === "custom" ? ntCustomSubject.trim() : ntIssueType;
+    if (!ntCompanyId) { setNtError("Lütfen bir şirket seçin."); return; }
+    if (!finalSubject) { setNtError("Lütfen sorun türünü seçin veya yazın."); return; }
     setNtSaving(true); setNtError("");
+
+    // Yapılandırılmış açıklama oluştur
+    const lines: string[] = [];
+    lines.push(`📋 Sorun: ${finalSubject}`);
+    lines.push(`👥 Etkilenen: ${NT_AFFECTED_LABELS[ntAffected] || ntAffected}`);
+    lines.push(`🔧 Destek türü: ${ntSupportType === "remote" ? "Uzaktan" : "Yerinde"}`);
+    if (ntStartedAt) lines.push(`🕐 Sorun başlangıcı: ${new Date(ntStartedAt).toLocaleString("tr-TR")}`);
+    if (ntNotes.trim()) { lines.push(""); lines.push("📝 Ek notlar:"); lines.push(ntNotes.trim()); }
+    const description = lines.join("\n");
+
     const r = await fetch("/api/admin/internal-ticket", {
       method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ company_id: ntCompanyId, subject: ntSubject, description: ntDesc, category: ntCategory, priority: ntPriority }),
+      body: JSON.stringify({
+        company_id: ntCompanyId,
+        subject:    finalSubject,
+        description,
+        category:   NT_CAT_MAP[ntCategory] || "technical",
+        priority:   ntPriority,
+      }),
     });
+    const json = await r.json();
     if (r.ok) {
       setNewTicketModal(false);
-      setNtCompanyId(""); setNtSubject(""); setNtDesc(""); setNtCategory("technical"); setNtPriority("medium");
+      setNtCompanyId(""); setNtCategory("internet_ag"); setNtIssueType("");
+      setNtCustomSubject(""); setNtPriority("medium"); setNtStartedAt("");
+      setNtAffected("1"); setNtSupportType("remote"); setNtNotes("");
       fetchTickets(); fetchStats();
-      router.push(`/admin/destek/${(await r.json()).ticket_id}`);
+      router.push(`/admin/destek/${json.ticket_id}`);
     } else {
-      setNtError((await r.json()).error || "Hata oluştu");
+      setNtError(json.error || "Hata oluştu");
     }
     setNtSaving(false);
   }
@@ -803,60 +849,130 @@ export default function AdminDashboard() {
 
       {/* ══════════════════════════ MODAL: Yeni Talep (İç) */}
       {newTicketModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.4)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px" }}
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
           onClick={e => { if (e.target === e.currentTarget) setNewTicketModal(false); }}>
-          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "560px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #e5e7ef" }}>
-              <div>
-                <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: "#1a1d2e" }}>Yeni İç Talep</h2>
-                <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>Sözleşmeli müşteri için talep aç</p>
+          <div style={{ background: "#fff", borderRadius: "18px", width: "100%", maxWidth: "620px", maxHeight: "92vh", display: "flex", flexDirection: "column", boxShadow: "0 24px 72px rgba(0,0,0,.28)" }}>
+
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px 16px", borderBottom: "1px solid #f0f0f5", flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                <div style={{ background: "#eff6ff", borderRadius: "10px", padding: "8px", display: "flex" }}>
+                  <Plus size={18} color="#0052ff" />
+                </div>
+                <div>
+                  <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>Yeni Destek Talebi</h2>
+                  <p style={{ margin: 0, fontSize: "12px", color: "#94a3b8" }}>Sözleşmeli müşteri için talep oluştur</p>
+                </div>
               </div>
-              <button onClick={() => setNewTicketModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={20} /></button>
+              <button onClick={() => setNewTicketModal(false)} style={{ background: "#f4f6fb", border: "none", borderRadius: "8px", cursor: "pointer", padding: "6px", display: "flex", color: "#6b7280" }}><X size={16} /></button>
             </div>
-            <div style={{ padding: "24px" }}>
+
+            {/* Body (scrollable) */}
+            <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+
+              {/* Şirket */}
               <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Şirket *</label>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🏢 Şirket *</label>
                 <select value={ntCompanyId} onChange={e => setNtCompanyId(e.target.value)} style={inpS}>
                   <option value="">— Şirket seçin —</option>
-                  {activeCompanies.map(c => <option key={c.id} value={c.id}>{c.name} ({c.contact_name})</option>)}
+                  {activeCompanies.map(c => <option key={c.id} value={c.id}>{c.name} — {c.contact_name}</option>)}
                 </select>
               </div>
-              <div style={{ marginBottom: "16px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Konu *</label>
-                <input value={ntSubject} onChange={e => setNtSubject(e.target.value)} placeholder="Talep konusu..." style={inpS} />
+
+              {/* Sorun Kategorisi */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "8px" }}>🗂 Sorun Kategorisi *</label>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                  {Object.entries(NT_ISSUES).map(([key, cat]) => (
+                    <button key={key} onClick={() => { setNtCategory(key); setNtIssueType(""); setNtPriority(NT_PRI_SUGGEST[key] || "medium"); }}
+                      style={{ padding: "6px 14px", borderRadius: "20px", border: `1.5px solid ${ntCategory === key ? "#0052ff" : "#e5e7ef"}`, background: ntCategory === key ? "#eff6ff" : "#fff", color: ntCategory === key ? "#0052ff" : "#6b7280", fontSize: "12px", fontWeight: ntCategory === key ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap" }}>
+                      {cat.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "16px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Kategori</label>
-                  <select value={ntCategory} onChange={e => setNtCategory(e.target.value)} style={inpS}>
-                    <option value="technical">Teknik</option>
-                    <option value="billing">Fatura / Lisans</option>
-                    <option value="general">Genel</option>
-                    <option value="feature_request">Özellik İsteği</option>
+
+              {/* Sorun Türü */}
+              {ntCategory && (
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>⚠️ Sorun Türü *</label>
+                  <select value={ntIssueType} onChange={e => setNtIssueType(e.target.value)} style={{ ...inpS, background: ntIssueType ? "#f0f5ff" : "#fff" }}>
+                    <option value="">— Seçin —</option>
+                    {NT_ISSUES[ntCategory]?.items.map(item => (
+                      <option key={item} value={item}>{item}</option>
+                    ))}
+                    <option value="custom">✏️ Diğer — manuel gir</option>
                   </select>
                 </div>
+              )}
+
+              {/* Özel konu girişi */}
+              {ntIssueType === "custom" && (
+                <div style={{ marginBottom: "12px" }}>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>Konu (Manuel)</label>
+                  <input value={ntCustomSubject} onChange={e => setNtCustomSubject(e.target.value)} placeholder="Sorun başlığını yazın..." style={inpS} />
+                </div>
+              )}
+
+              {/* Öncelik + Destek Türü */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
                 <div>
-                  <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Öncelik</label>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🚦 Öncelik</label>
                   <select value={ntPriority} onChange={e => setNtPriority(e.target.value)} style={inpS}>
-                    <option value="low">Düşük</option>
-                    <option value="medium">Orta</option>
-                    <option value="high">Yüksek</option>
-                    <option value="urgent">ACİL</option>
+                    <option value="low">🟢 Düşük</option>
+                    <option value="medium">🟡 Orta</option>
+                    <option value="high">🟠 Yüksek</option>
+                    <option value="urgent">🔴 ACİL</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🔧 Destek Türü</label>
+                  <select value={ntSupportType} onChange={e => setNtSupportType(e.target.value)} style={inpS}>
+                    <option value="remote">💻 Uzaktan</option>
+                    <option value="onsite">🏢 Yerinde</option>
                   </select>
                 </div>
               </div>
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Açıklama *</label>
-                <textarea value={ntDesc} onChange={e => setNtDesc(e.target.value)} rows={5} placeholder="Sorunun detaylı açıklaması..." style={{ ...inpS, resize: "vertical", lineHeight: 1.6 }} />
+
+              {/* Etkilenen kullanıcı + Sorun saati */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>👥 Etkilenen Kişi</label>
+                  <select value={ntAffected} onChange={e => setNtAffected(e.target.value)} style={inpS}>
+                    <option value="1">1 kişi</option>
+                    <option value="2-5">2–5 kişi</option>
+                    <option value="6-10">6–10 kişi</option>
+                    <option value="tum_ofis">Tüm ofis</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🕐 Sorun Başlangıcı</label>
+                  <input type="datetime-local" value={ntStartedAt} onChange={e => setNtStartedAt(e.target.value)} style={inpS} />
+                </div>
               </div>
-              {ntError && <p style={{ color: "#dc2626", fontSize: "13px", marginBottom: "12px" }}>⚠ {ntError}</p>}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={createInternalTicket} disabled={ntSaving}
-                  style={{ flex: 1, padding: "12px", background: ntSaving ? "#e5e7ef" : "#0052ff", color: ntSaving ? "#9ca3af" : "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: ntSaving ? "not-allowed" : "pointer" }}>
-                  {ntSaving ? "Oluşturuluyor..." : "Talep Oluştur →"}
-                </button>
-                <button onClick={() => setNewTicketModal(false)} style={{ padding: "12px 20px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
+
+              {/* Ek Notlar (opsiyonel) */}
+              <div style={{ marginBottom: "4px" }}>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>
+                  📝 Ek Notlar <span style={{ fontWeight: 400, color: "#9ca3af", textTransform: "none", letterSpacing: 0 }}>(opsiyonel)</span>
+                </label>
+                <textarea value={ntNotes} onChange={e => setNtNotes(e.target.value)} rows={3} placeholder="Varsa ek detay, geçmiş bilgi veya özel durum..." style={{ ...inpS, resize: "vertical", lineHeight: 1.6 }} />
               </div>
+
+              {ntError && (
+                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", marginTop: "12px" }}>
+                  <p style={{ color: "#dc2626", fontSize: "13px", margin: 0, fontWeight: 500 }}>⚠️ {ntError}</p>
+                </div>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div style={{ padding: "16px 24px", borderTop: "1px solid #f0f0f5", display: "flex", gap: "10px", flexShrink: 0 }}>
+              <button onClick={createInternalTicket} disabled={ntSaving || !ntCompanyId || (!ntIssueType)}
+                style={{ flex: 1, padding: "12px", background: ntSaving || !ntCompanyId || !ntIssueType ? "#e5e7ef" : "#0052ff", color: ntSaving || !ntCompanyId || !ntIssueType ? "#9ca3af" : "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: ntSaving || !ntCompanyId || !ntIssueType ? "not-allowed" : "pointer", transition: "background .15s" }}>
+                {ntSaving ? "Oluşturuluyor..." : "Talep Oluştur →"}
+              </button>
+              <button onClick={() => setNewTicketModal(false)} style={{ padding: "12px 20px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
             </div>
           </div>
         </div>

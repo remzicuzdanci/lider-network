@@ -478,52 +478,97 @@ export async function sendTicketResolvedEmail(
   contactName?: string
 ): Promise<void> {
   if (!process.env.SMTP_USER && !process.env.SMTP_DESTEK_USER) return;
-  const to = contactEmail || ticket.customer_email;
-  const name = contactName || ticket.customer_name;
+  const to   = contactEmail || ticket.customer_email;
+  const name = contactName  || ticket.customer_name;
+
+  // Çözüm süresi hesapla
+  let duration = "";
+  if (ticket.resolved_at && ticket.created_at) {
+    const diffMs  = new Date(ticket.resolved_at).getTime() - new Date(ticket.created_at).getTime();
+    const diffMin = Math.round(diffMs / 60000);
+    if (diffMin < 60) duration = `${diffMin} dakika`;
+    else if (diffMin < 1440) duration = `${Math.round(diffMin / 60)} saat`;
+    else duration = `${Math.round(diffMin / 1440)} gün`;
+  }
 
   const body = `
+    <!-- Selamlama -->
     <p style="font-size:16px;color:#1e293b;margin:0 0 6px">Sayın <strong>${esc(name)}</strong>,</p>
-    <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.6">
-      <strong>${formatTicketNo(ticket.ticket_number)}</strong> numaralı destek talebiniz başarıyla çözüme kavuşturulmuştur.
-      Hizmetinizde olduğumuz için memnuniyet duyuyoruz.
+    <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.7">
+      Lider Network teknik ekibi olarak bildirmek isteriz ki
+      <strong style="color:#1e293b">${formatTicketNo(ticket.ticket_number)}</strong> numaralı destek talebiniz
+      başarıyla sonuçlandırılmıştır.
     </p>
 
-    <!-- Resolved Banner -->
-    <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:22px 28px;margin-bottom:24px;text-align:center">
-      <div style="font-size:42px;margin-bottom:8px">✅</div>
-      <div style="font-size:20px;font-weight:900;color:#15803d;margin-bottom:4px">Talep Çözüldü</div>
-      <div style="font-size:13px;color:#16a34a">${formatTicketNo(ticket.ticket_number)} — ${esc(ticket.subject)}</div>
+    <!-- Çözüldü Bandı -->
+    <div style="background:linear-gradient(135deg,#f0fdf4 0%,#dcfce7 100%);border:1px solid #86efac;border-radius:14px;padding:24px 28px;margin-bottom:28px;text-align:center">
+      <div style="font-size:48px;line-height:1;margin-bottom:10px">✅</div>
+      <div style="font-size:22px;font-weight:900;color:#15803d;letter-spacing:-0.5px;margin-bottom:6px">Destek Talebiniz Tamamlandı</div>
+      <div style="font-size:13px;color:#16a34a;font-weight:600">${formatTicketNo(ticket.ticket_number)}</div>
+      ${duration ? `<div style="margin-top:8px;display:inline-block;background:#bbf7d0;color:#15803d;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:700">⏱ Çözüm süresi: ${duration}</div>` : ""}
     </div>
 
-    ${sectionTitle("Talep Özeti")}
+    ${sectionTitle("Talep Bilgileri")}
 
-    <table width="100%" cellpadding="0" cellspacing="0">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:8px">
       <tr>
-        <td width="50%" style="padding-right:8px;vertical-align:top">
-          ${field("Talep No", formatTicketNo(ticket.ticket_number))}
+        <td width="50%" style="padding-right:6px;vertical-align:top">
+          ${field("Talep Numarası", `<strong>${formatTicketNo(ticket.ticket_number)}</strong>`)}
         </td>
-        <td width="50%" style="padding-left:8px;vertical-align:top">
-          ${fieldAccent("Öncelik", priLabels[ticket.priority] || ticket.priority, priColors[ticket.priority] || "#64748b")}
+        <td width="50%" style="padding-left:6px;vertical-align:top">
+          ${fieldAccent("Öncelik Seviyesi", priLabels[ticket.priority] || ticket.priority, priColors[ticket.priority] || "#64748b")}
         </td>
       </tr>
     </table>
 
-    ${field("Konu", esc(ticket.subject))}
-    ${field("Oluşturulma Tarihi", formatDate(ticket.created_at))}
-    ${ticket.resolved_at ? field("Çözüm Tarihi", formatDate(ticket.resolved_at)) : ""}
+    ${field("Konu", `<strong>${esc(ticket.subject)}</strong>`)}
 
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:14px 20px;margin-top:20px">
-      <p style="margin:0;font-size:13px;color:#1d4ed8;line-height:1.6">
-        Talebinizle ilgili ek sorularınız için <a href="mailto:destek@lidernetwork.com.tr" style="color:#0052ff;text-decoration:none;font-weight:700">destek@lidernetwork.com.tr</a>
-        adresine yazabilir ya da <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none;font-weight:700">+90 312 232 02 88</a> numaralı hattımızı arayabilirsiniz.
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="50%" style="padding-right:6px;vertical-align:top">
+          ${field("Talep Tarihi", formatDate(ticket.created_at))}
+        </td>
+        <td width="50%" style="padding-left:6px;vertical-align:top">
+          ${ticket.resolved_at ? field("Çözüm Tarihi", formatDate(ticket.resolved_at)) : ""}
+        </td>
+      </tr>
+    </table>
+
+    <!-- Bilgi Notu -->
+    <div style="background:#f8faff;border:1px solid #c7d7ff;border-left:4px solid #0052ff;border-radius:0 10px 10px 0;padding:16px 20px;margin-top:20px;margin-bottom:8px">
+      <p style="margin:0 0 6px;font-size:13px;font-weight:700;color:#0038c7">Sonraki Adımlar</p>
+      <p style="margin:0;font-size:13px;color:#374151;line-height:1.7">
+        Bu konuyla ilgili bir soru veya sorunun devam ettiğini düşünüyorsanız lütfen bizimle iletişime geçmekten çekinmeyiniz.
+        Yeni bir destek talebi oluşturmak için aşağıdaki iletişim kanallarımızı kullanabilirsiniz.
       </p>
     </div>
+
+    <!-- İletişim -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:16px 20px;margin-top:16px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding-right:16px;vertical-align:top">
+            <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px">Telefon</div>
+            <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none;font-size:14px;font-weight:700">+90 312 232 02 88</a>
+          </td>
+          <td style="padding-left:16px;border-left:1px solid #e2e8f0;vertical-align:top">
+            <div style="font-size:11px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:6px">E-posta</div>
+            <a href="mailto:destek@lidernetwork.com.tr" style="color:#0052ff;text-decoration:none;font-size:14px;font-weight:700">destek@lidernetwork.com.tr</a>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <p style="margin-top:24px;font-size:13px;color:#94a3b8;line-height:1.6;text-align:center">
+      Lider Network olarak kesintisiz bilişim desteği sunmak önceliğimizdir.<br>
+      Güveniniz için teşekkür ederiz.
+    </p>
   `;
 
   await createTransporter().sendMail({
     from: `"Lider Network Destek" <${DESTEK_FROM}>`,
     to,
-    subject: `[Çözüldü] ${formatTicketNo(ticket.ticket_number)} — ${ticket.subject}`,
+    subject: `Destek Talebiniz Tamamlandı — ${formatTicketNo(ticket.ticket_number)}`,
     html: shell("approved", body),
   });
 }
