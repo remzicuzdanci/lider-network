@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Headphones, TicketCheck, Clock, Shield } from "lucide-react";
+import Image from "next/image";
+import { TicketCheck, Clock, Shield } from "lucide-react";
 
 export default function DesktekLanding() {
   return (
@@ -16,17 +17,25 @@ export default function DesktekLanding() {
       >
         <div className="container">
           <div style={{ maxWidth: "640px", margin: "0 auto", textAlign: "center", padding: "64px 0" }}>
-            {/* Icon */}
+            {/* Logo */}
             <div
               style={{
-                width: 72, height: 72, borderRadius: "20px",
-                background: "rgba(0,82,255,.15)",
-                border: "1px solid rgba(0,82,255,.3)",
-                display: "flex", alignItems: "center", justifyContent: "center",
+                display: "inline-block",
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "12px 28px",
                 margin: "0 auto 28px",
+                boxShadow: "0 4px 24px rgba(0,0,0,.18)",
               }}
             >
-              <Headphones size={32} color="#b7c4ff" />
+              <Image
+                src="/logo.png"
+                alt="Lider Network"
+                width={160}
+                height={52}
+                style={{ objectFit: "contain", display: "block", height: 52, width: "auto" }}
+                priority
+              />
             </div>
 
             <div
