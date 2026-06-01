@@ -633,7 +633,7 @@ export default function Navbar() {
                   className="font-semibold"
                   style={{ fontSize: 9, color: "rgba(238,49,36,.75)", fontFamily: "var(--font-family-label)", letterSpacing: ".04em" }}
                 >
-                  AUTHORIZED PARTNER
+                  PARTNER
                 </span>
               </div>
             </Link>
