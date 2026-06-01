@@ -23,6 +23,7 @@ export default function Footer() {
     { href: `/${locale}/fortinet`, label: t("nav.fortinet") },
     { href: `/${locale}/hakkimizda`, label: t("nav.about") },
     { href: `/${locale}/iletisim`, label: t("nav.contact") },
+    { href: "https://destek.lidernetwork.com.tr", label: locale === "tr" ? "🎧 Destek Portalı" : "🎧 Support Portal", external: true },
   ];
 
   const solutions = [
@@ -128,21 +129,39 @@ export default function Footer() {
             <ul className="flex flex-col gap-2" role="list">
               {quickLinks.map((link) => (
                 <li key={link.href + link.label}>
-                  <Link
-                    href={link.href}
-                    className="text-sm transition-colors duration-200"
-                    style={{ color: "var(--color-outline)" }}
-                    onMouseEnter={(e) => {
-                      (e.target as HTMLElement).style.color =
-                        "var(--color-primary)";
-                    }}
-                    onMouseLeave={(e) => {
-                      (e.target as HTMLElement).style.color =
-                        "var(--color-outline)";
-                    }}
-                  >
-                    {link.label}
-                  </Link>
+                  {"external" in link && link.external ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm transition-colors duration-200"
+                      style={{ color: "var(--color-primary)" }}
+                      onMouseEnter={(e) => {
+                        (e.target as HTMLElement).style.opacity = "0.75";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.target as HTMLElement).style.opacity = "1";
+                      }}
+                    >
+                      {link.label}
+                    </a>
+                  ) : (
+                    <Link
+                      href={link.href}
+                      className="text-sm transition-colors duration-200"
+                      style={{ color: "var(--color-outline)" }}
+                      onMouseEnter={(e) => {
+                        (e.target as HTMLElement).style.color =
+                          "var(--color-primary)";
+                      }}
+                      onMouseLeave={(e) => {
+                        (e.target as HTMLElement).style.color =
+                          "var(--color-outline)";
+                      }}
+                    >
+                      {link.label}
+                    </Link>
+                  )}
                 </li>
               ))}
             </ul>

@@ -28,6 +28,7 @@ import {
   Handshake,
   FileText,
   Award,
+  Headphones,
 } from "lucide-react";
 
 /* ─── Static data (locale-independent) ─────────────────────────────────── */
@@ -625,6 +626,34 @@ export default function Navbar() {
               </div>
             </Link>
 
+            {/* Destek Portalı küçük link */}
+            <a
+              href="https://destek.lidernetwork.com.tr"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 px-3 py-2 text-xs rounded transition-all duration-200"
+              style={{
+                fontFamily: "var(--font-family-label)",
+                fontWeight: 500,
+                color: "var(--color-primary)",
+                border: "1px solid rgba(0,82,255,0.3)",
+                backgroundColor: "rgba(0,82,255,0.06)",
+                textDecoration: "none",
+              }}
+              title={isTr ? "Müşteri Destek Portalı" : "Customer Support Portal"}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,82,255,0.14)";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,82,255,0.6)";
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(0,82,255,0.06)";
+                (e.currentTarget as HTMLElement).style.borderColor = "rgba(0,82,255,0.3)";
+              }}
+            >
+              <Headphones className="w-3.5 h-3.5" aria-hidden="true" />
+              {isTr ? "Destek" : "Support"}
+            </a>
+
             <Link
               href={otherLocaleHref}
               className="flex items-center gap-1.5 px-3 py-2 text-xs rounded transition-colors duration-200"
@@ -858,7 +887,29 @@ export default function Navbar() {
               </li>
             </ul>
 
-            <div className="flex items-center gap-3 mt-4 px-4">
+            {/* Mobil — Destek Portalı */}
+            <div className="px-4 mt-2">
+              <a
+                href="https://destek.lidernetwork.com.tr"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 w-full px-4 py-3 text-sm rounded"
+                style={{
+                  fontFamily: "var(--font-family-label)",
+                  fontWeight: 600,
+                  color: "var(--color-primary)",
+                  border: "1px solid rgba(0,82,255,0.3)",
+                  backgroundColor: "rgba(0,82,255,0.06)",
+                  textDecoration: "none",
+                }}
+                onClick={() => setIsMenuOpen(false)}
+              >
+                <Headphones className="w-4 h-4" aria-hidden="true" />
+                {isTr ? "Destek Portalı" : "Support Portal"}
+              </a>
+            </div>
+
+            <div className="flex items-center gap-3 mt-3 px-4">
               <Link
                 href={otherLocaleHref}
                 className="flex items-center gap-1.5 px-3 py-2 text-xs rounded"
