@@ -615,13 +615,12 @@ export default function Navbar() {
                 boxShadow: "0 2px 10px rgba(0,0,0,.28)",
               }}>
                 <Image
-                  src="/fortinet-partner.JPG"
-                  alt="Fortinet Partner"
-                  width={130}
-                  height={44}
+                  src="/fort-removebg-preview.png"
+                  alt="Fortinet Authorized Partner"
+                  width={160}
+                  height={50}
                   quality={100}
-                  unoptimized
-                  style={{ objectFit: "contain", display: "block", height: 40, width: "auto" }}
+                  style={{ objectFit: "contain", display: "block", height: 44, width: "auto" }}
                 />
               </div>
             </Link>
