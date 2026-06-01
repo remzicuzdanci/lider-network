@@ -7,11 +7,18 @@ import {
 } from "@/lib/ticket-mail";
 
 const schema = z.object({
-  fullName: z.string().min(2, "Ad soyad gerekli"),
-  company:  z.string().min(1, "Şirket adı gerekli"),
-  phone:    z.string().optional(),
-  email:    z.string().email("Geçerli e-posta girin"),
-  password: z.string().min(8, "Şifre en az 8 karakter olmalı"),
+  fullName:   z.string().min(2, "Yetkili adı soyadı gerekli"),
+  company:    z.string().min(1, "Firma adı gerekli"),
+  email:      z.string().email("Geçerli e-posta girin"),
+  password:   z.string().min(8, "Şifre en az 8 karakter olmalı"),
+  // optional extras
+  phone:      z.string().optional(),
+  phone2:     z.string().optional(),
+  address:    z.string().optional(),
+  city:       z.string().optional(),
+  district:   z.string().optional(),
+  taxNumber:  z.string().optional(),
+  kvkk:       z.boolean().refine((v) => v === true, "KVKK onayı zorunludur"),
 });
 
 export async function POST(request: NextRequest) {
@@ -24,7 +31,7 @@ export async function POST(request: NextRequest) {
       await supabase.auth.admin.createUser({
         email:         data.email,
         password:      data.password,
-        email_confirm: true, // skip Supabase confirmation; we have admin approval
+        email_confirm: true,
       });
 
     if (createErr) {
@@ -45,15 +52,20 @@ export async function POST(request: NextRequest) {
     const { error: profileErr } = await supabase
       .from("customer_profiles")
       .insert({
-        id:        userId,
-        full_name: data.fullName,
-        company:   data.company,
-        phone:     data.phone || null,
-        approved:  false,
+        id:          userId,
+        full_name:   data.fullName,
+        company:     data.company,
+        phone:       data.phone    || null,
+        phone2:      data.phone2   || null,
+        address:     data.address  || null,
+        city:        data.city     || null,
+        district:    data.district || null,
+        tax_number:  data.taxNumber || null,
+        kvkk_accepted: true,
+        approved:    false,
       });
 
     if (profileErr) {
-      // Roll back auth user to keep DB consistent
       await supabase.auth.admin.deleteUser(userId);
       console.error("Profile insert error:", profileErr);
       return NextResponse.json(
