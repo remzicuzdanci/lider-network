@@ -19,11 +19,10 @@ const INITIAL_STAFF = [
   { email: "omer.oztekin@lidernetwork.com.tr",    name: "Ömer Öztekin",    role: "staff",       pass: "Lider2024!" },
 ];
 
-export async function POST(req: NextRequest) {
+async function runSetup(key: string | null) {
   // Authorization
-  const key = new URL(req.url).searchParams.get("key");
   if (!process.env.ADMIN_PASSWORD || key !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+    return NextResponse.json({ error: "Yetkisiz — key parametresi yanlış veya eksik" }, { status: 401 });
   }
 
   // Check if already set up
@@ -55,4 +54,16 @@ export async function POST(req: NextRequest) {
     message: "Personel hesapları oluşturuldu. İlk şifreleri paylaşın ve değiştirtmeyi unutmayın.",
     users: results,
   });
+}
+
+// GET — tarayıcıdan direkt açılabilir
+export async function GET(req: NextRequest) {
+  const key = new URL(req.url).searchParams.get("key");
+  return runSetup(key);
+}
+
+// POST — curl / fetch ile de çalışır
+export async function POST(req: NextRequest) {
+  const key = new URL(req.url).searchParams.get("key");
+  return runSetup(key);
 }
