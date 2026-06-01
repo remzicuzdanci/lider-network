@@ -6,6 +6,7 @@ import {
   sendNewTicketAdminEmail,
 } from "@/lib/ticket-mail";
 import { getAdminSession } from "@/lib/admin-auth";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const createSchema = z.object({
   subject: z.string().min(5, "Konu en az 5 karakter olmalıdır").max(200),
@@ -22,20 +23,41 @@ const createSchema = z.object({
     .enum(["technical", "billing", "general", "feature_request"])
     .default("technical"),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  // Honeypot — bot'lar bu alanı doldurur, gerçek kullanıcılar doldurmaz
+  _hp: z.string().max(0).optional(),
 });
 
 // POST — create new ticket (public)
 export async function POST(request: NextRequest) {
+  // ── Rate limit: max 5 ticket / 1 saat / IP ───────────────────────────────────
+  const ip = getClientIp(request);
+  const rl = rateLimit(`ticket:${ip}`, 5, 60 * 60 * 1000);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Çok fazla talep gönderdiniz. Lütfen bir süre bekleyin." },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    );
+  }
+
   try {
     const body = await request.json();
     const data = createSchema.parse(body);
 
+    // Honeypot kontrolü — dolu ise bot
+    if (data._hp) {
+      // Gerçekmiş gibi başarı döndür, bot'u uyarma
+      return NextResponse.json({ success: true, ticket_id: "bot", ticket_number: 0 }, { status: 201 });
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { _hp: _honeypot, ...insertData } = data;
+
     const { data: ticket, error } = await supabase
       .from("tickets")
       .insert({
-        ...data,
-        company: data.company || null,
-        phone: data.phone || null,
+        ...insertData,
+        company: insertData.company || null,
+        phone: insertData.phone || null,
         status: "open",
       })
       .select()

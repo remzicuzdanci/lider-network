@@ -8,17 +8,35 @@ import {
   verifyPassword,
   COOKIE_NAME,
 } from "@/lib/admin-auth";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production",
-  sameSite: "lax" as const,
+  sameSite: "strict" as const, // CSRF koruması
   maxAge: 60 * 60 * 48, // 48h
   path: "/",
 };
 
 // POST — login (email + password  OR  legacy master password)
 export async function POST(request: NextRequest) {
+  // ── Rate limit: max 10 giriş denemesi / 15 dakika / IP ──────────────────────
+  const ip = getClientIp(request);
+  const rl = rateLimit(`login:${ip}`, 10, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    const retryAfterSec = Math.ceil(rl.retryAfterMs / 1000);
+    return NextResponse.json(
+      { error: `Çok fazla giriş denemesi. ${retryAfterSec} saniye bekleyin.` },
+      {
+        status: 429,
+        headers: {
+          "Retry-After": String(retryAfterSec),
+          "X-RateLimit-Remaining": "0",
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     const { email, password } = body as { email?: string; password?: string };
