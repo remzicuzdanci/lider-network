@@ -880,7 +880,7 @@ function FaturandiTab({
 ══════════════════════════════════════════════════════════════ */
 type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
 
-export default function IsPlani({ companies, staff = ["Remzi Cuzdancı","Ahmet Yılmaz","Mehmet Kaya","Fatma Demir","Ali Öztürk","Ayşe Çelik"] }: { companies: Company[]; staff?: string[] }) {
+export default function IsPlani({ companies, staff = ["Enes Yildiz","Halil Oztekin","Murat Aykac","Omer Oztekin","Remzi Cuzdanci","Yunus Oztekin"] }: { companies: Company[]; staff?: string[] }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const isTablet = width < 1024;
