@@ -761,9 +761,9 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceFo
 }
 
 function FaturandiTab({
-  tasks, projects, companies, onTaskSave, onProjectSave
+  tasks, projects, companies, staff, onTaskSave, onProjectSave
 }: {
-  tasks: WorkTask[]; projects: Project[]; companies: Company[];
+  tasks: WorkTask[]; projects: Project[]; companies: Company[]; staff: string[];
   onTaskSave: (task: WorkTask) => void; onProjectSave: (project: Project) => void;
 }) {
   const [monthOffset, setMonthOffset] = useState(0);
@@ -992,7 +992,7 @@ export default function IsPlani({ companies, staff = ["Remzi Cuzdancı","Ahmet Y
       {innerTab==="projeler" && <ProjelerTab companies={companies} staff={staff} />}
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
-      {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} onTaskSave={saveTask} onProjectSave={saveProject} />}
+      {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}
     </div>
