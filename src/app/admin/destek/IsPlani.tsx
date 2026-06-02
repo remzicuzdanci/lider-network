@@ -757,6 +757,8 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
   const [innerTab, setInnerTab] = useState<InnerTab>("projeler");
   const [tasks, setTasks]       = useState<WorkTask[]>([]);
   const [tasksLoaded, setTL]    = useState(false);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [projectsLoaded, setPL] = useState(false);
 
   /* ── Task CRUD (shared across tabs) ──────────────────────── */
   const loadTasks = useCallback(async () => {
@@ -764,7 +766,12 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
     if (r.ok) { setTasks(await r.json()); setTL(true); }
   }, []);
 
-  useEffect(() => { loadTasks(); }, [loadTasks]);
+  const loadProjects = useCallback(async () => {
+    const r = await fetch("/api/admin/projects");
+    if (r.ok) { setProjects(await r.json()); setPL(true); }
+  }, []);
+
+  useEffect(() => { loadTasks(); loadProjects(); }, [loadTasks, loadProjects]);
 
   async function saveTask(form: Partial<WorkTask>) {
     if (form.id) {
@@ -780,6 +787,23 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
     if (!confirm("Bu görevi silmek istiyor musunuz?")) return;
     await fetch("/api/admin/tasks",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
     setTasks(p=>p.filter(t=>t.id!==id));
+  }
+
+  /* ── Project CRUD ────────────────────────────────────────── */
+  async function saveProject(form: Partial<Project>) {
+    if (form.id) {
+      const r = await fetch("/api/admin/projects",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
+      if (r.ok){const u=await r.json();setProjects(p=>p.map(pr=>pr.id===u.id?{...pr,...u}:pr));}
+    } else {
+      const r = await fetch("/api/admin/projects",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
+      if (r.ok){const c=await r.json();setProjects(p=>[c,...p]);}
+    }
+  }
+
+  async function deleteProject(id: string) {
+    if (!confirm("Bu projeyi silmek istiyor musunuz?")) return;
+    await fetch("/api/admin/projects",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setProjects(p=>p.filter(pr=>pr.id!==id));
   }
 
   /* ── Stats ───────────────────────────────────────────────── */
