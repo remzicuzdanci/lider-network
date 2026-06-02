@@ -887,7 +887,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
   const isMobile = width < 768;
   const isTablet = width < 1024;
 
-  const [innerTab, setInnerTab] = useState<InnerTab>("projeler");
+  const [innerTab, setInnerTab] = useState<InnerTab>("gunluk");
   const [tasks, setTasks]       = useState<WorkTask[]>([]);
   const [tasksLoaded, setTL]    = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
@@ -975,9 +975,9 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
   const doneToday  = tasks.filter(t=>t.status==="done"&&t.updated_at?.slice(0,10)===today);
 
   const INNER_TABS: { id: InnerTab; label: string; icon: React.ReactNode }[] = [
-    { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
     { id:"gunluk",   label:"Günlük Görevler", icon:<CalendarDays size={14}/> },
     { id:"kanban",   label:"Kanban Board",    icon:<Columns size={14}/> },
+    { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
     { id:"faturalandı", label:"Faturalandı",  icon:<Receipt size={14}/> },
   ];
 
