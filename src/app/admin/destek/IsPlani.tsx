@@ -246,7 +246,7 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
           <div><label style={lblS}>Açıklama</label>
             <textarea value={form.description??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Proje hakkında kısa bilgi..." onChange={e=>set("description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Müşteri</label>
               <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
                 <option value="">— Seçin —</option>
@@ -260,7 +260,7 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
               </select>
             </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Başlangıç</label>
               <input type="date" value={form.start_date??""} style={inpS} onChange={e=>set("start_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
@@ -268,7 +268,7 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
               <input type="date" value={form.end_date??""} style={inpS} onChange={e=>set("end_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Aşama</label>
               <select value={form.phase??"teklif"} style={inpS} onChange={e=>set("phase",e.target.value)}>
                 {PHASES.map(p=><option key={p.id} value={p.id}>{p.label}</option>)}
@@ -325,7 +325,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
           <div><label style={lblS}>Müşteri Adı *</label>
             <input type="text" value={f.customer_name??""} required placeholder="Müşteri adı..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Telefon</label>
               <input type="tel" value={f.customer_phone??""} placeholder="0555 123 45 67" style={inpS} onChange={e=>set("customer_phone",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
@@ -339,7 +339,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
           <div><label style={lblS}>Teslim Edilen Ürünler/Açıklamalar</label>
             <textarea value={f.items_delivered??""} placeholder="Teslim edilen ürünler ve detayları..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("items_delivered",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>İmzalayan Kişi</label>
               <input type="text" value={f.signed_by??""} placeholder="Sorumlu kişinin adı" style={inpS} onChange={e=>set("signed_by",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
@@ -684,6 +684,10 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
+  const isTablet = width < 1024;
+
   const [modal, setModal] = useState<Partial<WorkTask>|null|false>(false);
   const [filterPri, setFP] = useState("");
   const [menuId, setMenuId] = useState<string|null>(null);
@@ -706,7 +710,13 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
         </button>
       </div>
 
-      <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"14px",alignItems:"start" }}>
+      <div style={{
+        display:"grid",
+        gridTemplateColumns: isMobile ? "1fr" : isTablet ? "1fr 1fr" : "1fr 1fr 1fr",
+        gap: isMobile ? "12px" : "14px",
+        alignItems:"start",
+        overflowX: isMobile ? "hidden" : "visible"
+      }}>
         {KAN_COLS.map(col=>{
           const colTasks = byCol(col.id);
           return (
