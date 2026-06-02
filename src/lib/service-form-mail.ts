@@ -48,12 +48,20 @@ function formatDate(d?: string): string {
   return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-function row(label: string, value?: string, pre = false): string {
+function row(label: string, value?: string, accent = "#0052ff"): string {
   if (!value) return "";
   return `
     <tr>
-      <td style="padding:14px 18px;border-bottom:1px solid #eef2f7;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.4px;width:38%;vertical-align:top;">${esc(label)}</td>
-      <td style="padding:14px 18px;border-bottom:1px solid #eef2f7;font-size:14px;color:#1a1d2e;${pre ? "white-space:pre-wrap;line-height:1.6;" : ""}">${esc(value)}</td>
+      <td style="padding:0 0 12px 0;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;">
+          <tr>
+            <td style="padding:14px 18px;background:#f8fafc;border-left:3px solid ${accent};border-radius:8px;">
+              <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;">${esc(label)}</div>
+              <div style="font-size:15px;color:#1a1d2e;line-height:1.55;white-space:pre-wrap;">${esc(value)}</div>
+            </td>
+          </tr>
+        </table>
+      </td>
     </tr>`;
 }
 
@@ -72,40 +80,83 @@ export async function sendServiceFormEmail(data: ServiceFormMailData): Promise<v
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>${esc(subject)}</title>
 </head>
-<body style="margin:0;padding:24px;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif;">
-  <div style="max-width:640px;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.08);">
-    <div style="background:linear-gradient(135deg,#0038c7,#0052ff);padding:32px 28px;text-align:center;">
-      <h1 style="color:#ffffff;margin:0;font-size:24px;letter-spacing:1px;">LİDER NETWORK</h1>
-      <p style="color:#cdd9ff;margin:8px 0 0;font-size:14px;">Servis / Hizmet Formu</p>
-    </div>
-    <div style="padding:26px 28px 8px;">
-      <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 18px;">
-        Sayın <strong>${esc(data.customer_name || "Müşterimiz")}</strong>,<br/>
-        Tarafınıza verdiğimiz hizmete ilişkin servis form detayları aşağıdadır.
-        Bizi tercih ettiğiniz için teşekkür ederiz.
-      </p>
-      <table style="width:100%;border-collapse:collapse;border:1px solid #eef2f7;border-radius:10px;overflow:hidden;">
-        ${row("Tarih", dateStr)}
-        ${row("Müşteri", data.customer_name)}
-        ${data.company_name ? row("Firma", data.company_name) : ""}
-        ${row("Telefon", data.customer_phone)}
-        ${row("Adres", data.customer_address, true)}
-        ${row("Yapılan Hizmet", data.service_description, true)}
-        ${row("Teslim Edilenler", data.items_delivered, true)}
-        ${row("Notlar", data.notes, true)}
-        ${row("Yetkili", data.signed_by)}
+<body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:28px 14px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
+
+        <!-- Header -->
+        <tr>
+          <td bgcolor="#0052ff" style="background:#0052ff;padding:0;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding:34px 32px;" align="left">
+                  <div style="display:inline-block;background:rgba(255,255,255,.16);border-radius:9px;padding:8px 14px;">
+                    <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:1.5px;">LİDER NETWORK</span>
+                  </div>
+                  <div style="color:#cdd9ff;font-size:14px;margin-top:14px;font-weight:500;">📋 Servis / Hizmet Formu</div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Greeting -->
+        <tr>
+          <td style="padding:30px 32px 6px;">
+            <p style="font-size:16px;color:#1a1d2e;line-height:1.6;margin:0 0 6px;font-weight:600;">
+              Sayın ${esc(data.customer_name || "Müşterimiz")},
+            </p>
+            <p style="font-size:14px;color:#64748b;line-height:1.65;margin:0 0 22px;">
+              Tarafınıza sunduğumuz hizmete ilişkin servis formu detayları aşağıdadır. Bizi tercih ettiğiniz için teşekkür ederiz.
+            </p>
+          </td>
+        </tr>
+
+        <!-- Detail cards -->
+        <tr>
+          <td style="padding:0 32px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              ${row("Tarih", dateStr, "#0052ff")}
+              ${row("Müşteri", data.customer_name, "#0052ff")}
+              ${data.company_name ? row("Firma", data.company_name, "#7c3aed") : ""}
+              ${row("Telefon", data.customer_phone, "#0891b2")}
+              ${row("Adres", data.customer_address, "#d97706")}
+              ${row("Yapılan Hizmet", data.service_description, "#15803d")}
+              ${row("Teslim Edilenler", data.items_delivered, "#15803d")}
+              ${row("Notlar", data.notes, "#64748b")}
+              ${row("Yetkili", data.signed_by, "#0052ff")}
+            </table>
+          </td>
+        </tr>
+
+        <!-- Note -->
+        <tr>
+          <td style="padding:8px 32px 26px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:16px 18px;background:#eff6ff;border-radius:10px;">
+                <p style="font-size:13px;color:#1e40af;line-height:1.6;margin:0;">
+                  💬 Herhangi bir sorunuz olursa bu e-postayı yanıtlayarak veya destek hattımızdan bize ulaşabilirsiniz.
+                </p>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        <!-- Footer -->
+        <tr>
+          <td bgcolor="#0f172a" style="background:#0f172a;padding:24px 32px;text-align:center;">
+            <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 4px;letter-spacing:.5px;">LİDER NETWORK</p>
+            <p style="color:#94a3b8;font-size:12px;margin:0 0 4px;">
+              <a href="https://www.lidernetwork.com.tr" style="color:#7dd3fc;text-decoration:none;">www.lidernetwork.com.tr</a>
+            </p>
+            <p style="color:#64748b;font-size:11px;margin:6px 0 0;">© ${new Date().getFullYear()} Lider Network. Tüm hakları saklıdır.</p>
+          </td>
+        </tr>
+
       </table>
-    </div>
-    <div style="padding:18px 28px 28px;">
-      <p style="font-size:13px;color:#64748b;line-height:1.6;margin:0;">
-        Herhangi bir sorunuz olursa bu e-postayı yanıtlayarak veya destek hattımızdan bize ulaşabilirsiniz.
-      </p>
-    </div>
-    <div style="background:#f8fafc;padding:20px 28px;border-top:1px solid #eef2f7;text-align:center;">
-      <p style="color:#94a3b8;font-size:12px;margin:0;">© ${new Date().getFullYear()} Lider Network. Tüm hakları saklıdır.</p>
-      <p style="color:#94a3b8;font-size:12px;margin:6px 0 0;">www.lidernetwork.com.tr</p>
-    </div>
-  </div>
+    </td></tr>
+  </table>
 </body>
 </html>`.trim();
 
