@@ -8,20 +8,8 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight, ListTodo, Menu,
+  Zap, ShieldCheck, ChevronRight,
 } from "lucide-react";
-import IsPlani from "./IsPlani";
-
-// Mobile responsive hook
-function useWindowSize() {
-  const [size, setSize] = useState({ width: typeof window !== 'undefined' ? window.innerWidth : 1200 });
-  useEffect(() => {
-    const handler = () => setSize({ width: window.innerWidth });
-    window.addEventListener('resize', handler);
-    return () => window.removeEventListener('resize', handler);
-  }, []);
-  return size;
-}
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function timeAgo(iso: string) {
@@ -62,7 +50,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "staff" | "reports" | "isplan";
+type Tab = "tickets" | "customers" | "companies" | "staff" | "reports";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
@@ -121,12 +109,7 @@ const inpS: React.CSSProperties = {
 // ── Main ──────────────────────────────────────────────────────────────────────
 export default function AdminDashboard() {
   const router = useRouter();
-  const { width } = useWindowSize();
-  const isMobile = width < 768;
-  const isTablet = width < 1024;
-
   const [tab, setTab] = useState<Tab>("tickets");
-  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
 
   // Session
   const [sessionName, setSessionName] = useState("Admin");
@@ -174,22 +157,6 @@ export default function AdminDashboard() {
   const [ntNotes, setNtNotes]                 = useState("");
   const [ntSaving, setNtSaving]               = useState(false);
   const [ntError, setNtError]                 = useState("");
-
-  // Password change modal
-  const [pwModal, setPwModal]           = useState(false);
-  const [pwCurrent, setPwCurrent]       = useState("");
-  const [pwNew, setPwNew]               = useState("");
-  const [pwConfirm, setPwConfirm]       = useState("");
-  const [pwSaving, setPwSaving]         = useState(false);
-  const [pwError, setPwError]           = useState("");
-  const [pwSuccess, setPwSuccess]       = useState("");
-
-  // SLA toast
-  const [slaToast, setSlaToast]         = useState("");
-  const [slaChecking, setSlaChecking]   = useState(false);
-
-  // Monthly summary toast
-  const [mSummaryToast, setMSummaryToast] = useState("");
 
   // Reports extra filters
   const [rptCompanyId, setRptCompanyId] = useState("all");
@@ -243,7 +210,7 @@ export default function AdminDashboard() {
   const fetchCompanies   = useCallback(async () => { setCompLoading(true); const r = await fetch("/api/admin/companies"); if (r.ok) setCompanies((await r.json()).companies || []); setCompLoading(false); }, []);
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
-  useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
+  useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); }, [fetchTickets, fetchStats, fetchAllTickets]);
   useEffect(() => { if (tab === "customers") fetchCustomers(); }, [tab, fetchCustomers]);
   useEffect(() => { if (tab === "companies") fetchCompanies(); }, [tab, fetchCompanies]);
   useEffect(() => { if (tab === "staff") fetchStaff(); }, [tab, fetchStaff]);
@@ -475,191 +442,11 @@ export default function AdminDashboard() {
 
   const activeCompanies = companies.filter(c=>c.active);
 
-  // ── Password change ────────────────────────────────────────────────────────
-  async function changePassword() {
-    setPwError(""); setPwSuccess("");
-    if (!pwCurrent || !pwNew || !pwConfirm) { setPwError("Tüm alanları doldurun."); return; }
-    if (pwNew.length < 8) { setPwError("Yeni şifre en az 8 karakter olmalıdır."); return; }
-    if (pwNew !== pwConfirm) { setPwError("Yeni şifreler eşleşmiyor."); return; }
-    setPwSaving(true);
-    const r = await fetch("/api/admin/staff/change-password", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ currentPassword: pwCurrent, newPassword: pwNew }),
-    });
-    const d = await r.json();
-    if (r.ok) {
-      setPwSuccess("Şifreniz başarıyla güncellendi.");
-      setPwCurrent(""); setPwNew(""); setPwConfirm("");
-    } else {
-      setPwError(d.error || "Hata oluştu.");
-    }
-    setPwSaving(false);
-  }
-
-  // ── SLA Check ─────────────────────────────────────────────────────────────
-  async function checkSLA() {
-    setSlaChecking(true); setSlaToast("");
-    const r = await fetch("/api/admin/sla-check");
-    const d = await r.json();
-    setSlaToast(d.message || (r.ok ? "Kontrol tamamlandı." : "Hata oluştu."));
-    setSlaChecking(false);
-    setTimeout(() => setSlaToast(""), 5000);
-  }
-
-  // ── Monthly Summary ───────────────────────────────────────────────────────
-  async function sendMonthlyToCompany(companyId?: string) {
-    setMSummaryToast("Gönderiliyor...");
-    const r = await fetch("/api/admin/monthly-summary", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(companyId ? { companyId } : {}),
-    });
-    const d = await r.json();
-    setMSummaryToast(d.message || (r.ok ? "Gönderildi." : "Hata oluştu."));
-    setTimeout(() => setMSummaryToast(""), 5000);
-  }
-
-  // ── CSV Export ────────────────────────────────────────────────────────────
-  function downloadCSV() {
-    const headers = ["Talep No","Konu","Durum","Öncelik","Kategori","Müşteri","Şirket","Personel","Oluşturulma","Çözüm Tarihi"];
-    const rows = rptTickets.map(t => [
-      `#${String(t.ticket_number).padStart(4,"0")}`,
-      t.subject,
-      STATUS_LABEL[t.status] || t.status,
-      PRI_LABEL[t.priority] || t.priority,
-      CAT_LABEL[t.category] || t.category,
-      t.customer_name,
-      t.company || "",
-      t.created_by_staff || "",
-      new Date(t.created_at).toLocaleDateString("tr-TR"),
-      t.resolved_at ? new Date(t.resolved_at).toLocaleDateString("tr-TR") : "",
-    ]);
-    const csv = [headers, ...rows].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(",")).join("\n");
-    const bom = "﻿"; // UTF-8 BOM for Excel Turkish chars
-    const blob = new Blob([bom + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `lider-network-rapor-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-  }
-
-  function printPDF() {
-    const dateStr = new Date().toLocaleDateString("tr-TR", { day:"2-digit", month:"long", year:"numeric" });
-    const rows = rptTickets.map((t, i) => `
-      <tr style="background:${i % 2 === 0 ? "#f8fafc" : "#fff"}">
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;color:#0052ff;white-space:nowrap">#${String(t.ticket_number).padStart(4,"0")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;max-width:200px;word-break:break-word">${t.subject.replace(/</g,"&lt;")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${STATUS_LABEL[t.status] || t.status}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${PRI_LABEL[t.priority] || t.priority}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0">${CAT_LABEL[t.category] || t.category}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0">${(t.customer_name || "").replace(/</g,"&lt;")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0">${(t.company || "—").replace(/</g,"&lt;")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${t.created_by_staff?.split("@")[0] || "—"}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${new Date(t.created_at).toLocaleDateString("tr-TR")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;white-space:nowrap">${t.resolved_at ? new Date(t.resolved_at).toLocaleDateString("tr-TR") : "—"}</td>
-      </tr>`).join("");
-
-    const html = `<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8">
-  <title>Lider Network — Destek Raporu</title>
-  <style>
-    body { margin: 0; padding: 24px; font-family: Arial, Helvetica, sans-serif; font-size: 12px; color: #1e293b; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 3px solid #0052ff; }
-    .logo-area h1 { margin: 0; font-size: 22px; color: #0052ff; letter-spacing: -0.5px; }
-    .logo-area p { margin: 4px 0 0; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 1px; }
-    .meta { text-align: right; font-size: 11px; color: #64748b; line-height: 1.7; }
-    .stats { display: flex; gap: 12px; margin-bottom: 20px; }
-    .stat { flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px; }
-    .stat .val { font-size: 22px; font-weight: 900; color: #0052ff; }
-    .stat .lbl { font-size: 10px; color: #94a3b8; text-transform: uppercase; letter-spacing: .5px; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; }
-    thead tr { background: #0052ff; }
-    thead th { padding: 9px 10px; text-align: left; color: #fff; font-size: 11px; font-weight: 700; border: 1px solid #0041cc; letter-spacing: .3px; }
-    .footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; font-size: 10px; color: #94a3b8; }
-    @media print { body { padding: 12px; } }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div class="logo-area">
-      <h1>LİDER NETWORK</h1>
-      <p>Destek Yönetim Sistemi — Rapor</p>
-    </div>
-    <div class="meta">
-      Oluşturulma: ${dateStr}<br>
-      Toplam: <strong>${rptTickets.length} talep</strong>
-    </div>
-  </div>
-  <div class="stats">
-    <div class="stat"><div class="val">${rptTickets.length}</div><div class="lbl">Toplam Talep</div></div>
-    <div class="stat" style="border-color:#bbf7d0"><div class="val" style="color:#15803d">${rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length}</div><div class="lbl">Çözülen</div></div>
-    <div class="stat" style="border-color:#fde68a"><div class="val" style="color:#d97706">${rptTickets.filter(t=>t.status==="open").length}</div><div class="lbl">Açık</div></div>
-    <div class="stat" style="border-color:#ddd6fe"><div class="val" style="color:#7c3aed">${rptTickets.filter(t=>t.status==="in_progress").length}</div><div class="lbl">İşlemde</div></div>
-    <div class="stat" style="border-color:#bfdbfe"><div class="val">${rptTickets.length ? Math.round((rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length/rptTickets.length)*100) : 0}%</div><div class="lbl">Çözüm Oranı</div></div>
-  </div>
-  <table>
-    <thead>
-      <tr>
-        ${["No","Konu","Durum","Öncelik","Kategori","Müşteri","Şirket","Personel","Tarih","Çözüm"].map(h=>`<th>${h}</th>`).join("")}
-      </tr>
-    </thead>
-    <tbody>${rows}</tbody>
-  </table>
-  <div class="footer">
-    <span>Lider Network Bilişim Hizmetleri — destek@lidernetwork.com.tr — +90 312 232 02 88</span>
-    <span>www.lidernetwork.com.tr</span>
-  </div>
-  <script>window.onload = () => { window.print(); }</script>
-</body>
-</html>`;
-
-    const win = window.open("", "_blank", "width=1100,height=800");
-    if (!win) { alert("Pop-up engelleyicisini kapatın ve tekrar deneyin."); return; }
-    win.document.write(html);
-    win.document.close();
-  }
-
-  // ── Staff Performance ─────────────────────────────────────────────────────
-  const rptStaffPerf = useMemo(() => {
-    const map = new Map<string, { name: string; total: number; resolved: number; totalMinutes: number }>();
-    rptTickets.filter(t => t.created_by_staff).forEach(t => {
-      const key = t.created_by_staff!;
-      const name = key.split("@")[0].replace(".", " ").replace(/\b\w/g, c => c.toUpperCase());
-      const prev = map.get(key) || { name, total: 0, resolved: 0, totalMinutes: 0 };
-      const isResolved = t.status === "resolved" || t.status === "closed";
-      const minutes = isResolved && t.resolved_at
-        ? Math.round((new Date(t.resolved_at).getTime() - new Date(t.created_at).getTime()) / 60000)
-        : 0;
-      map.set(key, { name, total: prev.total + 1, resolved: prev.resolved + (isResolved ? 1 : 0), totalMinutes: prev.totalMinutes + minutes });
-    });
-    return Array.from(map.values()).sort((a, b) => b.total - a.total);
-  }, [rptTickets]);
-
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f4f6fb", fontFamily: "var(--font-family-body)", position: "relative" }}>
+    <div style={{ display: "flex", minHeight: "100vh", background: "#f4f6fb", fontFamily: "var(--font-family-body)" }}>
 
       {/* ══════════════════════════════════════════════════════ SIDEBAR */}
-      <aside style={{
-        width: isMobile ? "70vw" : isTablet ? "240px" : "240px",
-        flexShrink: 0,
-        background: "#fff",
-        borderRight: "1px solid #e5e7ef",
-        display: isMobile && !sidebarOpen ? "none" : "flex",
-        flexDirection: "column",
-        position: isMobile ? "fixed" : "sticky",
-        top: 0,
-        left: 0,
-        height: "100vh",
-        overflowY: "auto",
-        zIndex: isMobile ? 999 : "auto",
-        boxShadow: isMobile && sidebarOpen ? "0 8px 24px rgba(0,0,0,.12)" : "none",
-        transition: "all .2s"
-      }}>
+      <aside style={{ width: "240px", flexShrink: 0, background: "#fff", borderRight: "1px solid #e5e7ef", display: "flex", flexDirection: "column", position: "sticky", top: 0, height: "100vh", overflowY: "auto" }}>
         <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid #f0f2f8" }}>
           <Image src="/logo.png" alt="Lider Network" width={120} height={36} style={{ objectFit: "contain" }} />
           <div style={{ marginTop: "5px", fontSize: "10px", fontWeight: 700, color: "#0052ff", letterSpacing: "1.5px", textTransform: "uppercase" }}>Admin Paneli</div>
@@ -675,7 +462,6 @@ export default function AdminDashboard() {
             <NavItem icon={<UserCog size={15} />} label="Personel" active={tab==="staff"} onClick={() => setTab("staff")} />
           )}
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
-          <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
 
           {stats && (
             <>
@@ -697,12 +483,7 @@ export default function AdminDashboard() {
           )}
         </nav>
 
-        <div style={{ padding: "8px 14px", borderTop: "1px solid #f0f2f8" }}>
-          <button onClick={() => { setPwModal(true); setPwError(""); setPwSuccess(""); }} style={{ width: "100%", padding: "7px 12px", background: "#f4f6fb", border: "1px solid #e5e7ef", borderRadius: "8px", color: "#6b7280", fontSize: "12px", fontWeight: 600, cursor: "pointer", textAlign: "left" }}>
-            🔒 Şifremi Değiştir
-          </button>
-        </div>
-        <div style={{ padding: "10px 14px", borderTop: "1px solid #f0f2f8", display: "flex", alignItems: "center", gap: "10px" }}>
+        <div style={{ padding: "12px 14px", borderTop: "1px solid #f0f2f8", display: "flex", alignItems: "center", gap: "10px" }}>
           <div style={{ width: 34, height: 34, borderRadius: "50%", background: "linear-gradient(135deg,#0052ff,#6366f1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px", fontWeight: 800, color: "#fff", flexShrink: 0 }}>
             {sessionName.split(" ").map(n=>n[0]).join("").toUpperCase().slice(0,2)}
           </div>
@@ -716,97 +497,37 @@ export default function AdminDashboard() {
         </div>
       </aside>
 
-      {/* Mobile sidebar overlay */}
-      {isMobile && sidebarOpen && (
-        <div onClick={() => setSidebarOpen(false)} style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,.3)",
-          zIndex: 998
-        }} />
-      )}
-
       {/* ══════════════════════════════════════════════════════ MAIN */}
-      <main style={{
-        flex: 1,
-        padding: isMobile ? "16px" : isTablet ? "20px 24px" : "28px 32px",
-        minWidth: 0,
-        marginLeft: isMobile && sidebarOpen ? "0" : "0"
-      }}>
+      <main style={{ flex: 1, padding: "28px 32px", minWidth: 0 }}>
 
         {/* Page header */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: isMobile ? "16px" : "24px",
-          gap: "12px",
-          flexWrap: isMobile ? "wrap" : "nowrap"
-        }}>
-          {isMobile && (
-            <button onClick={() => setSidebarOpen(!sidebarOpen)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: "#6b7280", padding: "4px" }}>
-              <Menu size={20} />
-            </button>
-          )}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "24px" }}>
           <div>
-            <h1 style={{
-              fontFamily: "var(--font-family-headline)",
-              fontSize: isMobile ? "18px" : "22px",
-              fontWeight: 800,
-              color: "#1a1d2e",
-              margin: "0 0 3px"
-            }}>
+            <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 3px" }}>
               {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="staff" ? "Personel" : "Raporlar"}
             </h1>
-            <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
+            <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
               {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${activeCompanies.length} aktif şirket` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
             </p>
           </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "10px" }}>
             {tab==="tickets" && (
-              <>
-                <button onClick={() => { fetchCompanies(); setNewTicketModal(true); }}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,82,255,.25)" }}>
-                  <Plus size={15} /> Yeni Talep
-                </button>
-                <button onClick={checkSLA} disabled={slaChecking}
-                  title="SLA süresi dolmak üzere olan talepleri kontrol et"
-                  style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 14px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "12px", fontWeight: 600, cursor: slaChecking ? "not-allowed" : "pointer" }}>
-                  <Zap size={13} color={slaChecking ? "#9ca3af" : "#d97706"} />
-                  {slaChecking ? "Kontrol..." : "SLA Kontrol"}
-                </button>
-              </>
+              <button onClick={() => { fetchCompanies(); setNewTicketModal(true); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,82,255,.25)" }}>
+                <Plus size={15} /> Yeni Talep
+              </button>
             )}
             {tab==="companies" && (
-              <>
-                <button onClick={() => sendMonthlyToCompany()}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                  📧 Tüm Şirketlere Aylık Rapor
-                </button>
-                <button onClick={() => setCompModal({})}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                  <Plus size={15} /> Şirket Ekle
-                </button>
-              </>
+              <button onClick={() => setCompModal({})}
+                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                <Plus size={15} /> Şirket Ekle
+              </button>
             )}
             <button onClick={() => { fetchTickets(); fetchStats(); fetchAllTickets(); if(tab==="customers") fetchCustomers(); if(tab==="companies") fetchCompanies(); if(tab==="staff") fetchStaff(); }}
               style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
               <RefreshCw size={14} /> Yenile
             </button>
           </div>
-          {/* SLA Toast */}
-          {slaToast && (
-            <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "#1a1d2e", color: "#fff", padding: "12px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,.2)" }}>
-              {slaToast}
-            </div>
-          )}
-          {/* Monthly Summary Toast */}
-          {mSummaryToast && (
-            <div style={{ position: "fixed", bottom: "24px", right: "24px", background: "#15803d", color: "#fff", padding: "12px 20px", borderRadius: "10px", fontSize: "13px", fontWeight: 600, zIndex: 999, boxShadow: "0 8px 24px rgba(0,0,0,.2)" }}>
-              {mSummaryToast}
-            </div>
-          )}
         </div>
 
         {/* ══════════════════════════ TICKETS TAB */}
@@ -1027,12 +748,9 @@ export default function AdminDashboard() {
                         {c.notes && <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#9ca3af", fontStyle: "italic" }}>{c.notes}</p>}
                       </div>
                     </div>
-                    <div style={{ marginTop: "12px", borderTop: "1px solid #f0f2f8", paddingTop: "10px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    <div style={{ marginTop: "12px", borderTop: "1px solid #f0f2f8", paddingTop: "10px" }}>
                       <button onClick={() => { setNtCompanyId(c.id); setNewTicketModal(true); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "6px 14px", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
-                        <Plus size={13} /> Talep Aç
-                      </button>
-                      <button onClick={() => sendMonthlyToCompany(c.id)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "6px 14px", color: "#15803d", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
-                        📧 Aylık Rapor Gönder
+                        <Plus size={13} /> Bu Şirket İçin Talep Aç
                       </button>
                     </div>
                   </div>
@@ -1289,79 +1007,7 @@ export default function AdminDashboard() {
                 ))}
               </div>
             </div>
-
-            {/* Personel Performansı */}
-            {rptStaffPerf.length > 0 && (
-              <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 24px", marginBottom: "14px" }}>
-                <h4 style={{ margin: "0 0 14px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "6px" }}>
-                  <ShieldCheck size={14} color="#0052ff" /> Personel Performansı
-                </h4>
-                <div style={{ overflowX: "auto" }}>
-                  <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "13px" }}>
-                    <thead>
-                      <tr style={{ borderBottom: "2px solid #e5e7ef" }}>
-                        {["Personel", "Açılan", "Çözülen", "Çözüm %", "Ort. Süre"].map(h => (
-                          <th key={h} style={{ padding: "8px 12px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rptStaffPerf.map((s, i) => {
-                        const pct = s.total ? Math.round((s.resolved / s.total) * 100) : 0;
-                        const avgMin = s.resolved > 0 ? Math.round(s.totalMinutes / s.resolved) : null;
-                        let avgStr = "—";
-                        if (avgMin !== null) {
-                          if (avgMin < 60) avgStr = `${avgMin}dk`;
-                          else if (avgMin < 1440) avgStr = `${Math.round(avgMin/60)}sa`;
-                          else avgStr = `${Math.round(avgMin/1440)}g`;
-                        }
-                        return (
-                          <tr key={i} style={{ borderBottom: "1px solid #f0f2f8" }}>
-                            <td style={{ padding: "10px 12px", fontWeight: 600, color: "#1a1d2e" }}>{s.name}</td>
-                            <td style={{ padding: "10px 12px", fontWeight: 800, color: "#0052ff" }}>{s.total}</td>
-                            <td style={{ padding: "10px 12px", color: "#15803d", fontWeight: 700 }}>{s.resolved}</td>
-                            <td style={{ padding: "10px 12px" }}>
-                              <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                <div style={{ flex: 1, height: "6px", background: "#f0f2f8", borderRadius: "3px", overflow: "hidden", minWidth: 60 }}>
-                                  <div style={{ height: "100%", width: `${pct}%`, background: pct >= 80 ? "#22c55e" : pct >= 50 ? "#f59e0b" : "#ef4444", borderRadius: "3px" }} />
-                                </div>
-                                <span style={{ fontSize: "12px", fontWeight: 700, color: "#1a1d2e", minWidth: 32 }}>%{pct}</span>
-                              </div>
-                            </td>
-                            <td style={{ padding: "10px 12px", fontSize: "12px", color: "#6b7280" }}>{avgStr}</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* PDF / Excel Export */}
-            <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "16px 24px", marginBottom: "14px" }}>
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
-                <div>
-                  <h4 style={{ margin: "0 0 2px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>Dışa Aktar</h4>
-                  <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>{rptTotal} talep listelendi</p>
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button onClick={printPDF} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-                    📄 PDF İndir
-                  </button>
-                  <button onClick={downloadCSV} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "9px 16px", background: "#f0fdf4", border: "1.5px solid #bbf7d0", borderRadius: "10px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                    📊 Excel İndir
-                  </button>
-                </div>
-              </div>
-            </div>
-
           </>
-        )}
-
-        {/* ══════════════════════════ İŞ PLANI TAB */}
-        {tab === "isplan" && (
-          <IsPlani companies={companies} staff={staff.map(s => s.name)} />
         )}
       </main>
 
@@ -1497,50 +1143,6 @@ export default function AdminDashboard() {
                 {ntSaving ? "Oluşturuluyor..." : "Talep Oluştur →"}
               </button>
               <button onClick={() => setNewTicketModal(false)} style={{ padding: "12px 20px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════ MODAL: Şifre Değiştir */}
-      {pwModal && (
-        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: "16px" }}
-          onClick={e => { if (e.target === e.currentTarget) setPwModal(false); }}>
-          <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "420px", boxShadow: "0 24px 72px rgba(0,0,0,.28)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #f0f0f5" }}>
-              <h2 style={{ margin: 0, fontSize: "16px", fontWeight: 800, color: "#0f172a" }}>🔒 Şifremi Değiştir</h2>
-              <button onClick={() => setPwModal(false)} style={{ background: "#f4f6fb", border: "none", borderRadius: "8px", cursor: "pointer", padding: "6px", display: "flex", color: "#6b7280" }}><X size={16} /></button>
-            </div>
-            <div style={{ padding: "24px" }}>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Mevcut Şifre</label>
-                <input type="password" value={pwCurrent} onChange={e => setPwCurrent(e.target.value)} placeholder="••••••••" style={inpS} />
-              </div>
-              <div style={{ marginBottom: "14px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Yeni Şifre</label>
-                <input type="password" value={pwNew} onChange={e => setPwNew(e.target.value)} placeholder="••••••••" style={inpS} />
-              </div>
-              <div style={{ marginBottom: "20px" }}>
-                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Yeni Şifre (Tekrar)</label>
-                <input type="password" value={pwConfirm} onChange={e => setPwConfirm(e.target.value)} placeholder="••••••••" style={inpS} />
-              </div>
-              {pwError && (
-                <div style={{ background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }}>
-                  <p style={{ color: "#dc2626", fontSize: "13px", margin: 0, fontWeight: 500 }}>⚠️ {pwError}</p>
-                </div>
-              )}
-              {pwSuccess && (
-                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 14px", marginBottom: "14px" }}>
-                  <p style={{ color: "#15803d", fontSize: "13px", margin: 0, fontWeight: 600 }}>✓ {pwSuccess}</p>
-                </div>
-              )}
-              <div style={{ display: "flex", gap: "10px" }}>
-                <button onClick={changePassword} disabled={pwSaving}
-                  style={{ flex: 1, padding: "12px", background: pwSaving ? "#e5e7ef" : "#0052ff", color: pwSaving ? "#9ca3af" : "#fff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, cursor: pwSaving ? "not-allowed" : "pointer" }}>
-                  {pwSaving ? "Kaydediliyor..." : "Şifreyi Güncelle"}
-                </button>
-                <button onClick={() => setPwModal(false)} style={{ padding: "12px 20px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
-              </div>
             </div>
           </div>
         </div>
