@@ -1,11 +1,16 @@
 import { NextResponse } from "next/server";
-import { getAdminSession } from "@/lib/admin-auth";
+import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
 
 /* ── GET /api/admin/staff ──────────────────────────────────── */
 export async function GET() {
-  const ok = await getAdminSession();
-  if (!ok) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  // Try admin session first, fall back to regular session
+  const isAdmin = await getAdminSession();
+  const user = await getSessionUser();
+
+  if (!isAdmin && !user) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  }
 
   const { data, error } = await supabase
     .from("users")
