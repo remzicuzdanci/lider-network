@@ -152,7 +152,7 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>{form.id?"Görevi Düzenle":"Yeni Görev"}</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
         </div>
-        <form onSubmit={async e => { e.preventDefault(); if(!form.title?.trim()) return; setSaving(true); await onSave(form); setSaving(false); }}
+        <form onSubmit={async e => { e.preventDefault(); if(!form.title?.trim()) return; setSaving(true); try { await onSave(form); onClose(); } catch(err){ alert("Kaydedilemedi: "+(err instanceof Error?err.message:"Bilinmeyen hata")); } finally { setSaving(false); } }}
           style={{ display:"flex",flexDirection:"column",gap:isMobile?"15px":"13px" }}>
           <div><label style={lbl}>Başlık *</label>
             <input type="text" value={form.title??""} required placeholder="Görevi kısaca açıklayın..." style={inp} onChange={e=>set("title",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -917,10 +917,12 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
   async function saveTask(form: Partial<WorkTask>) {
     if (form.id) {
       const r = await fetch("/api/admin/tasks",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-      if (r.ok){const u=await r.json();setTasks(p=>p.map(t=>t.id===u.id?{...t,...u}:t));}
+      if (!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Görev güncellenemedi");}
+      const u=await r.json();setTasks(p=>p.map(t=>t.id===u.id?{...t,...u}:t));
     } else {
       const r = await fetch("/api/admin/tasks",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-      if (r.ok){const c=await r.json();setTasks(p=>[c,...p]);}
+      if (!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Görev oluşturulamadı");}
+      const c=await r.json();setTasks(p=>[c,...p]);
     }
   }
 
