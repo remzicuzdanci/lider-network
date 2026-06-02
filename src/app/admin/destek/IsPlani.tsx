@@ -174,7 +174,7 @@ function TaskModal({ task, defaultDate, companies, onSave, onClose }: {
             </div>
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
-            <input type="checkbox" checked={form.billed??false} onChange={e=>set("billed",e.target.checked)} style={{ cursor:"pointer",width:16,height:16 }} id="billedCheckbox" />
+            <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:16,height:16 }} id="billedCheckbox" />
             <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
           </div>
           <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
@@ -254,7 +254,7 @@ function ProjectModal({ project, companies, onSave, onClose }: {
             <textarea value={form.notes??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Özel notlar, hatırlatmalar..." onChange={e=>set("notes",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
           <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
-            <input type="checkbox" checked={form.billed??false} onChange={e=>set("billed",e.target.checked)} style={{ cursor:"pointer",width:16,height:16 }} id="projBilledCheckbox" />
+            <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:16,height:16 }} id="projBilledCheckbox" />
             <label htmlFor="projBilledCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu proje faturalandı</label>
           </div>
           <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
