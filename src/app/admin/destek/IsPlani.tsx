@@ -172,7 +172,13 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
               </select>
             </div>
           </div>
-          <div>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+            <div><label style={lbl}>Atanan Kişi</label>
+              <select value={form.assigned_to??""} style={inp} onChange={e=>set("assigned_to",e.target.value)}>
+                <option value="">— Seçin —</option>
+                {staff.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
             <div><label style={lbl}>Bitiş Tarihi</label>
               <input type="date" value={form.due_date??""} style={inp} onChange={e=>set("due_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
@@ -240,12 +246,19 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
           <div><label style={lblS}>Açıklama</label>
             <textarea value={form.description??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Proje hakkında kısa bilgi..." onChange={e=>set("description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div>
-            <label style={lblS}>Müşteri</label>
-            <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
-              <option value="">— Seçin —</option>
-              {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+            <div><label style={lblS}>Müşteri</label>
+              <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
+                <option value="">— Seçin —</option>
+                {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div><label style={lblS}>Sorumlu</label>
+              <select value={form.assigned_to??""} style={inpS} onChange={e=>set("assigned_to",e.target.value)}>
+                <option value="">— Seçin —</option>
+                {staff.map(s=><option key={s} value={s}>{s}</option>)}
+              </select>
+            </div>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Başlangıç</label>
@@ -517,8 +530,8 @@ function ProjelerTab({ companies, staff }: { companies: Company[]; staff: string
 /* ══════════════════════════════════════════════════════════════
    TAB: GÜNLÜK GÖREVLER
 ══════════════════════════════════════════════════════════════ */
-function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenServiceForm }: {
-  tasks: WorkTask[]; companies: Company[]; staff: string[];
+function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentUserName = "", onOpenServiceForm }: {
+  tasks: WorkTask[]; companies: Company[]; staff: string[]; currentUserName?: string;
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
@@ -628,8 +641,9 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
                   const done  = task.status==="done";
                   const cat   = catMap[task.category]??catMap["general"];
                   const pri   = priMap[task.priority]??priMap["medium"];
+                  const mine  = !!currentUserName && task.assigned_to===currentUserName;
                   return (
-                    <div key={task.id} style={{ display:"flex",alignItems:"flex-start",gap:"10px",background:"#fff",border:`1.5px solid ${done?"#bbf7d0":"#e5e7ef"}`,borderRadius:"11px",padding:"12px 14px",transition:"all .15s",opacity:done?.7:1 }}>
+                    <div key={task.id} style={{ display:"flex",alignItems:"flex-start",gap:"10px",background:mine?"#eff6ff":"#fff",border:`1.5px solid ${mine?"#93c5fd":done?"#bbf7d0":"#e5e7ef"}`,borderLeft:mine?"4px solid #0052ff":undefined,borderRadius:"11px",padding:"12px 14px",transition:"all .15s",opacity:done?.7:1 }}>
                       <button onClick={()=>toggleDone(task)} style={{ background:"none",border:"none",cursor:"pointer",color:done?"#22c55e":"#cbd5e1",flexShrink:0,marginTop:"1px",padding:0 }}>
                         {done ? <CheckCircle2 size={18}/> : <Circle size={18}/>}
                       </button>
@@ -665,8 +679,8 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
 /* ══════════════════════════════════════════════════════════════
    TAB: KANBAN
 ══════════════════════════════════════════════════════════════ */
-function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenServiceForm }: {
-  tasks: WorkTask[]; companies: Company[]; staff: string[];
+function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentUserName = "", onOpenServiceForm }: {
+  tasks: WorkTask[]; companies: Company[]; staff: string[]; currentUserName?: string;
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
@@ -725,8 +739,9 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
                 const cat = catMap[task.category]??catMap["general"];
                 const pri = priMap[task.priority]??priMap["medium"];
                 const due = dueBadge(task.due_date,task.status==="done");
+                const mine = !!currentUserName && task.assigned_to===currentUserName;
                 return (
-                  <div key={task.id} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"11px",padding:"13px",marginBottom:"9px",boxShadow:"0 1px 4px rgba(0,0,0,.04)",transition:"box-shadow .15s" }}
+                  <div key={task.id} style={{ background:mine?"#eff6ff":"#fff",border:`1.5px solid ${mine?"#93c5fd":"#e5e7ef"}`,borderLeft:mine?"4px solid #0052ff":"1.5px solid #e5e7ef",borderRadius:"11px",padding:"13px",marginBottom:"9px",boxShadow:"0 1px 4px rgba(0,0,0,.04)",transition:"box-shadow .15s" }}
                     onMouseEnter={e=>(e.currentTarget as HTMLElement).style.boxShadow="0 4px 12px rgba(0,0,0,.09)"}
                     onMouseLeave={e=>(e.currentTarget as HTMLElement).style.boxShadow="0 1px 4px rgba(0,0,0,.04)"}>
 
@@ -867,7 +882,7 @@ function FaturandiTab({
 ══════════════════════════════════════════════════════════════ */
 type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
 
-export default function IsPlani({ companies, staff = ["Enes Yildiz","Halil Oztekin","Murat Aykac","Omer Oztekin","Remzi Cuzdanci","Yunus Oztekin"] }: { companies: Company[]; staff?: string[] }) {
+export default function IsPlani({ companies, staff = [], currentUserName = "" }: { companies: Company[]; staff?: string[]; currentUserName?: string }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const isTablet = width < 1024;
@@ -1049,8 +1064,8 @@ export default function IsPlani({ companies, staff = ["Enes Yildiz","Halil Oztek
 
       {/* ── Tab content ──────────────────────────────────────── */}
       {innerTab==="projeler" && <ProjelerTab companies={companies} staff={staff} />}
-      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
-      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
+      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
+      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}

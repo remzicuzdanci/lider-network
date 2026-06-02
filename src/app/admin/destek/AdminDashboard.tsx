@@ -155,15 +155,7 @@ export default function AdminDashboard() {
   const [compModal, setCompModal]         = useState<Partial<Company> | null>(null); // null = closed, {} = new
   const [compSaving, setCompSaving]       = useState(false);
 
-  // Staff - Hardcoded list
-  const staffList = [
-    "Enes Yildiz",
-    "Halil Oztekin",
-    "Murat Aykac",
-    "Omer Oztekin",
-    "Remzi Cuzdanci",
-    "Yunus Oztekin"
-  ];
+  // Staff - loaded from staff_users table via /api/admin/staff
   const [staff, setStaff]             = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffSetupDone, setStaffSetupDone] = useState(false);
@@ -1380,7 +1372,7 @@ export default function AdminDashboard() {
 
         {/* ══════════════════════════ İŞ PLANI TAB */}
         {tab === "isplan" && (
-          <IsPlani companies={companies} staff={staffList} />
+          <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} />
         )}
       </main>
 

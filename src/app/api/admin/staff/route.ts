@@ -13,7 +13,7 @@ export async function GET() {
   }
 
   const { data, error } = await supabase
-    .from("users")
+    .from("staff_users")
     .select("id, name, email, role, active, created_at")
     .eq("active", true)
     .order("name", { ascending: true });
@@ -21,6 +21,6 @@ export async function GET() {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json({
-    staff: (data || []).map(u => u.name) // Return just names for dropdown
+    staff: data || [] // Full staff objects (id, name, email, role, active)
   });
 }
