@@ -1372,7 +1372,7 @@ export default function AdminDashboard() {
 
         {/* ══════════════════════════ İŞ PLANI TAB */}
         {tab === "isplan" && (
-          <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} />
+          <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} currentUserRole={sessionRole} />
         )}
       </main>
 

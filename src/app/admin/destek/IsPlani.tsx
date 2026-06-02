@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import {
   Plus, X, Calendar, Flag, Building2, User,
   MoreHorizontal, Edit2, Trash2, Clock, ChevronLeft,
   ChevronRight, CheckCircle2, Circle, Columns,
   FolderKanban, CalendarDays, TrendingUp, AlertTriangle, Receipt,
+  BarChart3, FileSpreadsheet, FileText, Download,
 } from "lucide-react";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 /* ══════════════════════════════════════════════════════════════
    TYPES
@@ -890,9 +894,285 @@ function FaturandiTab({
 /* ══════════════════════════════════════════════════════════════
    MAIN
 ══════════════════════════════════════════════════════════════ */
-type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
+/* ══════════════════════════════════════════════════════════════
+   TAB: RAPORLAR (yalnızca super_admin)
+══════════════════════════════════════════════════════════════ */
+type Period = "today" | "week" | "month" | "all";
 
-export default function IsPlani({ companies, staff = [], currentUserName = "" }: { companies: Company[]; staff?: string[]; currentUserName?: string }) {
+// jsPDF standart fontu Türkçe ş/ğ/ı/İ karakterlerini gösteremediği için
+// PDF çıktısında okunabilir ASCII karşılıklarına çeviriyoruz.
+function trAscii(s: string): string {
+  return (s ?? "")
+    .replace(/ş/g,"s").replace(/Ş/g,"S")
+    .replace(/ğ/g,"g").replace(/Ğ/g,"G")
+    .replace(/ı/g,"i").replace(/İ/g,"I")
+    .replace(/ç/g,"c").replace(/Ç/g,"C")
+    .replace(/ö/g,"o").replace(/Ö/g,"O")
+    .replace(/ü/g,"u").replace(/Ü/g,"U");
+}
+
+function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies: Company[]; staff: string[] }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
+  const [period, setPeriod] = useState<Period>("month");
+
+  const companyName = useCallback(
+    (id?: string) => companies.find(c => c.id === id)?.name || "Atanmamış",
+    [companies]
+  );
+
+  const { startDate, periodLabel } = useMemo(() => {
+    const now = new Date();
+    if (period === "today") { const s = new Date(now); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Bugün" }; }
+    if (period === "week")  { const s = new Date(now); s.setDate(now.getDate()-7); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Son 7 Gün" }; }
+    if (period === "month") { const s = new Date(now); s.setDate(now.getDate()-30); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Son 30 Gün" }; }
+    return { startDate: new Date(0), periodLabel:"Tüm Zamanlar" };
+  }, [period]);
+
+  const filtered = useMemo(
+    () => tasks.filter(t => new Date(t.created_at) >= startDate),
+    [tasks, startDate]
+  );
+
+  // ── Personel performansı ──
+  const perf = useMemo(() => {
+    return staff.map(name => {
+      const ts   = filtered.filter(t => t.assigned_to === name);
+      const done = ts.filter(t => t.status === "done").length;
+      const prog = ts.filter(t => t.status === "in_progress").length;
+      const todo = ts.filter(t => t.status === "todo").length;
+      const billed = ts.filter(t => t.billed).length;
+      const rate = ts.length ? Math.round((done / ts.length) * 100) : 0;
+      return { name, total: ts.length, done, prog, todo, billed, rate };
+    }).sort((a,b) => b.total - a.total);
+  }, [filtered, staff]);
+
+  // ── Müşteri bazlı rapor ──
+  const byCompany = useMemo(() => {
+    const map = new Map<string, { name:string; total:number; done:number; prog:number; todo:number; billed:number }>();
+    filtered.forEach(t => {
+      const key = t.company_id || "none";
+      const name = t.company_id ? companyName(t.company_id) : "Müşteri Atanmamış";
+      const row = map.get(key) || { name, total:0, done:0, prog:0, todo:0, billed:0 };
+      row.total++;
+      if (t.status === "done") row.done++;
+      else if (t.status === "in_progress") row.prog++;
+      else row.todo++;
+      if (t.billed) row.billed++;
+      map.set(key, row);
+    });
+    return [...map.values()].sort((a,b) => b.total - a.total);
+  }, [filtered, companyName]);
+
+  const totals = useMemo(() => ({
+    total:  filtered.length,
+    done:   filtered.filter(t => t.status === "done").length,
+    prog:   filtered.filter(t => t.status === "in_progress").length,
+    todo:   filtered.filter(t => t.status === "todo").length,
+    billed: filtered.filter(t => t.billed).length,
+  }), [filtered]);
+
+  const dateTag = new Date().toLocaleDateString("tr-TR").replace(/\./g,"-");
+
+  // ── Excel çıktısı ──
+  function exportExcel() {
+    const wb = XLSX.utils.book_new();
+    const perfSheet = XLSX.utils.aoa_to_sheet([
+      [`Personel Performans Raporu — ${periodLabel}`],
+      [],
+      ["Personel","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tamamlama %"],
+      ...perf.map(p => [p.name, p.total, p.done, p.prog, p.todo, p.billed, `%${p.rate}`]),
+      [],
+      ["TOPLAM", totals.total, totals.done, totals.prog, totals.todo, totals.billed, ""],
+    ]);
+    perfSheet["!cols"] = [{wch:22},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:13}];
+    XLSX.utils.book_append_sheet(wb, perfSheet, "Performans");
+
+    const compSheet = XLSX.utils.aoa_to_sheet([
+      [`Müşteri Bazlı Rapor — ${periodLabel}`],
+      [],
+      ["Müşteri","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan"],
+      ...byCompany.map(c => [c.name, c.total, c.done, c.prog, c.todo, c.billed]),
+    ]);
+    compSheet["!cols"] = [{wch:28},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13}];
+    XLSX.utils.book_append_sheet(wb, compSheet, "Müşteri Bazlı");
+
+    XLSX.writeFile(wb, `Lider-Network-Rapor-${periodLabel.replace(/ /g,"")}-${dateTag}.xlsx`);
+  }
+
+  // ── PDF çıktısı ──
+  function exportPDF() {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("LIDER NETWORK", 14, 18);
+    doc.setFontSize(11);
+    doc.setTextColor(100);
+    doc.text(trAscii(`Is Plani Raporu — ${periodLabel}`), 14, 25);
+    doc.text(`Tarih: ${new Date().toLocaleDateString("tr-TR")}`, 14, 31);
+
+    autoTable(doc, {
+      startY: 38,
+      head: [["Personel","Toplam","Biten","Devam","Bekleyen","Fatura","Tamamlama"]],
+      body: [
+        ...perf.map(p => [trAscii(p.name), p.total, p.done, p.prog, p.todo, p.billed, `%${p.rate}`]),
+        [{ content:"TOPLAM", styles:{ fontStyle:"bold" } }, totals.total, totals.done, totals.prog, totals.todo, totals.billed, ""],
+      ],
+      headStyles: { fillColor: [0,82,255] },
+      styles: { fontSize: 9 },
+    });
+
+    const afterY = (doc as unknown as { lastAutoTable:{ finalY:number } }).lastAutoTable.finalY + 10;
+    doc.setFontSize(12);
+    doc.setTextColor(30);
+    doc.text(trAscii("Musteri Bazli Rapor"), 14, afterY);
+
+    autoTable(doc, {
+      startY: afterY + 4,
+      head: [["Musteri","Toplam","Biten","Devam","Bekleyen","Fatura"]],
+      body: byCompany.map(c => [trAscii(c.name), c.total, c.done, c.prog, c.todo, c.billed]),
+      headStyles: { fillColor: [16,185,129] },
+      styles: { fontSize: 9 },
+    });
+
+    doc.save(`Lider-Network-Rapor-${trAscii(periodLabel).replace(/ /g,"")}-${dateTag}.pdf`);
+  }
+
+  const card  = { background:"#fff", border:"1px solid #e5e7ef", borderRadius:"13px", padding:isMobile?"16px":"20px", marginBottom:"18px" } as const;
+  const th     = { padding:"10px 12px", fontSize:"11px", fontWeight:700, color:"#64748b", textTransform:"uppercase" as const, textAlign:"left" as const, borderBottom:"2px solid #e5e7ef", whiteSpace:"nowrap" as const };
+  const thN    = { ...th, textAlign:"center" as const };
+  const td     = { padding:"11px 12px", fontSize:"13px", color:"#1a1d2e", borderBottom:"1px solid #f1f5f9" };
+  const tdN    = { ...td, textAlign:"center" as const, fontWeight:600 };
+
+  const PERIODS: { id:Period; label:string }[] = [
+    { id:"today", label:"Bugün" },
+    { id:"week",  label:"Son 7 Gün" },
+    { id:"month", label:"Son 30 Gün" },
+    { id:"all",   label:"Tümü" },
+  ];
+
+  return (
+    <div>
+      {/* Üst bar: dönem seçimi + dışa aktarma */}
+      <div style={{ display:"flex",flexDirection:isMobile?"column":"row",gap:"12px",justifyContent:"space-between",alignItems:isMobile?"stretch":"center",marginBottom:"18px" }}>
+        <div style={{ display:"flex",gap:"6px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"11px",padding:"4px",overflowX:"auto" }}>
+          {PERIODS.map(p=>(
+            <button key={p.id} onClick={()=>setPeriod(p.id)}
+              style={{ padding:isMobile?"10px 12px":"7px 14px",borderRadius:"8px",border:"none",whiteSpace:"nowrap",
+                background:period===p.id?"linear-gradient(135deg,#0038c7,#0052ff)":"transparent",
+                color:period===p.id?"#fff":"#64748b",fontSize:"13px",fontWeight:period===p.id?700:500,cursor:"pointer" }}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+        <div style={{ display:"flex",gap:"8px" }}>
+          <button onClick={exportExcel}
+            style={{ flex:isMobile?1:0,display:"flex",alignItems:"center",justifyContent:"center",gap:"7px",padding:isMobile?"11px 14px":"9px 16px",borderRadius:"9px",border:"none",background:"linear-gradient(135deg,#15803d,#22c55e)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 4px 12px rgba(34,197,94,.25)" }}>
+            <FileSpreadsheet size={15}/> Excel
+          </button>
+          <button onClick={exportPDF}
+            style={{ flex:isMobile?1:0,display:"flex",alignItems:"center",justifyContent:"center",gap:"7px",padding:isMobile?"11px 14px":"9px 16px",borderRadius:"9px",border:"none",background:"linear-gradient(135deg,#b91c1c,#ef4444)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:"pointer",boxShadow:"0 4px 12px rgba(239,68,68,.25)" }}>
+            <FileText size={15}/> PDF
+          </button>
+        </div>
+      </div>
+
+      {/* Özet kutuları */}
+      <div style={{ display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:"12px",marginBottom:"18px" }}>
+        {[
+          { label:"Toplam Görev", value:totals.total,  color:"#0052ff" },
+          { label:"Tamamlanan",   value:totals.done,   color:"#15803d" },
+          { label:"Devam Eden",   value:totals.prog,   color:"#7c3aed" },
+          { label:"Bekleyen",     value:totals.todo,   color:"#d97706" },
+          { label:"Faturalanan",  value:totals.billed, color:"#0891b2" },
+        ].map(s=>(
+          <div key={s.label} style={{ background:"#fff",border:"1px solid #e5e7ef",borderTop:`3px solid ${s.color}`,borderRadius:"12px",padding:isMobile?"14px":"16px" }}>
+            <p style={{ fontSize:isMobile?"24px":"26px",fontWeight:900,color:s.color,margin:"0 0 4px",lineHeight:1 }}>{s.value}</p>
+            <p style={{ fontSize:"11.5px",color:"#9ca3af",margin:0 }}>{s.label}</p>
+          </div>
+        ))}
+      </div>
+
+      {/* Personel performans tablosu */}
+      <div style={card}>
+        <div style={{ display:"flex",alignItems:"center",gap:"8px",marginBottom:"14px" }}>
+          <TrendingUp size={16} color="#0052ff"/>
+          <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>Personel Performansı <span style={{ fontSize:"12px",fontWeight:600,color:"#94a3b8" }}>({periodLabel})</span></h3>
+        </div>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%",borderCollapse:"collapse",minWidth:"560px" }}>
+            <thead><tr>
+              <th style={th}>Personel</th>
+              <th style={thN}>Toplam</th>
+              <th style={thN}>Biten</th>
+              <th style={thN}>Devam</th>
+              <th style={thN}>Bekleyen</th>
+              <th style={thN}>Fatura</th>
+              <th style={thN}>Tamamlama</th>
+            </tr></thead>
+            <tbody>
+              {perf.map(p=>(
+                <tr key={p.name}>
+                  <td style={{ ...td,fontWeight:700 }}>{p.name}</td>
+                  <td style={tdN}>{p.total}</td>
+                  <td style={{ ...tdN,color:"#15803d" }}>{p.done}</td>
+                  <td style={{ ...tdN,color:"#7c3aed" }}>{p.prog}</td>
+                  <td style={{ ...tdN,color:"#d97706" }}>{p.todo}</td>
+                  <td style={{ ...tdN,color:"#0891b2" }}>{p.billed}</td>
+                  <td style={tdN}>
+                    <div style={{ display:"flex",alignItems:"center",gap:"7px",justifyContent:"center" }}>
+                      <div style={{ width:"54px",height:"7px",background:"#eef2f7",borderRadius:"4px",overflow:"hidden" }}>
+                        <div style={{ width:`${p.rate}%`,height:"100%",background:p.rate>=70?"#22c55e":p.rate>=40?"#f59e0b":"#ef4444" }}/>
+                      </div>
+                      <span style={{ fontSize:"12px",fontWeight:700 }}>%{p.rate}</span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+              {perf.length===0 && <tr><td colSpan={7} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Müşteri bazlı rapor tablosu */}
+      <div style={card}>
+        <div style={{ display:"flex",alignItems:"center",gap:"8px",marginBottom:"14px" }}>
+          <Building2 size={16} color="#15803d"/>
+          <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>Müşteri Bazlı Rapor <span style={{ fontSize:"12px",fontWeight:600,color:"#94a3b8" }}>({periodLabel})</span></h3>
+        </div>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%",borderCollapse:"collapse",minWidth:"520px" }}>
+            <thead><tr>
+              <th style={th}>Müşteri</th>
+              <th style={thN}>Toplam</th>
+              <th style={thN}>Biten</th>
+              <th style={thN}>Devam</th>
+              <th style={thN}>Bekleyen</th>
+              <th style={thN}>Fatura</th>
+            </tr></thead>
+            <tbody>
+              {byCompany.map(c=>(
+                <tr key={c.name}>
+                  <td style={{ ...td,fontWeight:700 }}>{c.name}</td>
+                  <td style={tdN}>{c.total}</td>
+                  <td style={{ ...tdN,color:"#15803d" }}>{c.done}</td>
+                  <td style={{ ...tdN,color:"#7c3aed" }}>{c.prog}</td>
+                  <td style={{ ...tdN,color:"#d97706" }}>{c.todo}</td>
+                  <td style={{ ...tdN,color:"#0891b2" }}>{c.billed}</td>
+                </tr>
+              ))}
+              {byCompany.length===0 && <tr><td colSpan={6} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı" | "raporlar";
+
+export default function IsPlani({ companies, staff = [], currentUserName = "", currentUserRole = "staff" }: { companies: Company[]; staff?: string[]; currentUserName?: string; currentUserRole?: string }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const isTablet = width < 1024;
@@ -995,11 +1275,13 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
   const inProgress = tasks.filter(t=>t.status==="in_progress");
   const doneToday  = tasks.filter(t=>t.status==="done"&&t.updated_at?.slice(0,10)===today);
 
+  const isSuperAdmin = currentUserRole === "super_admin";
   const INNER_TABS: { id: InnerTab; label: string; icon: React.ReactNode }[] = [
     { id:"gunluk",   label:"Günlük Görevler", icon:<CalendarDays size={14}/> },
     { id:"kanban",   label:"Kanban Board",    icon:<Columns size={14}/> },
     { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
     { id:"faturalandı", label:"Faturalandı",  icon:<Receipt size={14}/> },
+    ...(isSuperAdmin ? [{ id:"raporlar" as InnerTab, label:"Raporlar", icon:<BarChart3 size={14}/> }] : []),
   ];
 
   return (
@@ -1090,6 +1372,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
+      {innerTab==="raporlar" && isSuperAdmin && tasksLoaded && <RaporlarTab tasks={tasks} companies={companies} staff={staff} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onSend={sendServiceForm} onClose={()=>setServiceFormModal(false)} />}
     </div>
