@@ -95,6 +95,16 @@ const KAN_COLS = [
 /* ══════════════════════════════════════════════════════════════
    HELPERS
 ══════════════════════════════════════════════════════════════ */
+function useWindowSize() {
+  const [size, setSize] = useState({ width: typeof window !== 'undefined' ? window.innerWidth : 1200 });
+  useEffect(() => {
+    const handler = () => setSize({ width: window.innerWidth });
+    window.addEventListener('resize', handler);
+    return () => window.removeEventListener('resize', handler);
+  }, []);
+  return size;
+}
+
 const inpS: React.CSSProperties = { padding:"9px 12px", background:"#fff", border:"1.5px solid #e5e7ef", borderRadius:"8px", color:"#1a1d2e", fontSize:"13px", outline:"none", fontFamily:"inherit", width:"100%", boxSizing:"border-box" };
 const lblS: React.CSSProperties = { display:"block", fontSize:"11px", fontWeight:700, color:"#374151", marginBottom:"5px", letterSpacing:".3px", textTransform:"uppercase" };
 
@@ -126,14 +136,16 @@ function TaskModal({ task, defaultDate, companies, onSave, onOpenServiceForm, on
   task: Partial<WorkTask>|null; defaultDate?: string;
   companies: Company[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
   const [form, setForm] = useState<Partial<WorkTask>>(task ?? { category:"general", priority:"medium", status:"todo", due_date: defaultDate });
   const [saving, setSaving] = useState(false);
   function set<K extends keyof WorkTask>(k: K, v: WorkTask[K]) { setForm(f => ({...f,[k]:v})); }
 
   return (
-    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px" }}
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?"0":"20px" }}
       onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff",borderRadius:"18px",padding:"28px",width:"100%",maxWidth:"480px",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background:"#fff",borderRadius:isMobile?"0":"18px",padding:isMobile?"20px":"28px",width:"100%",maxWidth:isMobile?"100%":"480px",maxHeight:isMobile?"100vh":"auto",overflowY:isMobile?"auto":"visible",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px" }}>
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>{form.id?"Görevi Düzenle":"Yeni Görev"}</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
@@ -210,14 +222,16 @@ function ProjectModal({ project, companies, onSave, onClose }: {
   project: Partial<Project>|null; companies: Company[];
   onSave: (p: Partial<Project>) => Promise<void>; onClose: () => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
   const [form, setForm] = useState<Partial<Project>>(project ?? { phase:"teklif", status:"active" });
   const [saving, setSaving] = useState(false);
   function set<K extends keyof Project>(k: K, v: Project[K]) { setForm(f=>({...f,[k]:v})); }
 
   return (
-    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px" }}
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?"0":"20px" }}
       onClick={e => { if(e.target===e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff",borderRadius:"18px",padding:"28px",width:"100%",maxWidth:"520px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background:"#fff",borderRadius:isMobile?"0":"18px",padding:isMobile?"20px":"28px",width:"100%",maxWidth:isMobile?"100%":"520px",maxHeight:isMobile?"100vh":"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px" }}>
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>{form.id?"Projeyi Düzenle":"Yeni Proje"}</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
@@ -290,14 +304,16 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
   form: Partial<ServiceForm>|null; task?: WorkTask; project?: Project; companies: Company[];
   onSave: (f: Partial<ServiceForm>) => Promise<void>; onClose: () => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
   const [f, setF] = useState<Partial<ServiceForm>>(form ?? { status:"draft", task_id: task?.id, project_id: project?.id, company_id: task?.company_id||project?.company_id });
   const [saving, setSaving] = useState(false);
   function set<K extends keyof ServiceForm>(k: K, v: ServiceForm[K]) { setF(x=>({...x,[k]:v})); }
 
   return (
-    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px" }}
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?"0":"20px" }}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff",borderRadius:"18px",padding:"28px",width:"100%",maxWidth:"550px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
+      <div style={{ background:"#fff",borderRadius:isMobile?"0":"18px",padding:isMobile?"20px":"28px",width:"100%",maxWidth:isMobile?"100%":"550px",maxHeight:isMobile?"100vh":"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
         <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px" }}>
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>📋 Servis Formu</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
@@ -834,6 +850,10 @@ function FaturandiTab({
 type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
 
 export default function IsPlani({ companies }: { companies: Company[] }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
+  const isTablet = width < 1024;
+
   const [innerTab, setInnerTab] = useState<InnerTab>("projeler");
   const [tasks, setTasks]       = useState<WorkTask[]>([]);
   const [tasksLoaded, setTL]    = useState(false);
@@ -927,7 +947,7 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
   ];
 
   return (
-    <div style={{ padding:"28px 32px",background:"#f8fafc",minHeight:"100%",fontFamily:"inherit" }}>
+    <div style={{ padding:isMobile?"16px 16px":"28px 32px",background:"#f8fafc",minHeight:"100%",fontFamily:"inherit" }}>
 
       {/* ── Page header ──────────────────────────────────────── */}
       <div style={{ marginBottom:"22px" }}>
@@ -936,7 +956,7 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
       </div>
 
       {/* ── Summary stats ────────────────────────────────────── */}
-      <div style={{ display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:"12px",marginBottom:"22px" }}>
+      <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":isTablet?"repeat(2,1fr)":"repeat(4,1fr)",gap:"12px",marginBottom:"22px" }}>
         {[
           { label:"Devam Eden Görev",     value:inProgress.length,  color:"#7c3aed", border:"#7c3aed", icon:<TrendingUp size={14} color="#7c3aed"/> },
           { label:"Bugün Yapılacak",      value:todayTasks.filter(t=>t.status!=="done").length, color:"#0052ff", border:"#0052ff", icon:<CalendarDays size={14} color="#0052ff"/> },
@@ -957,11 +977,11 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
       </div>
 
       {/* ── Inner tabs ───────────────────────────────────────── */}
-      <div style={{ display:"flex",gap:"4px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"12px",padding:"4px",marginBottom:"20px",width:"fit-content" }}>
+      <div style={{ display:"flex",gap:"4px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"12px",padding:"4px",marginBottom:"20px",width:isMobile?"100%":"fit-content",overflowX:isMobile?"auto":"visible",overflowY:"hidden",WebkitOverflowScrolling:"touch" }}>
         {INNER_TABS.map(t=>(
           <button key={t.id} onClick={()=>setInnerTab(t.id)}
-            style={{ display:"flex",alignItems:"center",gap:"6px",padding:"7px 16px",borderRadius:"9px",border:"none",background:innerTab===t.id?"linear-gradient(135deg,#0038c7,#0052ff)":"transparent",color:innerTab===t.id?"#fff":"#64748b",fontSize:"13px",fontWeight:innerTab===t.id?700:500,cursor:"pointer",transition:"all .15s" }}>
-            {t.icon}{t.label}
+            style={{ display:"flex",alignItems:"center",gap:isMobile?"3px":"6px",padding:isMobile?"5px 10px":"7px 16px",borderRadius:"9px",border:"none",background:innerTab===t.id?"linear-gradient(135deg,#0038c7,#0052ff)":"transparent",color:innerTab===t.id?"#fff":"#64748b",fontSize:isMobile?"11px":"13px",fontWeight:innerTab===t.id?700:500,cursor:"pointer",transition:"all .15s",whiteSpace:"nowrap" }}>
+            {t.icon}{!isMobile&&t.label}
           </button>
         ))}
       </div>
