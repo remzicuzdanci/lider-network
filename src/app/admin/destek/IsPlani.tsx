@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import {
   Plus, X, Calendar, Flag, Building2, User,
   MoreHorizontal, Edit2, Trash2, Clock, ChevronLeft,
-  ChevronRight, CheckCircle2, Circle, LayoutKanban,
+  ChevronRight, CheckCircle2, Circle, Columns,
   FolderKanban, CalendarDays, TrendingUp, AlertTriangle,
 } from "lucide-react";
 
