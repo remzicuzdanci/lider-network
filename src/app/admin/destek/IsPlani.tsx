@@ -153,61 +153,61 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
         </div>
         <form onSubmit={async e => { e.preventDefault(); if(!form.title?.trim()) return; setSaving(true); await onSave(form); setSaving(false); }}
-          style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
-          <div><label style={lblS}>Başlık *</label>
-            <input type="text" value={form.title??""} required placeholder="Görevi kısaca açıklayın..." style={inpS} onChange={e=>set("title",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          style={{ display:"flex",flexDirection:"column",gap:isMobile?"15px":"13px" }}>
+          <div><label style={lbl}>Başlık *</label>
+            <input type="text" value={form.title??""} required placeholder="Görevi kısaca açıklayın..." style={inp} onChange={e=>set("title",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div><label style={lblS}>Açıklama</label>
-            <textarea value={form.description??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Detay..." onChange={e=>set("description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          <div><label style={lbl}>Açıklama</label>
+            <textarea value={form.description??""} rows={isMobile?3:2} style={{...inp,resize:"vertical"as const}} placeholder="Detay..." onChange={e=>set("description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
-            <div><label style={lblS}>Kategori</label>
-              <select value={form.category??"general"} style={inpS} onChange={e=>set("category",e.target.value)}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+            <div><label style={lbl}>Kategori</label>
+              <select value={form.category??"general"} style={inp} onChange={e=>set("category",e.target.value)}>
                 {TASK_CATS.map(c=><option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
               </select>
             </div>
-            <div><label style={lblS}>Öncelik</label>
-              <select value={form.priority??"medium"} style={inpS} onChange={e=>set("priority",e.target.value)}>
+            <div><label style={lbl}>Öncelik</label>
+              <select value={form.priority??"medium"} style={inp} onChange={e=>set("priority",e.target.value)}>
                 {PRIS.map(p=><option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
-            <div><label style={lblS}>Atanan Kişi</label>
-              <select value={form.assigned_to??""} style={inpS} onChange={e=>set("assigned_to",e.target.value)}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+            <div><label style={lbl}>Atanan Kişi</label>
+              <select value={form.assigned_to??""} style={inp} onChange={e=>set("assigned_to",e.target.value)}>
                 <option value="">— Seçin —</option>
                 {staff.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
-            <div><label style={lblS}>Bitiş Tarihi</label>
-              <input type="date" value={form.due_date??""} style={inpS} onChange={e=>set("due_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            <div><label style={lbl}>Bitiş Tarihi</label>
+              <input type="date" value={form.due_date??""} style={inp} onChange={e=>set("due_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
-            <div><label style={lblS}>Müşteri</label>
-              <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+            <div><label style={lbl}>Müşteri</label>
+              <select value={form.company_id??""} style={inp} onChange={e=>set("company_id",e.target.value)}>
                 <option value="">— Seçin —</option>
                 {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
             </div>
-            <div><label style={lblS}>Durum</label>
-              <select value={form.status??"todo"} style={inpS} onChange={e=>set("status",e.target.value as WorkTask["status"])}>
+            <div><label style={lbl}>Durum</label>
+              <select value={form.status??"todo"} style={inp} onChange={e=>set("status",e.target.value as WorkTask["status"])}>
                 {KAN_COLS.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
           </div>
-          <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
-            <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:16,height:16 }} id="billedCheckbox" />
-            <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
+          <div style={{ display:"flex",alignItems:"center",gap:isMobile?"10px":"8px",padding:isMobile?"14px":"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
+            <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:isMobile?20:16,height:isMobile?20:16 }} id="billedCheckbox" />
+            <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:isMobile?"13px":"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
           </div>
           {form.status==="done" && form.id && (
-            <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)} style={{ width:"100%",padding:"10px",background:"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px" }}>
+            <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)} style={{ width:"100%",padding:isMobile?"14px":"10px",background:"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:isMobile?"13px":"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",minHeight:isMobile?"44px":"auto" }}>
               📋 Servis Formu Oluştur
             </button>
           )}
-          <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
-            <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
-            <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#0038c7,#0052ff)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,82,255,.28)" }}>
+          <div style={{ display:"flex",gap:isMobile?"8px":"10px",justifyContent:"flex-end",marginTop:"4px",flexWrap:isMobile?"wrap":"nowrap" }}>
+            <button type="button" onClick={onClose} style={{ flex:isMobile?1:0,padding:isMobile?"12px 18px":"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:isMobile?"13px":"13px",fontWeight:600,cursor:"pointer",minHeight:isMobile?"44px":"auto" }}>İptal</button>
+            <button type="submit" disabled={saving} style={{ flex:isMobile?1:0,padding:isMobile?"12px 22px":"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#0038c7,#0052ff)",color:"#fff",fontSize:isMobile?"13px":"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,82,255,.28)",minHeight:isMobile?"44px":"auto" }}>
               {saving?"Kaydediliyor...":form.id?"Güncelle":"Oluştur"}
             </button>
           </div>
@@ -536,6 +536,10 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
+  const isTablet = width < 1024;
+
   const [date, setDate] = useState(todayStr());
   const [modal, setModal] = useState<Partial<WorkTask>|null|false>(false);
   const [filterPerson, setFP] = useState("");
@@ -579,15 +583,30 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
       </div>
 
       {/* Stats strip */}
-      <div style={{ display:"flex",gap:"12px",marginBottom:"20px",flexWrap:"wrap" }}>
+      <div style={{
+        display:"flex",
+        gap:isMobile?"10px":"12px",
+        marginBottom:isMobile?"18px":"20px",
+        flexWrap:"wrap"
+      }}>
         {[
           { label:"Toplam",      value:dayTasks.length,                            color:"#0052ff" },
           { label:"Tamamlandı",  value:dayTasks.filter(t=>t.status==="done").length, color:"#15803d" },
           { label:"Bekliyor",    value:dayTasks.filter(t=>t.status!=="done").length, color:"#d97706" },
         ].map(s=>(
-          <div key={s.label} style={{ display:"flex",alignItems:"center",gap:"6px",padding:"7px 14px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"9px" }}>
-            <span style={{ fontSize:"18px",fontWeight:900,color:s.color }}>{s.value}</span>
-            <span style={{ fontSize:"11px",color:"#9ca3af" }}>{s.label}</span>
+          <div key={s.label} style={{
+            display:"flex",
+            alignItems:"center",
+            gap:isMobile?"8px":"6px",
+            padding:isMobile?"10px 16px":"7px 14px",
+            background:"#fff",
+            border:"1.5px solid #e5e7ef",
+            borderRadius:"9px",
+            flex:isMobile?"1 0 calc(50% - 5px)":"none",
+            justifyContent:"center"
+          }}>
+            <span style={{ fontSize:isMobile?"20px":"18px",fontWeight:900,color:s.color }}>{s.value}</span>
+            <span style={{ fontSize:isMobile?"12px":"11px",color:"#9ca3af" }}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -958,32 +977,75 @@ export default function IsPlani({ companies, staff = ["Remzi Cuzdancı","Ahmet Y
       </div>
 
       {/* ── Summary stats ────────────────────────────────────── */}
-      <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":isTablet?"repeat(2,1fr)":"repeat(4,1fr)",gap:"12px",marginBottom:"22px" }}>
+      <div style={{
+        display:"grid",
+        gridTemplateColumns:isMobile?"1fr":isTablet?"repeat(2,1fr)":"repeat(4,1fr)",
+        gap:isMobile?"14px":"12px",
+        marginBottom:isMobile?"18px":"22px"
+      }}>
         {[
-          { label:"Devam Eden Görev",     value:inProgress.length,  color:"#7c3aed", border:"#7c3aed", icon:<TrendingUp size={14} color="#7c3aed"/> },
-          { label:"Bugün Yapılacak",      value:todayTasks.filter(t=>t.status!=="done").length, color:"#0052ff", border:"#0052ff", icon:<CalendarDays size={14} color="#0052ff"/> },
-          { label:"Gecikmiş",             value:overdue.length,      color:"#dc2626", border:"#dc2626", icon:<AlertTriangle size={14} color="#dc2626"/> },
-          { label:"Bugün Tamamlandı",     value:doneToday.length,    color:"#15803d", border:"#15803d", icon:<CheckCircle2 size={14} color="#15803d"/> },
+          { label:"Devam Eden Görev",     value:inProgress.length,  color:"#7c3aed", border:"#7c3aed", icon:<TrendingUp size={isMobile?16:14} color="#7c3aed"/> },
+          { label:"Bugün Yapılacak",      value:todayTasks.filter(t=>t.status!=="done").length, color:"#0052ff", border:"#0052ff", icon:<CalendarDays size={isMobile?16:14} color="#0052ff"/> },
+          { label:"Gecikmiş",             value:overdue.length,      color:"#dc2626", border:"#dc2626", icon:<AlertTriangle size={isMobile?16:14} color="#dc2626"/> },
+          { label:"Bugün Tamamlandı",     value:doneToday.length,    color:"#15803d", border:"#15803d", icon:<CheckCircle2 size={isMobile?16:14} color="#15803d"/> },
         ].map(s=>(
           <div key={s.label} onClick={()=>setInnerTab("gunluk")}
-            style={{ background:"#fff",border:`1px solid #e5e7ef`,borderRadius:"13px",padding:"16px 18px",borderTop:`3px solid ${s.border}`,cursor:"pointer",transition:"box-shadow .15s" }}
+            style={{
+              background:"#fff",
+              border:`1px solid #e5e7ef`,
+              borderRadius:"13px",
+              padding:isMobile?"18px 16px":"16px 18px",
+              borderTop:`3px solid ${s.border}`,
+              cursor:"pointer",
+              transition:"box-shadow .15s",
+              minHeight:isMobile?"100px":"auto"
+            }}
             onMouseEnter={e=>(e.currentTarget as HTMLElement).style.boxShadow="0 4px 16px rgba(0,0,0,.08)"}
             onMouseLeave={e=>(e.currentTarget as HTMLElement).style.boxShadow="none"}>
-            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"8px" }}>
-              <p style={{ fontSize:"28px",fontWeight:900,color:s.color,margin:0,lineHeight:1 }}>{s.value}</p>
-              <div style={{ padding:"6px",background:`${s.color}12`,borderRadius:"8px" }}>{s.icon}</div>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:isMobile?"12px":"8px" }}>
+              <p style={{ fontSize:isMobile?"32px":"28px",fontWeight:900,color:s.color,margin:0,lineHeight:1 }}>{s.value}</p>
+              <div style={{ padding:isMobile?"8px":"6px",background:`${s.color}12`,borderRadius:"8px" }}>{s.icon}</div>
             </div>
-            <p style={{ fontSize:"11.5px",color:"#9ca3af",margin:0 }}>{s.label}</p>
+            <p style={{ fontSize:isMobile?"12.5px":"11.5px",color:"#9ca3af",margin:0,lineHeight:1.4 }}>{s.label}</p>
           </div>
         ))}
       </div>
 
       {/* ── Inner tabs ───────────────────────────────────────── */}
-      <div style={{ display:"flex",gap:"4px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"12px",padding:"4px",marginBottom:"20px",width:isMobile?"100%":"fit-content",overflowX:isMobile?"auto":"visible",overflowY:"hidden",WebkitOverflowScrolling:"touch" }}>
+      <div style={{
+        display:"flex",
+        gap:isMobile?"6px":"4px",
+        background:"#fff",
+        border:"1.5px solid #e5e7ef",
+        borderRadius:"12px",
+        padding:isMobile?"8px":"4px",
+        marginBottom:isMobile?"18px":"20px",
+        width:isMobile?"100%":"fit-content",
+        overflowX:isMobile?"auto":"visible",
+        overflowY:"hidden",
+        WebkitOverflowScrolling:"touch"
+      }}>
         {INNER_TABS.map(t=>(
           <button key={t.id} onClick={()=>setInnerTab(t.id)}
-            style={{ display:"flex",alignItems:"center",gap:isMobile?"3px":"6px",padding:isMobile?"5px 10px":"7px 16px",borderRadius:"9px",border:"none",background:innerTab===t.id?"linear-gradient(135deg,#0038c7,#0052ff)":"transparent",color:innerTab===t.id?"#fff":"#64748b",fontSize:isMobile?"11px":"13px",fontWeight:innerTab===t.id?700:500,cursor:"pointer",transition:"all .15s",whiteSpace:"nowrap" }}>
-            {t.icon}{!isMobile&&t.label}
+            style={{
+              display:"flex",
+              alignItems:"center",
+              justifyContent:"center",
+              gap:isMobile?"6px":"6px",
+              padding:isMobile?"10px 14px":"7px 16px",
+              borderRadius:"9px",
+              border:"none",
+              background:innerTab===t.id?"linear-gradient(135deg,#0038c7,#0052ff)":"transparent",
+              color:innerTab===t.id?"#fff":"#64748b",
+              fontSize:isMobile?"12px":"13px",
+              fontWeight:innerTab===t.id?700:500,
+              cursor:"pointer",
+              transition:"all .15s",
+              whiteSpace:"nowrap",
+              minHeight:isMobile?"44px":"auto"
+            }}>
+            {t.icon}
+            {t.label}
           </button>
         ))}
       </div>
