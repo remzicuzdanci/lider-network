@@ -34,6 +34,15 @@ interface Project {
 
 interface Company { id: string; name: string; }
 
+interface ServiceForm {
+  id: string; task_id?: string; project_id?: string; company_id?: string;
+  customer_name?: string; customer_phone?: string; customer_email?: string;
+  service_description?: string; items_delivered?: string; notes?: string;
+  signed_by?: string; signed_at?: string; sent_to_email?: string;
+  status: "draft" | "sent" | "confirmed";
+  created_at: string; updated_at?: string;
+}
+
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
 ══════════════════════════════════════════════════════════════ */
@@ -261,6 +270,70 @@ function ProjectModal({ project, companies, onSave, onClose }: {
             <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
             <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#0038c7,#0052ff)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,82,255,.28)" }}>
               {saving?"Kaydediliyor...":form.id?"Güncelle":"Oluştur"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════
+   SERVICE FORM MODAL
+══════════════════════════════════════════════════════════════ */
+function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
+  form: Partial<ServiceForm>|null; task?: WorkTask; project?: Project; companies: Company[];
+  onSave: (f: Partial<ServiceForm>) => Promise<void>; onClose: () => void;
+}) {
+  const [f, setF] = useState<Partial<ServiceForm>>(form ?? { status:"draft", task_id: task?.id, project_id: project?.id, company_id: task?.company_id||project?.company_id });
+  const [saving, setSaving] = useState(false);
+  function set<K extends keyof ServiceForm>(k: K, v: ServiceForm[K]) { setF(x=>({...x,[k]:v})); }
+
+  return (
+    <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:"20px" }}
+      onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
+      <div style={{ background:"#fff",borderRadius:"18px",padding:"28px",width:"100%",maxWidth:"550px",maxHeight:"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px" }}>
+          <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>📋 Servis Formu</h3>
+          <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
+        </div>
+        <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); await onSave(f); setSaving(false); }}
+          style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
+          <div><label style={lblS}>Müşteri Adı *</label>
+            <input type="text" value={f.customer_name??""} required placeholder="Müşteri adı..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+            <div><label style={lblS}>Telefon</label>
+              <input type="tel" value={f.customer_phone??""} placeholder="0555 123 45 67" style={inpS} onChange={e=>set("customer_phone",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            </div>
+            <div><label style={lblS}>E-posta</label>
+              <input type="email" value={f.customer_email??""} placeholder="musteri@email.com" style={inpS} onChange={e=>set("customer_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            </div>
+          </div>
+          <div><label style={lblS}>Hizmet/Ürün Açıklaması *</label>
+            <textarea value={f.service_description??""} required placeholder="Yapılan çalışma, servis, ürün vb..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("service_description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div><label style={lblS}>Teslim Edilen Ürünler/Açıklamalar</label>
+            <textarea value={f.items_delivered??""} placeholder="Teslim edilen ürünler ve detayları..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("items_delivered",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div style={{ display:"grid",gridTemplateColumns:"1fr 1fr",gap:"11px" }}>
+            <div><label style={lblS}>İmzalayan Kişi</label>
+              <input type="text" value={f.signed_by??""} placeholder="Sorumlu kişinin adı" style={inpS} onChange={e=>set("signed_by",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            </div>
+            <div><label style={lblS}>Tarih</label>
+              <input type="date" value={f.signed_at??""} style={inpS} onChange={e=>set("signed_at",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            </div>
+          </div>
+          <div><label style={lblS}>Notlar</label>
+            <textarea value={f.notes??""} placeholder="Ek notlar, özel istekler..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("notes",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div><label style={lblS}>Gönderme E-postası</label>
+            <input type="email" value={f.sent_to_email??""} placeholder="Form kimin e-postasına gönderilecek?" style={inpS} onChange={e=>set("sent_to_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
+            <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
+            <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(16,185,129,.28)" }}>
+              {saving?"Kaydediliyor...":"✓ Formu Kaydet & Gönder"}
             </button>
           </div>
         </form>
@@ -759,6 +832,9 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
   const [tasksLoaded, setTL]    = useState(false);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoaded, setPL] = useState(false);
+  const [serviceForms, setServiceForms] = useState<ServiceForm[]>([]);
+  const [formsLoaded, setFL] = useState(false);
+  const [serviceFormModal, setServiceFormModal] = useState<Partial<ServiceForm>|false>(false);
 
   /* ── Task CRUD (shared across tabs) ──────────────────────── */
   const loadTasks = useCallback(async () => {
@@ -771,7 +847,12 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
     if (r.ok) { setProjects(await r.json()); setPL(true); }
   }, []);
 
-  useEffect(() => { loadTasks(); loadProjects(); }, [loadTasks, loadProjects]);
+  const loadServiceForms = useCallback(async () => {
+    const r = await fetch("/api/admin/service-forms");
+    if (r.ok) { setServiceForms(await r.json()); setFL(true); }
+  }, []);
+
+  useEffect(() => { loadTasks(); loadProjects(); loadServiceForms(); }, [loadTasks, loadProjects, loadServiceForms]);
 
   async function saveTask(form: Partial<WorkTask>) {
     if (form.id) {
@@ -804,6 +885,24 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
     if (!confirm("Bu projeyi silmek istiyor musunuz?")) return;
     await fetch("/api/admin/projects",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
     setProjects(p=>p.filter(pr=>pr.id!==id));
+  }
+
+  /* ── Service Form CRUD ───────────────────────────────────── */
+  async function saveServiceForm(form: Partial<ServiceForm>) {
+    if (form.id) {
+      const r = await fetch("/api/admin/service-forms",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
+      if (r.ok){const u=await r.json();setServiceForms(p=>p.map(sf=>sf.id===u.id?{...sf,...u}:sf));}
+    } else {
+      const r = await fetch("/api/admin/service-forms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
+      if (r.ok){const c=await r.json();setServiceForms(p=>[c,...p]);}
+    }
+    setServiceFormModal(false);
+  }
+
+  async function deleteServiceForm(id: string) {
+    if (!confirm("Bu formu silmek istiyor musunuz?")) return;
+    await fetch("/api/admin/service-forms",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id})});
+    setServiceForms(p=>p.filter(sf=>sf.id!==id));
   }
 
   /* ── Stats ───────────────────────────────────────────────── */
@@ -865,6 +964,8 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} onTaskSave={saveTask} onProjectSave={saveProject} />}
+
+      {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}
     </div>
   );
 }
