@@ -122,9 +122,9 @@ function fmtDate(d?: string) {
 /* ══════════════════════════════════════════════════════════════
    TASK MODAL
 ══════════════════════════════════════════════════════════════ */
-function TaskModal({ task, defaultDate, companies, onSave, onClose }: {
+function TaskModal({ task, defaultDate, companies, onSave, onOpenServiceForm, onClose }: {
   task: Partial<WorkTask>|null; defaultDate?: string;
-  companies: Company[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onClose: () => void;
+  companies: Company[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
 }) {
   const [form, setForm] = useState<Partial<WorkTask>>(task ?? { category:"general", priority:"medium", status:"todo", due_date: defaultDate });
   const [saving, setSaving] = useState(false);
@@ -186,6 +186,11 @@ function TaskModal({ task, defaultDate, companies, onSave, onClose }: {
             <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:16,height:16 }} id="billedCheckbox" />
             <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
           </div>
+          {form.status==="done" && form.id && (
+            <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)} style={{ width:"100%",padding:"10px",background:"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px" }}>
+              📋 Servis Formu Oluştur
+            </button>
+          )}
           <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
             <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
             <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#0038c7,#0052ff)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,82,255,.28)" }}>
@@ -507,10 +512,11 @@ function ProjelerTab({ companies }: { companies: Company[] }) {
 /* ══════════════════════════════════════════════════════════════
    TAB: GÜNLÜK GÖREVLER
 ══════════════════════════════════════════════════════════════ */
-function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies }: {
+function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceForm }: {
   tasks: WorkTask[]; companies: Company[];
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
+  onOpenServiceForm?: (taskId: string) => void;
 }) {
   const [date, setDate] = useState(todayStr());
   const [modal, setModal] = useState<Partial<WorkTask>|null|false>(false);
@@ -627,7 +633,7 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies }: {
         </div>
       )}
 
-      {modal!==false && <TaskModal task={modal} defaultDate={date} companies={companies} onSave={onTaskSave} onClose={()=>setModal(false)} />}
+      {modal!==false && <TaskModal task={modal} defaultDate={date} companies={companies} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
     </div>
   );
 }
@@ -635,10 +641,11 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies }: {
 /* ══════════════════════════════════════════════════════════════
    TAB: KANBAN
 ══════════════════════════════════════════════════════════════ */
-function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies }: {
+function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceForm }: {
   tasks: WorkTask[]; companies: Company[];
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
+  onOpenServiceForm?: (taskId: string) => void;
 }) {
   const [modal, setModal] = useState<Partial<WorkTask>|null|false>(false);
   const [filterPri, setFP] = useState("");
@@ -730,7 +737,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies }: {
         })}
       </div>
 
-      {modal!==false && <TaskModal task={modal} companies={companies} onSave={onTaskSave} onClose={()=>setModal(false)} />}
+      {modal!==false && <TaskModal task={modal} companies={companies} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
     </div>
   );
 }
@@ -961,8 +968,8 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
 
       {/* ── Tab content ──────────────────────────────────────── */}
       {innerTab==="projeler" && <ProjelerTab companies={companies} />}
-      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
-      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
+      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
+      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} onTaskSave={saveTask} onProjectSave={saveProject} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}
