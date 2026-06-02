@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
       customer_name: body.customer_name || null,
       customer_phone: body.customer_phone || null,
       customer_email: body.customer_email || null,
+      customer_address: body.customer_address || null,
       service_description: body.service_description || null,
       items_delivered: body.items_delivered || null,
       notes: body.notes || null,

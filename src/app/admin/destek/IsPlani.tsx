@@ -37,6 +37,7 @@ interface Company { id: string; name: string; }
 interface ServiceForm {
   id: string; task_id?: string; project_id?: string; company_id?: string;
   customer_name?: string; customer_phone?: string; customer_email?: string;
+  customer_address?: string;
   service_description?: string; items_delivered?: string; notes?: string;
   signed_by?: string; signed_at?: string; sent_to_email?: string;
   status: "draft" | "sent" | "confirmed";
@@ -302,14 +303,15 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
 /* ══════════════════════════════════════════════════════════════
    SERVICE FORM MODAL
 ══════════════════════════════════════════════════════════════ */
-function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
+function ServiceFormModal({ form, task, project, companies, onSave, onSend, onClose }: {
   form: Partial<ServiceForm>|null; task?: WorkTask; project?: Project; companies: Company[];
-  onSave: (f: Partial<ServiceForm>) => Promise<void>; onClose: () => void;
+  onSave: (f: Partial<ServiceForm>) => Promise<unknown>; onSend: (f: Partial<ServiceForm>) => Promise<void>; onClose: () => void;
 }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const [f, setF] = useState<Partial<ServiceForm>>(form ?? { status:"draft", task_id: task?.id, project_id: project?.id, company_id: task?.company_id||project?.company_id });
   const [saving, setSaving] = useState(false);
+  const [sending, setSending] = useState(false);
   function set<K extends keyof ServiceForm>(k: K, v: ServiceForm[K]) { setF(x=>({...x,[k]:v})); }
 
   return (
@@ -320,7 +322,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>📋 Servis Formu</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
         </div>
-        <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); await onSave(f); setSaving(false); }}
+        <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); try { await onSave(f); onClose(); } catch(err){ alert("Kaydedilemedi: "+(err instanceof Error?err.message:"Hata")); } finally { setSaving(false); } }}
           style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
           <div><label style={lblS}>Müşteri Adı *</label>
             <input type="text" value={f.customer_name??""} required placeholder="Müşteri adı..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -332,6 +334,9 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
             <div><label style={lblS}>E-posta</label>
               <input type="email" value={f.customer_email??""} placeholder="musteri@email.com" style={inpS} onChange={e=>set("customer_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
+          </div>
+          <div><label style={lblS}>Müşteri Adresi</label>
+            <textarea value={f.customer_address??""} placeholder="Mahalle, cadde, no, ilçe/il..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("customer_address",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
           <div><label style={lblS}>Hizmet/Ürün Açıklaması *</label>
             <textarea value={f.service_description??""} required placeholder="Yapılan çalışma, servis, ürün vb..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("service_description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -353,10 +358,15 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
           <div><label style={lblS}>Gönderme E-postası</label>
             <input type="email" value={f.sent_to_email??""} placeholder="Form kimin e-postasına gönderilecek?" style={inpS} onChange={e=>set("sent_to_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
-            <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
-            <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(16,185,129,.28)" }}>
-              {saving?"Kaydediliyor...":"✓ Formu Kaydet & Gönder"}
+          <div style={{ display:"flex",gap:isMobile?"8px":"10px",justifyContent:"flex-end",marginTop:"4px",flexWrap:isMobile?"wrap":"nowrap" }}>
+            <button type="button" onClick={onClose} style={{ flex:isMobile?"1 1 100%":"0",padding:"10px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
+            <button type="submit" disabled={saving||sending} style={{ flex:isMobile?1:0,padding:"10px 18px",border:"1.5px solid #cbd5e1",borderRadius:"9px",background:"#f8fafc",color:"#334155",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer" }}>
+              {saving?"Kaydediliyor...":"Taslak Kaydet"}
+            </button>
+            <button type="button" disabled={saving||sending}
+              onClick={async()=>{ if(!f.customer_name?.trim()){alert("Müşteri adı gerekli");return;} if(!f.service_description?.trim()){alert("Hizmet açıklaması gerekli");return;} if(!f.customer_email?.trim()){alert("E-posta göndermek için müşteri e-postası gerekli");return;} setSending(true); try { await onSend(f); onClose(); } catch(err){ alert("Gönderilemedi: "+(err instanceof Error?err.message:"Hata")); } finally { setSending(false); } }}
+              style={{ flex:isMobile?1:0,padding:"10px 20px",border:"none",borderRadius:"9px",background:(saving||sending)?"#d1d5db":"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(16,185,129,.28)" }}>
+              {sending?"Gönderiliyor...":"✓ Kaydet & E-posta Gönder"}
             </button>
           </div>
         </form>
@@ -950,15 +960,26 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
   }
 
   /* ── Service Form CRUD ───────────────────────────────────── */
-  async function saveServiceForm(form: Partial<ServiceForm>) {
+  async function saveServiceForm(form: Partial<ServiceForm>): Promise<ServiceForm> {
     if (form.id) {
       const r = await fetch("/api/admin/service-forms",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-      if (r.ok){const u=await r.json();setServiceForms(p=>p.map(sf=>sf.id===u.id?{...sf,...u}:sf));}
+      if (!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Form kaydedilemedi");}
+      const u=await r.json();setServiceForms(p=>p.map(sf=>sf.id===u.id?{...sf,...u}:sf));return u;
     } else {
       const r = await fetch("/api/admin/service-forms",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(form)});
-      if (r.ok){const c=await r.json();setServiceForms(p=>[c,...p]);}
+      if (!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"Form oluşturulamadı");}
+      const c=await r.json();setServiceForms(p=>[c,...p]);return c;
     }
-    setServiceFormModal(false);
+  }
+
+  async function sendServiceForm(form: Partial<ServiceForm>) {
+    // 1) Save first to get an id and persist latest data
+    const saved = await saveServiceForm(form);
+    // 2) Trigger email send via API
+    const r = await fetch("/api/admin/service-forms/send",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({ id: saved.id })});
+    if (!r.ok){const e=await r.json().catch(()=>({}));throw new Error(e.error||"E-posta gönderilemedi");}
+    const updated = await r.json();
+    setServiceForms(p=>p.map(sf=>sf.id===updated.id?{...sf,...updated}:sf));
   }
 
   async function deleteServiceForm(id: string) {
@@ -1070,7 +1091,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "" }:
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
 
-      {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}
+      {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onSend={sendServiceForm} onClose={()=>setServiceFormModal(false)} />}
     </div>
   );
 }
