@@ -641,15 +641,24 @@ export default function AdminDashboard() {
   }, [rptTickets]);
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", background: "#f4f6fb", fontFamily: "var(--font-family-body)", position: "relative" }}>
+    <div style={{
+      display: "flex",
+      flexDirection: isMobile ? "column" : "row",
+      minHeight: "100vh",
+      background: "#f4f6fb",
+      fontFamily: "var(--font-family-body)",
+      position: "relative",
+      width: "100%",
+      overflow: "hidden"
+    }}>
 
       {/* ══════════════════════════════════════════════════════ SIDEBAR */}
       <aside style={{
-        width: isMobile ? "70vw" : isTablet ? "240px" : "240px",
+        width: "240px",
         flexShrink: 0,
         background: "#fff",
         borderRight: "1px solid #e5e7ef",
-        display: isMobile && !sidebarOpen ? "none" : "flex",
+        display: isMobile ? (sidebarOpen ? "flex" : "none") : "flex",
         flexDirection: "column",
         position: isMobile ? "fixed" : "sticky",
         top: 0,
@@ -729,9 +738,11 @@ export default function AdminDashboard() {
       {/* ══════════════════════════════════════════════════════ MAIN */}
       <main style={{
         flex: 1,
+        width: isMobile ? "100%" : "auto",
         padding: isMobile ? "16px" : isTablet ? "20px 24px" : "28px 32px",
         minWidth: 0,
-        marginLeft: isMobile && sidebarOpen ? "0" : "0"
+        overflowX: "hidden",
+        position: "relative"
       }}>
 
         {/* Page header */}
