@@ -5,7 +5,7 @@ import {
   Plus, X, Calendar, Flag, Building2, User,
   MoreHorizontal, Edit2, Trash2, Clock, ChevronLeft,
   ChevronRight, CheckCircle2, Circle, Columns,
-  FolderKanban, CalendarDays, TrendingUp, AlertTriangle,
+  FolderKanban, CalendarDays, TrendingUp, AlertTriangle, Receipt,
 } from "lucide-react";
 
 /* ══════════════════════════════════════════════════════════════
@@ -18,6 +18,7 @@ interface WorkTask {
   assigned_to?: string; company_id?: string;
   due_date?: string; created_by: string;
   created_at: string; updated_at?: string;
+  billed?: boolean; billed_date?: string;
   companies?: { name: string };
 }
 
@@ -27,6 +28,7 @@ interface Project {
   start_date?: string; end_date?: string;
   assigned_to?: string; notes?: string;
   created_by: string; created_at: string; updated_at?: string;
+  billed?: boolean; billed_date?: string;
   companies?: { name: string };
 }
 
@@ -171,6 +173,10 @@ function TaskModal({ task, defaultDate, companies, onSave, onClose }: {
               </select>
             </div>
           </div>
+          <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
+            <input type="checkbox" checked={form.billed??false} onChange={e=>set("billed",e.target.checked)} style={{ cursor:"pointer",width:16,height:16 }} id="billedCheckbox" />
+            <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
+          </div>
           <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
             <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
             <button type="submit" disabled={saving} style={{ padding:"9px 22px",border:"none",borderRadius:"9px",background:saving?"#d1d5db":"linear-gradient(135deg,#0038c7,#0052ff)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:saving?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(0,82,255,.28)" }}>
@@ -246,6 +252,10 @@ function ProjectModal({ project, companies, onSave, onClose }: {
           </div>
           <div><label style={lblS}>Notlar</label>
             <textarea value={form.notes??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Özel notlar, hatırlatmalar..." onChange={e=>set("notes",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          </div>
+          <div style={{ display:"flex",alignItems:"center",gap:"8px",padding:"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
+            <input type="checkbox" checked={form.billed??false} onChange={e=>set("billed",e.target.checked)} style={{ cursor:"pointer",width:16,height:16 }} id="projBilledCheckbox" />
+            <label htmlFor="projBilledCheckbox" style={{ cursor:"pointer",fontSize:"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu proje faturalandı</label>
           </div>
           <div style={{ display:"flex",gap:"10px",justifyContent:"flex-end",marginTop:"4px" }}>
             <button type="button" onClick={onClose} style={{ padding:"9px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
@@ -652,10 +662,96 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies }: {
   );
 }
 
+function FaturandiTab({
+  tasks, projects, companies, onTaskSave, onProjectSave
+}: {
+  tasks: WorkTask[]; projects: Project[]; companies: Company[];
+  onTaskSave: (task: WorkTask) => void; onProjectSave: (project: Project) => void;
+}) {
+  const [monthOffset, setMonthOffset] = useState(0);
+  const now = new Date();
+  const month = now.getMonth() - monthOffset;
+  const year = now.getFullYear() + (monthOffset > 11 ? -1 : monthOffset < -11 ? 1 : 0);
+  const monthStart = new Date(year, month, 1).toISOString().slice(0, 10);
+  const monthEnd = new Date(year, month + 1, 0).toISOString().slice(0, 10);
+
+  const billedTasks = tasks.filter(t => t.billed && t.billed_date && t.billed_date.slice(0, 10) >= monthStart && t.billed_date.slice(0, 10) <= monthEnd);
+  const billedProjects = projects.filter(p => p.billed && p.billed_date && p.billed_date.slice(0, 10) >= monthStart && p.billed_date.slice(0, 10) <= monthEnd);
+
+  const grouped: Record<string, { tasks: WorkTask[]; projects: Project[] }> = {};
+  billedTasks.forEach(t => {
+    const cid = t.company_id || "unknown";
+    if (!grouped[cid]) grouped[cid] = { tasks: [], projects: [] };
+    grouped[cid].tasks.push(t);
+  });
+  billedProjects.forEach(p => {
+    const cid = p.company_id || "unknown";
+    if (!grouped[cid]) grouped[cid] = { tasks: [], projects: [] };
+    grouped[cid].projects.push(p);
+  });
+
+  const monthLabel = new Date(year, month).toLocaleDateString("tr-TR", { month: "long", year: "numeric" });
+
+  return (
+    <div>
+      <div style={{ display:"flex",gap:"10px",alignItems:"center",marginBottom:"22px" }}>
+        <button onClick={()=>setMonthOffset(monthOffset+1)} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"8px",padding:"7px 12px",cursor:"pointer",fontSize:"13px",color:"#64748b",fontWeight:600 }}>← Geçen Ay</button>
+        <span style={{ fontSize:"14px",fontWeight:700,color:"#1a1d2e",minWidth:180 }}>{monthLabel}</span>
+        <button onClick={()=>setMonthOffset(monthOffset-1)} disabled={monthOffset===0} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"8px",padding:"7px 12px",cursor:"pointer",fontSize:"13px",color:"#64748b",fontWeight:600,opacity:monthOffset===0?.5:1 }}>Gelecek Ay →</button>
+      </div>
+
+      {Object.entries(grouped).map(([cid, { tasks: cTasks, projects: cProjects }]) => {
+        const company = companies.find(c => c.id === cid);
+        return (
+          <div key={cid} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"11px",padding:"16px",marginBottom:"16px" }}>
+            <h4 style={{ margin:"0 0 12px",fontSize:"14px",fontWeight:700,color:"#1a1d2e",display:"flex",alignItems:"center",gap:"7px" }}><Building2 size={16} color="#0052ff"/>{company?.name||"Bilinmeyen"}</h4>
+
+            {cTasks.length > 0 && (
+              <div style={{ marginBottom:"12px" }}>
+                <p style={{ margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"#64748b",textTransform:"uppercase" }}>Görevler ({cTasks.length})</p>
+                {cTasks.map(t=>(
+                  <div key={t.id} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"#f8fafc",borderRadius:"7px",marginBottom:"5px",fontSize:"12px" }}>
+                    <div>
+                      <span style={{ fontWeight:600,color:"#1a1d2e" }}>{t.title}</span>
+                      <span style={{ fontSize:"11px",color:"#94a3b8",marginLeft:"8px" }}>{new Date(t.billed_date!).toLocaleDateString("tr-TR")}</span>
+                    </div>
+                    <button onClick={()=>onTaskSave({...t,billed:false})} style={{ background:"#fee2e2",color:"#991b1b",border:"none",borderRadius:"5px",padding:"3px 8px",fontSize:"11px",fontWeight:600,cursor:"pointer" }}>Geri Al</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {cProjects.length > 0 && (
+              <div>
+                <p style={{ margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"#64748b",textTransform:"uppercase" }}>Projeler ({cProjects.length})</p>
+                {cProjects.map(p=>(
+                  <div key={p.id} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"#f0fdf4",borderRadius:"7px",marginBottom:"5px",fontSize:"12px" }}>
+                    <div>
+                      <span style={{ fontWeight:600,color:"#1a1d2e" }}>{p.name}</span>
+                      <span style={{ fontSize:"11px",color:"#94a3b8",marginLeft:"8px" }}>{new Date(p.billed_date!).toLocaleDateString("tr-TR")}</span>
+                    </div>
+                    <button onClick={()=>onProjectSave({...p,billed:false})} style={{ background:"#fee2e2",color:"#991b1b",border:"none",borderRadius:"5px",padding:"3px 8px",fontSize:"11px",fontWeight:600,cursor:"pointer" }}>Geri Al</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      {Object.keys(grouped).length === 0 && (
+        <div style={{ textAlign:"center",padding:"40px 20px",color:"#94a3b8" }}>
+          <p style={{ fontSize:"13px" }}>Bu ayda faturalandı işlem yok.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ══════════════════════════════════════════════════════════════
    MAIN
 ══════════════════════════════════════════════════════════════ */
-type InnerTab = "projeler" | "gunluk" | "kanban";
+type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
 
 export default function IsPlani({ companies }: { companies: Company[] }) {
   const [innerTab, setInnerTab] = useState<InnerTab>("projeler");
@@ -696,7 +792,8 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
   const INNER_TABS: { id: InnerTab; label: string; icon: React.ReactNode }[] = [
     { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
     { id:"gunluk",   label:"Günlük Görevler", icon:<CalendarDays size={14}/> },
-    { id:"kanban",   label:"Kanban Board",    icon:<LayoutKanban size={14}/> },
+    { id:"kanban",   label:"Kanban Board",    icon:<Columns size={14}/> },
+    { id:"faturalandı", label:"Faturalandı",  icon:<Receipt size={14}/> },
   ];
 
   return (
@@ -743,6 +840,7 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
       {innerTab==="projeler" && <ProjelerTab companies={companies} />}
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} />}
+      {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} onTaskSave={saveTask} onProjectSave={saveProject} />}
     </div>
   );
 }
