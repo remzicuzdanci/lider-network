@@ -659,8 +659,8 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenSe
 /* ══════════════════════════════════════════════════════════════
    TAB: KANBAN
 ══════════════════════════════════════════════════════════════ */
-function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceForm }: {
-  tasks: WorkTask[]; companies: Company[];
+function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenServiceForm }: {
+  tasks: WorkTask[]; companies: Company[]; staff: string[];
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
@@ -991,7 +991,7 @@ export default function IsPlani({ companies, staff = ["Remzi Cuzdancı","Ahmet Y
       {/* ── Tab content ──────────────────────────────────────── */}
       {innerTab==="projeler" && <ProjelerTab companies={companies} staff={staff} />}
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
-      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
+      {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onClose={()=>setServiceFormModal(false)} />}
