@@ -46,7 +46,7 @@ interface ServiceForm {
 /* ══════════════════════════════════════════════════════════════
    CONSTANTS
 ══════════════════════════════════════════════════════════════ */
-const STAFF = ["Remzi Cuzdancı","Ahmet Yılmaz","Mehmet Kaya","Fatma Demir","Ali Öztürk","Ayşe Çelik"];
+// Removed - now passed as prop
 
 const PHASES = [
   { id:"teklif",    label:"Teklif",    color:"#64748b", bg:"#f1f5f9" },
@@ -132,15 +132,17 @@ function fmtDate(d?: string) {
 /* ══════════════════════════════════════════════════════════════
    TASK MODAL
 ══════════════════════════════════════════════════════════════ */
-function TaskModal({ task, defaultDate, companies, onSave, onOpenServiceForm, onClose }: {
+function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceForm, onClose }: {
   task: Partial<WorkTask>|null; defaultDate?: string;
-  companies: Company[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
+  companies: Company[]; staff: string[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
 }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const [form, setForm] = useState<Partial<WorkTask>>(task ?? { category:"general", priority:"medium", status:"todo", due_date: defaultDate });
   const [saving, setSaving] = useState(false);
   function set<K extends keyof WorkTask>(k: K, v: WorkTask[K]) { setForm(f => ({...f,[k]:v})); }
+  const inp = {...inpS, padding: isMobile?"14px":"9px 12px", fontSize: isMobile?"16px":"13px"};
+  const lbl = {...lblS, fontSize: isMobile?"13px":"11px", marginBottom: isMobile?"8px":"5px"};
 
   return (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?"0":"20px" }}
@@ -174,7 +176,7 @@ function TaskModal({ task, defaultDate, companies, onSave, onOpenServiceForm, on
             <div><label style={lblS}>Atanan Kişi</label>
               <select value={form.assigned_to??""} style={inpS} onChange={e=>set("assigned_to",e.target.value)}>
                 <option value="">— Seçin —</option>
-                {STAFF.map(s=><option key={s} value={s}>{s}</option>)}
+                {staff.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
             <div><label style={lblS}>Bitiş Tarihi</label>
@@ -218,8 +220,8 @@ function TaskModal({ task, defaultDate, companies, onSave, onOpenServiceForm, on
 /* ══════════════════════════════════════════════════════════════
    PROJECT MODAL
 ══════════════════════════════════════════════════════════════ */
-function ProjectModal({ project, companies, onSave, onClose }: {
-  project: Partial<Project>|null; companies: Company[];
+function ProjectModal({ project, companies, staff, onSave, onClose }: {
+  project: Partial<Project>|null; companies: Company[]; staff: string[];
   onSave: (p: Partial<Project>) => Promise<void>; onClose: () => void;
 }) {
   const { width } = useWindowSize();
@@ -254,7 +256,7 @@ function ProjectModal({ project, companies, onSave, onClose }: {
             <div><label style={lblS}>Sorumlu</label>
               <select value={form.assigned_to??""} style={inpS} onChange={e=>set("assigned_to",e.target.value)}>
                 <option value="">— Seçin —</option>
-                {STAFF.map(s=><option key={s} value={s}>{s}</option>)}
+                {staff.map(s=><option key={s} value={s}>{s}</option>)}
               </select>
             </div>
           </div>
@@ -366,7 +368,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onClose }: {
 /* ══════════════════════════════════════════════════════════════
    TAB: PROJELER
 ══════════════════════════════════════════════════════════════ */
-function ProjelerTab({ companies }: { companies: Company[] }) {
+function ProjelerTab({ companies, staff }: { companies: Company[]; staff: string[] }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState<Partial<Project>|null|false>(false);
@@ -520,7 +522,7 @@ function ProjelerTab({ companies }: { companies: Company[] }) {
         </div>
       )}
 
-      {modal!==false && <ProjectModal project={modal} companies={companies} onSave={save} onClose={()=>setModal(false)} />}
+      {modal!==false && <ProjectModal project={modal} companies={companies} staff={staff} onSave={save} onClose={()=>setModal(false)} />}
     </div>
   );
 }
@@ -528,8 +530,8 @@ function ProjelerTab({ companies }: { companies: Company[] }) {
 /* ══════════════════════════════════════════════════════════════
    TAB: GÜNLÜK GÖREVLER
 ══════════════════════════════════════════════════════════════ */
-function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceForm }: {
-  tasks: WorkTask[]; companies: Company[];
+function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, onOpenServiceForm }: {
+  tasks: WorkTask[]; companies: Company[]; staff: string[];
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
   onTaskDelete: (id: string) => Promise<void>;
   onOpenServiceForm?: (taskId: string) => void;
@@ -567,7 +569,7 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceFo
         <select value={filterPerson} onChange={e=>setFP(e.target.value)}
           style={{ padding:"7px 12px",border:"1.5px solid #e5e7ef",borderRadius:"8px",fontSize:"12px",color:filterPerson?"#0052ff":"#64748b",background:"#fff",cursor:"pointer",outline:"none" }}>
           <option value="">Tüm Personel</option>
-          {STAFF.map(s=><option key={s} value={s}>{s}</option>)}
+          {staff.map(s=><option key={s} value={s}>{s}</option>)}
         </select>
         <div style={{ flex:1 }}/>
         <button onClick={()=>setModal({due_date:date,status:"todo"})}
@@ -649,7 +651,7 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceFo
         </div>
       )}
 
-      {modal!==false && <TaskModal task={modal} defaultDate={date} companies={companies} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
+      {modal!==false && <TaskModal task={modal} defaultDate={date} companies={companies} staff={staff} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
     </div>
   );
 }
@@ -753,7 +755,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, onOpenServiceFo
         })}
       </div>
 
-      {modal!==false && <TaskModal task={modal} companies={companies} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
+      {modal!==false && <TaskModal task={modal} companies={companies} staff={staff} onSave={onTaskSave} onOpenServiceForm={onOpenServiceForm} onClose={()=>setModal(false)} />}
     </div>
   );
 }
@@ -849,7 +851,7 @@ function FaturandiTab({
 ══════════════════════════════════════════════════════════════ */
 type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı";
 
-export default function IsPlani({ companies }: { companies: Company[] }) {
+export default function IsPlani({ companies, staff = ["Remzi Cuzdancı","Ahmet Yılmaz","Mehmet Kaya","Fatma Demir","Ali Öztürk","Ayşe Çelik"] }: { companies: Company[]; staff?: string[] }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const isTablet = width < 1024;
@@ -987,8 +989,8 @@ export default function IsPlani({ companies }: { companies: Company[] }) {
       </div>
 
       {/* ── Tab content ──────────────────────────────────────── */}
-      {innerTab==="projeler" && <ProjelerTab companies={companies} />}
-      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
+      {innerTab==="projeler" && <ProjelerTab companies={companies} staff={staff} />}
+      {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} onTaskSave={saveTask} onProjectSave={saveProject} />}
 

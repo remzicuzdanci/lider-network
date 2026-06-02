@@ -1296,7 +1296,7 @@ export default function AdminDashboard() {
 
         {/* ══════════════════════════ İŞ PLANI TAB */}
         {tab === "isplan" && (
-          <IsPlani companies={companies} />
+          <IsPlani companies={companies} staff={["Remzi Cuzdancı","Ahmet Yılmaz","Mehmet Kaya","Fatma Demir","Ali Öztürk","Ayşe Çelik"]} />
         )}
       </main>
 
