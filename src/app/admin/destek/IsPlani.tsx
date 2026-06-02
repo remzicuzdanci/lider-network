@@ -172,13 +172,7 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
               </select>
             </div>
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
-            <div><label style={lbl}>Atanan Kişi</label>
-              <select value={form.assigned_to??""} style={inp} onChange={e=>set("assigned_to",e.target.value)}>
-                <option value="">— Seçin —</option>
-                {staff.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+          <div>
             <div><label style={lbl}>Bitiş Tarihi</label>
               <input type="date" value={form.due_date??""} style={inp} onChange={e=>set("due_date",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
             </div>
@@ -246,19 +240,12 @@ function ProjectModal({ project, companies, staff, onSave, onClose }: {
           <div><label style={lblS}>Açıklama</label>
             <textarea value={form.description??""} rows={2} style={{...inpS,resize:"vertical"as const}} placeholder="Proje hakkında kısa bilgi..." onChange={e=>set("description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
-            <div><label style={lblS}>Müşteri</label>
-              <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
-                <option value="">— Seçin —</option>
-                {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div><label style={lblS}>Sorumlu</label>
-              <select value={form.assigned_to??""} style={inpS} onChange={e=>set("assigned_to",e.target.value)}>
-                <option value="">— Seçin —</option>
-                {staff.map(s=><option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
+          <div>
+            <label style={lblS}>Müşteri</label>
+            <select value={form.company_id??""} style={inpS} onChange={e=>set("company_id",e.target.value)}>
+              <option value="">— Seçin —</option>
+              {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
           </div>
           <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
             <div><label style={lblS}>Başlangıç</label>
