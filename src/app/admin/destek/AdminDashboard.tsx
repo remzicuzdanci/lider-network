@@ -8,8 +8,9 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight,
+  Zap, ShieldCheck, ChevronRight, ListTodo,
 } from "lucide-react";
+import IsPlani from "./IsPlani";
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 function timeAgo(iso: string) {
@@ -50,7 +51,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "staff" | "reports";
+type Tab = "tickets" | "customers" | "companies" | "staff" | "reports" | "isplan";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
@@ -643,6 +644,7 @@ export default function AdminDashboard() {
             <NavItem icon={<UserCog size={15} />} label="Personel" active={tab==="staff"} onClick={() => setTab("staff")} />
           )}
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
+          <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
 
           {stats && (
             <>
@@ -1290,6 +1292,11 @@ export default function AdminDashboard() {
             </div>
 
           </>
+        )}
+
+        {/* ══════════════════════════ İŞ PLANI TAB */}
+        {tab === "isplan" && (
+          <IsPlani companies={companies} />
         )}
       </main>
 
