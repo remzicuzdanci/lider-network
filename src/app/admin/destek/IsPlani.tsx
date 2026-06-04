@@ -770,7 +770,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                           <div style={{ position:"absolute",right:0,top:"100%",zIndex:50,background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",minWidth:150,padding:"5px" }}
                             onMouseLeave={()=>setMenuId(null)}>
                             {KAN_COLS.filter(c=>c.id!==task.status).map(c=>(
-                              <button key={c.id} onClick={()=>{onTaskSave({...task,status:c.id});setMenuId(null);}}
+                              <button key={c.id} onClick={async()=>{setMenuId(null);try{await onTaskSave({id:task.id,status:c.id});}catch(err){alert("Durum değiştirilemedi: "+(err instanceof Error?err.message:"Hata"));}}}
                                 style={{ display:"block",width:"100%",textAlign:"left",padding:"6px 10px",borderRadius:"7px",background:"none",border:"none",fontSize:"12px",color:c.color,cursor:"pointer",fontWeight:600 }}>
                                 → {c.label}
                               </button>
