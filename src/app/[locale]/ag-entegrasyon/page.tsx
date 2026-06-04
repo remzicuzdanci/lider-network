@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Network, Wifi, Settings, Server, Mail } from "lucide-react";
+import FaqSection from "@/components/seo/FaqSection";
+import { agEntegrasyonFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -425,6 +427,8 @@ export default async function AgEntegrasyonPage({
             </div>
           </div>
         </section>
+
+        <FaqSection items={agEntegrasyonFaqs} />
       </main>
     </>
   );

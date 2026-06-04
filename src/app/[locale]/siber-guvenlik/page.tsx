@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Shield, CheckCircle, AlertTriangle, Network, Mail } from "lucide-react";
+import FaqSection from "@/components/seo/FaqSection";
+import { siberGuvenlikFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -495,6 +497,8 @@ export default async function SiberGuvenlikPage({
             </div>
           </div>
         </section>
+
+        <FaqSection items={siberGuvenlikFaqs} />
       </main>
     </>
   );

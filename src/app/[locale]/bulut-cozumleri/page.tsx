@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Cloud, Shield, Network, Mail } from "lucide-react";
+import FaqSection from "@/components/seo/FaqSection";
+import { bulutFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -528,6 +530,8 @@ export default async function BulutCozumleriPage({
             />
           </div>
         </section>
+
+        <FaqSection items={bulutFaqs} />
       </main>
     </>
   );

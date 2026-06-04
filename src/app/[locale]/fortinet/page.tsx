@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import FortinetClient from "./FortinetClient";
+import FaqSection from "@/components/seo/FaqSection";
+import { fortinetFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -43,5 +45,10 @@ export async function generateMetadata({
 }
 
 export default async function FortinetPage() {
-  return <FortinetClient />;
+  return (
+    <>
+      <FortinetClient />
+      <FaqSection items={fortinetFaqs} />
+    </>
+  );
 }
