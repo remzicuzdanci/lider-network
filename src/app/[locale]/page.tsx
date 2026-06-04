@@ -3,6 +3,7 @@ import { getTranslations } from "next-intl/server";
 import Hero from "@/components/home/Hero";
 import Stats from "@/components/home/Stats";
 import ClientMarquee from "@/components/home/ClientMarquee";
+import PartnerBadges from "@/components/home/PartnerBadges";
 import FortinetHighlight from "@/components/home/FortinetHighlight";
 import FortinetProducts from "@/components/home/FortinetProducts";
 import Services from "@/components/home/Services";
@@ -57,6 +58,7 @@ export default async function HomePage() {
       <Hero />
       <Stats />
       <ClientMarquee />
+      <PartnerBadges />
       <FortinetHighlight />
       <FortinetProducts />
       <Services />
