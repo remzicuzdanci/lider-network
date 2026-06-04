@@ -129,6 +129,7 @@ const organizationSchema = {
   },
   sameAs: [
     "https://www.linkedin.com/company/lider-network-teknoloji-information-technologies/",
+    "https://cloud.google.com/find-a-partner/partner/lider-network-teknoloji-dan%C4%B1%C5%9Fmanl%C4%B1k-ltd-%C5%9Eti",
   ],
 };
 

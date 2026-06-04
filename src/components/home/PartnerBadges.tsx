@@ -17,6 +17,7 @@ const partners = [
     level: "Workspace Partner",
     color: "#4285F4",
     icon: "🔵",
+    href: "https://cloud.google.com/find-a-partner/partner/lider-network-teknoloji-dan%C4%B1%C5%9Fmanl%C4%B1k-ltd-%C5%9Eti",
   },
   {
     name: "Microsoft",
@@ -93,48 +94,68 @@ export default function PartnerBadges() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
-          {partners.map((p) => (
-            <div
-              key={p.name}
-              className="flex flex-col items-center text-center p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-              style={{
-                backgroundColor: `${p.color}07`,
-                border: `1px solid ${p.color}1a`,
-              }}
-            >
-              {/* Brand name */}
-              <div
-                className="text-sm font-black mb-1"
-                style={{ color: p.color, fontFamily: "var(--font-family-headline)" }}
-              >
-                {p.name}
-              </div>
-
-              {/* Badge level */}
-              <div
-                className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-2"
-                style={{
-                  backgroundColor: `${p.color}15`,
-                  color: p.color,
-                  border: `1px solid ${p.color}25`,
-                  fontFamily: "var(--font-family-label)",
-                }}
-              >
-                {p.badge}
-              </div>
-
-              {/* Specialty */}
-              <div className="flex items-center gap-1">
-                <CheckCircle2 className="w-3 h-3 shrink-0" style={{ color: p.color }} />
-                <span
-                  className="text-[10px]"
-                  style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
+          {partners.map((p) => {
+            const href = "href" in p ? (p.href as string) : undefined;
+            const cardClass =
+              "flex flex-col items-center text-center p-4 rounded-2xl transition-all duration-200 hover:-translate-y-1 hover:shadow-lg";
+            const cardStyle = {
+              backgroundColor: `${p.color}07`,
+              border: `1px solid ${p.color}1a`,
+            };
+            const inner = (
+              <>
+                {/* Brand name */}
+                <div
+                  className="text-sm font-black mb-1"
+                  style={{ color: p.color, fontFamily: "var(--font-family-headline)" }}
                 >
-                  {p.level}
-                </span>
+                  {p.name}
+                </div>
+
+                {/* Badge level */}
+                <div
+                  className="text-[10px] font-bold px-2 py-0.5 rounded-full mb-2"
+                  style={{
+                    backgroundColor: `${p.color}15`,
+                    color: p.color,
+                    border: `1px solid ${p.color}25`,
+                    fontFamily: "var(--font-family-label)",
+                  }}
+                >
+                  {p.badge}
+                </div>
+
+                {/* Specialty */}
+                <div className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 shrink-0" style={{ color: p.color }} />
+                  <span
+                    className="text-[10px]"
+                    style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
+                  >
+                    {p.level}
+                  </span>
+                </div>
+              </>
+            );
+
+            return href ? (
+              <a
+                key={p.name}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={isTr ? "Google Cloud Partner profilini görüntüle" : "View Google Cloud Partner profile"}
+                className={cardClass}
+                style={cardStyle}
+              >
+                {inner}
+              </a>
+            ) : (
+              <div key={p.name} className={cardClass} style={cardStyle}>
+                {inner}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
