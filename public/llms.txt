@@ -1,0 +1,40 @@
+# Lider Network
+
+> Lider Network, 2006'dan beri faaliyet gösteren bir Türk bilişim teknolojileri firması ve resmi **Fortinet Yetkili Partner**'dır. Kurumsal siber güvenlik, ağ altyapısı, veri depolama ve bulut çözümleri sunar. 500'den fazla başarılı proje ve 7/24 teknik destek.
+
+## Hakkında
+- **Firma:** Lider Network Teknoloji
+- **Kuruluş:** 2006
+- **Konum:** Birlik Mh. 448. Cd No:119/2, Çankaya, Ankara, Türkiye
+- **Telefon:** +90 312 232 02 88
+- **E-posta:** info@lidernetwork.com.tr
+- **Web:** https://www.lidernetwork.com.tr
+- **Çalışma saatleri:** Hafta içi 09:00–18:00
+- **Statü:** Fortinet Yetkili Partner
+
+## Hizmetler
+- Siber Güvenlik (Fortinet FortiGate NGFW, SD-WAN, endpoint güvenliği): https://www.lidernetwork.com.tr/tr/siber-guvenlik
+- Fortinet Çözümleri (FortiGate, FortiSwitch, FortiAP, yönetim): https://www.lidernetwork.com.tr/tr/fortinet
+- Ağ Entegrasyonu ve Altyapı: https://www.lidernetwork.com.tr/tr/ag-entegrasyon
+- Bulut Çözümleri: https://www.lidernetwork.com.tr/tr/bulut-cozumleri
+- Veri Depolama (Synology dahil): https://www.lidernetwork.com.tr/tr/veri-depolama
+- Sanallaştırma: https://www.lidernetwork.com.tr/tr/sanallastirma
+- Sistem Entegrasyonu: https://www.lidernetwork.com.tr/tr/sistem-entegrasyonu
+- İş Sürekliliği: https://www.lidernetwork.com.tr/tr/is-surekliligi
+- BT Danışmanlığı: https://www.lidernetwork.com.tr/tr/bt-danismanligi
+- Zayıf Akım Sistemleri: https://www.lidernetwork.com.tr/tr/zayif-akim
+
+## Önemli Sayfalar
+- Ana Sayfa: https://www.lidernetwork.com.tr/tr
+- Tüm Hizmetler: https://www.lidernetwork.com.tr/tr/hizmetler
+- Hakkımızda: https://www.lidernetwork.com.tr/tr/hakkimizda
+- Referanslar: https://www.lidernetwork.com.tr/tr/referanslar
+- Çözüm Ortaklarımız: https://www.lidernetwork.com.tr/tr/cozum-ortaklarimiz
+- Blog: https://www.lidernetwork.com.tr/tr/blog
+- İletişim: https://www.lidernetwork.com.tr/tr/iletisim
+
+## Sık Sorulan Sorular
+- **Lider Network Fortinet partneri mi?** Evet, resmi Fortinet Yetkili Partner'dır.
+- **Hangi şehirde?** Ankara, Çankaya. Türkiye genelinde hizmet verir.
+- **Kimlere hizmet veriyor?** KOBİ'lerden büyük kurumsal işletmelere her ölçekte firmaya.
+- **Ne zamandan beri?** 2006'dan beri.
