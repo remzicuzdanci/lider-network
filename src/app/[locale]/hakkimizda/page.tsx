@@ -4,7 +4,6 @@ import {
   ArrowRight,
   Target,
   Eye,
-  CheckCircle2,
   MapPin,
   Phone,
   Mail,
@@ -332,47 +331,13 @@ export default async function AboutPage({
         </div>
       </section>
 
-      {/* ─── SERTİFİKALAR & ORTAKLIKLAR ───────────────────────────────────── */}
+      {/* ─── İLETİŞİM & OFİS ──────────────────────────────────────────────── */}
       <section
         className="py-16"
         style={{ backgroundColor: "rgba(255,255,255,0.02)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)" }}
       >
         <div className="max-w-7xl mx-auto px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <div
-                className="text-xs font-bold mb-3 uppercase tracking-widest"
-                style={{ color: FN_RED, fontFamily: "var(--font-family-label)" }}
-              >
-                {isTr ? "Sertifikalar" : "Certifications"}
-              </div>
-              <h2
-                className="text-3xl font-black mb-6"
-                style={{ fontFamily: "var(--font-family-headline)" }}
-              >
-                {isTr ? "Teknik Yetkinliklerimiz" : "Our Technical Competencies"}
-              </h2>
-              <div className="space-y-3">
-                {[
-                  { label: "Fortinet Authorized Partner", sub: "Yetkili Satıcı & Destek", color: FN_RED },
-                  { label: "Google Cloud Partner", sub: "Google Workspace Partner", color: "#4285F4" },
-                ].map((c) => (
-                  <div
-                    key={c.label}
-                    className="flex items-center gap-3 p-3 rounded-xl"
-                    style={{ backgroundColor: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
-                  >
-                    <CheckCircle2 className="w-4 h-4 shrink-0" style={{ color: c.color }} />
-                    <div>
-                      <div className="text-sm font-semibold" style={{ color: "var(--color-on-surface)", fontFamily: "var(--font-family-label)" }}>
-                        {c.label}
-                      </div>
-                      <div className="text-xs" style={{ color: "var(--color-outline)" }}>{c.sub}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="max-w-2xl mx-auto">
 
             {/* İletişim & Ofis */}
             <div>
