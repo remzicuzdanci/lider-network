@@ -539,7 +539,7 @@ export default function FortiAPPage() {
               </h2>
               <div className="space-y-4">
                 {[
-                  "Fortinet NSE sertifikalı kablosuz ağ uzmanları",
+                  "Fortinet uzman kablosuz ağ uzmanları",
                   "RF site survey ve kapsama alanı optimizasyonu",
                   "FortiGate + FortiAP + FortiSwitch bütünleşik tasarım",
                   "Zero-touch provisioning ile hızlı devreye alma",
@@ -623,7 +623,7 @@ export default function FortiAPPage() {
             style={{ color: "var(--color-on-surface-variant)" }}
           >
             FortiAP WiFi 7 çözümleri için ücretsiz RF site survey ve kapsama analizi alın.
-            NSE sertifikalı kablosuz ağ uzmanlarımız en kısa sürede dönüş yapar.
+            uzman kablosuz ağ uzmanlarımız en kısa sürede dönüş yapar.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

@@ -141,7 +141,7 @@ const strategyItems = [
   "KVKK, ISO 27001, PCI-DSS uyumluluk otomasyonu",
   "SD-WAN ve Zero Trust Network Access (ZTNA) entegrasyonu",
   "Bulut (AWS, Azure, GCP) ve şirket içi hibrit SOC",
-  "NSE sertifikalı Fortinet mühendis ekibi",
+  "uzman Fortinet mühendis ekibi",
 ];
 
 export default function YonetimSOCPage() {
@@ -584,7 +584,7 @@ export default function YonetimSOCPage() {
             style={{ color: "var(--color-on-surface-variant)" }}
           >
             FortiAnalyzer, FortiManager ve FortiSIEM için ücretsiz demo ve POC planlayın.
-            NSE sertifikalı SOC uzmanlarımız mevcut altyapınızı analiz eder.
+            uzman SOC uzmanlarımız mevcut altyapınızı analiz eder.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

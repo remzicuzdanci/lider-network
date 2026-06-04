@@ -516,7 +516,7 @@ export default function Navbar() {
                     style={{ borderTop: "1px solid rgba(255,60,0,0.12)" }}
                   >
                     <span className="text-xs" style={{ color: "var(--color-outline)" }}>
-                      {isTr ? "NSE Sertifikalı Fortinet Uzmanları — 2006'dan beri" : "NSE Certified Fortinet Experts — since 2006"}
+                      {isTr ? "Fortinet Yetkili Partner — 2006'dan beri" : "Fortinet Authorized Partner — since 2006"}
                     </span>
                     <Link
                       href={`/${locale}/fortinet`}

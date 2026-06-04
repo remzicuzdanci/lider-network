@@ -118,7 +118,7 @@ export default function Partners() {
                 fontFamily: "var(--font-family-label)",
               }}
             >
-              {isTr ? "Yetkili Partner · NSE Sertifikalı" : "Authorized Partner · NSE Certified"}
+              {isTr ? "Fortinet Yetkili Partner" : "Fortinet Authorized Partner"}
             </span>
           </div>
           <Link

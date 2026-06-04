@@ -67,8 +67,8 @@ export default function LatestPosts() {
               style={{ color: "var(--color-on-surface-variant)" }}
             >
               {isTr
-                ? "NSE sertifikalı mühendislerimizden Fortinet ve siber güvenlik üzerine güncel teknik bilgiler."
-                : "Up-to-date technical insights on Fortinet and cybersecurity from our NSE-certified engineers."}
+                ? "uzman mühendislerimizden Fortinet ve siber güvenlik üzerine güncel teknik bilgiler."
+                : "Up-to-date technical insights on Fortinet and cybersecurity from our expert engineers."}
             </p>
           </div>
           <Link

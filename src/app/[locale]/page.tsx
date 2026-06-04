@@ -42,8 +42,8 @@ export async function generateMetadata({
         ? "Lider Network - Fortinet Yetkili Partner | Enterprise BT Çözümleri"
         : "Lider Network - Fortinet Authorized Partner | Enterprise IT Solutions",
       description: isTr
-        ? "Enterprise düzeyde siber güvenlik, ağ altyapısı ve veri depolama çözümleri. Fortinet NSE sertifikalı mühendisler. 2006'dan beri güvenilir çözümler."
-        : "Enterprise-grade cybersecurity, network infrastructure and data storage solutions. Fortinet NSE certified engineers. Trusted solutions since 2006.",
+        ? "Enterprise düzeyde siber güvenlik, ağ altyapısı ve veri depolama çözümleri. Fortinet uzman mühendisler. 2006'dan beri güvenilir çözümler."
+        : "Enterprise-grade cybersecurity, network infrastructure and data storage solutions. Fortinet expert engineers. Trusted solutions since 2006.",
       url: `${baseUrl}/${locale}`,
       type: "website",
       images: [{ url: "/og-image.png", width: 1200, height: 630 }],

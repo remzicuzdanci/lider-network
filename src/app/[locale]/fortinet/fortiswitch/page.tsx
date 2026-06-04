@@ -463,7 +463,7 @@ export default function FortiSwitchPage() {
             </h2>
             <div className="space-y-4">
               {[
-                "Fortinet Yetkili Partner — NSE sertifikalı mühendisler",
+                "Fortinet Yetkili Partner",
                 "Ağ tasarımı, kurulum ve devreye alma dahil anahtar teslim proje",
                 "7/24 teknik destek ve uzaktan yönetim hizmetleri",
                 "FortiGate + FortiSwitch + FortiAP bütünleşik mimari tasarımı",
@@ -567,7 +567,7 @@ export default function FortiSwitchPage() {
             style={{ color: "var(--color-on-surface-variant)" }}
           >
             FortiSwitch çözümleri için ücretsiz ağ analizi ve kişiselleştirilmiş teklif alın.
-            NSE sertifikalı mühendislerimiz 1 iş günü içinde dönüş yapar.
+            uzman mühendislerimiz 1 iş günü içinde dönüş yapar.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

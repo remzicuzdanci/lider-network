@@ -94,7 +94,7 @@ const whyLider = [
   {
     icon: Shield,
     title: "Sertifikalı Uzmanlık",
-    desc: "Fortinet NSE 4-7 sertifikalı mühendis ekibi ile endpoint güvenlik tasarımı ve implementasyonu.",
+    desc: "uzman Fortinet mühendis ekibi ile endpoint güvenlik tasarımı ve implementasyonu.",
   },
   {
     icon: Cpu,
@@ -516,7 +516,7 @@ export default function EndpointPage() {
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {[
-              "Fortinet Yetkili Partner — NSE 4-7 sertifikası",
+              "Fortinet Yetkili Partner",
               "Mevcut güvenlik altyapısıyla entegrasyon",
               "Proje bazlı ve SLA'lı managed hizmet seçeneği",
               "KVKK uyumluluk denetimi ve raporlama",

@@ -124,7 +124,7 @@ export default function BlogPage() {
             </h1>
             <p className="text-base leading-relaxed" style={{ color: "var(--color-on-surface-variant)" }}>
               Fortinet çözümleri, siber güvenlik trendleri ve BT altyapısı hakkında
-              uzman içerikler. NSE sertifikalı mühendislerimizden güncel teknik bilgiler.
+              uzman içerikler. uzman mühendislerimizden güncel teknik bilgiler.
             </p>
           </div>
         </div>

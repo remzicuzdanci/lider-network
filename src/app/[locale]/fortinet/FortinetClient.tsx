@@ -741,7 +741,7 @@ function FullProductFamily() {
             style={{ color: "var(--color-on-surface-variant)" }}
           >
             Projenize uygun Fortinet çözümünü birlikte belirleyelim.
-            NSE sertifikalı mühendislerimiz sizin için analiz yapsın.
+            uzman mühendislerimiz sizin için analiz yapsın.
           </p>
           <a
             href="#iletisim"

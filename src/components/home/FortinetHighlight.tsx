@@ -44,7 +44,7 @@ export default function FortinetHighlight() {
   const stats = [
     { value: "#1", label: isTr ? "Küresel NGFW Piyasa Lideri" : "Global NGFW Market Leader" },
     { value: "50%+", label: isTr ? "Küresel Pazar Payı" : "Global Market Share" },
-    { value: "NSE", label: isTr ? "Sertifikalı Mühendisler" : "Certified Engineers" },
+    { value: "13+", label: isTr ? "Yıl Gartner Lideri" : "Years Gartner Leader" },
     { value: "500+", label: isTr ? "Tamamlanan Kurulum" : "Completed Installations" },
   ];
 
@@ -90,7 +90,7 @@ export default function FortinetHighlight() {
             }}
           >
             <Shield className="w-3 h-3" aria-hidden="true" />
-            {isTr ? "NSE Sertifikalı Ekip" : "NSE Certified Team"}
+            {isTr ? "Uzman Fortinet Ekibi" : "Expert Fortinet Team"}
           </div>
         </div>
 

@@ -165,14 +165,12 @@ export default function Expertise() {
                     color: "var(--color-outline)",
                   }}
                 >
-                  SERTİFİKALAR
+                  YETKİLİ ORTAKLIKLAR
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[
-                    "Fortinet NSE",
-                    "VMware VCP",
-                    "Microsoft Azure",
-                    "CISSP",
+                    "Fortinet Yetkili Partner",
+                    "Google Cloud Partner",
                   ].map((cert) => (
                     <span
                       key={cert}

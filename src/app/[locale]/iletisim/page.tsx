@@ -541,14 +541,14 @@ export default async function ContactPage({
 
             <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.07)" }}>
               {(isTr ? [
-                { q: "Ücretsiz altyapı analizi nasıl işliyor?", a: "Formu doldurmanızın ardından NSE sertifikalı mühendisimiz 1 iş günü içinde sizi arar. Mevcut altyapınızı değerlendirir, açık noktaları ve iyileştirme alanlarını ücretsiz raporlar." },
+                { q: "Ücretsiz altyapı analizi nasıl işliyor?", a: "Formu doldurmanızın ardından uzman mühendisimiz 1 iş günü içinde sizi arar. Mevcut altyapınızı değerlendirir, açık noktaları ve iyileştirme alanlarını ücretsiz raporlar." },
                 { q: "Fortinet lisansı ve donanım satışı yapıyor musunuz?", a: "Evet. Fortinet Yetkili Partner olarak FortiGate, FortiSwitch, FortiAP ve tüm Fortinet ürün gamı için resmi lisans ve donanım satışı yapıyoruz. Rekabetçi fiyat ve orijinal garanti sunuyoruz." },
                 { q: "SLA garantiniz nedir?", a: "Kurumsal destek anlaşmalarımızda kritik arızalar için 4 saat, standart talepler için 8 saat yanıt süresi garantisi veriyoruz. 7/24 teknik destek hattımız aktiftir." },
                 { q: "Proje süresi ne kadar?", a: "Kapsama göre değişir. Tek cihaz kurulumu 1 gün, orta ölçekli ağ projeleri 1-4 hafta, büyük kurumsal altyapı projeleri ise 1-6 ay sürebilir. Proje başlangıcında kesin takvim sunulur." },
                 { q: "Hangi şehirlerde hizmet veriyorsunuz?", a: "Ankara merkezli olmakla birlikte İstanbul, İzmir ve tüm Türkiye genelinde saha hizmeti sunuyoruz. Uzaktan yönetim ve danışmanlık için coğrafi sınır yoktur." },
                 { q: "Mevcut altyapımı değiştirmeden entegrasyon yapabilir misiniz?", a: "Evet. Mevcut altyapınızı koruyarak kademeli geçiş planı hazırlıyoruz. FortiGate, mevcut switch/router ile birlikte çalışabilir — sıfırdan başlamak zorunda değilsiniz." },
               ] : [
-                { q: "How does the free infrastructure analysis work?", a: "After submitting the form, our NSE-certified engineer will contact you within 1 business day. We evaluate your existing infrastructure and provide a free report on gaps and improvement areas." },
+                { q: "How does the free infrastructure analysis work?", a: "After submitting the form, our expert engineer will contact you within 1 business day. We evaluate your existing infrastructure and provide a free report on gaps and improvement areas." },
                 { q: "Do you sell Fortinet licenses and hardware?", a: "Yes. As a Fortinet Authorized Partner, we sell official licenses and hardware for FortiGate, FortiSwitch, FortiAP and the full Fortinet product range, with competitive pricing and genuine warranty." },
                 { q: "What is your SLA guarantee?", a: "Our enterprise support agreements guarantee a 4-hour response for critical faults and 8 hours for standard requests. 24/7 technical support line is always active." },
                 { q: "How long does a project take?", a: "It depends on scope. Single device installation takes 1 day, mid-scale network projects 1-4 weeks, large enterprise infrastructure projects 1-6 months. A precise timeline is provided at project kickoff." },

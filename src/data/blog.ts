@@ -97,7 +97,7 @@ export const posts: BlogPost[] = [
 
 <h2>Sonuç</h2>
 <p>FortiGate, kurumsal ağ güvenliğini tek bir platform altında toplamak isteyen işletmeler için ideal çözümdür. Gartner Magic Quadrant'ta <strong>13 yıl üst üste Lider</strong> olarak gösterilen Fortinet'in amiral gemisi ürünü olan FortiGate, performans ve güvenliği bir arada sunar.</p>
-<p>Lider Network olarak FortiGate tasarımı, kurulumu ve yönetiminde NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>Lider Network olarak FortiGate tasarımı, kurulumu ve yönetiminde uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
   {
@@ -147,7 +147,7 @@ export const posts: BlogPost[] = [
 </ul>
 
 <h2>Sonuç</h2>
-<p>SASE mimarileri geleceğin kurumsal ağ altyapılarının temelini oluşturmaktadır. Fortinet'in unified yaklaşımı, tek bir vendor üzerinden eksiksiz bir SASE deneyimi sunar. Lider Network olarak SASE dönüşüm projelerinizde NSE sertifikalı ekibimizle yanınızdayız.</p>
+<p>SASE mimarileri geleceğin kurumsal ağ altyapılarının temelini oluşturmaktadır. Fortinet'in unified yaklaşımı, tek bir vendor üzerinden eksiksiz bir SASE deneyimi sunar. Lider Network olarak SASE dönüşüm projelerinizde uzman ekibimizle yanınızdayız.</p>
     `,
   },
   {
@@ -5084,7 +5084,7 @@ export const posts: BlogPost[] = [
 </table>
 
 <h2>Sonuç</h2>
-<p>Administrative Access ayarları, FortiGate güvenliğinin temel taşlarından biridir. "İhtiyacın kadar aç, geri kalanını kapat" prensibi ile hareket etmek, saldırı yüzeyini minimuma indirir. Lider Network NSE sertifikalı mühendisleri olarak FortiGate güvenlik denetimleri ve yapılandırma optimizasyonu konularında yanınızdayız.</p>
+<p>Administrative Access ayarları, FortiGate güvenliğinin temel taşlarından biridir. "İhtiyacın kadar aç, geri kalanını kapat" prensibi ile hareket etmek, saldırı yüzeyini minimuma indirir. Lider Network uzman mühendisleri olarak FortiGate güvenlik denetimleri ve yapılandırma optimizasyonu konularında yanınızdayız.</p>
     `,
   },
 
@@ -5186,7 +5186,7 @@ export const posts: BlogPost[] = [
 <p>FortiAP ile FortiGate arasındaki iletişim <strong>CAPWAP (Control and Provisioning of Wireless Access Points)</strong> protokolü üzerinden gerçekleşir. CAPWAP, UDP 5246 (kontrol) ve UDP 5247 (veri) portlarını kullanır. FortiAP ile FortiGate arasında bir firewall politikası varsa bu portların açık olması zorunludur.</p>
 
 <h2>Sonuç</h2>
-<p>FortiSwitch olmadan FortiAP kurulumu, doğru adımlar izlendiğinde oldukça pratiktir. Sürecin en kritik noktası <strong>Security Fabric Connection</strong> ayarının doğru arayüzde etkinleştirilmesidir. Lider Network olarak FortiAP tasarımı, kurulumu ve sorun giderme konularında NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+<p>FortiSwitch olmadan FortiAP kurulumu, doğru adımlar izlendiğinde oldukça pratiktir. Sürecin en kritik noktası <strong>Security Fabric Connection</strong> ayarının doğru arayüzde etkinleştirilmesidir. Lider Network olarak FortiAP tasarımı, kurulumu ve sorun giderme konularında uzman mühendislerimizle destek sağlıyoruz.</p>
     `,
   },
 
@@ -5310,7 +5310,7 @@ diagnose debug enable</code></pre>
 </table>
 
 <h2>Sonuç</h2>
-<p>FTP Helper, NAT arkasındaki FTP bağlantılarını sorunsuz hale getiren FortiGate'in akıllı bir özelliğidir. Ancak FTPS veya standart dışı konfigürasyonlarda dikkatli yapılandırma gerektirir. Lider Network olarak FortiGate politika tasarımı, NAT yapılandırması ve uygulama katmanı sorunlarında NSE sertifikalı mühendislerimizle destek veriyoruz.</p>
+<p>FTP Helper, NAT arkasındaki FTP bağlantılarını sorunsuz hale getiren FortiGate'in akıllı bir özelliğidir. Ancak FTPS veya standart dışı konfigürasyonlarda dikkatli yapılandırma gerektirir. Lider Network olarak FortiGate politika tasarımı, NAT yapılandırması ve uygulama katmanı sorunlarında uzman mühendislerimizle destek veriyoruz.</p>
     `,
   },
 
@@ -5443,7 +5443,7 @@ end</code></pre>
 </ul>
 
 <h2>Sonuç</h2>
-<p>FortiExtender, Fortinet ekosisteminin WAN tarafını güçlendiren kritik bir bileşendir. Özellikle SD-WAN ile birleştiğinde; fiber kesintilerine karşı otomatik failover, şube bağlantısı ve mobil kullanım senaryolarında güvenilir ve merkezi yönetilebilir bir çözüm sunar. Lider Network olarak FortiExtender tasarımı, kurulumu ve SD-WAN entegrasyonunda NSE sertifikalı mühendislerimizle hizmetinizdeyiz.</p>
+<p>FortiExtender, Fortinet ekosisteminin WAN tarafını güçlendiren kritik bir bileşendir. Özellikle SD-WAN ile birleştiğinde; fiber kesintilerine karşı otomatik failover, şube bağlantısı ve mobil kullanım senaryolarında güvenilir ve merkezi yönetilebilir bir çözüm sunar. Lider Network olarak FortiExtender tasarımı, kurulumu ve SD-WAN entegrasyonunda uzman mühendislerimizle hizmetinizdeyiz.</p>
     `,
   },
 
@@ -5596,7 +5596,7 @@ diagnose sys session stat</code></pre>
 </ol>
 
 <h2>Sonuç</h2>
-<p>FortiView, FortiGate'in en güçlü yerleşik araçlarından biridir. Ek bir yazılım veya lisans gerektirmeden ağınızdaki trafiği tam görünürlükle izlemenizi sağlar. Kaynak, hedef, uygulama, web sitesi, politika ve oturum katmanlarında birbirini tamamlayan bu ekranlar, hem günlük operasyon hem de olay müdahalesi için vazgeçilmezdir. Lider Network olarak FortiGate izleme, SOC kurulumu ve güvenlik denetimi konularında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>FortiView, FortiGate'in en güçlü yerleşik araçlarından biridir. Ek bir yazılım veya lisans gerektirmeden ağınızdaki trafiği tam görünürlükle izlemenizi sağlar. Kaynak, hedef, uygulama, web sitesi, politika ve oturum katmanlarında birbirini tamamlayan bu ekranlar, hem günlük operasyon hem de olay müdahalesi için vazgeçilmezdir. Lider Network olarak FortiGate izleme, SOC kurulumu ve güvenlik denetimi konularında uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -5747,7 +5747,7 @@ diagnose sys session stat</code></pre>
 </ul>
 
 <h2>Sonuç</h2>
-<p>Security Fabric menüsü, FortiGate'i sadece bir firewall olmaktan çıkarıp tüm ağın görünürlük ve yönetim merkezine dönüştürür. Physical Topology ile kabloyu, Logical Topology ile politikayı, Security Rating ile güvenlik açıklarını, Automation ile tekrarlayan işleri otomatize edebilir, Connector'larla ekosistemi genişletebilirsiniz. Lider Network olarak Security Fabric tasarımı, kurulumu ve optimizasyonu konularında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>Security Fabric menüsü, FortiGate'i sadece bir firewall olmaktan çıkarıp tüm ağın görünürlük ve yönetim merkezine dönüştürür. Physical Topology ile kabloyu, Logical Topology ile politikayı, Security Rating ile güvenlik açıklarını, Automation ile tekrarlayan işleri otomatize edebilir, Connector'larla ekosistemi genişletebilirsiniz. Lider Network olarak Security Fabric tasarımı, kurulumu ve optimizasyonu konularında uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -5979,7 +5979,7 @@ diagnose sniffer packet any "port 80" 4 100</code></pre>
 </table>
 
 <h2>Sonuç</h2>
-<p>FortiGate'in Network menüsü, basit bir arayüz IP atamasından BGP gibi karmaşık yönlendirme protokollerine kadar her ölçekteki ağ ihtiyacını karşılar. Günlük operasyonlarda en sık kullanılanlar Interfaces, Static Routes, DNS ve Diagnostics'tir. SD-WAN ise çok WAN hatlı ortamlarda vazgeçilmez hale gelmiştir. Lider Network olarak FortiGate ağ tasarımı, SD-WAN kurulumu ve yönlendirme protokolleri yapılandırmasında NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>FortiGate'in Network menüsü, basit bir arayüz IP atamasından BGP gibi karmaşık yönlendirme protokollerine kadar her ölçekteki ağ ihtiyacını karşılar. Günlük operasyonlarda en sık kullanılanlar Interfaces, Static Routes, DNS ve Diagnostics'tir. SD-WAN ise çok WAN hatlı ortamlarda vazgeçilmez hale gelmiştir. Lider Network olarak FortiGate ağ tasarımı, SD-WAN kurulumu ve yönlendirme protokolleri yapılandırmasında uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -6057,7 +6057,7 @@ diagnose sniffer packet any "port 80" 4 100</code></pre>
 </ol>
 
 <h2>Sonuç</h2>
-<p>FortiOS 7.6, AI tabanlı güvenlik, gelişmiş SD-WAN telemetrisi ve ZTNA 2.0 ile kurumsal güvenlik gereksinimlerini karşılama konusunda önemli adımlar atmaktadır. Yükseltme planlaması ve test süreçlerinde Lider Network NSE sertifikalı mühendisleri olarak destek sağlıyoruz.</p>
+<p>FortiOS 7.6, AI tabanlı güvenlik, gelişmiş SD-WAN telemetrisi ve ZTNA 2.0 ile kurumsal güvenlik gereksinimlerini karşılama konusunda önemli adımlar atmaktadır. Yükseltme planlaması ve test süreçlerinde Lider Network uzman mühendisleri olarak destek sağlıyoruz.</p>
     `,
   },
 
@@ -6152,7 +6152,7 @@ diagnose sniffer packet any "port 80" 4 100</code></pre>
 <p>Fortinet, FortiOS 7.4 sürümüyle birlikte SSL VPN'i resmi olarak <strong>deprecated</strong> (kullanım dışı bırakılacak) ilan etti. Bu, SSL VPN'in aniden ortadan kalkmayacağı ancak aktif olarak geliştirilmeyeceği anlamına gelir. Yeni kurulumlar için <strong>IPsec IKEv2 + FortiClient</strong> veya <strong>ZTNA</strong> geçişi planlanması önerilir.</p>
 
 <h2>Sonuç</h2>
-<p>İki protokolün de güçlü ve zayıf tarafları vardır. Kısa vadede SSL VPN çalışmaya devam edecek ancak uzun vadede IPsec VPN ve ZTNA'ya geçiş planlamak stratejik bir karardır. Lider Network olarak VPN tasarımı, migrasyon planlaması ve FortiClient EMS kurulumunda NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+<p>İki protokolün de güçlü ve zayıf tarafları vardır. Kısa vadede SSL VPN çalışmaya devam edecek ancak uzun vadede IPsec VPN ve ZTNA'ya geçiş planlamak stratejik bir karardır. Lider Network olarak VPN tasarımı, migrasyon planlaması ve FortiClient EMS kurulumunda uzman mühendislerimizle destek sağlıyoruz.</p>
     `,
   },
 
@@ -6286,7 +6286,7 @@ end</code></pre>
 </ul>
 
 <h2>Sonuç</h2>
-<p>FortiGate HA, kurumsal ağlarda firewall katmanında kesintisizlik sağlamanın en güvenilir yoludur. Active-Passive mod çoğu senaryo için yeterli ve yönetimi kolaydır; yüksek UTM throughput gerektiren ortamlarda Active-Active değerlendirilebilir. Lider Network olarak FortiGate HA tasarımı, kurulumu ve failover testlerinde NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>FortiGate HA, kurumsal ağlarda firewall katmanında kesintisizlik sağlamanın en güvenilir yoludur. Active-Passive mod çoğu senaryo için yeterli ve yönetimi kolaydır; yüksek UTM throughput gerektiren ortamlarda Active-Active değerlendirilebilir. Lider Network olarak FortiGate HA tasarımı, kurulumu ve failover testlerinde uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -6417,7 +6417,7 @@ end</code></pre>
 </ol>
 
 <h2>Sonuç</h2>
-<p>Zero Trust, "iç ağ güvenlidir" varsayımının geçerliliğini yitirdiği modern tehdit ortamında en doğru güvenlik yaklaşımıdır. Fortinet'in ZTNA çözümü, FortiGate, FortiClient ve EMS üçlüsüyle geleneksel VPN'e güçlü bir alternatif sunar. Lider Network olarak ZTNA mimari tasarımı, FortiClient EMS kurulumu ve Zero Trust yolculuğunuzda NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>Zero Trust, "iç ağ güvenlidir" varsayımının geçerliliğini yitirdiği modern tehdit ortamında en doğru güvenlik yaklaşımıdır. Fortinet'in ZTNA çözümü, FortiGate, FortiClient ve EMS üçlüsüyle geleneksel VPN'e güçlü bir alternatif sunar. Lider Network olarak ZTNA mimari tasarımı, FortiClient EMS kurulumu ve Zero Trust yolculuğunuzda uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -6524,7 +6524,7 @@ end</code></pre>
 </ul>
 
 <h2>Sonuç</h2>
-<p>SSL Deep Inspection, modern siber güvenliğin vazgeçilmez bir bileşenidir. Şifreli trafik içinde gizlenen tehditleri tespit etmeden IPS, antivirüs ve web filtresi tam anlamıyla işlev göremez. Doğru yapılandırılmış CA sertifika dağıtımı ve istisnalar ile kullanıcı deneyimini bozmadan maksimum güvenlik sağlanabilir. Lider Network olarak SSL Inspection yapılandırması, CA sertifika dağıtımı ve UTM politika optimizasyonunda NSE sertifikalı mühendislerimizle destek sağlıyoruz.</p>
+<p>SSL Deep Inspection, modern siber güvenliğin vazgeçilmez bir bileşenidir. Şifreli trafik içinde gizlenen tehditleri tespit etmeden IPS, antivirüs ve web filtresi tam anlamıyla işlev göremez. Doğru yapılandırılmış CA sertifika dağıtımı ve istisnalar ile kullanıcı deneyimini bozmadan maksimum güvenlik sağlanabilir. Lider Network olarak SSL Inspection yapılandırması, CA sertifika dağıtımı ve UTM politika optimizasyonunda uzman mühendislerimizle destek sağlıyoruz.</p>
     `,
   },
 
@@ -6623,7 +6623,7 @@ end</code></pre>
 </ul>
 
 <h2>Sonuç</h2>
-<p>Bu hataların büyük bölümü tecrübesizlikten değil, zaman baskısı ve "sonra hallederim" ertelemesinden kaynaklanır. Düzenli güvenlik denetimleri bu riskleri minimuma indirir. Lider Network olarak FortiGate güvenlik denetimi, yapılandırma revizyonu ve best-practice uygulamaları konusunda NSE sertifikalı mühendislerimizle yanınızdayız.</p>
+<p>Bu hataların büyük bölümü tecrübesizlikten değil, zaman baskısı ve "sonra hallederim" ertelemesinden kaynaklanır. Düzenli güvenlik denetimleri bu riskleri minimuma indirir. Lider Network olarak FortiGate güvenlik denetimi, yapılandırma revizyonu ve best-practice uygulamaları konusunda uzman mühendislerimizle yanınızdayız.</p>
     `,
   },
 
@@ -6998,7 +6998,7 @@ get vpn ssl monitor</code></pre>
 
 <h2>Sonuç</h2>
 <p>FortiOS 7.4.12, özellikle <strong>SSL VPN güvenlik yamaları ve HA kararlılık iyileştirmeleri</strong> nedeniyle üretim ortamları için önemli bir güncelleme niteliği taşımaktadır. "Sonra yaparız" mantığıyla ertelenen firmware güncellemeleri, bugün yamalanan zafiyetlerin yarın exploit edilmesi anlamına gelir.</p>
-<p>Yükseltme planlaması, yedek alma, HA sıralama ve doğrulama adımlarını eksiksiz uygulayarak bu güncellemeyi güvenli şekilde gerçekleştirebilirsiniz. Lider Network olarak FortiGate firmware yükseltme planlaması ve uygulamasında NSE sertifikalı mühendislerimizle destek sunuyoruz.</p>
+<p>Yükseltme planlaması, yedek alma, HA sıralama ve doğrulama adımlarını eksiksiz uygulayarak bu güncellemeyi güvenli şekilde gerçekleştirebilirsiniz. Lider Network olarak FortiGate firmware yükseltme planlaması ve uygulamasında uzman mühendislerimizle destek sunuyoruz.</p>
     `,
   },
 

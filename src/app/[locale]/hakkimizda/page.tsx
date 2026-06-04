@@ -30,8 +30,8 @@ export async function generateMetadata({
       ? "Hakkımızda | Lider Network Teknoloji — Ankara"
       : "About Us | Lider Network Technology — Ankara",
     description: isTr
-      ? "Lider Network Teknoloji Danışmanlık — 2006'dan bu yana Fortinet Yetkili Partner. Ankara merkezli, 500+ kurumsal proje, NSE sertifikalı mühendis kadrosu."
-      : "Lider Network Technology Consulting — Fortinet Authorized Partner since 2006. Ankara-based, 500+ enterprise projects, NSE certified engineering team.",
+      ? "Lider Network Teknoloji Danışmanlık — 2006'dan bu yana Fortinet Yetkili Partner. Ankara merkezli, 500+ kurumsal proje, uzman mühendis kadrosu."
+      : "Lider Network Technology Consulting — Fortinet Authorized Partner since 2006. Ankara-based, 500+ enterprise projects, expert engineering team.",
     alternates: {
       canonical: `${baseUrl}/${locale}/hakkimizda`,
       languages: {
@@ -117,8 +117,8 @@ export default async function AboutPage({
 
               <p className="text-lg leading-relaxed mb-8 max-w-xl" style={{ color: "var(--color-on-surface-variant)" }}>
                 {isTr
-                  ? "Lider Network Teknoloji Danışmanlık, 2006 yılından bu yana Ankara merkezli olarak kurumsal BT altyapısı, siber güvenlik ve ağ çözümleri alanında hizmet vermektedir. Fortinet Yetkili Partner unvanıyla NSE sertifikalı mühendis kadromuzla yanınızdayız."
-                  : "Lider Network Technology Consulting has been providing enterprise IT infrastructure, cybersecurity and network solutions from Ankara since 2006. As a Fortinet Authorized Partner, our NSE-certified engineers are here for you."}
+                  ? "Lider Network Teknoloji Danışmanlık, 2006 yılından bu yana Ankara merkezli olarak kurumsal BT altyapısı, siber güvenlik ve ağ çözümleri alanında hizmet vermektedir. Fortinet Yetkili Partner unvanıyla uzman mühendis kadromuzla yanınızdayız."
+                  : "Lider Network Technology Consulting has been providing enterprise IT infrastructure, cybersecurity and network solutions from Ankara since 2006. As a Fortinet Authorized Partner, our expert engineers are here for you."}
               </p>
 
               {/* Contact strip */}
@@ -172,7 +172,7 @@ export default async function AboutPage({
                 {[
                   { v: "2006", l: isTr ? "Kuruluş Yılı" : "Founded", color: FN_RED },
                   { v: "500+", l: isTr ? "Başarılı Proje" : "Successful Projects", color: BLUE },
-                  { v: "NSE", l: isTr ? "Fortinet Sertifika" : "Fortinet Certificate", color: "#7c3aed" },
+                  { v: "Google", l: isTr ? "Cloud Partner" : "Cloud Partner", color: "#4285F4" },
                   { v: "7/24", l: isTr ? "Teknik Destek" : "Technical Support", color: "#059669" },
                   { v: "%98", l: isTr ? "Müşteri Memnuniyeti" : "Customer Satisfaction", color: BLUE },
                   { v: "20+", l: isTr ? "Yıl Deneyim" : "Years Experience", color: FN_RED },
@@ -294,7 +294,7 @@ export default async function AboutPage({
             {
               icon: Award,
               title: isTr ? "Uzmanlık" : "Expertise",
-              desc: isTr ? "Fortinet NSE 4-7 sertifikalı mühendislerden oluşan, FortiGate ve ağ güvenliğinde uzman kadromuz." : "Expert team of Fortinet NSE 4-7 certified engineers specialized in FortiGate and network security.",
+              desc: isTr ? "uzman Fortinet mühendislerden oluşan, FortiGate ve ağ güvenliğinde uzman kadromuz." : "Expert team of expert Fortinet engineers specialized in FortiGate and network security.",
               color: "#7c3aed",
             },
             {
@@ -354,7 +354,6 @@ export default async function AboutPage({
               </h2>
               <div className="space-y-3">
                 {[
-                  { label: "Fortinet NSE Sertifikalı", sub: "Network Security Expert", color: FN_RED },
                   { label: "Fortinet Authorized Partner", sub: "Yetkili Satıcı & Destek", color: FN_RED },
                   { label: "Google Cloud Partner", sub: "Google Workspace Partner", color: "#4285F4" },
                 ].map((c) => (
@@ -484,8 +483,8 @@ export default async function AboutPage({
           </h2>
           <p className="text-base mb-8 max-w-xl mx-auto" style={{ color: "var(--color-on-surface-variant)" }}>
             {isTr
-              ? "Altyapınızı güçlendirmek ve geleceğinizi güvence altına almak için bugün iletişime geçin. NSE sertifikalı mühendislerimiz en kısa sürede dönüş yapar."
-              : "Contact us today to strengthen your infrastructure and secure your future. Our NSE-certified engineers will get back to you as soon as possible."}
+              ? "Altyapınızı güçlendirmek ve geleceğinizi güvence altına almak için bugün iletişime geçin. uzman mühendislerimiz en kısa sürede dönüş yapar."
+              : "Contact us today to strengthen your infrastructure and secure your future. Our expert engineers will get back to you as soon as possible."}
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link

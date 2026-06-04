@@ -236,7 +236,7 @@ export default async function BlogPostPage({
                     className="text-xs leading-relaxed mb-4"
                     style={{ color: "var(--color-on-surface-variant)" }}
                   >
-                    NSE sertifikalı mühendislerimiz altyapınızı ücretsiz analiz eder.
+                    uzman mühendislerimiz altyapınızı ücretsiz analiz eder.
                   </p>
                   <Link
                     href={`/${locale}/iletisim`}
