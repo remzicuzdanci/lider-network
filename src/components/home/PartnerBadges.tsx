@@ -12,6 +12,13 @@ const partners = [
     icon: "🔴",
   },
   {
+    name: "Google Cloud",
+    badge: "Cloud Partner",
+    level: "Workspace Partner",
+    color: "#4285F4",
+    icon: "🔵",
+  },
+  {
     name: "Microsoft",
     badge: "Cloud Solution Provider",
     level: "Azure Partner",
@@ -85,7 +92,7 @@ export default function PartnerBadges() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
           {partners.map((p) => (
             <div
               key={p.name}
