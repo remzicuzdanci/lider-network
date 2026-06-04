@@ -294,7 +294,7 @@ export default async function AboutPage({
             {
               icon: Award,
               title: isTr ? "Uzmanlık" : "Expertise",
-              desc: isTr ? "Fortinet NSE 4-7, VMware VCP, Microsoft Azure sertifikalı mühendislerden oluşan uzman kadromuz." : "Expert team with Fortinet NSE 4-7, VMware VCP, Microsoft Azure certified engineers.",
+              desc: isTr ? "Fortinet NSE 4-7 sertifikalı mühendislerden oluşan, FortiGate ve ağ güvenliğinde uzman kadromuz." : "Expert team of Fortinet NSE 4-7 certified engineers specialized in FortiGate and network security.",
               color: "#7c3aed",
             },
             {
@@ -356,10 +356,7 @@ export default async function AboutPage({
                 {[
                   { label: "Fortinet NSE Sertifikalı", sub: "Network Security Expert", color: FN_RED },
                   { label: "Fortinet Authorized Partner", sub: "Yetkili Satıcı & Destek", color: FN_RED },
-                  { label: "VMware Solution Provider", sub: "vSphere, NSX, VDI", color: "#607cdc" },
-                  { label: "Microsoft Azure Certified", sub: "Cloud Solutions Provider", color: "#00a4ef" },
-                  { label: "Veeam Gold Partner", sub: "Backup & Recovery", color: "#00b336" },
-                  { label: "CISSP / CompTIA Security+", sub: "Güvenlik Sertifikaları", color: "#f59e0b" },
+                  { label: "Google Cloud Partner", sub: "Google Workspace Partner", color: "#4285F4" },
                 ].map((c) => (
                   <div
                     key={c.label}
