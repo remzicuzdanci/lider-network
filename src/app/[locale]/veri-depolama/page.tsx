@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Database, ShieldCheck, Cloud, HardDrive, RefreshCw, BookOpen, Mail } from "lucide-react";
 import FaqSection from "@/components/seo/FaqSection";
+import RelatedArticles from "@/components/seo/RelatedArticles";
 import { veriDepolamaFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
@@ -535,6 +536,7 @@ export default async function VeriDepolamaPage({
         </section>
 
         <FaqSection items={veriDepolamaFaqs} />
+        <RelatedArticles serviceSlug="veri-depolama" locale={locale} />
       </main>
     </>
   );

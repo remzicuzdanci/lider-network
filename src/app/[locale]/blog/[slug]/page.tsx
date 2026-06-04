@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import { ArrowLeft, Calendar, Clock, Tag, ArrowRight } from "lucide-react";
 import { posts, categories, getPost, getRelatedPosts } from "@/data/blog";
+import { serviceForCategory } from "@/lib/content-links";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 const BLUE = "#0052ff";
@@ -70,6 +71,7 @@ export default async function BlogPostPage({
   const related = getRelatedPosts(slug, 3);
   const catLabel = categories.find((c) => c.id === post.category)?.label ?? "";
   const color = post.categoryColor;
+  const service = serviceForCategory(post.category);
 
   const articleSchema = {
     "@context": "https://schema.org",
@@ -87,6 +89,16 @@ export default async function BlogPostPage({
     url: `${baseUrl}/${locale}/blog/${slug}`,
   };
 
+  const breadcrumbSchema = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Ana Sayfa", item: `${baseUrl}/${locale}` },
+      { "@type": "ListItem", position: 2, name: "Blog", item: `${baseUrl}/${locale}/blog` },
+      { "@type": "ListItem", position: 3, name: post.title, item: `${baseUrl}/${locale}/blog/${slug}` },
+    ],
+  };
+
   return (
     <main
       className="min-h-screen"
@@ -95,6 +107,10 @@ export default async function BlogPostPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleSchema) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema) }}
       />
 
       {/* ── HERO ──────────────────────────────────────────────────────────── */}
@@ -232,6 +248,30 @@ export default async function BlogPostPage({
                     }}
                   >
                     Ücretsiz Analiz Al
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
+
+                {/* İlgili Hizmet (blog -> hizmet iç linki) */}
+                <div
+                  className="rounded-2xl p-5"
+                  style={{
+                    backgroundColor: "rgba(255,255,255,0.03)",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                  }}
+                >
+                  <div
+                    className="text-xs font-bold uppercase tracking-widest mb-3"
+                    style={{ color: "var(--color-outline)", fontFamily: "var(--font-family-label)" }}
+                  >
+                    İlgili Hizmet
+                  </div>
+                  <Link
+                    href={`/${locale}/${service.slug}`}
+                    className="flex items-center justify-between gap-2 text-sm font-bold transition-colors hover:opacity-80"
+                    style={{ color }}
+                  >
+                    {service.label}
                     <ArrowRight className="w-3.5 h-3.5" />
                   </Link>
                 </div>

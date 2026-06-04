@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Cloud, Shield, Network, Mail } from "lucide-react";
 import FaqSection from "@/components/seo/FaqSection";
+import RelatedArticles from "@/components/seo/RelatedArticles";
 import { bulutFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
@@ -532,6 +533,7 @@ export default async function BulutCozumleriPage({
         </section>
 
         <FaqSection items={bulutFaqs} />
+        <RelatedArticles serviceSlug="bulut-cozumleri" locale={locale} />
       </main>
     </>
   );

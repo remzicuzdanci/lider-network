@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import FortinetClient from "./FortinetClient";
 import FaqSection from "@/components/seo/FaqSection";
+import RelatedArticles from "@/components/seo/RelatedArticles";
 import { fortinetFaqs } from "@/lib/service-faqs";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
@@ -44,11 +45,17 @@ export async function generateMetadata({
   };
 }
 
-export default async function FortinetPage() {
+export default async function FortinetPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
   return (
     <>
       <FortinetClient />
       <FaqSection items={fortinetFaqs} />
+      <RelatedArticles serviceSlug="fortinet" locale={locale} />
     </>
   );
 }
