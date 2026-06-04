@@ -2,6 +2,14 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
 
+// projects tablosundaki gerçek kolonlar (join'li 'companies' alanı hariç)
+const PROJECT_COLS = ["name","description","company_id","phase","status","start_date","end_date","assigned_to","notes","billed","billed_date"] as const;
+function pickProjectFields(body: Record<string, unknown>): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  for (const k of PROJECT_COLS) if (k in body) out[k] = body[k];
+  return out;
+}
+
 export async function GET() {
   const ok = await getAdminSession();
   if (!ok) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
@@ -22,7 +30,7 @@ export async function POST(req: NextRequest) {
   const body = await req.json();
   const { data, error } = await supabase
     .from("projects")
-    .insert({ ...body, created_by: user.name })
+    .insert({ ...pickProjectFields(body), created_by: user.name })
     .select("*, companies(name)")
     .single();
 
@@ -34,10 +42,12 @@ export async function PATCH(req: NextRequest) {
   const ok = await getAdminSession();
   if (!ok) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const { id, ...fields } = await req.json();
+  const body = await req.json();
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
   const { data, error } = await supabase
     .from("projects")
-    .update({ ...fields, updated_at: new Date().toISOString() })
+    .update({ ...pickProjectFields(body), updated_at: new Date().toISOString() })
     .eq("id", id)
     .select("*, companies(name)")
     .single();

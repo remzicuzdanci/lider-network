@@ -48,8 +48,15 @@ export async function PATCH(req: NextRequest) {
   if (!ok) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
   const body = await req.json();
-  const { id, ...fields } = body;
+  const { id } = body;
   if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
+
+  // Yalnızca gerçek kolonları güncelle (join'li 'companies' gibi alanları ele)
+  const ALLOWED = ["title","description","category","priority","status","assigned_to","company_id","due_date","billed","billed_date"] as const;
+  const fields: Record<string, unknown> = {};
+  for (const k of ALLOWED) {
+    if (k in body) fields[k] = body[k];
+  }
 
   const { data, error } = await supabase
     .from("work_tasks")
