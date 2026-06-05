@@ -82,6 +82,104 @@ function taskRow(t: DigestTask): string {
     </tr>`;
 }
 
+export interface AssignedTaskData {
+  staffName: string;
+  staffEmail: string;
+  title: string;
+  description?: string;
+  priority?: string;
+  category?: string;
+  due_date?: string;
+  company_name?: string;
+  assignedBy?: string;
+}
+
+/** Bir göreve atandığında ilgili personele anında bildirim e-postası. */
+export async function sendTaskAssignedEmail(data: AssignedTaskData): Promise<void> {
+  if (!data.staffEmail) return;
+
+  const transporter = createTransporter();
+  const pri = PRI_LABEL[data.priority || "medium"] || PRI_LABEL.medium;
+  const firstName = data.staffName.split(" ")[0] || data.staffName;
+  const subject = `🔔 Yeni görev atandı: ${data.title}`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="tr">
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1.0" /><title>${esc(subject)}</title></head>
+<body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:28px 14px;">
+    <tr><td align="center">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
+
+        <tr>
+          <td bgcolor="#0052ff" style="background:#0052ff;padding:30px 32px;">
+            <div style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:.5px;">🔔 Yeni Görev Atandı</div>
+            <div style="color:#cdd9ff;font-size:13px;margin-top:6px;">Merhaba ${esc(firstName)}, üzerine yeni bir görev atandı.</div>
+          </td>
+        </tr>
+
+        <tr>
+          <td style="padding:28px 32px 8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr><td style="padding:18px 20px;background:#f8fafc;border-left:4px solid ${pri.color};border-radius:10px;">
+                <div style="font-size:17px;font-weight:700;color:#1a1d2e;margin-bottom:10px;">${esc(data.title)}</div>
+                ${data.description ? `<div style="font-size:14px;color:#475569;line-height:1.6;margin-bottom:12px;">${esc(data.description)}</div>` : ""}
+                <div style="font-size:12px;color:#64748b;">
+                  <span style="color:${pri.color};font-weight:700;">Öncelik: ${pri.label}</span>
+                  ${data.company_name ? ` &nbsp;•&nbsp; 🏢 ${esc(data.company_name)}` : ""}
+                  ${data.due_date ? ` &nbsp;•&nbsp; 📆 ${fmtDate(data.due_date)}` : ""}
+                </div>
+              </td></tr>
+            </table>
+          </td>
+        </tr>
+
+        ${data.assignedBy ? `<tr><td style="padding:4px 32px;"><p style="font-size:12px;color:#94a3b8;margin:0;">Atayan: ${esc(data.assignedBy)}</p></td></tr>` : ""}
+
+        <tr>
+          <td style="padding:18px 32px 28px;" align="center">
+            <a href="https://www.lidernetwork.com.tr/admin/destek" style="display:inline-block;background:#0052ff;color:#ffffff;text-decoration:none;font-size:14px;font-weight:700;padding:13px 28px;border-radius:10px;">
+              Görevi Görüntüle →
+            </a>
+          </td>
+        </tr>
+
+        <tr>
+          <td bgcolor="#0f172a" style="background:#0f172a;padding:20px 32px;text-align:center;">
+            <p style="color:#ffffff;font-size:13px;font-weight:700;margin:0 0 4px;letter-spacing:.5px;">LİDER NETWORK</p>
+            <p style="color:#64748b;font-size:11px;margin:0;">İş Planı — otomatik görev bildirimi</p>
+          </td>
+        </tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`.trim();
+
+  const text = [
+    `Yeni görev atandı — Merhaba ${firstName}`,
+    "",
+    `Görev: ${data.title}`,
+    data.description ? `Açıklama: ${data.description}` : "",
+    `Öncelik: ${pri.label}`,
+    data.company_name ? `Müşteri: ${data.company_name}` : "",
+    data.due_date ? `Bitiş: ${fmtDate(data.due_date)}` : "",
+    data.assignedBy ? `Atayan: ${data.assignedBy}` : "",
+    "",
+    "Panel: https://www.lidernetwork.com.tr/admin/destek",
+  ].filter(Boolean).join("\n");
+
+  await transporter.sendMail({
+    from: `"Lider Network" <${DESTEK_FROM}>`,
+    to: data.staffEmail,
+    subject,
+    html,
+    text,
+  });
+}
+
 export async function sendTaskDigestEmail(data: TaskDigestData): Promise<void> {
   if (!data.staffEmail || data.tasks.length === 0) return;
 

@@ -1,6 +1,52 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
+import { sendTaskAssignedEmail } from "@/lib/task-digest-mail";
+
+interface TaskRow {
+  title: string; description?: string | null; priority?: string | null;
+  category?: string | null; due_date?: string | null;
+  assigned_to?: string | null; company_id?: string | null;
+}
+
+/* Göreve atanan personele anında bildirim e-postası gönderir.
+   Hata olursa API isteğini düşürmez; yalnızca loglar. */
+async function notifyAssignment(task: TaskRow, assignedBy?: string) {
+  try {
+    if (!task.assigned_to) return;
+    const { data: staff } = await supabase
+      .from("staff_users")
+      .select("name, email")
+      .eq("name", task.assigned_to)
+      .eq("active", true)
+      .maybeSingle();
+    if (!staff?.email) return;
+
+    let companyName: string | undefined;
+    if (task.company_id) {
+      const { data: c } = await supabase
+        .from("companies")
+        .select("name")
+        .eq("id", task.company_id)
+        .maybeSingle();
+      companyName = c?.name;
+    }
+
+    await sendTaskAssignedEmail({
+      staffName: task.assigned_to,
+      staffEmail: staff.email,
+      title: task.title,
+      description: task.description || undefined,
+      priority: task.priority || undefined,
+      category: task.category || undefined,
+      due_date: task.due_date || undefined,
+      company_name: companyName,
+      assignedBy,
+    });
+  } catch (e) {
+    console.error("Görev atama maili gönderilemedi:", e);
+  }
+}
 
 /* ── GET /api/admin/tasks ──────────────────────────────────────── */
 export async function GET() {
@@ -39,6 +85,12 @@ export async function POST(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Yeni görev birine atandıysa anında bildirim gönder
+  if (data?.assigned_to) {
+    await notifyAssignment(data, user.name);
+  }
+
   return NextResponse.json(data, { status: 201 });
 }
 
@@ -58,6 +110,17 @@ export async function PATCH(req: NextRequest) {
     if (k in body) fields[k] = body[k];
   }
 
+  // Atanan kişi değişti mi? (yalnızca değişince mail atmak için eski değeri al)
+  let prevAssignee: string | null = null;
+  if ("assigned_to" in fields) {
+    const { data: prev } = await supabase
+      .from("work_tasks")
+      .select("assigned_to")
+      .eq("id", id)
+      .maybeSingle();
+    prevAssignee = prev?.assigned_to ?? null;
+  }
+
   const { data, error } = await supabase
     .from("work_tasks")
     .update({ ...fields, updated_at: new Date().toISOString() })
@@ -66,6 +129,13 @@ export async function PATCH(req: NextRequest) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Görev yeni birine atandıysa (değişti ve boş değilse) bildirim gönder
+  const user = await getSessionUser();
+  if (data?.assigned_to && data.assigned_to !== prevAssignee) {
+    await notifyAssignment(data, user?.name);
+  }
+
   return NextResponse.json(data);
 }
 
