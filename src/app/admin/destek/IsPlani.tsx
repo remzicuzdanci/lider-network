@@ -23,6 +23,7 @@ interface WorkTask {
   due_date?: string; created_by: string;
   created_at: string; updated_at?: string;
   billed?: boolean; billed_date?: string;
+  products?: string; amount?: number;
   companies?: { name: string };
 }
 
@@ -139,7 +140,7 @@ function fmtDate(d?: string) {
 ══════════════════════════════════════════════════════════════ */
 function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceForm, onClose }: {
   task: Partial<WorkTask>|null; defaultDate?: string;
-  companies: Company[]; staff: string[]; onSave: (t: Partial<WorkTask>) => Promise<void>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
+  companies: Company[]; staff: string[]; onSave: (t: Partial<WorkTask>) => Promise<unknown>; onOpenServiceForm?: (taskId: string) => void; onClose: () => void;
 }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
@@ -201,9 +202,21 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
               </select>
             </div>
           </div>
-          <div style={{ display:"flex",alignItems:"center",gap:isMobile?"10px":"8px",padding:isMobile?"14px":"11px 12px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
-            <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked)set("billed_date",new Date().toISOString());else set("billed_date",null as any);}} style={{ cursor:"pointer",width:isMobile?20:16,height:isMobile?20:16 }} id="billedCheckbox" />
-            <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:isMobile?"13px":"12px",fontWeight:600,color:"#374151",margin:0 }}>✓ Bu görev faturalandı</label>
+          <div style={{ display:"flex",flexDirection:"column",gap:isMobile?"12px":"10px",padding:isMobile?"14px":"12px 14px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
+            <div style={{ display:"flex",alignItems:"center",gap:isMobile?"10px":"8px" }}>
+              <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked){if(!form.billed_date)set("billed_date",new Date().toISOString());}else set("billed_date",null as any);}} style={{ cursor:"pointer",width:isMobile?20:16,height:isMobile?20:16 }} id="billedCheckbox" />
+              <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:isMobile?"13px":"12px",fontWeight:700,color:"#374151",margin:0 }}>🧾 Bu görev faturalanacak (faturaya eklenecek)</label>
+            </div>
+            {form.billed && (
+              <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 160px",gap:isMobile?"12px":"11px" }}>
+                <div><label style={lbl}>Ürünler / Hizmetler</label>
+                  <textarea value={form.products??""} rows={isMobile?3:2} placeholder="Örn:&#10;ViewSonic 32&quot; 2K Monitör x1&#10;HDMI Kablo x2" style={{...inp,resize:"vertical"as const}} onChange={e=>set("products",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                </div>
+                <div><label style={lbl}>Tutar (₺)</label>
+                  <input type="number" min="0" step="0.01" value={form.amount??""} placeholder="0,00" style={inp} onChange={e=>set("amount",e.target.value===""?(undefined as any):Number(e.target.value))} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                </div>
+              </div>
+            )}
           </div>
           {form.status==="done" && form.id && (
             <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)} style={{ width:"100%",padding:isMobile?"14px":"10px",background:"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:isMobile?"13px":"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",minHeight:isMobile?"44px":"auto" }}>
@@ -809,9 +822,12 @@ function FaturandiTab({
   tasks, projects, companies, staff, onTaskSave, onProjectSave
 }: {
   tasks: WorkTask[]; projects: Project[]; companies: Company[]; staff: string[];
-  onTaskSave: (task: WorkTask) => void; onProjectSave: (project: Project) => void;
+  onTaskSave: (task: Partial<WorkTask>) => Promise<unknown>; onProjectSave: (project: Project) => void;
 }) {
+  const { width } = useWindowSize();
+  const isMobile = width < 768;
   const [monthOffset, setMonthOffset] = useState(0);
+  const [editTask, setEditTask] = useState<WorkTask|false>(false);
   const now = new Date();
   const month = now.getMonth() - monthOffset;
   const year = now.getFullYear() + (monthOffset > 11 ? -1 : monthOffset < -11 ? 1 : 0);
@@ -820,6 +836,9 @@ function FaturandiTab({
 
   const billedTasks = tasks.filter(t => t.billed && t.billed_date && t.billed_date.slice(0, 10) >= monthStart && t.billed_date.slice(0, 10) <= monthEnd);
   const billedProjects = projects.filter(p => p.billed && p.billed_date && p.billed_date.slice(0, 10) >= monthStart && p.billed_date.slice(0, 10) <= monthEnd);
+
+  const fmtTL = (n?: number) => (n || n === 0) ? `${Number(n).toLocaleString("tr-TR",{minimumFractionDigits:0,maximumFractionDigits:2})} ₺` : "—";
+  const grandTotal = billedTasks.reduce((s,t)=>s+(Number(t.amount)||0),0);
 
   const grouped: Record<string, { tasks: WorkTask[]; projects: Project[] }> = {};
   billedTasks.forEach(t => {
@@ -837,28 +856,54 @@ function FaturandiTab({
 
   return (
     <div>
-      <div style={{ display:"flex",gap:"10px",alignItems:"center",marginBottom:"22px" }}>
+      <div style={{ display:"flex",gap:"10px",alignItems:"center",marginBottom:"16px",flexWrap:"wrap" }}>
         <button onClick={()=>setMonthOffset(monthOffset+1)} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"8px",padding:"7px 12px",cursor:"pointer",fontSize:"13px",color:"#64748b",fontWeight:600 }}>← Geçen Ay</button>
-        <span style={{ fontSize:"14px",fontWeight:700,color:"#1a1d2e",minWidth:180 }}>{monthLabel}</span>
+        <span style={{ fontSize:"14px",fontWeight:700,color:"#1a1d2e",minWidth:140 }}>{monthLabel}</span>
         <button onClick={()=>setMonthOffset(monthOffset-1)} disabled={monthOffset===0} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"8px",padding:"7px 12px",cursor:"pointer",fontSize:"13px",color:"#64748b",fontWeight:600,opacity:monthOffset===0?.5:1 }}>Gelecek Ay →</button>
       </div>
 
+      {/* Toplam faturalanacak tutar */}
+      {billedTasks.length > 0 && (
+        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",background:"linear-gradient(135deg,#0038c7,#0052ff)",borderRadius:"12px",padding:isMobile?"16px":"16px 22px",marginBottom:"18px",color:"#fff" }}>
+          <div>
+            <p style={{ margin:0,fontSize:"12px",opacity:.85 }}>Bu ay faturalanacak ({billedTasks.length} görev)</p>
+            <p style={{ margin:"3px 0 0",fontSize:isMobile?"22px":"26px",fontWeight:900,lineHeight:1 }}>{fmtTL(grandTotal)}</p>
+          </div>
+          <Receipt size={isMobile?30:38} style={{ opacity:.6 }}/>
+        </div>
+      )}
+
       {Object.entries(grouped).map(([cid, { tasks: cTasks, projects: cProjects }]) => {
         const company = companies.find(c => c.id === cid);
+        const cTotal = cTasks.reduce((s,t)=>s+(Number(t.amount)||0),0);
         return (
           <div key={cid} style={{ background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"11px",padding:"16px",marginBottom:"16px" }}>
-            <h4 style={{ margin:"0 0 12px",fontSize:"14px",fontWeight:700,color:"#1a1d2e",display:"flex",alignItems:"center",gap:"7px" }}><Building2 size={16} color="#0052ff"/>{company?.name||"Bilinmeyen"}</h4>
+            <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px",gap:"8px" }}>
+              <h4 style={{ margin:0,fontSize:"14px",fontWeight:700,color:"#1a1d2e",display:"flex",alignItems:"center",gap:"7px" }}><Building2 size={16} color="#0052ff"/>{company?.name||"Bilinmeyen"}</h4>
+              {cTotal>0 && <span style={{ fontSize:"13px",fontWeight:800,color:"#0052ff",whiteSpace:"nowrap" }}>{fmtTL(cTotal)}</span>}
+            </div>
 
             {cTasks.length > 0 && (
               <div style={{ marginBottom:"12px" }}>
                 <p style={{ margin:"0 0 8px",fontSize:"11px",fontWeight:700,color:"#64748b",textTransform:"uppercase" }}>Görevler ({cTasks.length})</p>
                 {cTasks.map(t=>(
-                  <div key={t.id} style={{ display:"flex",justifyContent:"space-between",alignItems:"center",padding:"7px 10px",background:"#f8fafc",borderRadius:"7px",marginBottom:"5px",fontSize:"12px" }}>
-                    <div>
-                      <span style={{ fontWeight:600,color:"#1a1d2e" }}>{t.title}</span>
-                      <span style={{ fontSize:"11px",color:"#94a3b8",marginLeft:"8px" }}>{new Date(t.billed_date!).toLocaleDateString("tr-TR")}</span>
+                  <div key={t.id} onClick={()=>setEditTask(t)} style={{ display:"flex",justifyContent:"space-between",alignItems:"flex-start",padding:"10px 12px",background:"#f8fafc",border:"1px solid #eef2f7",borderRadius:"8px",marginBottom:"6px",fontSize:"12px",cursor:"pointer",gap:"10px" }}
+                    onMouseEnter={e=>(e.currentTarget as HTMLElement).style.background="#eff6ff"}
+                    onMouseLeave={e=>(e.currentTarget as HTMLElement).style.background="#f8fafc"}>
+                    <div style={{ flex:1,minWidth:0 }}>
+                      <div style={{ display:"flex",alignItems:"center",gap:"8px",flexWrap:"wrap" }}>
+                        <span style={{ fontWeight:700,color:"#1a1d2e",fontSize:"13px" }}>{t.title}</span>
+                        <span style={{ fontSize:"11px",color:"#94a3b8" }}>{new Date(t.billed_date!).toLocaleDateString("tr-TR")}</span>
+                      </div>
+                      {t.products && <div style={{ marginTop:"4px",fontSize:"12px",color:"#475569",whiteSpace:"pre-line",lineHeight:1.5 }}>{t.products}</div>}
                     </div>
-                    <button onClick={()=>onTaskSave({...t,billed:false})} style={{ background:"#fee2e2",color:"#991b1b",border:"none",borderRadius:"5px",padding:"3px 8px",fontSize:"11px",fontWeight:600,cursor:"pointer" }}>Geri Al</button>
+                    <div style={{ display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px" }}>
+                      <span style={{ fontWeight:800,color:"#0052ff",fontSize:"13px",whiteSpace:"nowrap" }}>{fmtTL(t.amount)}</span>
+                      <div style={{ display:"flex",gap:"5px" }}>
+                        <button onClick={e=>{e.stopPropagation();setEditTask(t);}} style={{ background:"#eff6ff",color:"#0052ff",border:"none",borderRadius:"5px",padding:"3px 8px",fontSize:"11px",fontWeight:600,cursor:"pointer" }}>Düzenle</button>
+                        <button onClick={e=>{e.stopPropagation();onTaskSave({id:t.id,billed:false,billed_date:null as any});}} style={{ background:"#fee2e2",color:"#991b1b",border:"none",borderRadius:"5px",padding:"3px 8px",fontSize:"11px",fontWeight:600,cursor:"pointer" }}>Geri Al</button>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -884,9 +929,11 @@ function FaturandiTab({
 
       {Object.keys(grouped).length === 0 && (
         <div style={{ textAlign:"center",padding:"40px 20px",color:"#94a3b8" }}>
-          <p style={{ fontSize:"13px" }}>Bu ayda faturalandı işlem yok.</p>
+          <p style={{ fontSize:"13px" }}>Bu ayda faturalanacak işlem yok.</p>
         </div>
       )}
+
+      {editTask!==false && <TaskModal task={editTask} companies={companies} staff={staff} onSave={onTaskSave} onClose={()=>setEditTask(false)} />}
     </div>
   );
 }
@@ -1280,7 +1327,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "", c
     { id:"gunluk",   label:"Günlük Görevler", icon:<CalendarDays size={14}/> },
     { id:"kanban",   label:"Kanban Board",    icon:<Columns size={14}/> },
     { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
-    { id:"faturalandı", label:"Faturalandı",  icon:<Receipt size={14}/> },
+    { id:"faturalandı", label:"Faturalanacak",  icon:<Receipt size={14}/> },
     ...(isSuperAdmin ? [{ id:"raporlar" as InnerTab, label:"Raporlar", icon:<BarChart3 size={14}/> }] : []),
   ];
 

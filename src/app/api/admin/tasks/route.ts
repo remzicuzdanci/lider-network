@@ -79,6 +79,10 @@ export async function POST(req: NextRequest) {
       assigned_to:  body.assigned_to  || null,
       company_id:   body.company_id   || null,
       due_date:     body.due_date     || null,
+      billed:       body.billed       || false,
+      billed_date:  body.billed_date  || null,
+      products:     body.products     || null,
+      amount:       body.amount ?? null,
       created_by:   user.name,
     })
     .select()
@@ -104,7 +108,7 @@ export async function PATCH(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
 
   // Yalnızca gerçek kolonları güncelle (join'li 'companies' gibi alanları ele)
-  const ALLOWED = ["title","description","category","priority","status","assigned_to","company_id","due_date","billed","billed_date"] as const;
+  const ALLOWED = ["title","description","category","priority","status","assigned_to","company_id","due_date","billed","billed_date","products","amount"] as const;
   const fields: Record<string, unknown> = {};
   for (const k of ALLOWED) {
     if (k in body) fields[k] = body[k];
