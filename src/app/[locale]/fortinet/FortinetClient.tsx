@@ -126,16 +126,22 @@ type ContactFormData = z.infer<typeof contactSchema>;
 
 /* ─── JSON-LD ─────────────────────────────────────────────────────────────── */
 
+// Not: Fiyat listelemeyen B2B bir kurumsal site olduğumuz için Product/Offer
+// yerine Service şeması kullanıyoruz. Böylece Google "eksik price/availability"
+// gibi ürün snippet hatalarını üretmez.
 const jsonLd = {
   "@context": "https://schema.org",
-  "@type": "Product",
-  name: "FortiGate NGFW",
-  brand: { "@type": "Brand", name: "Fortinet" },
+  "@type": "Service",
+  serviceType: "FortiGate NGFW Kurulum, Lisans ve Yönetim",
+  name: "FortiGate NGFW Çözümleri",
   description:
-    "Yapay zeka destekli güvenlik hizmetleri ve hibrit ağ mimarileri için optimize edilmiş FortiGate NGFW çözümleri.",
-  offers: {
-    "@type": "Offer",
-    seller: { "@type": "Organization", name: "Lider Network" },
+    "Yapay zeka destekli güvenlik hizmetleri ve hibrit ağ mimarileri için optimize edilmiş FortiGate NGFW çözümleri; kurulum, lisanslama, yapılandırma ve 7/24 teknik destek.",
+  brand: { "@type": "Brand", name: "Fortinet" },
+  areaServed: "TR",
+  provider: {
+    "@type": "Organization",
+    name: "Lider Network",
+    url: "https://www.lidernetwork.com.tr",
   },
 };
 
