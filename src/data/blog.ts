@@ -7002,6 +7002,164 @@ get vpn ssl monitor</code></pre>
     `,
   },
 
+  {
+    slug: "fortigate-ilk-kurulum-adim-adim-baslangic-rehberi",
+    title: "FortiGate İlk Kurulum: Sıfırdan Adım Adım Başlangıç Rehberi",
+    excerpt:
+      "Yeni bir FortiGate cihazını kutudan çıkardıktan sonra ilk erişim, temel ağ yapılandırması, internet politikası, yönetim güvenliği ve yedekleme adımlarını sırasıyla ele alıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Kurulum", "FortiOS", "İlk Yapılandırma", "NGFW"],
+    publishedAt: "2026-06-02",
+    readTime: 7,
+    content: `
+<h2>İlk Erişim ve Hazırlık</h2>
+<p>Yeni bir FortiGate cihazı fabrika ayarlarında, varsayılan olarak <strong>192.168.1.99</strong> IP adresi ve <code>port1</code> (veya MGMT) arayüzü üzerinden yönetilir. Bilgisayarınıza aynı ağ bloğundan statik bir IP verip tarayıcıdan <strong>https://192.168.1.99</strong> adresine bağlanarak başlayabilirsiniz. İlk girişte kullanıcı adı <code>admin</code>, şifre boştur ve sistem sizi hemen güçlü bir parola belirlemeye zorlar.</p>
+
+<h2>Temel Ağ Yapılandırması (WAN ve LAN)</h2>
+<p>İlk yapılması gereken, internet (WAN) ve iç ağ (LAN) arayüzlerini doğru tanımlamaktır:</p>
+<ul>
+  <li><strong>WAN arayüzü:</strong> İnternet servis sağlayıcınızdan gelen bağlantıyı statik IP, DHCP veya PPPoE moduna göre yapılandırın.</li>
+  <li><strong>LAN arayüzü:</strong> İç ağınız için bir IP bloğu (örn. 10.0.0.1/24) atayın ve gerekiyorsa DHCP sunucusunu etkinleştirin.</li>
+  <li><strong>Rol tanımı:</strong> Her arayüze "WAN" veya "LAN" rolü atamak, sonraki yapılandırmaları sadeleştirir.</li>
+</ul>
+
+<h2>İnternet Erişimi için İlk Firewall Politikası</h2>
+<p>FortiGate'te hiçbir trafik, açık bir politika olmadan geçmez. İç ağın internete çıkabilmesi için LAN'dan WAN'a yönlü bir <strong>firewall policy</strong> oluşturmanız ve bu politikada <strong>NAT</strong> seçeneğini etkinleştirmeniz gerekir. Bu aşamada güvenlik profillerini (antivirüs, web filter) da politikaya bağlayarak korumayı ilk günden devreye alabilirsiniz.</p>
+
+<h2>DNS, Zaman ve Yönetim Güvenliği</h2>
+<p>Doğru çalışan bir güvenlik duvarı için <strong>DNS sunucuları</strong> ve <strong>NTP zaman senkronizasyonu</strong> kritik öneme sahiptir; loglarda tutarlı zaman damgası ve FortiGuard hizmetlerinin sağlıklı çalışması buna bağlıdır. Yönetim güvenliği için ise:</p>
+<ul>
+  <li>HTTP ve Telnet gibi şifrelenmemiş protokolleri kapatın, yalnızca HTTPS ve SSH bırakın.</li>
+  <li>Yönetim erişimini belirli IP adresleriyle sınırlayın (trusted hosts).</li>
+  <li>Yönetici hesaplarına iki faktörlü doğrulama (FortiToken) ekleyin.</li>
+</ul>
+
+<h2>Firmware, Lisans ve Yedek</h2>
+<p>Kuruluma başlamadan önce cihazı FortiCare hesabınıza kaydedin, lisanslarınızı (FortiGuard, destek) etkinleştirin ve <strong>kararlı bir FortiOS sürümüne</strong> güncelleyin. Yapılandırma tamamlandığında mutlaka <strong>konfigürasyon yedeği</strong> alın; bu yedek, olası bir donanım değişiminde veya hatalı değişiklikte sizi saatlerce iş kaybından kurtarır.</p>
+
+<h2>Sonuç</h2>
+<p>FortiGate ilk kurulumu, doğru sırayla yapıldığında hem hızlı hem güvenli ilerler: erişim, arayüzler, politika, DNS/zaman, yönetim güvenliği ve yedek. Bu temel doğru atıldığında SD-WAN, VPN ve gelişmiş güvenlik profilleri çok daha sağlam bir zemine oturur.</p>
+<p>Lider Network olarak FortiGate kurulumu, yapılandırması ve devreye alma projelerinde uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-web-filtreleme-web-filter-yapilandirma",
+    title: "FortiGate Web Filtreleme (Web Filter) Yapılandırma Rehberi",
+    excerpt:
+      "FortiGate Web Filter ile kategori bazlı içerik engelleme, FortiGuard kategorileri, profil oluşturma, URL filtreleri ve SSL denetimiyle ilişkisini adım adım açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Web Filter", "FortiGuard", "İçerik Filtreleme", "URL Filtering"],
+    publishedAt: "2026-06-03",
+    readTime: 6,
+    content: `
+<h2>Web Filter Nedir?</h2>
+<p>FortiGate Web Filter, kullanıcıların eriştiği web sitelerini <strong>kategori, itibar ve URL</strong> bazında denetleyen bir güvenlik özelliğidir. Hem zararlı/oltalama sitelerini engelleyerek güvenlik sağlar hem de iş dışı içeriklere (kumar, sosyal medya, video akışı) erişimi kurum politikanıza göre sınırlandırır.</p>
+
+<h2>FortiGuard Kategorileri</h2>
+<p>FortiGate, milyonlarca web sitesini gerçek zamanlı güncellenen <strong>FortiGuard</strong> veri tabanı üzerinden onlarca kategoriye ayırır: kötü amaçlı yazılım, oltalama, yetişkin içerik, sosyal ağlar, oyun, akış medya ve daha fazlası. Her kategoriye ayrı bir aksiyon atayabilirsiniz:</p>
+<ul>
+  <li><strong>Allow (İzin Ver):</strong> Trafiğe izin verilir.</li>
+  <li><strong>Block (Engelle):</strong> Sayfa engellenir, kullanıcıya uyarı gösterilir.</li>
+  <li><strong>Warning (Uyar):</strong> Kullanıcı uyarılır ama devam edebilir.</li>
+  <li><strong>Monitor (İzle):</strong> Erişime izin verilir ancak loglanır.</li>
+</ul>
+
+<h2>Web Filter Profili Oluşturma</h2>
+<p>Yapılandırma, <strong>Security Profiles &gt; Web Filter</strong> menüsünden yeni bir profil oluşturmakla başlar. Profilde kategori aksiyonlarını belirledikten sonra bu profili ilgili <strong>firewall politikasına</strong> bağlarsınız. Profil politikaya bağlanmadan filtreleme çalışmaz; bu, en sık yapılan hatalardan biridir.</p>
+
+<h2>URL Filtreleri ve İstisnalar</h2>
+<p>Kategori bazlı kontrolün yanında, belirli adresler için <strong>statik URL filtreleri</strong> tanımlayabilirsiniz. Örneğin bir kategori engelliyken kuruma ait bir SaaS uygulamasını beyaz listeye (allow) alabilir veya tek tek zararlı adresleri kara listeye ekleyebilirsiniz. Wildcard ve regex desteği esnek kurallar yazmanızı sağlar.</p>
+
+<h2>SSL Denetimi ile İlişkisi</h2>
+<p>Günümüzde trafiğin büyük çoğunluğu HTTPS üzerinden şifrelidir. Web Filter'ın şifreli trafikte tam etkili olabilmesi için <strong>SSL/TLS inspection</strong> profilinin de politikaya uygulanması gerekir. Aksi halde FortiGate yalnızca sertifika üzerindeki alan adına bakabilir, sayfa içeriğini göremez.</p>
+
+<h2>Sonuç</h2>
+<p>Web Filter, kurumsal ağda hem güvenlik hem verimlilik için en hızlı kazanç sağlayan profillerden biridir. Doğru kategori politikası, akıllı istisnalar ve SSL denetimiyle birleştiğinde, hem tehditleri hem de iş dışı trafiği etkili biçimde yönetebilirsiniz.</p>
+<p>Lider Network olarak FortiGate güvenlik profili tasarımı ve içerik filtreleme politikalarında uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-application-control-uygulama-kontrolu",
+    title: "FortiGate Application Control: Uygulama Bazlı Trafik Kontrolü",
+    excerpt:
+      "Port ve protokol yetersiz kaldığında devreye giren Application Control ile uygulamaları tanıyıp yönetmeyi, shadow IT'yi kontrol altına almayı ve örnek senaryoları inceliyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Application Control", "Shadow IT", "NGFW", "Trafik Yönetimi"],
+    publishedAt: "2026-06-04",
+    readTime: 6,
+    content: `
+<h2>Application Control Neden Gerekli?</h2>
+<p>Geleneksel güvenlik duvarları trafiği yalnızca <strong>port ve protokol</strong> üzerinden tanır. Ancak bugün birçok uygulama 443 (HTTPS) portunu kullanır; yani sadece porta bakarak YouTube ile bir bankacılık uygulamasını ayırt edemezsiniz. FortiGate <strong>Application Control</strong>, derin paket incelemesiyle trafiğin hangi uygulamaya ait olduğunu tanıyarak bu boşluğu kapatır.</p>
+
+<h2>Shadow IT ile Mücadele</h2>
+<p>Kullanıcıların IT onayı olmadan kullandığı bulut depolama, mesajlaşma veya uzak masaüstü araçları (shadow IT), ciddi bir veri sızıntısı riskidir. Application Control ile bu uygulamaları <strong>görünür kılar, sınırlandırır veya tamamen engellersiniz</strong> — üstelik kullanıcıların portları değiştirerek atlatmasına izin vermeden.</p>
+
+<h2>Application Control Profili Oluşturma</h2>
+<p>Yapılandırma <strong>Security Profiles &gt; Application Control</strong> menüsünden yapılır. Uygulamaları kategori (oyun, P2P, proxy, bulut depolama) veya tek tek uygulama bazında ele alabilirsiniz. Her biri için aksiyon tanımlarsınız:</p>
+<ul>
+  <li><strong>Allow / Block:</strong> İzin ver veya engelle.</li>
+  <li><strong>Monitor:</strong> Engellemeden yalnızca logla — politikayı sıkılaştırmadan önce trafiği gözlemlemek için idealdir.</li>
+  <li><strong>Quarantine:</strong> İhlal eden kaynağı geçici olarak karantinaya al.</li>
+</ul>
+
+<h2>Derin İnceleme ve Bant Genişliği Yönetimi</h2>
+<p>Şifreli uygulamaların tam olarak tanınması için <strong>SSL inspection</strong> önerilir. Ayrıca Application Control'ü <strong>traffic shaping</strong> ile birleştirerek kritik olmayan uygulamalara (akış medya gibi) bant genişliği limiti koyabilir, iş kritik uygulamalara öncelik verebilirsiniz.</p>
+
+<h2>Örnek Senaryo</h2>
+<p>Tipik bir kurumsal politika şöyle olabilir: P2P ve anonim proxy uygulamaları <em>engellenir</em>, onaysız bulut depolama <em>izlenir</em>, video akışı <em>bant genişliği ile sınırlandırılır</em> ve iş uygulamaları <em>önceliklendirilir</em>. Bu yaklaşım hem güvenliği hem ağ performansını birlikte iyileştirir.</p>
+
+<h2>Sonuç</h2>
+<p>Application Control, "yeni nesil" güvenlik duvarını gerçekten yeni nesil yapan temel bileşenlerden biridir. Uygulama görünürlüğü olmadan ne tam güvenlik ne de verimli bant genişliği yönetimi mümkündür.</p>
+<p>Lider Network olarak FortiGate uygulama kontrolü ve trafik önceliklendirme politikalarının tasarımında uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-ips-antivirus-profilleri-tehdit-korumasi",
+    title: "FortiGate IPS ve Antivirüs Profilleri ile Tehdit Koruması",
+    excerpt:
+      "FortiGate'in iki temel tehdit koruma katmanı olan IPS ve Antivirüs profillerini, çalışma mantıklarını, inline/flow tarama modlarını ve doğru yapılandırma adımlarını ele alıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "IPS", "Antivirus", "FortiGuard", "Tehdit Koruması"],
+    publishedAt: "2026-06-05",
+    readTime: 7,
+    content: `
+<h2>İki Katmanlı Tehdit Koruması</h2>
+<p>FortiGate'in güvenlik gücünün merkezinde, FortiGuard istihbaratıyla beslenen iki profil bulunur: <strong>Intrusion Prevention System (IPS)</strong> ve <strong>Antivirüs (AV)</strong>. IPS, ağ üzerindeki saldırı girişimlerini ve istismar (exploit) denemelerini durdururken; Antivirüs, dosya transferleri içindeki zararlı yazılımları tespit eder. İkisi birlikte çalıştığında çok katmanlı bir savunma oluşur.</p>
+
+<h2>IPS Nasıl Çalışır?</h2>
+<p>IPS, ağ trafiğini bilinen saldırı <strong>imzalarıyla</strong> karşılaştırır ve bir zafiyetin istismar edilmeye çalışıldığını anlık olarak tespit edip engeller. FortiGuard, yeni keşfedilen zafiyetler için imzaları sürekli günceller; bu yüzden geçerli bir IPS lisansı ve düzenli imza güncellemesi kritik öneme sahiptir.</p>
+<ul>
+  <li><strong>İmza tabanlı tespit:</strong> Bilinen exploit ve saldırı kalıplarını yakalar.</li>
+  <li><strong>Protokol anomalisi:</strong> Standart dışı, şüpheli protokol davranışlarını işaretler.</li>
+  <li><strong>Hız bazlı koruma:</strong> Tarama ve flood türü saldırıları eşik değerlerle sınırlar.</li>
+</ul>
+
+<h2>Antivirüs Tarama Modları</h2>
+<p>FortiGate Antivirüs, dosyaları iki temel modda tarar:</p>
+<ul>
+  <li><strong>Flow-based (akış tabanlı):</strong> Düşük gecikme ve yüksek performans önceliklidir; trafik akarken tarar.</li>
+  <li><strong>Proxy-based:</strong> Dosyayı tam alıp tarar; daha derin inceleme sunar, sandbox (FortiSandbox) entegrasyonuyla bilinmeyen tehditleri de yakalayabilir.</li>
+</ul>
+
+<h2>Profil Oluşturma ve Politikaya Bağlama</h2>
+<p>IPS ve Antivirüs profilleri <strong>Security Profiles</strong> menüsünden oluşturulur ve tıpkı diğer profiller gibi bir <strong>firewall politikasına</strong> bağlanır. Profil politikaya uygulanmadığı sürece koruma devreye girmez. En yaygın hata, profilin oluşturulup politikaya eklenmeyi unutulmasıdır.</p>
+
+<h2>Şifreli Trafikte Derin Tarama</h2>
+<p>Zararlı yazılımların çoğu bugün HTTPS üzerinden taşınır. IPS ve Antivirüs'ün şifreli trafikte etkili olabilmesi için <strong>SSL/TLS deep inspection</strong> profilinin de aktif olması gerekir. Performans dengesi için, kritik segmentlerde derin tarama uygularken hassas trafikte (bankacılık, sağlık) istisna tanımlamak iyi bir pratiktir.</p>
+
+<h2>Sonuç</h2>
+<p>IPS ve Antivirüs profilleri, doğru yapılandırıldığında FortiGate'i pasif bir geçiş noktasından aktif bir tehdit önleme platformuna dönüştürür. Güncel imzalar, doğru tarama modu ve SSL denetimiyle birleştiğinde kurumsal ağınız hem bilinen hem bilinmeyen tehditlere karşı korunur.</p>
+<p>Lider Network olarak FortiGate tehdit koruma profillerinin tasarımı, optimizasyonu ve güvenlik denetimlerinde uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
