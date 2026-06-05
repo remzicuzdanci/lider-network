@@ -7160,6 +7160,189 @@ get vpn ssl monitor</code></pre>
     `,
   },
 
+  {
+    slug: "fortigate-fsso-ldap-kullanici-bazli-guvenlik",
+    title: "FortiGate'te FSSO ve LDAP ile Kullanıcı Bazlı Güvenlik",
+    excerpt:
+      "IP tabanlı politikaların ötesine geçip kullanıcı kimliğine göre güvenlik uygulamak için FortiGate'in LDAP entegrasyonunu ve Fortinet Single Sign-On (FSSO) yapısını ele alıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "FSSO", "LDAP", "Active Directory", "Kimlik Doğrulama"],
+    publishedAt: "2026-05-27",
+    readTime: 7,
+    content: `
+<h2>Neden Kullanıcı Bazlı Güvenlik?</h2>
+<p>Klasik firewall politikaları kaynak ve hedefi <strong>IP adresi</strong> üzerinden tanır. Ancak modern ağlarda kullanıcılar farklı cihazlardan, değişken IP'lerle bağlanır. "Muhasebe ekibi şu uygulamalara erişsin, stajyerler erişmesin" gibi kurallar IP ile değil, <strong>kullanıcı kimliğiyle</strong> uygulanmalıdır. FortiGate bunu LDAP ve FSSO ile sağlar.</p>
+
+<h2>LDAP Entegrasyonu</h2>
+<p>FortiGate, <strong>LDAP</strong> protokolü üzerinden Active Directory veya başka bir dizin sunucusuna bağlanarak kullanıcıları ve grupları doğrular. Bu yöntem özellikle <strong>SSL VPN, captive portal ve yönetici girişi</strong> gibi kullanıcının aktif olarak kimlik girdiği senaryolarda kullanılır. Yapılandırmada dizin sunucusunun adresi, bağlanma (bind) hesabı ve arama tabanı (base DN) tanımlanır.</p>
+
+<h2>FSSO Nedir?</h2>
+<p><strong>Fortinet Single Sign-On (FSSO)</strong>, kullanıcıların ağa Windows oturumu açtığında otomatik olarak kimliklerinin FortiGate'e bildirilmesini sağlar. Böylece kullanıcı ayrıca bir giriş yapmadan, kimliğine uygun politikalar şeffaf biçimde uygulanır. İki temel mod vardır:</p>
+<ul>
+  <li><strong>Agent (Collector) modu:</strong> Domain controller üzerine kurulan bir ajan, oturum açma olaylarını toplar ve FortiGate'e iletir. Büyük ortamlar için en kararlı yöntemdir.</li>
+  <li><strong>Polling modu:</strong> FortiGate, DC güvenlik loglarını periyodik sorgular; ek ajan gerektirmez ancak daha küçük ortamlar için uygundur.</li>
+</ul>
+
+<h2>Gruba Dayalı Politikalar</h2>
+<p>Kimlik bilgisi FortiGate'e ulaştığında, firewall politikalarında kaynak olarak IP yerine <strong>kullanıcı grubu</strong> seçebilirsiniz. Örneğin "Domain Users" grubuna temel internet, "IT-Admins" grubuna yönetim araçlarına erişim, "Guest" grubuna yalnızca web tanımlayabilirsiniz. Bu, hem güvenliği hem denetlenebilirliği büyük ölçüde artırır.</p>
+
+<h2>Sonuç</h2>
+<p>LDAP ve FSSO, FortiGate'i IP merkezli bir cihazdan <strong>kimlik farkında (identity-aware)</strong> bir güvenlik platformuna dönüştürür. Kullanıcı bazlı politikalar, hem Zero Trust yaklaşımının temelini oluşturur hem de loglarda "kim, ne zaman, neye erişti" sorularına net cevap verir.</p>
+<p>Lider Network olarak FortiGate kimlik doğrulama, Active Directory entegrasyonu ve FSSO kurulumu konularında uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-vdom-nedir-sanal-domain-yapilandirma",
+    title: "FortiGate VDOM Nedir? Sanal Domain'lerle Çoklu Yönetim",
+    excerpt:
+      "Tek bir FortiGate cihazını birden fazla bağımsız güvenlik duvarına bölen VDOM yapısını, kullanım senaryolarını ve inter-VDOM bağlantılarını anlaşılır biçimde açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "VDOM", "Virtual Domain", "Segmentasyon", "MSSP"],
+    publishedAt: "2026-05-29",
+    readTime: 6,
+    content: `
+<h2>VDOM Nedir?</h2>
+<p><strong>Virtual Domain (VDOM)</strong>, tek bir fiziksel FortiGate cihazını birbirinden tamamen bağımsız birden fazla sanal güvenlik duvarına bölen özelliktir. Her VDOM'un kendi arayüzleri, politika tabloları, yönlendirme tablosu ve yönetici hesapları olabilir. Böylece tek donanımla birden çok izole ağı yönetebilirsiniz.</p>
+
+<h2>Hangi Senaryolarda Kullanılır?</h2>
+<ul>
+  <li><strong>Çoklu kiracı (MSSP):</strong> Bir servis sağlayıcı, farklı müşterileri tek cihaz üzerinde tamamen izole biçimde barındırabilir.</li>
+  <li><strong>Departman/birim ayrımı:</strong> Üretim, misafir ve yönetim ağlarını ayrı politika setleriyle izole etmek.</li>
+  <li><strong>Farklı güvenlik gereksinimleri:</strong> Bir bölümde sıkı denetim, diğerinde esnek kurallar gerektiğinde yönetimi sadeleştirir.</li>
+</ul>
+
+<h2>Management ve Traffic VDOM</h2>
+<p>VDOM modu etkinleştirildiğinde bir <strong>yönetim VDOM'u (management)</strong> ve bir veya daha fazla <strong>trafik VDOM'u</strong> bulunur. Yönetim VDOM'u cihazın genel hizmetlerini (FortiGuard güncellemeleri, log gönderimi) üstlenirken; trafik VDOM'ları gerçek kullanıcı trafiğini taşır. Her VDOM'a ayrı yönetici atayarak yetkileri de bölebilirsiniz.</p>
+
+<h2>Inter-VDOM Bağlantıları</h2>
+<p>VDOM'lar varsayılan olarak izoledir; aralarında trafik geçmesi gerekiyorsa <strong>inter-VDOM link</strong> adı verilen sanal bağlantılar oluşturulur. Bu bağlantı üzerinden, tıpkı iki ayrı cihaz arasında olduğu gibi yönlendirme ve firewall politikaları tanımlanır. Bu sayede kontrollü, denetlenebilir bir trafik akışı sağlanır.</p>
+
+<h2>Ne Zaman Tercih Edilmeli?</h2>
+<p>VDOM güçlü bir özelliktir ancak yönetimi karmaşıklaştırabilir. Küçük ve tek amaçlı kurulumlarda genellikle gerekmez; segmentasyon için VLAN ve farklı politikalar yeterli olabilir. Ancak gerçek bir izolasyon, ayrı yönetim yetkisi veya çoklu müşteri ihtiyacı varsa VDOM en doğru çözümdür.</p>
+
+<h2>Sonuç</h2>
+<p>VDOM, donanım maliyetini düşürürken güçlü bir izolasyon sağlar. Doğru senaryoda kullanıldığında tek bir FortiGate, birden fazla bağımsız güvenlik duvarının işini görür.</p>
+<p>Lider Network olarak FortiGate VDOM tasarımı, çoklu kiracı yapılandırması ve ağ segmentasyonu projelerinde uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-traffic-shaping-qos-bant-genisligi-yonetimi",
+    title: "FortiGate Traffic Shaping (QoS) ile Bant Genişliği Yönetimi",
+    excerpt:
+      "Kritik uygulamalara öncelik verip bant genişliğini adil dağıtmak için FortiGate'in traffic shaping ve QoS mekanizmalarını, shaper türlerini ve örnek senaryoları inceliyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "Traffic Shaping", "QoS", "Bant Genişliği", "Ağ Performansı"],
+    publishedAt: "2026-05-31",
+    readTime: 6,
+    content: `
+<h2>Traffic Shaping Neden Gerekli?</h2>
+<p>İnternet bant genişliği sınırlı bir kaynaktır. Tek bir büyük indirme veya video akışı, tüm hattı doldurarak VoIP görüşmelerinin kesilmesine veya iş uygulamalarının yavaşlamasına neden olabilir. <strong>Traffic shaping (QoS)</strong>, trafiği önceliklendirerek kritik uygulamalara garanti bant genişliği ayırır ve kalan kapasiteyi adil biçimde dağıtır.</p>
+
+<h2>Shaper Türleri</h2>
+<ul>
+  <li><strong>Shared shaper:</strong> Bir politikadaki tüm trafiğe ortak bir limit/öncelik uygular.</li>
+  <li><strong>Per-IP shaper:</strong> Limiti her kullanıcı (IP) için ayrı uygular; tek bir kullanıcının hattı tüketmesini engeller.</li>
+  <li><strong>Application shaper:</strong> Application Control ile birleşerek belirli uygulamalara (ör. akış medya) limit koyar.</li>
+</ul>
+
+<h2>Garanti ve Maksimum Bant Genişliği</h2>
+<p>Her shaper'da iki temel değer tanımlanır: <strong>guaranteed bandwidth</strong> (uygulamanın her koşulda alacağı minimum hız) ve <strong>maximum bandwidth</strong> (aşamayacağı üst sınır). Örneğin VoIP trafiğine yüksek öncelik ve garanti hız verirken, misafir ağına düşük öncelik ve üst sınır koyabilirsiniz.</p>
+
+<h2>Öncelik ve DSCP İşaretleme</h2>
+<p>FortiGate, trafiğe <strong>high / medium / low</strong> öncelik atayabilir ve <strong>DSCP</strong> değerleriyle işaretleyebilir. Bu işaretleme, paketlerin yalnızca FortiGate üzerinde değil, ağdaki diğer cihazlarda da öncelikli işlenmesini sağlar — uçtan uca tutarlı bir QoS politikası oluşur.</p>
+
+<h2>Örnek Senaryo</h2>
+<p>Tipik bir kurum politikası: <em>VoIP ve video konferans</em> en yüksek öncelik ve garanti hız; <em>iş uygulamaları (ERP, e-posta)</em> orta öncelik; <em>yedekleme ve büyük indirmeler</em> düşük öncelik ve mesai saatlerinde üst sınır; <em>misafir ağı</em> per-IP limit. Bu yapı, hat dolduğunda bile kritik işlerin aksamamasını sağlar.</p>
+
+<h2>Sonuç</h2>
+<p>Traffic shaping, "internet yavaş" şikayetlerinin çoğunu bant genişliği artırmadan çözebilen güçlü bir araçtır. Doğru önceliklendirme, hem kullanıcı deneyimini hem de iş sürekliliğini doğrudan iyileştirir.</p>
+<p>Lider Network olarak FortiGate QoS tasarımı, VoIP önceliklendirme ve bant genişliği yönetimi projelerinde uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-fortitoken-iki-faktorlu-dogrulama-2fa",
+    title: "FortiGate'te FortiToken ile İki Faktörlü Doğrulama (2FA)",
+    excerpt:
+      "Çalınan parolaların yetmediği bir savunma için FortiGate'te FortiToken tabanlı iki faktörlü doğrulamayı; yönetici girişi ve SSL VPN senaryolarıyla birlikte açıklıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "FortiToken", "2FA", "MFA", "VPN Güvenliği"],
+    publishedAt: "2026-06-01",
+    readTime: 6,
+    content: `
+<h2>Neden İki Faktörlü Doğrulama?</h2>
+<p>Parolalar; oltalama, sızıntı veya kaba kuvvet saldırılarıyla ele geçirilebilir. <strong>İki faktörlü doğrulama (2FA)</strong>, "bildiğiniz bir şey" (parola) ile "sahip olduğunuz bir şey" (tek kullanımlık kod) kombinasyonunu zorunlu kılarak, parola çalınsa bile yetkisiz erişimi engeller. FortiGate bunu <strong>FortiToken</strong> ile yerel olarak sağlar.</p>
+
+<h2>FortiToken Türleri</h2>
+<ul>
+  <li><strong>FortiToken Mobile:</strong> Akıllı telefon uygulaması üzerinden 30 saniyede bir yenilenen kod üretir; en yaygın ve pratik yöntemdir.</li>
+  <li><strong>FortiToken Hardware:</strong> Fiziksel anahtarlık tipi cihaz; internet erişimi olmayan ortamlar için idealdir.</li>
+  <li><strong>E-posta / SMS token:</strong> Tek kullanımlık kodun e-posta veya SMS ile gönderildiği daha esnek yöntemler.</li>
+</ul>
+
+<h2>Yönetici Girişinde 2FA</h2>
+<p>En kritik 2FA uygulaması, FortiGate'in <strong>yönetici (admin) hesaplarıdır</strong>. Yönetim arayüzüne erişim, parolaya ek olarak FortiToken koduyla korunduğunda, cihazın tamamen ele geçirilme riski büyük ölçüde azalır. Her yönetici hesabına token ataması birkaç adımda yapılır.</p>
+
+<h2>SSL VPN ve Uzaktan Erişimde 2FA</h2>
+<p>Uzaktan çalışan kullanıcıların <strong>SSL VPN</strong> girişleri, dışarıya açık olmaları nedeniyle en çok hedef alınan noktalardandır. VPN kullanıcılarına 2FA zorunlu kılmak, kurumsal ağa açılan bu kapıyı ciddi biçimde güvenli hale getirir. LDAP/Active Directory entegrasyonuyla birlikte kullanıldığında hem kimlik hem ikinci faktör merkezi olarak yönetilir.</p>
+
+<h2>Kayıt ve Aktivasyon</h2>
+<p>FortiToken'lar önce FortiGate'e tanıtılır, ardından ilgili kullanıcı hesabına atanır. Kullanıcı ilk girişte token'ı uygulamasına aktive eder. Süreç tamamlandığında, her oturum açma denemesi parola + anlık kod ister. Token kaybı durumunda yönetici, hesabı geçici olarak token'sız moda alarak yeniden atama yapabilir.</p>
+
+<h2>Sonuç</h2>
+<p>2FA, en düşük maliyetle en yüksek güvenlik kazancı sağlayan önlemlerden biridir. Özellikle yönetici ve VPN erişimlerinde FortiToken kullanımı, kurumsal ağı parola tabanlı saldırıların büyük çoğunluğuna karşı korur.</p>
+<p>Lider Network olarak FortiGate 2FA, FortiToken kurulumu ve güvenli uzaktan erişim yapılandırmalarında uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-ssl-vpn-kurulumu-uzaktan-erisim-rehberi",
+    title: "FortiGate SSL VPN Kurulumu: Uçtan Uca Uzaktan Erişim Rehberi",
+    excerpt:
+      "Uzaktan çalışanlar için güvenli erişim sağlayan FortiGate SSL VPN'in web ve tünel modlarını, portal yapılandırmasını, kullanıcı doğrulamayı ve güvenlik önlemlerini adım adım ele alıyoruz.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "SSL VPN", "Uzaktan Erişim", "FortiClient", "VPN"],
+    publishedAt: "2026-06-05",
+    readTime: 7,
+    content: `
+<h2>SSL VPN Nedir ve Modları</h2>
+<p>FortiGate <strong>SSL VPN</strong>, uzaktaki kullanıcıların internet üzerinden kurumsal ağa şifreli ve güvenli biçimde bağlanmasını sağlar. İki temel modda çalışır:</p>
+<ul>
+  <li><strong>Tunnel mode:</strong> FortiClient uygulamasıyla tam ağ erişimi sağlar; kullanıcı sanki ofisteymiş gibi iç kaynaklara erişir.</li>
+  <li><strong>Web mode:</strong> Yalnızca tarayıcı üzerinden, ek istemci gerektirmeden belirli web uygulamalarına erişim sunar.</li>
+</ul>
+
+<h2>Portal Yapılandırması</h2>
+<p>SSL VPN <strong>portal'ı</strong>, kullanıcıların bağlandığında ne görebileceğini ve nelere erişebileceğini tanımlar. Burada IP havuzu (kullanıcılara verilecek adresler), erişilebilir kaynaklar (bookmarks) ve <strong>split tunnel</strong> ayarı belirlenir. Split tunnel etkinken yalnızca kurumsal trafik VPN'den geçer, internet trafiği kullanıcının kendi hattından akar — performansı artırır.</p>
+
+<h2>Kullanıcı Doğrulama ve Gruplar</h2>
+<p>Kullanıcılar yerel veritabanından veya <strong>LDAP/Active Directory</strong> üzerinden doğrulanabilir. Kullanıcılar gruplara atanır ve her grup belirli bir portala bağlanır. Bu sayede farklı ekiplere farklı erişim seviyeleri tanımlanır.</p>
+
+<h2>Firewall Politikası</h2>
+<p>SSL VPN trafiğinin iç ağa ulaşabilmesi için bir <strong>firewall politikası</strong> gerekir: kaynak olarak SSL VPN arayüzü/kullanıcı grubu, hedef olarak iç ağ tanımlanır. Bu politikada erişimi yalnızca gerekli kaynaklarla sınırlamak, en az ayrıcalık (least privilege) ilkesi açısından önemlidir.</p>
+
+<h2>Güvenlik Önlemleri</h2>
+<p>SSL VPN dışarıya açık bir kapı olduğu için ek önlemler şarttır:</p>
+<ul>
+  <li><strong>İki faktörlü doğrulama (FortiToken)</strong> mutlaka etkinleştirilmeli.</li>
+  <li>Varsayılan portları değiştirmek ve erişimi gerekiyorsa coğrafi olarak kısıtlamak.</li>
+  <li>FortiOS'u güncel tutmak — SSL VPN, geçmişte kritik zafiyetlerin hedefi olmuştur.</li>
+  <li>Başarısız giriş denemelerini ve oturumları düzenli izlemek.</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Doğru yapılandırılmış bir SSL VPN, uzaktan çalışmayı hem esnek hem güvenli kılar. Portal tasarımı, kullanıcı doğrulama, sınırlı politika ve 2FA bir arada uygulandığında, kurumsal ağınıza güvenli bir uzaktan erişim kapısı açmış olursunuz.</p>
+<p>Lider Network olarak FortiGate SSL VPN kurulumu, FortiClient dağıtımı ve güvenli uzaktan erişim projelerinde uzman mühendislerimizle yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
