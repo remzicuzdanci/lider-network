@@ -944,7 +944,7 @@ function FaturandiTab({
 /* ══════════════════════════════════════════════════════════════
    TAB: RAPORLAR (yalnızca super_admin)
 ══════════════════════════════════════════════════════════════ */
-type Period = "today" | "week" | "month" | "all";
+type Period = "today" | "week" | "month" | "all" | "custom";
 
 // jsPDF standart fontu Türkçe ş/ğ/ı/İ karakterlerini gösteremediği için
 // PDF çıktısında okunabilir ASCII karşılıklarına çeviriyoruz.
@@ -962,54 +962,80 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const [period, setPeriod] = useState<Period>("month");
+  const [cStart, setCStart] = useState("");
+  const [cEnd, setCEnd] = useState("");
+  const [fStaff, setFStaff] = useState("");      // "" = tüm personel
+  const [fCompany, setFCompany] = useState("");  // "" = tüm müşteri ("none" = atanmamış)
 
   const companyName = useCallback(
     (id?: string) => companies.find(c => c.id === id)?.name || "Atanmamış",
     [companies]
   );
+  const fmtTL = (n?: number) => (n || n === 0) ? `${Number(n).toLocaleString("tr-TR",{minimumFractionDigits:0,maximumFractionDigits:2})} ₺` : "—";
+  const statusLabel = (s: string) => KAN_COLS.find(k => k.id === s)?.label ?? s;
 
-  const { startDate, periodLabel } = useMemo(() => {
+  const { startDate, endDate, periodLabel } = useMemo(() => {
     const now = new Date();
-    if (period === "today") { const s = new Date(now); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Bugün" }; }
-    if (period === "week")  { const s = new Date(now); s.setDate(now.getDate()-7); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Son 7 Gün" }; }
-    if (period === "month") { const s = new Date(now); s.setDate(now.getDate()-30); s.setHours(0,0,0,0); return { startDate:s, periodLabel:"Son 30 Gün" }; }
-    return { startDate: new Date(0), periodLabel:"Tüm Zamanlar" };
-  }, [period]);
+    const end = new Date(now); end.setHours(23,59,59,999);
+    if (period === "custom" && cStart) {
+      const s = new Date(cStart); s.setHours(0,0,0,0);
+      const e = cEnd ? new Date(cEnd) : new Date(now); e.setHours(23,59,59,999);
+      const fmt = (d: string) => d ? new Date(d).toLocaleDateString("tr-TR") : "bugün";
+      return { startDate:s, endDate:e, periodLabel:`${fmt(cStart)} – ${fmt(cEnd)}` };
+    }
+    if (period === "today") { const s = new Date(now); s.setHours(0,0,0,0); return { startDate:s, endDate:end, periodLabel:"Bugün" }; }
+    if (period === "week")  { const s = new Date(now); s.setDate(now.getDate()-7); s.setHours(0,0,0,0); return { startDate:s, endDate:end, periodLabel:"Son 7 Gün" }; }
+    if (period === "month") { const s = new Date(now); s.setDate(now.getDate()-30); s.setHours(0,0,0,0); return { startDate:s, endDate:end, periodLabel:"Son 30 Gün" }; }
+    return { startDate: new Date(0), endDate:end, periodLabel:"Tüm Zamanlar" };
+  }, [period, cStart, cEnd]);
 
   const filtered = useMemo(
-    () => tasks.filter(t => new Date(t.created_at) >= startDate),
-    [tasks, startDate]
+    () => tasks.filter(t => {
+      const d = new Date(t.created_at);
+      if (d < startDate || d > endDate) return false;
+      if (fStaff && t.assigned_to !== fStaff) return false;
+      if (fCompany) { const cid = t.company_id || "none"; if (cid !== fCompany) return false; }
+      return true;
+    }),
+    [tasks, startDate, endDate, fStaff, fCompany]
   );
 
-  // ── Personel performansı ──
+  // ── Personel performansı (tutar dahil) ──
   const perf = useMemo(() => {
-    return staff.map(name => {
-      const ts   = filtered.filter(t => t.assigned_to === name);
-      const done = ts.filter(t => t.status === "done").length;
-      const prog = ts.filter(t => t.status === "in_progress").length;
-      const todo = ts.filter(t => t.status === "todo").length;
-      const billed = ts.filter(t => t.billed).length;
-      const rate = ts.length ? Math.round((done / ts.length) * 100) : 0;
-      return { name, total: ts.length, done, prog, todo, billed, rate };
-    }).sort((a,b) => b.total - a.total);
-  }, [filtered, staff]);
+    const map = new Map<string, { name:string; total:number; done:number; prog:number; todo:number; billed:number; amount:number }>();
+    filtered.forEach(t => {
+      const name = t.assigned_to || "Atanmamış";
+      const r = map.get(name) || { name, total:0, done:0, prog:0, todo:0, billed:0, amount:0 };
+      r.total++;
+      if (t.status === "done") r.done++; else if (t.status === "in_progress") r.prog++; else r.todo++;
+      if (t.billed) { r.billed++; r.amount += Number(t.amount) || 0; }
+      map.set(name, r);
+    });
+    return [...map.values()].map(r => ({ ...r, rate: r.total ? Math.round(r.done/r.total*100) : 0 })).sort((a,b) => b.total - a.total);
+  }, [filtered]);
 
-  // ── Müşteri bazlı rapor ──
+  // ── Müşteri bazlı rapor (tutar dahil) ──
   const byCompany = useMemo(() => {
-    const map = new Map<string, { name:string; total:number; done:number; prog:number; todo:number; billed:number }>();
+    const map = new Map<string, { name:string; total:number; done:number; prog:number; todo:number; billed:number; amount:number }>();
     filtered.forEach(t => {
       const key = t.company_id || "none";
       const name = t.company_id ? companyName(t.company_id) : "Müşteri Atanmamış";
-      const row = map.get(key) || { name, total:0, done:0, prog:0, todo:0, billed:0 };
+      const row = map.get(key) || { name, total:0, done:0, prog:0, todo:0, billed:0, amount:0 };
       row.total++;
       if (t.status === "done") row.done++;
       else if (t.status === "in_progress") row.prog++;
       else row.todo++;
-      if (t.billed) row.billed++;
+      if (t.billed) { row.billed++; row.amount += Number(t.amount) || 0; }
       map.set(key, row);
     });
     return [...map.values()].sort((a,b) => b.total - a.total);
   }, [filtered, companyName]);
+
+  // ── Detay liste (hangi işler) ──
+  const detail = useMemo(
+    () => [...filtered].sort((a,b) => +new Date(b.created_at) - +new Date(a.created_at)),
+    [filtered]
+  );
 
   const totals = useMemo(() => ({
     total:  filtered.length,
@@ -1017,71 +1043,115 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
     prog:   filtered.filter(t => t.status === "in_progress").length,
     todo:   filtered.filter(t => t.status === "todo").length,
     billed: filtered.filter(t => t.billed).length,
+    amount: filtered.reduce((s,t) => s + (t.billed ? (Number(t.amount)||0) : 0), 0),
   }), [filtered]);
 
   const dateTag = new Date().toLocaleDateString("tr-TR").replace(/\./g,"-");
 
-  // ── Excel çıktısı ──
+  // ── Excel çıktısı (3 sayfa) ──
   function exportExcel() {
     const wb = XLSX.utils.book_new();
+
     const perfSheet = XLSX.utils.aoa_to_sheet([
       [`Personel Performans Raporu — ${periodLabel}`],
       [],
-      ["Personel","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tamamlama %"],
-      ...perf.map(p => [p.name, p.total, p.done, p.prog, p.todo, p.billed, `%${p.rate}`]),
+      ["Personel","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)","Tamamlama %"],
+      ...perf.map(p => [p.name, p.total, p.done, p.prog, p.todo, p.billed, p.amount, `%${p.rate}`]),
       [],
-      ["TOPLAM", totals.total, totals.done, totals.prog, totals.todo, totals.billed, ""],
+      ["TOPLAM", totals.total, totals.done, totals.prog, totals.todo, totals.billed, totals.amount, ""],
     ]);
-    perfSheet["!cols"] = [{wch:22},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:13}];
+    perfSheet["!cols"] = [{wch:22},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:14},{wch:13}];
     XLSX.utils.book_append_sheet(wb, perfSheet, "Performans");
 
     const compSheet = XLSX.utils.aoa_to_sheet([
       [`Müşteri Bazlı Rapor — ${periodLabel}`],
       [],
-      ["Müşteri","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan"],
-      ...byCompany.map(c => [c.name, c.total, c.done, c.prog, c.todo, c.billed]),
+      ["Müşteri","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)"],
+      ...byCompany.map(c => [c.name, c.total, c.done, c.prog, c.todo, c.billed, c.amount]),
     ]);
-    compSheet["!cols"] = [{wch:28},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13}];
+    compSheet["!cols"] = [{wch:28},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:14}];
     XLSX.utils.book_append_sheet(wb, compSheet, "Müşteri Bazlı");
 
-    XLSX.writeFile(wb, `Lider-Network-Rapor-${periodLabel.replace(/ /g,"")}-${dateTag}.xlsx`);
+    const detSheet = XLSX.utils.aoa_to_sheet([
+      [`Görev Detayı — ${periodLabel}`],
+      [],
+      ["Görev","Personel","Müşteri","Kategori","Durum","Bitiş Tarihi","Faturalanacak","Tutar (₺)","Ürünler"],
+      ...detail.map(t => [
+        t.title,
+        t.assigned_to || "—",
+        t.company_id ? companyName(t.company_id) : "—",
+        catMap[t.category]?.label ?? t.category,
+        statusLabel(t.status),
+        t.due_date ? new Date(t.due_date).toLocaleDateString("tr-TR") : "—",
+        t.billed ? "Evet" : "Hayır",
+        t.billed ? (Number(t.amount)||0) : "",
+        t.products || "",
+      ]),
+    ]);
+    detSheet["!cols"] = [{wch:32},{wch:16},{wch:22},{wch:16},{wch:13},{wch:13},{wch:13},{wch:13},{wch:30}];
+    XLSX.utils.book_append_sheet(wb, detSheet, "Görev Detayı");
+
+    XLSX.writeFile(wb, `Lider-Network-Rapor-${periodLabel.replace(/[ /]/g,"_")}-${dateTag}.xlsx`);
   }
 
-  // ── PDF çıktısı ──
+  // ── PDF çıktısı (özet + 3 tablo) ──
   function exportPDF() {
     const doc = new jsPDF();
-    doc.setFontSize(16);
+    const tl = (n: number) => `${Number(n).toLocaleString("tr-TR")} TL`;
+    const lastY = () => (doc as unknown as { lastAutoTable:{ finalY:number } }).lastAutoTable.finalY;
+
+    doc.setFontSize(17); doc.setTextColor(0,82,255);
     doc.text("LIDER NETWORK", 14, 18);
-    doc.setFontSize(11);
-    doc.setTextColor(100);
-    doc.text(trAscii(`Is Plani Raporu — ${periodLabel}`), 14, 25);
-    doc.text(`Tarih: ${new Date().toLocaleDateString("tr-TR")}`, 14, 31);
+    doc.setFontSize(11); doc.setTextColor(60);
+    doc.text(trAscii(`Is Plani Raporu — ${periodLabel}`), 14, 26);
+    doc.setFontSize(9); doc.setTextColor(120);
+    doc.text(`Olusturma: ${new Date().toLocaleDateString("tr-TR")}${fStaff?` | Personel: ${trAscii(fStaff)}`:""}${fCompany?` | Musteri: ${trAscii(fCompany==="none"?"Atanmamis":companyName(fCompany))}`:""}`, 14, 32);
+
+    // Özet satırı
+    doc.setFontSize(9); doc.setTextColor(40);
+    doc.text(trAscii(`Toplam: ${totals.total}   Biten: ${totals.done}   Devam: ${totals.prog}   Bekleyen: ${totals.todo}   Faturalanacak: ${totals.billed}   Tutar: ${tl(totals.amount)}`), 14, 39);
 
     autoTable(doc, {
-      startY: 38,
-      head: [["Personel","Toplam","Biten","Devam","Bekleyen","Fatura","Tamamlama"]],
+      startY: 44,
+      head: [["Personel","Toplam","Biten","Devam","Bekleyen","Fatura","Tutar","%"]],
       body: [
-        ...perf.map(p => [trAscii(p.name), p.total, p.done, p.prog, p.todo, p.billed, `%${p.rate}`]),
-        [{ content:"TOPLAM", styles:{ fontStyle:"bold" } }, totals.total, totals.done, totals.prog, totals.todo, totals.billed, ""],
+        ...perf.map(p => [trAscii(p.name), p.total, p.done, p.prog, p.todo, p.billed, tl(p.amount), `%${p.rate}`]),
+        [{ content:"TOPLAM", styles:{ fontStyle:"bold" } }, totals.total, totals.done, totals.prog, totals.todo, totals.billed, tl(totals.amount), ""],
       ],
       headStyles: { fillColor: [0,82,255] },
-      styles: { fontSize: 9 },
+      styles: { fontSize: 8 },
+      didParseCell: (d) => { if (d.row.index === perf.length && d.section === "body") d.cell.styles.fontStyle = "bold"; },
     });
 
-    const afterY = (doc as unknown as { lastAutoTable:{ finalY:number } }).lastAutoTable.finalY + 10;
-    doc.setFontSize(12);
-    doc.setTextColor(30);
-    doc.text(trAscii("Musteri Bazli Rapor"), 14, afterY);
-
+    doc.setFontSize(11); doc.setTextColor(30);
+    doc.text(trAscii("Musteri Bazli Rapor"), 14, lastY() + 9);
     autoTable(doc, {
-      startY: afterY + 4,
-      head: [["Musteri","Toplam","Biten","Devam","Bekleyen","Fatura"]],
-      body: byCompany.map(c => [trAscii(c.name), c.total, c.done, c.prog, c.todo, c.billed]),
+      startY: lastY() + 12,
+      head: [["Musteri","Toplam","Biten","Devam","Bekleyen","Fatura","Tutar"]],
+      body: byCompany.map(c => [trAscii(c.name), c.total, c.done, c.prog, c.todo, c.billed, tl(c.amount)]),
       headStyles: { fillColor: [16,185,129] },
-      styles: { fontSize: 9 },
+      styles: { fontSize: 8 },
     });
 
-    doc.save(`Lider-Network-Rapor-${trAscii(periodLabel).replace(/ /g,"")}-${dateTag}.pdf`);
+    doc.setFontSize(11); doc.setTextColor(30);
+    doc.text(trAscii("Gorev Detayi"), 14, lastY() + 9);
+    autoTable(doc, {
+      startY: lastY() + 12,
+      head: [["Gorev","Personel","Musteri","Durum","Bitis","Tutar"]],
+      body: detail.map(t => [
+        trAscii(t.title),
+        trAscii(t.assigned_to || "—"),
+        trAscii(t.company_id ? companyName(t.company_id) : "—"),
+        trAscii(statusLabel(t.status)),
+        t.due_date ? new Date(t.due_date).toLocaleDateString("tr-TR") : "—",
+        t.billed ? tl(Number(t.amount)||0) : "—",
+      ]),
+      headStyles: { fillColor: [100,116,139] },
+      styles: { fontSize: 7.5 },
+      columnStyles: { 0: { cellWidth: 55 } },
+    });
+
+    doc.save(`Lider-Network-Rapor-${trAscii(periodLabel).replace(/[ /]/g,"_")}-${dateTag}.pdf`);
   }
 
   const card  = { background:"#fff", border:"1px solid #e5e7ef", borderRadius:"13px", padding:isMobile?"16px":"20px", marginBottom:"18px" } as const;
@@ -1095,7 +1165,9 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
     { id:"week",  label:"Son 7 Gün" },
     { id:"month", label:"Son 30 Gün" },
     { id:"all",   label:"Tümü" },
+    { id:"custom", label:"Özel Tarih" },
   ];
+  const sel = { padding:isMobile?"11px 10px":"8px 11px", borderRadius:"8px", border:"1.5px solid #e5e7ef", fontSize:"13px", color:"#1a1d2e", background:"#fff", cursor:"pointer", outline:"none" } as const;
 
   return (
     <div>
@@ -1123,17 +1195,47 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
         </div>
       </div>
 
+      {/* Filtreler: özel tarih + personel + müşteri */}
+      <div style={{ display:"flex",flexWrap:"wrap",gap:"10px",alignItems:"center",marginBottom:"18px",background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"11px",padding:isMobile?"12px":"12px 14px" }}>
+        {period==="custom" && (
+          <>
+            <div style={{ display:"flex",alignItems:"center",gap:"6px" }}>
+              <span style={{ fontSize:"12px",color:"#64748b",fontWeight:600 }}>Başlangıç</span>
+              <input type="date" value={cStart} onChange={e=>setCStart(e.target.value)} style={sel} />
+            </div>
+            <div style={{ display:"flex",alignItems:"center",gap:"6px" }}>
+              <span style={{ fontSize:"12px",color:"#64748b",fontWeight:600 }}>Bitiş</span>
+              <input type="date" value={cEnd} onChange={e=>setCEnd(e.target.value)} style={sel} />
+            </div>
+          </>
+        )}
+        <select value={fStaff} onChange={e=>setFStaff(e.target.value)} style={sel}>
+          <option value="">👤 Tüm Personel</option>
+          {staff.map(s=><option key={s} value={s}>{s}</option>)}
+        </select>
+        <select value={fCompany} onChange={e=>setFCompany(e.target.value)} style={sel}>
+          <option value="">🏢 Tüm Müşteriler</option>
+          {companies.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
+          <option value="none">Müşteri Atanmamış</option>
+        </select>
+        {(fStaff||fCompany||period==="custom") && (
+          <button onClick={()=>{setFStaff("");setFCompany("");setCStart("");setCEnd("");setPeriod("month");}}
+            style={{ padding:isMobile?"11px 12px":"8px 12px",borderRadius:"8px",border:"1.5px solid #fecaca",background:"#fef2f2",color:"#dc2626",fontSize:"12px",fontWeight:700,cursor:"pointer" }}>Temizle</button>
+        )}
+      </div>
+
       {/* Özet kutuları */}
-      <div style={{ display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(5,1fr)",gap:"12px",marginBottom:"18px" }}>
+      <div style={{ display:"grid",gridTemplateColumns:isMobile?"repeat(2,1fr)":"repeat(6,1fr)",gap:"12px",marginBottom:"18px" }}>
         {[
           { label:"Toplam Görev", value:totals.total,  color:"#0052ff" },
           { label:"Tamamlanan",   value:totals.done,   color:"#15803d" },
           { label:"Devam Eden",   value:totals.prog,   color:"#7c3aed" },
           { label:"Bekleyen",     value:totals.todo,   color:"#d97706" },
-          { label:"Faturalanan",  value:totals.billed, color:"#0891b2" },
+          { label:"Faturalanacak", value:totals.billed, color:"#0891b2" },
+          { label:"Toplam Tutar", value:fmtTL(totals.amount), color:"#dc2626", small:true },
         ].map(s=>(
           <div key={s.label} style={{ background:"#fff",border:"1px solid #e5e7ef",borderTop:`3px solid ${s.color}`,borderRadius:"12px",padding:isMobile?"14px":"16px" }}>
-            <p style={{ fontSize:isMobile?"24px":"26px",fontWeight:900,color:s.color,margin:"0 0 4px",lineHeight:1 }}>{s.value}</p>
+            <p style={{ fontSize:s.small?(isMobile?"15px":"17px"):(isMobile?"24px":"26px"),fontWeight:900,color:s.color,margin:"0 0 4px",lineHeight:1.1 }}>{s.value}</p>
             <p style={{ fontSize:"11.5px",color:"#9ca3af",margin:0 }}>{s.label}</p>
           </div>
         ))}
@@ -1154,6 +1256,7 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
               <th style={thN}>Devam</th>
               <th style={thN}>Bekleyen</th>
               <th style={thN}>Fatura</th>
+              <th style={{...thN,textAlign:"right"}}>Tutar</th>
               <th style={thN}>Tamamlama</th>
             </tr></thead>
             <tbody>
@@ -1165,6 +1268,7 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
                   <td style={{ ...tdN,color:"#7c3aed" }}>{p.prog}</td>
                   <td style={{ ...tdN,color:"#d97706" }}>{p.todo}</td>
                   <td style={{ ...tdN,color:"#0891b2" }}>{p.billed}</td>
+                  <td style={{ ...td,textAlign:"right",fontWeight:700,color:"#dc2626",whiteSpace:"nowrap" }}>{p.amount?fmtTL(p.amount):"—"}</td>
                   <td style={tdN}>
                     <div style={{ display:"flex",alignItems:"center",gap:"7px",justifyContent:"center" }}>
                       <div style={{ width:"54px",height:"7px",background:"#eef2f7",borderRadius:"4px",overflow:"hidden" }}>
@@ -1175,7 +1279,7 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
                   </td>
                 </tr>
               ))}
-              {perf.length===0 && <tr><td colSpan={7} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
+              {perf.length===0 && <tr><td colSpan={8} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
             </tbody>
           </table>
         </div>
@@ -1196,6 +1300,7 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
               <th style={thN}>Devam</th>
               <th style={thN}>Bekleyen</th>
               <th style={thN}>Fatura</th>
+              <th style={{...thN,textAlign:"right"}}>Tutar</th>
             </tr></thead>
             <tbody>
               {byCompany.map(c=>(
@@ -1206,9 +1311,50 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
                   <td style={{ ...tdN,color:"#7c3aed" }}>{c.prog}</td>
                   <td style={{ ...tdN,color:"#d97706" }}>{c.todo}</td>
                   <td style={{ ...tdN,color:"#0891b2" }}>{c.billed}</td>
+                  <td style={{ ...td,textAlign:"right",fontWeight:700,color:"#dc2626",whiteSpace:"nowrap" }}>{c.amount?fmtTL(c.amount):"—"}</td>
                 </tr>
               ))}
-              {byCompany.length===0 && <tr><td colSpan={6} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
+              {byCompany.length===0 && <tr><td colSpan={7} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu dönemde görev yok</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Görev detay listesi (hangi işler) */}
+      <div style={card}>
+        <div style={{ display:"flex",alignItems:"center",gap:"8px",marginBottom:"14px" }}>
+          <CalendarDays size={16} color="#7c3aed"/>
+          <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>Görev Detayı <span style={{ fontSize:"12px",fontWeight:600,color:"#94a3b8" }}>({detail.length} görev · {periodLabel})</span></h3>
+        </div>
+        <div style={{ overflowX:"auto" }}>
+          <table style={{ width:"100%",borderCollapse:"collapse",minWidth:"720px" }}>
+            <thead><tr>
+              <th style={th}>Görev</th>
+              <th style={th}>Personel</th>
+              <th style={th}>Müşteri</th>
+              <th style={th}>Kategori</th>
+              <th style={thN}>Durum</th>
+              <th style={thN}>Bitiş</th>
+              <th style={{...thN,textAlign:"right"}}>Tutar</th>
+            </tr></thead>
+            <tbody>
+              {detail.map(t=>{
+                const kc = KAN_COLS.find(k=>k.id===t.status);
+                return (
+                  <tr key={t.id}>
+                    <td style={{ ...td,fontWeight:600,maxWidth:240 }}>{t.title}</td>
+                    <td style={td}>{t.assigned_to||"—"}</td>
+                    <td style={td}>{t.company_id?companyName(t.company_id):"—"}</td>
+                    <td style={{ ...td,color:"#64748b" }}>{catMap[t.category]?.label??t.category}</td>
+                    <td style={tdN}>
+                      <span style={{ fontSize:"11px",fontWeight:700,padding:"2px 8px",borderRadius:"6px",background:kc?.bg||"#f1f5f9",color:kc?.color||"#64748b",whiteSpace:"nowrap" }}>{statusLabel(t.status)}</span>
+                    </td>
+                    <td style={{ ...tdN,fontWeight:500,color:"#64748b",whiteSpace:"nowrap" }}>{t.due_date?new Date(t.due_date).toLocaleDateString("tr-TR"):"—"}</td>
+                    <td style={{ ...td,textAlign:"right",fontWeight:700,color:"#dc2626",whiteSpace:"nowrap" }}>{t.billed?fmtTL(t.amount):"—"}</td>
+                  </tr>
+                );
+              })}
+              {detail.length===0 && <tr><td colSpan={7} style={{ ...td,textAlign:"center",color:"#94a3b8",padding:"24px" }}>Bu filtrede görev yok</td></tr>}
             </tbody>
           </table>
         </div>
