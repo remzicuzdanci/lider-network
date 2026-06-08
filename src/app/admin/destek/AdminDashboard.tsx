@@ -1644,6 +1644,9 @@ export default function AdminDashboard() {
                 { label: "Yetkili / Müdür Adı *",key: "contact_name",  type: "text",  placeholder: "Ahmet Yılmaz" },
                 { label: "Yetkili E-posta *",    key: "contact_email", type: "email", placeholder: "mudurad@sirket.com" },
                 { label: "Telefon",              key: "phone",         type: "text",  placeholder: "+90 312 000 00 00" },
+                { label: "Adres",                key: "address",       type: "text",  placeholder: "Mahalle, cadde, no, ilçe/il" },
+                { label: "Vergi Dairesi",        key: "tax_office",    type: "text",  placeholder: "ör. Sincan" },
+                { label: "Vergi No",             key: "tax_no",        type: "text",  placeholder: "ör. 1234567890" },
               ].map(f => (
                 <div key={f.key} style={{ marginBottom: "14px" }}>
                   <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>{f.label}</label>

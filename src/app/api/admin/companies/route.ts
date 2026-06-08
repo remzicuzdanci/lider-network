@@ -10,6 +10,9 @@ const schema = z.object({
   phone:         z.string().max(30).optional().nullable(),
   sector:        z.string().max(80).optional().nullable(),
   notes:         z.string().max(500).optional().nullable(),
+  address:       z.string().max(300).optional().nullable(),
+  tax_office:    z.string().max(120).optional().nullable(),
+  tax_no:        z.string().max(40).optional().nullable(),
 });
 
 // GET — list all companies
