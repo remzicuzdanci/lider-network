@@ -87,11 +87,8 @@ function shell(badge: BadgeType, body: string) {
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td>
-                <div style="display:inline-block;background:#0052ff;border-radius:8px;padding:6px 14px">
-                  <span style="color:#ffffff;font-size:18px;font-weight:900;letter-spacing:-0.5px">LİDER</span>
-                  <span style="color:#b7c4ff;font-size:18px;font-weight:400;letter-spacing:-0.5px"> NETWORK</span>
-                </div>
-                <div style="margin-top:6px;color:#64748b;font-size:12px;letter-spacing:1px;text-transform:uppercase">Destek Portalı</div>
+                <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="158" height="83" style="display:block;width:158px;height:auto;border:0;outline:none;text-decoration:none" />
+                <div style="margin-top:8px;color:#64748b;font-size:12px;letter-spacing:1px;text-transform:uppercase">Destek Portalı</div>
               </td>
               <td align="right" style="vertical-align:top">
                 ${BADGES[badge]}
