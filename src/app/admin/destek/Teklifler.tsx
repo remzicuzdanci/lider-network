@@ -201,8 +201,8 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
     w.document.close();
   }
 
-  const inp = { padding: "9px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", fontSize: "13px", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
-  const lbl = { fontSize: "11px", fontWeight: 700 as const, color: "#6b7280", textTransform: "uppercase" as const, letterSpacing: ".5px", display: "block", marginBottom: "5px" };
+  const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
+  const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", textTransform: "uppercase" as const, letterSpacing: ".4px", display: "block", marginBottom: "6px" };
 
   /* ── LİSTE ── */
   if (view === "list") {
@@ -273,8 +273,8 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
 
       <div style={{ display: "grid", gridTemplateColumns: "minmax(0,340px) 1fr", gap: "18px", alignItems: "start" }}>
         {/* Sol: teklif bilgileri */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "13px", padding: "18px" }}>
-          <h3 style={{ margin: "0 0 14px", fontSize: "14px", fontWeight: 800, color: "#1a1d2e" }}>Teklif Bilgileri</h3>
+        <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #0052ff", borderRadius: "13px", padding: "18px" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: 800, color: "#0052ff", display: "flex", alignItems: "center", gap: "7px" }}>📋 Teklif Bilgileri</h3>
           <div style={{ marginBottom: "12px" }}><label style={lbl}>Müşteri *</label>
             <select value={companyId} onChange={e => setCompanyId(e.target.value)} style={inp}>
               <option value="">— Seçin —</option>
@@ -300,9 +300,9 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
         </div>
 
         {/* Sağ: ürün / hizmetler */}
-        <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "13px", padding: "18px" }}>
+        <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #16a34a", borderRadius: "13px", padding: "18px" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", gap: "8px", flexWrap: "wrap" }}>
-            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 800, color: "#1a1d2e" }}>Ürün / Hizmetler</h3>
+            <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 800, color: "#16a34a", display: "flex", alignItems: "center", gap: "7px" }}>🛒 Ürün / Hizmetler</h3>
             <button onClick={() => setNewProd(true)} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "7px 12px", borderRadius: "8px", border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}><Plus size={13} /> Yeni Ürün</button>
           </div>
 
@@ -389,8 +389,8 @@ function NewProductModal({ currency, onClose, onSaved }: { currency: string; onC
   const [unit, setUnit] = useState("Adet");
   const [saving, setSaving] = useState(false);
 
-  const inp = { padding: "9px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", fontSize: "13px", outline: "none", width: "100%", boxSizing: "border-box" as const };
-  const lbl = { fontSize: "11px", fontWeight: 700 as const, color: "#6b7280", display: "block", marginBottom: "5px" };
+  const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const };
+  const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", display: "block", marginBottom: "6px", textTransform: "uppercase" as const, letterSpacing: ".3px" };
 
   async function save() {
     if (!name.trim()) { alert("Ürün adı gerekli"); return; }
@@ -404,12 +404,13 @@ function NewProductModal({ currency, onClose, onSaved }: { currency: string; onC
   return (
     <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div style={{ background: "#fff", borderRadius: "16px", padding: "24px", width: "100%", maxWidth: "460px", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
-          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#1a1d2e" }}>Yeni Ürün Kaydı</h3>
-          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={18} /></button>
+      <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "460px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px", background: "linear-gradient(135deg,#16a34a,#22c55e)" }}>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "7px" }}>🛒 Yeni Ürün Kaydı</h3>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
         </div>
-        <p style={{ fontSize: "12px", color: "#94a3b8", margin: "0 0 16px", lineHeight: 1.5 }}>Ürün kataloğa eklenir, sonraki tekliflerde aratıp seçebilirsiniz. Detayları sonra düzenleyebilirsiniz.</p>
+        <div style={{ padding: "22px" }}>
+        <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 16px", lineHeight: 1.5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 12px" }}>Ürün kataloğa eklenir, sonraki tekliflerde aratıp seçebilirsiniz. Detayları sonra düzenleyebilirsiniz.</p>
         <div style={{ marginBottom: "12px" }}><label style={lbl}>Ürün Adı *</label><input value={name} onChange={e => setName(e.target.value)} autoFocus placeholder="ör. Viewsonic 32 Monitör" style={inp} /></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
           <div><label style={lbl}>Ürün Kodu</label><input value={code} onChange={e => setCode(e.target.value)} placeholder="opsiyonel" style={inp} /></div>
@@ -422,7 +423,8 @@ function NewProductModal({ currency, onClose, onSaved }: { currency: string; onC
         </div>
         <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", marginTop: "18px" }}>
           <button onClick={onClose} style={{ padding: "9px 18px", border: "1.5px solid #e5e7ef", borderRadius: "9px", background: "#fff", color: "#374151", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>Vazgeç</button>
-          <button onClick={save} disabled={saving} style={{ padding: "9px 22px", border: "none", borderRadius: "9px", background: saving ? "#9ca3af" : "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Kaydediliyor…" : "Kaydet"}</button>
+          <button onClick={save} disabled={saving} style={{ padding: "9px 22px", border: "none", borderRadius: "9px", background: saving ? "#9ca3af" : "linear-gradient(135deg,#16a34a,#22c55e)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}>{saving ? "Kaydediliyor…" : "Kaydet"}</button>
+        </div>
         </div>
       </div>
     </div>
