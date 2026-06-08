@@ -113,7 +113,10 @@ export async function sendTaskAssignedEmail(data: AssignedTaskData): Promise<voi
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
 
         <tr>
-          <td bgcolor="#0052ff" style="background:#0052ff;padding:30px 32px;">
+          <td bgcolor="#0052ff" style="background:#0052ff;padding:26px 32px 28px;">
+            <div style="display:inline-block;background:#ffffff;border-radius:9px;padding:8px 14px;margin-bottom:16px;">
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="132" height="69" style="display:block;width:132px;height:auto;border:0;outline:none;text-decoration:none" />
+            </div>
             <div style="color:#ffffff;font-size:19px;font-weight:800;letter-spacing:.5px;">🔔 Yeni Görev Atandı</div>
             <div style="color:#cdd9ff;font-size:13px;margin-top:6px;">Merhaba ${esc(firstName)}, üzerine yeni bir görev atandı.</div>
           </td>
@@ -201,7 +204,10 @@ export async function sendTaskDigestEmail(data: TaskDigestData): Promise<void> {
       <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
 
         <tr>
-          <td bgcolor="#0052ff" style="background:#0052ff;padding:32px;">
+          <td bgcolor="#0052ff" style="background:#0052ff;padding:28px 32px 30px;">
+            <div style="display:inline-block;background:#ffffff;border-radius:9px;padding:8px 14px;margin-bottom:16px;">
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="132" height="69" style="display:block;width:132px;height:auto;border:0;outline:none;text-decoration:none" />
+            </div>
             <div style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:1.5px;">☀️ Günaydın, ${esc(firstName)}!</div>
             <div style="color:#cdd9ff;font-size:13px;margin-top:8px;">${esc(today)}</div>
           </td>

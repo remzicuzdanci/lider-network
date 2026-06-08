@@ -91,8 +91,8 @@ export async function sendServiceFormEmail(data: ServiceFormMailData): Promise<v
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
               <tr>
                 <td style="padding:34px 32px;" align="left">
-                  <div style="display:inline-block;background:rgba(255,255,255,.16);border-radius:9px;padding:8px 14px;">
-                    <span style="color:#ffffff;font-size:20px;font-weight:800;letter-spacing:1.5px;">LİDER NETWORK</span>
+                  <div style="display:inline-block;background:#ffffff;border-radius:10px;padding:10px 16px;">
+                    <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="150" height="79" style="display:block;width:150px;height:auto;border:0;outline:none;text-decoration:none" />
                   </div>
                   <div style="color:#cdd9ff;font-size:14px;margin-top:14px;font-weight:500;">📋 Servis / Hizmet Formu</div>
                 </td>
