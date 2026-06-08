@@ -47,7 +47,7 @@ export async function GET() {
 
   const { data, error } = await supabase
     .from("quotes")
-    .select("*, companies(name)")
+    .select("*")
     .order("created_at", { ascending: false });
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       status:        b.status || "draft",
       created_by:    user.name,
     })
-    .select("*, companies(name)")
+    .select("*")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -107,7 +107,7 @@ export async function PATCH(req: NextRequest) {
 
   const { data, error } = await supabase
     .from("quotes").update(fields).eq("id", b.id)
-    .select("*, companies(name)")
+    .select("*")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

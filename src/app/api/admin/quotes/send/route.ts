@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
   const { data: q, error } = await supabase
     .from("quotes")
-    .select("*, companies(name)")
+    .select("*")
     .eq("id", id)
     .single();
   if (error || !q) return NextResponse.json({ error: "Teklif bulunamadı" }, { status: 404 });
@@ -44,7 +44,7 @@ export async function POST(req: NextRequest) {
     .from("quotes")
     .update({ status: "sent", updated_at: new Date().toISOString() })
     .eq("id", id)
-    .select("*, companies(name)")
+    .select("*")
     .single();
 
   return NextResponse.json(updated || { success: true });

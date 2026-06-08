@@ -308,9 +308,9 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
 
           {/* Ürün arama */}
           <div style={{ position: "relative", marginBottom: "14px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #e5e7ef", borderRadius: "9px", padding: "0 12px", background: "#f8fafc" }}>
-              <Search size={15} color="#9ca3af" />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adından arayın (en az 2 harf)…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", outline: "none" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #cbd5e1", borderRadius: "9px", padding: "0 12px", background: "#fff" }}>
+              <Search size={15} color="#64748b" />
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Ürün adından arayın (en az 2 harf)…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", color: "#1a1d2e", outline: "none" }} />
               <button onClick={addBlank} title="Boş kalem ekle" style={{ background: "none", border: "none", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>+ Boş</button>
             </div>
             {results.length > 0 && (
@@ -332,15 +332,15 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
           ) : (
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
-                <thead><tr>
+                <thead><tr style={{ borderBottom: "2px solid #e5e7ef" }}>
                   {["Açıklama", "Miktar", "Fiyat", "İsk.%", "KDV%", "Net", ""].map((h, i) => (
-                    <th key={i} style={{ padding: "7px 6px", fontSize: "10.5px", fontWeight: 700, color: "#94a3b8", textTransform: "uppercase", textAlign: i >= 1 && i <= 5 ? "right" : "left" }}>{h}</th>
+                    <th key={i} style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: ".3px", textAlign: i >= 1 && i <= 5 ? "right" : "left" }}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
                   {items.map((it, i) => {
                     const gross = (+it.quantity || 0) * (+it.unit_price || 0); const net = gross - gross * (+it.discount || 0) / 100;
-                    const cell = { width: "100%", border: "1px solid #e5e7ef", borderRadius: "6px", padding: "6px 7px", fontSize: "12px", textAlign: "right" as const, boxSizing: "border-box" as const, outline: "none" };
+                    const cell = { width: "100%", border: "1.5px solid #cbd5e1", borderRadius: "6px", padding: "6px 7px", fontSize: "12px", color: "#1a1d2e", background: "#fff", textAlign: "right" as const, boxSizing: "border-box" as const, outline: "none" };
                     return (
                       <tr key={i}>
                         <td style={{ padding: "4px 5px" }}><input value={it.description} onChange={e => setItem(i, { description: e.target.value })} placeholder="Açıklama" style={{ ...cell, textAlign: "left" }} /></td>
