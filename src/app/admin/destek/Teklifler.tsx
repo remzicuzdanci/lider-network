@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save } from "lucide-react";
-import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
+import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History } from "lucide-react";
 
-interface Company { id: string; name: string; }
+interface Company {
+  id: string; name: string;
+  contact_name?: string | null; contact_email?: string | null; phone?: string | null;
+  address?: string | null; tax_office?: string | null; tax_no?: string | null;
+}
 interface Product { id: string; name: string; code?: string; unit_price: number; currency: string; kdv_rate: number; unit: string; }
 interface Item { product_id?: string | null; description: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit: string; }
 interface Quote {
@@ -25,7 +27,6 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   rejected: { label: "Red",        color: "#dc2626", bg: "#fef2f2" },
 };
 const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const trAscii = (s: string) => (s ?? "").replace(/ş/g,"s").replace(/Ş/g,"S").replace(/ğ/g,"g").replace(/Ğ/g,"G").replace(/ı/g,"i").replace(/İ/g,"I").replace(/ç/g,"c").replace(/Ç/g,"C").replace(/ö/g,"o").replace(/Ö/g,"O").replace(/ü/g,"u").replace(/Ü/g,"U");
 
 const today = () => new Date().toISOString().slice(0, 10);
 function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
@@ -51,6 +52,9 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
   const [search, setSearch] = useState("");
   const [results, setResults] = useState<Product[]>([]);
   const [newProd, setNewProd] = useState(false);
+
+  // fiyat geçmişi
+  const [histFor, setHistFor] = useState<{ product_id?: string | null; name: string } | null>(null);
 
   const loadQuotes = useCallback(async () => {
     setLoading(true);
@@ -129,76 +133,128 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
     setQuotes(p => p.filter(q => q.id !== id));
   }
 
-  function buildPdf(q: { quote_no: string; companyName: string; quote_date?: string; valid_until?: string; currency: string; description?: string; items: Item[]; t: typeof totals }) {
-    const doc = new jsPDF();
-    const cur = q.currency;
-    const m = (n: number) => `${trAscii(SYM[cur] || cur)} ${Number(n).toLocaleString("tr-TR", { minimumFractionDigits: 2 })}`;
-    doc.setFontSize(18); doc.setTextColor(0, 82, 255); doc.text("LIDER NETWORK", 14, 18);
-    doc.setFontSize(13); doc.setTextColor(30); doc.text("FIYAT TEKLIFI", 14, 27);
-    doc.setFontSize(10); doc.setTextColor(90);
-    doc.text(`Teklif No: ${q.quote_no}`, 14, 35);
-    doc.text(`Musteri: ${trAscii(q.companyName)}`, 14, 41);
-    doc.text(`Tarih: ${q.quote_date ? new Date(q.quote_date).toLocaleDateString("tr-TR") : "-"}   Gecerlilik: ${q.valid_until ? new Date(q.valid_until).toLocaleDateString("tr-TR") : "-"}`, 14, 47);
+  // Profesyonel teklif belgesi (HTML) — Türkçe sorunsuz, yazdır/PDF için
+  function quoteDocHtml(no: string): string {
+    const cur = currency;
+    const c = companies.find(x => x.id === companyId);
+    const m = (n: number) => `${SYM[cur] || cur} ${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const dt = (d?: string) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
+    const kdvRates = [...new Set(items.map(i => +i.kdv_rate || 0))];
+    const kdvLabel = kdvRates.length === 1 ? `KDV (%${kdvRates[0]})` : "KDV";
 
-    autoTable(doc, {
-      startY: 53,
-      head: [["#", "Aciklama", "Miktar", "Fiyat", "Isk.%", "Net"]],
-      body: q.items.map((it, i) => {
-        const gross = it.quantity * it.unit_price; const net = gross - gross * it.discount / 100;
-        return [String(i + 1), trAscii(it.description), `${it.quantity} ${trAscii(it.unit || "")}`, m(it.unit_price), `%${it.discount || 0}`, m(net)];
-      }),
-      headStyles: { fillColor: [0, 82, 255] }, styles: { fontSize: 9 },
-      columnStyles: { 1: { cellWidth: 78 } },
-    });
-    const y = (doc as unknown as { lastAutoTable: { finalY: number } }).lastAutoTable.finalY + 8;
-    const rows: [string, string][] = [
-      ["Brut Toplam", m(q.t.subtotal)], ["Indirim", "- " + m(q.t.discount_total)],
-      ["Net Toplam", m(q.t.net_total)], ["KDV", m(q.t.kdv_total)], ["GENEL TOPLAM", m(q.t.grand_total)],
-    ];
-    doc.setFontSize(10);
-    rows.forEach((r, i) => {
-      const yy = y + i * 7; const bold = i === rows.length - 1;
-      doc.setTextColor(bold ? 0 : 90, bold ? 82 : 90, bold ? 255 : 90);
-      doc.setFont("helvetica", bold ? "bold" : "normal");
-      doc.text(r[0], 130, yy); doc.text(r[1], 196, yy, { align: "right" });
-    });
-    if (q.description) { doc.setFont("helvetica", "normal"); doc.setTextColor(80); doc.setFontSize(9); doc.text(trAscii(q.description).slice(0, 400), 14, y + 4, { maxWidth: 100 }); }
-    return doc;
+    const rows = items.map((it, i) => {
+      const gross = (+it.quantity || 0) * (+it.unit_price || 0);
+      const net = gross - gross * (+it.discount || 0) / 100;
+      return `<tr>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;"><span style="color:#9ca3af;">${i + 1}.</span> ${it.description || ""}</td>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;white-space:nowrap;">${it.quantity} ${it.unit || ""}</td>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;white-space:nowrap;">${m(it.unit_price)}</td>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">%${it.discount || 0}</td>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">%${it.kdv_rate || 0}</td>
+        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;font-weight:700;white-space:nowrap;">${m(net)}</td>
+      </tr>`;
+    }).join("");
+
+    const taxLine = (c?.tax_office || c?.tax_no) ? `<div style="font-size:11px;color:#4b5563;margin-top:2px;">VD: ${c?.tax_office || "—"}  VN: ${c?.tax_no || "—"}</div>` : "";
+    const addrLine = c?.address ? `<div style="font-size:11px;color:#4b5563;margin-top:2px;">${c.address}</div>` : "";
+    const attn = c?.contact_name ? `<div style="font-weight:700;font-size:12px;margin-top:8px;color:#111827;">Sayın ${c.contact_name} dikkatine;</div>` : "";
+
+    return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif ${no}</title>
+<style>
+  @page { size:A4; margin:16mm 15mm; }
+  *{ box-sizing:border-box; }
+  body{ font-family:Arial,Helvetica,sans-serif; color:#1f2937; font-size:12px; margin:0; }
+  .seller{ font-weight:700; font-size:12.5px; margin-top:10px; color:#111827; }
+  .doctitle{ text-align:center; font-size:19px; font-weight:800; letter-spacing:2px; margin:22px 0 16px; color:#111827; }
+  table.items{ width:100%; border-collapse:collapse; margin-top:6px; }
+  table.items thead th{ border-bottom:2px solid #111827; font-size:11px; padding:8px 6px; color:#111827; }
+  .intro{ color:#1d4ed8; font-size:12px; margin:14px 0 6px; }
+  .totrow{ display:flex; justify-content:space-between; padding:3px 0; font-size:12.5px; }
+  .grand{ border-top:2px solid #111827; margin-top:5px; padding-top:7px; font-weight:800; font-size:14px; }
+  .closing{ font-size:12px; color:#374151; margin-top:46px; line-height:1.6; }
+</style></head><body>
+  <table style="width:100%;border:0;border-collapse:collapse;"><tr>
+    <td style="border:0;vertical-align:top;">
+      <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:56px;width:auto;" />
+      <div class="seller">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+    </td>
+  </tr></table>
+
+  <div class="doctitle">TEKLİF FORMU</div>
+
+  <table style="width:100%;border:0;border-collapse:collapse;"><tr>
+    <td style="border:0;vertical-align:top;">
+      <div style="font-weight:800;font-size:13px;color:#111827;">${c?.name || customerName(companyId)}</div>
+      ${addrLine}${taxLine}${attn}
+    </td>
+    <td style="border:0;vertical-align:top;text-align:right;white-space:nowrap;font-size:12px;color:#374151;">
+      <div><b>Tarih:</b> ${dt(qDate)}</div>
+      <div><b>Geçerlilik:</b> ${dt(validUntil)}</div>
+      <div><b>Teklif No:</b> ${no}</div>
+    </td>
+  </tr></table>
+
+  <p class="intro">Yapmış olduğumuz görüşmeler sonrasında hazırlamış olduğumuz fiyat teklifimizi değerlendirmenize sunarız.</p>
+
+  <table class="items">
+    <thead><tr>
+      <th style="text-align:left;">Açıklama</th>
+      <th style="text-align:center;">Miktar</th>
+      <th style="text-align:right;">Fiyat</th>
+      <th style="text-align:center;">İsk.</th>
+      <th style="text-align:center;">KDV (%)</th>
+      <th style="text-align:right;">Tutar (KDV Hariç)</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>
+
+  <table style="width:100%;border:0;border-collapse:collapse;margin-top:12px;"><tr>
+    <td style="border:0;"></td>
+    <td style="border:0;width:260px;">
+      <div class="totrow"><span style="color:#6b7280;">Brüt Toplam</span><span>${m(totals.subtotal)}</span></div>
+      ${totals.discount_total ? `<div class="totrow"><span style="color:#6b7280;">İndirim</span><span style="color:#dc2626;">- ${m(totals.discount_total)}</span></div>` : ""}
+      <div class="totrow"><span style="color:#6b7280;">Net</span><span>${m(totals.net_total)}</span></div>
+      <div class="totrow"><span style="color:#6b7280;">${kdvLabel}</span><span>${m(totals.kdv_total)}</span></div>
+      <div class="totrow grand"><span>TOPLAM</span><span>${m(totals.grand_total)}</span></div>
+    </td>
+  </tr></table>
+
+  ${desc ? `<div style="margin-top:22px;font-size:12px;color:#4b5563;line-height:1.6;white-space:pre-wrap;">${desc}</div>` : ""}
+
+  <div class="closing">
+    Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
+    <div style="margin-top:22px;">Saygılarımızla,</div>
+    <div style="margin-top:4px;font-weight:700;color:#111827;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+    <div style="font-size:11px;color:#6b7280;margin-top:4px;">+90 312 232 02 88 · info@lidernetwork.com.tr · www.lidernetwork.com.tr</div>
+  </div>
+  <script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>
+</body></html>`;
   }
 
-  function currentPdfData() {
-    return { quote_no: quoteNo || "TASLAK", companyName: companies.find(c => c.id === companyId)?.name || "-", quote_date: qDate, valid_until: validUntil, currency, description: desc, items, t: totals };
+  function openDoc(no: string) {
+    const w = window.open("", "_blank");
+    if (!w) { alert("Açılır pencere engellendi. Tarayıcı pop-up iznini verin."); return; }
+    w.document.write(quoteDocHtml(no));
+    w.document.close();
   }
   async function exportPDF() {
     let no = quoteNo;
     if (!editId) { const s = await save(); if (!s) return; no = s.quote_no; }
-    const doc = buildPdf({ ...currentPdfData(), quote_no: no });
-    doc.save(`Teklif-${no}.pdf`);
+    openDoc(no || "TASLAK");
   }
+  function printQuote() { openDoc(quoteNo || "TASLAK"); }
+
+  function customerName(id: string) { return companies.find(c => c.id === id)?.name || "—"; }
+
   async function sendEmail() {
     const saved = editId ? { id: editId } : await save();
     if (!saved) return;
-    const to = prompt("Teklifin gönderileceği e-posta adresi:");
+    const c = companies.find(x => x.id === companyId);
+    const to = prompt("Teklifin gönderileceği e-posta adresi:", c?.contact_email || "");
     if (!to) return;
     const r = await fetch("/api/admin/quotes/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: ("id" in saved ? saved.id : editId), email: to }) });
     if (r.ok) { alert("Teklif e-postası gönderildi ✓"); await loadQuotes(); }
     else alert("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
-  }
-  function printQuote() {
-    const d = currentPdfData();
-    const w = window.open("", "_blank"); if (!w) return;
-    const rowsHtml = d.items.map((it, i) => {
-      const gross = it.quantity * it.unit_price; const net = gross - gross * it.discount / 100;
-      return `<tr><td>${i + 1}. ${it.description}</td><td style="text-align:center">${it.quantity} ${it.unit || ""}</td><td style="text-align:right">${money(it.unit_price, currency)}</td><td style="text-align:center">%${it.discount || 0}</td><td style="text-align:right"><b>${money(net, currency)}</b></td></tr>`;
-    }).join("");
-    w.document.write(`<html><head><title>Teklif ${d.quote_no}</title><style>body{font-family:Arial;padding:30px;color:#1a1d2e}h1{color:#0052ff;margin:0}table{width:100%;border-collapse:collapse;margin-top:16px}th,td{padding:8px 10px;border-bottom:1px solid #e5e7ef;font-size:13px}th{background:#f8fafc;text-align:left;font-size:11px;text-transform:uppercase;color:#64748b}.tot{margin-top:16px;float:right;min-width:280px}.tot div{display:flex;justify-content:space-between;padding:4px 0}.gt{border-top:2px solid #0052ff;color:#0052ff;font-weight:800;font-size:16px;padding-top:8px}</style></head><body>
-      <h1>LİDER NETWORK</h1><p style="color:#64748b;margin:4px 0 0">Fiyat Teklifi · ${d.quote_no}</p>
-      <p style="margin:14px 0 0"><b>Müşteri:</b> ${d.companyName}<br><b>Tarih:</b> ${d.quote_date ? new Date(d.quote_date).toLocaleDateString("tr-TR") : "-"} &nbsp; <b>Geçerlilik:</b> ${d.valid_until ? new Date(d.valid_until).toLocaleDateString("tr-TR") : "-"}</p>
-      <table><thead><tr><th>Açıklama</th><th style="text-align:center">Miktar</th><th style="text-align:right">Fiyat</th><th style="text-align:center">İsk.</th><th style="text-align:right">Net</th></tr></thead><tbody>${rowsHtml}</tbody></table>
-      <div class="tot"><div><span>Brüt Toplam</span><span>${money(d.t.subtotal, currency)}</span></div><div><span>İndirim</span><span>- ${money(d.t.discount_total, currency)}</span></div><div><span>Net Toplam</span><span>${money(d.t.net_total, currency)}</span></div><div><span>KDV</span><span>${money(d.t.kdv_total, currency)}</span></div><div class="gt"><span>GENEL TOPLAM</span><span>${money(d.t.grand_total, currency)}</span></div></div>
-      ${d.description ? `<div style="clear:both;margin-top:30px;padding:14px;background:#f8fafc;border-radius:8px;font-size:13px;color:#475569;white-space:pre-wrap">${d.description}</div>` : ""}
-      <script>window.onload=()=>window.print()</script></body></html>`);
-    w.document.close();
   }
 
   const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
@@ -349,7 +405,10 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
                         <td style={{ padding: "4px 5px", width: "62px" }}><input type="number" step="any" value={it.discount} onChange={e => setItem(i, { discount: +e.target.value })} style={cell} /></td>
                         <td style={{ padding: "4px 5px", width: "62px" }}><input type="number" step="any" value={it.kdv_rate} onChange={e => setItem(i, { kdv_rate: +e.target.value })} style={cell} /></td>
                         <td style={{ padding: "4px 5px", fontSize: "12px", fontWeight: 700, color: "#1a1d2e", textAlign: "right", whiteSpace: "nowrap" }}>{money(net, currency)}</td>
-                        <td style={{ padding: "4px 5px" }}><button onClick={() => delItem(i)} style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer" }}><Trash2 size={14} /></button></td>
+                        <td style={{ padding: "4px 5px", whiteSpace: "nowrap" }}>
+                          <button onClick={() => setHistFor({ product_id: it.product_id, name: it.description })} title="Önceki fiyatlar" style={{ background: "none", border: "none", color: "#0052ff", cursor: "pointer", marginRight: "2px" }}><History size={14} /></button>
+                          <button onClick={() => delItem(i)} title="Sil" style={{ background: "none", border: "none", color: "#dc2626", cursor: "pointer" }}><Trash2 size={14} /></button>
+                        </td>
                       </tr>
                     );
                   })}
@@ -375,6 +434,55 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
       </div>
 
       {newProd && <NewProductModal currency={currency} onClose={() => setNewProd(false)} onSaved={(p) => { addProduct(p); setNewProd(false); }} />}
+      {histFor && <HistoryModal target={histFor} onClose={() => setHistFor(null)} />}
+    </div>
+  );
+}
+
+/* ── Fiyat Geçmişi Modalı ── */
+function HistoryModal({ target, onClose }: { target: { product_id?: string | null; name: string }; onClose: () => void }) {
+  const [rows, setRows] = useState<{ quote_no: string; customer_name: string; quote_date: string; unit_price: number; quantity: number; discount: number; currency: string }[]>([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => {
+    const p = new URLSearchParams();
+    if (target.product_id) p.set("product_id", target.product_id);
+    else p.set("name", target.name);
+    fetch(`/api/admin/quote-history?${p.toString()}`).then(r => r.ok ? r.json() : { history: [] }).then(d => { setRows(d.history || []); setLoading(false); }).catch(() => setLoading(false));
+  }, [target]);
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px", background: "linear-gradient(135deg,#0038c7,#0052ff)" }}>
+          <h3 style={{ margin: 0, fontSize: "14px", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "7px" }}><History size={16} /> Önceki Fiyatlar</h3>
+          <button onClick={onClose} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        </div>
+        <div style={{ padding: "18px 22px", maxHeight: "60vh", overflowY: "auto" }}>
+          <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 14px" }}>Bu ürünün geçmiş tekliflerde <strong>kime, kaçtan</strong> verildiği:</p>
+          {loading ? <p style={{ color: "#94a3b8", fontSize: "13px" }}>Yükleniyor…</p> : rows.length === 0 ? (
+            <p style={{ color: "#94a3b8", fontSize: "13px", textAlign: "center", padding: "20px 0" }}>Bu ürün için önceki teklif kaydı bulunamadı.</p>
+          ) : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>
+                {["Müşteri", "Tarih", "Teklif", "Birim Fiyat"].map((h, i) => (
+                  <th key={i} style={{ padding: "8px 8px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: i === 3 ? "right" : "left", borderBottom: "2px solid #e5e7ef", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {rows.map((r, i) => (
+                  <tr key={i}>
+                    <td style={{ padding: "9px 8px", fontSize: "13px", color: "#1a1d2e", fontWeight: 600, borderBottom: "1px solid #f1f5f9" }}>{r.customer_name}</td>
+                    <td style={{ padding: "9px 8px", fontSize: "12px", color: "#64748b", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{new Date(r.quote_date).toLocaleDateString("tr-TR")}</td>
+                    <td style={{ padding: "9px 8px", fontSize: "12px", color: "#0052ff", fontWeight: 700, borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{r.quote_no}</td>
+                    <td style={{ padding: "9px 8px", fontSize: "13px", color: "#15803d", fontWeight: 800, textAlign: "right", borderBottom: "1px solid #f1f5f9", whiteSpace: "nowrap" }}>{money(r.unit_price, r.currency)}{r.discount ? <span style={{ fontSize: "10px", color: "#dc2626", fontWeight: 600 }}> (-%{r.discount})</span> : null}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

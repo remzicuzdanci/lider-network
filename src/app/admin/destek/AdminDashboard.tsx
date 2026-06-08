@@ -1419,7 +1419,7 @@ export default function AdminDashboard() {
 
         {tab === "quotes" && (
           <div style={{ padding: "24px 28px" }}>
-            <Teklifler companies={companies.map(c => ({ id: c.id, name: c.name }))} currentUserName={sessionName} />
+            <Teklifler companies={companies} currentUserName={sessionName} />
           </div>
         )}
       </main>
