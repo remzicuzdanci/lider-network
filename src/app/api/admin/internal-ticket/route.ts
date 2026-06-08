@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { supabase } from "@/lib/supabase";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
-import { sendNewTicketAdminEmail } from "@/lib/ticket-mail";
+import { sendNewTicketAdminEmail, sendTicketCreatedEmail } from "@/lib/ticket-mail";
 import { sendWhatsAppUrgentAlert } from "@/lib/whatsapp";
 import type { Ticket } from "@/lib/supabase";
 
@@ -18,6 +18,7 @@ const schema = z.object({
   description:   z.string().min(5).max(5000),
   category:      z.enum(["technical", "billing", "general", "feature_request"]).default("technical"),
   priority:      z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  notify_email:  z.string().email().optional(),
 });
 
 export async function POST(req: NextRequest) {
@@ -41,6 +42,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Şirket bulunamadı" }, { status: 404 });
     }
 
+    // Bildirim e-postası girildiyse şirket kartındaki mail yerine onu kullan
+    const notifyEmail = body.notify_email || company.contact_email;
+
     const { data: ticket, error } = await supabase
       .from("tickets")
       .insert({
@@ -50,12 +54,12 @@ export async function POST(req: NextRequest) {
         priority:               body.priority,
         status:                 "open",
         customer_name:          company.contact_name,
-        customer_email:         company.contact_email,
+        customer_email:         notifyEmail,
         company:                company.name,
         phone:                  company.phone || null,
         ticket_source:          "internal",
         company_id:             company.id,
-        company_contact_email:  company.contact_email,
+        company_contact_email:  notifyEmail,
         created_by_staff:       staffUser?.email || null,
         assigned_to:            staffUser?.email || null,
       })
@@ -69,6 +73,11 @@ export async function POST(req: NextRequest) {
 
     // Notify all admins (same as external tickets)
     sendNewTicketAdminEmail(ticket as Ticket).catch(console.error);
+
+    // Bildirim e-postası girildiyse, açılış bildirimini o adrese gönder
+    if (body.notify_email) {
+      sendTicketCreatedEmail(ticket as Ticket).catch(console.error);
+    }
 
     // WhatsApp urgent alert
     if (body.priority === "urgent") {

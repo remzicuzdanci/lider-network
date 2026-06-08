@@ -8,9 +8,10 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight, ListTodo, Menu,
+  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote,
 } from "lucide-react";
 import IsPlani from "./IsPlani";
+import PersonelNotlari from "./PersonelNotlari";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -62,7 +63,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "staff" | "reports" | "isplan";
+type Tab = "tickets" | "customers" | "companies" | "staff" | "reports" | "isplan" | "notes";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
@@ -170,6 +171,7 @@ export default function AdminDashboard() {
   const [ntStartedAt, setNtStartedAt]         = useState("");
   const [ntAffected, setNtAffected]           = useState("1_kisi");
   const [ntAffectedName, setNtAffectedName]   = useState("");
+  const [ntNotifyEmail, setNtNotifyEmail]     = useState("");
   const [ntSupportType, setNtSupportType]     = useState("remote");
   const [ntNotes, setNtNotes]                 = useState("");
   const [ntSaving, setNtSaving]               = useState(false);
@@ -391,6 +393,7 @@ export default function AdminDashboard() {
         description,
         category:   NT_CAT_MAP[ntCategory] || "technical",
         priority:   ntPriority,
+        notify_email: ntNotifyEmail.trim() || undefined,
       }),
     });
     const json = await r.json();
@@ -398,7 +401,7 @@ export default function AdminDashboard() {
       setNewTicketModal(false);
       setNtCompanyId(""); setNtCategory("internet_ag"); setNtIssueType("");
       setNtCustomSubject(""); setNtPriority("medium"); setNtStartedAt("");
-      setNtAffected("1_kisi"); setNtAffectedName(""); setNtSupportType("remote"); setNtNotes("");
+      setNtAffected("1_kisi"); setNtAffectedName(""); setNtNotifyEmail(""); setNtSupportType("remote"); setNtNotes("");
       fetchTickets(); fetchStats();
       router.push(`/admin/destek/${json.ticket_id}`);
     } else {
@@ -685,6 +688,7 @@ export default function AdminDashboard() {
           )}
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
           <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
+          <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
 
           {stats && (
             <>
@@ -768,7 +772,7 @@ export default function AdminDashboard() {
               color: "#1a1d2e",
               margin: "0 0 3px"
             }}>
-              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="staff" ? "Personel" : "Raporlar"}
+              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
               {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${activeCompanies.length} aktif şirket` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
@@ -1374,6 +1378,12 @@ export default function AdminDashboard() {
         {tab === "isplan" && (
           <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} currentUserRole={sessionRole} />
         )}
+
+        {tab === "notes" && (
+          <div style={{ padding: "24px 28px" }}>
+            <PersonelNotlari userName={sessionName} />
+          </div>
+        )}
       </main>
 
       {/* ══════════════════════════ MODAL: Yeni Talep (İç) */}
@@ -1478,6 +1488,13 @@ export default function AdminDashboard() {
                     <option value="tum_ofis">Tüm ofis</option>
                   </select>
                 </div>
+              </div>
+
+              {/* Bildirim e-postası (override) */}
+              <div style={{ marginBottom: "12px" }}>
+                <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>📧 Bildirim E-postası <span style={{ fontWeight: 400, color: "#9ca3af", textTransform: "none", letterSpacing: 0 }}>(opsiyonel — boşsa şirket maili kullanılır)</span></label>
+                <input type="email" value={ntNotifyEmail} onChange={e => setNtNotifyEmail(e.target.value)} placeholder="ornek: gm@musterifirma.com" style={inpS} />
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "5px 2px 0", lineHeight: 1.5 }}>Doldurursanız açılış ve çözüm bildirimleri şirket kartındaki mail yerine <strong>bu adrese</strong> gönderilir.</p>
               </div>
 
               {/* Sorun saati */}
