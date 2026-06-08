@@ -172,6 +172,7 @@ export default function AdminDashboard() {
   const [ntAffected, setNtAffected]           = useState("1_kisi");
   const [ntAffectedName, setNtAffectedName]   = useState("");
   const [ntNotifyEmail, setNtNotifyEmail]     = useState("");
+  const [ntCompanyEmails, setNtCompanyEmails] = useState<string[]>([]);
   const [ntSupportType, setNtSupportType]     = useState("remote");
   const [ntNotes, setNtNotes]                 = useState("");
   const [ntSaving, setNtSaving]               = useState(false);
@@ -246,6 +247,17 @@ export default function AdminDashboard() {
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
   useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
+  // Şirket seçilince o şirkete ait daha önce kullanılmış bildirim e-postalarını getir
+  useEffect(() => {
+    if (!ntCompanyId) { setNtCompanyEmails([]); return; }
+    let active = true;
+    fetch(`/api/admin/company-emails?company_id=${ntCompanyId}`)
+      .then(r => r.ok ? r.json() : { emails: [] })
+      .then(d => { if (active) setNtCompanyEmails(d.emails || []); })
+      .catch(() => { if (active) setNtCompanyEmails([]); });
+    return () => { active = false; };
+  }, [ntCompanyId]);
+
   useEffect(() => { if (tab === "customers") fetchCustomers(); }, [tab, fetchCustomers]);
   useEffect(() => { if (tab === "companies") fetchCompanies(); }, [tab, fetchCompanies]);
   useEffect(() => { if (tab === "staff") fetchStaff(); }, [tab, fetchStaff]);
@@ -1511,8 +1523,25 @@ export default function AdminDashboard() {
               {/* Bildirim e-postası (override) */}
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>📧 Bildirim E-postası <span style={{ fontWeight: 400, color: "#9ca3af", textTransform: "none", letterSpacing: 0 }}>(opsiyonel — boşsa şirket maili kullanılır)</span></label>
-                <input type="email" value={ntNotifyEmail} onChange={e => setNtNotifyEmail(e.target.value)} placeholder="ornek: gm@musterifirma.com" style={inpS} />
-                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "5px 2px 0", lineHeight: 1.5 }}>Doldurursanız açılış ve çözüm bildirimleri şirket kartındaki mail yerine <strong>bu adrese</strong> gönderilir.</p>
+                <input type="email" list="nt-company-emails" value={ntNotifyEmail} onChange={e => setNtNotifyEmail(e.target.value)} placeholder="ornek: gm@musterifirma.com" style={inpS} />
+                <datalist id="nt-company-emails">
+                  {ntCompanyEmails.map(em => <option key={em} value={em} />)}
+                </datalist>
+                {ntCompanyEmails.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px", marginTop: "8px" }}>
+                    <span style={{ fontSize: "11px", color: "#9ca3af", alignSelf: "center" }}>Kayıtlı:</span>
+                    {ntCompanyEmails.map(em => (
+                      <button key={em} type="button" onClick={() => setNtNotifyEmail(em)}
+                        style={{ fontSize: "11px", fontWeight: 600, padding: "4px 10px", borderRadius: "20px", cursor: "pointer",
+                          border: ntNotifyEmail === em ? "1.5px solid #0052ff" : "1px solid #e5e7ef",
+                          background: ntNotifyEmail === em ? "#eff6ff" : "#f8fafc",
+                          color: ntNotifyEmail === em ? "#0052ff" : "#475569" }}>
+                        {em}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p style={{ fontSize: "11px", color: "#9ca3af", margin: "7px 2px 0", lineHeight: 1.5 }}>Doldurursanız açılış ve çözüm bildirimleri şirket kartındaki mail yerine <strong>bu adrese</strong> gönderilir. Bu şirket için girdiğiniz adresler bir sonraki sefere hatırlanır.</p>
               </div>
 
               {/* Sorun saati */}
