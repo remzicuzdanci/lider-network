@@ -1439,7 +1439,7 @@ export default function AdminDashboard() {
 
         {tab === "quotes" && (
           <div style={{ padding: "24px 28px" }}>
-            <Teklifler companies={companies} currentUserName={sessionName} initialCompanyId={quotesFilterCompany} />
+            <Teklifler companies={companies} currentUserName={sessionName} staff={staff.map(s => s.name)} initialCompanyId={quotesFilterCompany} />
           </div>
         )}
       </main>

@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       items,
       ...totals,
       status:        b.status || "draft",
-      created_by:    user.name,
+      created_by:    b.created_by || user.name,
     })
     .select("*")
     .single();
@@ -96,7 +96,7 @@ export async function PATCH(req: NextRequest) {
   if (!b.id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
 
   const fields: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  const ALLOWED = ["quote_no","company_id","customer_name","quote_date","valid_until","currency","exchange_rate","description","status"] as const;
+  const ALLOWED = ["quote_no","company_id","customer_name","quote_date","valid_until","currency","exchange_rate","description","status","created_by"] as const;
   for (const k of ALLOWED) if (k in b) fields[k] = b[k];
 
   if ("items" in b) {

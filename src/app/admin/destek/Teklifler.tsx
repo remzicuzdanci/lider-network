@@ -15,7 +15,7 @@ interface Quote {
   quote_date?: string; valid_until?: string; currency: string; exchange_rate?: number;
   description?: string; items: Item[]; subtotal: number; discount_total: number;
   net_total: number; kdv_total: number; grand_total: number; status: string;
-  created_at: string; companies?: { name: string };
+  created_by?: string; created_at: string; companies?: { name: string };
 }
 
 const CURRENCIES = ["TL", "USD", "EUR"];
@@ -31,7 +31,7 @@ const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n ||
 const today = () => new Date().toISOString().slice(0, 10);
 function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
 
-export default function Teklifler({ companies = [], initialCompanyId = "" }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string }) {
+export default function Teklifler({ companies = [], initialCompanyId = "", staff = [], currentUserName = "" }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string; staff?: string[] }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "edit">("list");
@@ -49,6 +49,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
   const [currency, setCurrency] = useState("TL");
   const [rate, setRate] = useState("");
   const [desc, setDesc] = useState("");
+  const [preparedBy, setPreparedBy] = useState(currentUserName);
   const [items, setItems] = useState<Item[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -90,13 +91,13 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
   }, [items]);
 
   function resetForm() {
-    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setItems([]); setSearch(""); setResults([]);
+    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setPreparedBy(currentUserName); setItems([]); setSearch(""); setResults([]);
   }
   function openNew() { resetForm(); setEditId(null); setView("edit"); }
   function openEdit(q: Quote) {
     setEditId(q.id); setCompanyId(q.company_id || ""); setQuoteNo(q.quote_no || "");
     setQDate(q.quote_date || today()); setValidUntil(q.valid_until || ""); setCurrency(q.currency || "TL");
-    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setItems(q.items || []);
+    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setItems(q.items || []);
     setSearch(""); setResults([]); setView("edit");
   }
 
@@ -119,6 +120,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
       quote_no: quoteNo || undefined,
       quote_date: qDate, valid_until: validUntil || null,
       currency, exchange_rate: rate ? Number(rate) : 1, description: desc, items,
+      created_by: preparedBy || currentUserName || null,
     };
     try {
       const r = await fetch("/api/admin/quotes", { method: editId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -214,6 +216,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
           <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Tarih</span><b style="color:#0f172a;">${dt(qDate)}</b></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Geçerlilik</span><b style="color:#0f172a;">${dt(validUntil)}</b></div>
           <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Para Birimi</span><b style="color:#0f172a;">${cur}</b></div>
+          ${preparedBy ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Teklifi Veren</span><b style="color:#0f172a;">${preparedBy}</b></div>` : ""}
         </div>
       </td>
     </tr></table>
@@ -381,7 +384,10 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
                         <td style={{ padding: "10px 16px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "8px", background: avatarBg(cname), color: "#fff", fontSize: "11px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials(cname)}</span>
-                            <span style={{ fontSize: "13px", color: "#1a1d2e", fontWeight: 600 }}>{cname}</span>
+                            <div>
+                              <div style={{ fontSize: "13px", color: "#1a1d2e", fontWeight: 600 }}>{cname}</div>
+                              {q.created_by && <div style={{ fontSize: "11px", color: "#9ca3af" }}>👤 {q.created_by}</div>}
+                            </div>
                           </div>
                         </td>
                         <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b", whiteSpace: "nowrap" }}>{q.quote_date ? new Date(q.quote_date).toLocaleDateString("tr-TR") : "—"}</td>
@@ -437,6 +443,16 @@ export default function Teklifler({ companies = [], initialCompanyId = "" }: { c
               <select value={currency} onChange={e => setCurrency(e.target.value)} style={inp}>{CURRENCIES.map(c => <option key={c} value={c}>{c}</option>)}</select>
             </div>
             <div><label style={lbl}>Döviz Kuru</label><input type="number" step="0.0001" value={rate} onChange={e => setRate(e.target.value)} placeholder={currency === "TL" ? "—" : "ör. 45,97"} style={inp} disabled={currency === "TL"} /></div>
+          </div>
+          <div style={{ marginBottom: "12px" }}><label style={lbl}>Teklifi Veren</label>
+            {staff.length > 0 ? (
+              <select value={preparedBy} onChange={e => setPreparedBy(e.target.value)} style={inp}>
+                {!staff.includes(preparedBy) && preparedBy && <option value={preparedBy}>{preparedBy}</option>}
+                {staff.map(s => <option key={s} value={s}>{s}</option>)}
+              </select>
+            ) : (
+              <input value={preparedBy} onChange={e => setPreparedBy(e.target.value)} placeholder="Hazırlayan kişi" style={inp} />
+            )}
           </div>
           <div><label style={lbl}>Açıklama</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4} placeholder="Teklif notu, şartlar…" style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
