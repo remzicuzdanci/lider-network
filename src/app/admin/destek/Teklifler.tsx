@@ -145,13 +145,14 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
     const rows = items.map((it, i) => {
       const gross = (+it.quantity || 0) * (+it.unit_price || 0);
       const net = gross - gross * (+it.discount || 0) / 100;
-      return `<tr>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;"><span style="color:#9ca3af;">${i + 1}.</span> ${it.description || ""}</td>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;white-space:nowrap;">${it.quantity} ${it.unit || ""}</td>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;white-space:nowrap;">${m(it.unit_price)}</td>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">%${it.discount || 0}</td>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:center;">%${it.kdv_rate || 0}</td>
-        <td style="padding:9px 6px;border-bottom:1px solid #e5e7eb;font-size:12px;text-align:right;font-weight:700;white-space:nowrap;">${m(net)}</td>
+      const bg = i % 2 ? "#f5f8ff" : "#ffffff";
+      return `<tr style="background:${bg};">
+        <td style="padding:11px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}</td>
+        <td style="padding:11px 12px;font-size:12px;text-align:center;white-space:nowrap;color:#475569;">${it.quantity} ${it.unit || ""}</td>
+        <td style="padding:11px 12px;font-size:12px;text-align:right;white-space:nowrap;color:#475569;">${m(it.unit_price)}</td>
+        <td style="padding:11px 12px;font-size:12px;text-align:center;color:#475569;">%${it.discount || 0}</td>
+        <td style="padding:11px 12px;font-size:12px;text-align:center;color:#475569;">%${it.kdv_rate || 0}</td>
+        <td style="padding:11px 14px;font-size:12.5px;text-align:right;font-weight:800;white-space:nowrap;color:#0f172a;">${m(net)}</td>
       </tr>`;
     }).join("");
 
@@ -161,71 +162,96 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
 
     return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teklif ${no}</title>
 <style>
-  @page { size:A4; margin:16mm 15mm; }
+  @page { size:A4; margin:0; }
   *{ box-sizing:border-box; }
-  body{ font-family:Arial,Helvetica,sans-serif; color:#1f2937; font-size:12px; margin:0; }
-  .seller{ font-weight:700; font-size:12.5px; margin-top:10px; color:#111827; }
-  .doctitle{ text-align:center; font-size:19px; font-weight:800; letter-spacing:2px; margin:22px 0 16px; color:#111827; }
-  table.items{ width:100%; border-collapse:collapse; margin-top:6px; }
-  table.items thead th{ border-bottom:2px solid #111827; font-size:11px; padding:8px 6px; color:#111827; }
-  .intro{ color:#1d4ed8; font-size:12px; margin:14px 0 6px; }
-  .totrow{ display:flex; justify-content:space-between; padding:3px 0; font-size:12.5px; }
-  .grand{ border-top:2px solid #111827; margin-top:5px; padding-top:7px; font-weight:800; font-size:14px; }
-  .closing{ font-size:12px; color:#374151; margin-top:46px; line-height:1.6; }
+  html,body{ margin:0; padding:0; }
+  body{ font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif; color:#1f2937; font-size:12px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .band{ background:#0052ff; background:linear-gradient(120deg,#0038c7 0%,#0052ff 55%,#3b74ff 100%); padding:28px 40px; }
+  .accent{ height:5px; background:#ff5e07; }
+  .content{ padding:30px 40px 0; }
+  .doctitle{ color:#ffffff; font-size:27px; font-weight:800; letter-spacing:1px; margin:0; }
+  .card{ background:#f8fafc; border:1px solid #e8edf3; border-radius:11px; padding:15px 17px; }
+  .intro{ color:#0052ff; font-size:12.5px; margin:20px 0 6px; font-weight:500; }
+  table.items{ width:100%; border-collapse:collapse; margin-top:8px; border-radius:9px; overflow:hidden; box-shadow:0 1px 4px rgba(15,23,42,.06); }
+  table.items thead th{ background:#0f172a; color:#ffffff; font-size:10.5px; font-weight:700; padding:12px 12px; letter-spacing:.4px; }
+  .totbox{ background:#eef4ff; border:1px solid #cfe0ff; border-radius:12px; padding:15px 19px; }
+  .totrow{ display:flex; justify-content:space-between; padding:4px 0; font-size:12.5px; color:#475569; }
+  .grand{ border-top:2px solid #0052ff; margin-top:9px; padding-top:10px; font-weight:800; font-size:17px; color:#0052ff; }
+  .footer{ background:#0f172a; color:#cbd5e1; padding:18px 40px; margin-top:40px; font-size:11px; text-align:center; }
 </style></head><body>
-  <table style="width:100%;border:0;border-collapse:collapse;"><tr>
-    <td style="border:0;vertical-align:top;">
-      <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:56px;width:auto;" />
-      <div class="seller">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
-    </td>
-  </tr></table>
 
-  <div class="doctitle">TEKLİF FORMU</div>
+  <div class="band">
+    <table style="width:100%;border:0;border-collapse:collapse;"><tr>
+      <td style="border:0;vertical-align:middle;">
+        <span style="display:inline-block;background:#ffffff;border-radius:12px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.18);">
+          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:66px;width:auto;display:block;" />
+        </span>
+        <div style="color:#cdd9ff;font-size:12px;margin-top:13px;font-weight:600;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+      </td>
+      <td style="border:0;vertical-align:middle;text-align:right;">
+        <div class="doctitle">FİYAT TEKLİFİ</div>
+        <div style="display:inline-block;background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;margin-top:12px;">${no}</div>
+      </td>
+    </tr></table>
+  </div>
+  <div class="accent"></div>
 
-  <table style="width:100%;border:0;border-collapse:collapse;"><tr>
-    <td style="border:0;vertical-align:top;">
-      <div style="font-weight:800;font-size:13px;color:#111827;">${c?.name || customerName(companyId)}</div>
-      ${addrLine}${taxLine}${attn}
-    </td>
-    <td style="border:0;vertical-align:top;text-align:right;white-space:nowrap;font-size:12px;color:#374151;">
-      <div><b>Tarih:</b> ${dt(qDate)}</div>
-      <div><b>Geçerlilik:</b> ${dt(validUntil)}</div>
-      <div><b>Teklif No:</b> ${no}</div>
-    </td>
-  </tr></table>
+  <div class="content">
+    <table style="width:100%;border:0;border-collapse:separate;border-spacing:0;"><tr>
+      <td style="border:0;vertical-align:top;width:58%;padding-right:14px;">
+        <div class="card" style="border-left:4px solid #0052ff;">
+          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;font-weight:800;margin-bottom:6px;">Müşteri</div>
+          <div style="font-weight:800;font-size:14px;color:#0f172a;">${c?.name || customerName(companyId)}</div>
+          ${addrLine}${taxLine}${attn}
+        </div>
+      </td>
+      <td style="border:0;vertical-align:top;width:42%;">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Tarih</span><b style="color:#0f172a;">${dt(qDate)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Geçerlilik</span><b style="color:#0f172a;">${dt(validUntil)}</b></div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px;"><span style="color:#64748b;">Para Birimi</span><b style="color:#0f172a;">${cur}</b></div>
+        </div>
+      </td>
+    </tr></table>
 
-  <p class="intro">Yapmış olduğumuz görüşmeler sonrasında hazırlamış olduğumuz fiyat teklifimizi değerlendirmenize sunarız.</p>
+    <p class="intro">Yapmış olduğumuz görüşmeler sonrasında hazırlamış olduğumuz fiyat teklifimizi değerlendirmenize sunarız.</p>
 
-  <table class="items">
-    <thead><tr>
-      <th style="text-align:left;">Açıklama</th>
-      <th style="text-align:center;">Miktar</th>
-      <th style="text-align:right;">Fiyat</th>
-      <th style="text-align:center;">İsk.</th>
-      <th style="text-align:center;">KDV (%)</th>
-      <th style="text-align:right;">Tutar (KDV Hariç)</th>
-    </tr></thead>
-    <tbody>${rows}</tbody>
-  </table>
+    <table class="items">
+      <thead><tr>
+        <th style="text-align:left;">AÇIKLAMA</th>
+        <th style="text-align:center;">MİKTAR</th>
+        <th style="text-align:right;">FİYAT</th>
+        <th style="text-align:center;">İSK.</th>
+        <th style="text-align:center;">KDV</th>
+        <th style="text-align:right;">TUTAR (KDV Hariç)</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
 
-  <table style="width:100%;border:0;border-collapse:collapse;margin-top:12px;"><tr>
-    <td style="border:0;"></td>
-    <td style="border:0;width:260px;">
-      <div class="totrow"><span style="color:#6b7280;">Brüt Toplam</span><span>${m(totals.subtotal)}</span></div>
-      ${totals.discount_total ? `<div class="totrow"><span style="color:#6b7280;">İndirim</span><span style="color:#dc2626;">- ${m(totals.discount_total)}</span></div>` : ""}
-      <div class="totrow"><span style="color:#6b7280;">Net</span><span>${m(totals.net_total)}</span></div>
-      <div class="totrow"><span style="color:#6b7280;">${kdvLabel}</span><span>${m(totals.kdv_total)}</span></div>
-      <div class="totrow grand"><span>TOPLAM</span><span>${m(totals.grand_total)}</span></div>
-    </td>
-  </tr></table>
+    <table style="width:100%;border:0;border-collapse:collapse;margin-top:16px;"><tr>
+      <td style="border:0;"></td>
+      <td style="border:0;width:300px;">
+        <div class="totbox">
+          <div class="totrow"><span>Brüt Toplam</span><span style="font-weight:600;color:#1f2937;">${m(totals.subtotal)}</span></div>
+          ${totals.discount_total ? `<div class="totrow"><span>İndirim</span><span style="color:#dc2626;font-weight:600;">- ${m(totals.discount_total)}</span></div>` : ""}
+          <div class="totrow"><span>Net Toplam</span><span style="font-weight:600;color:#1f2937;">${m(totals.net_total)}</span></div>
+          <div class="totrow"><span>${kdvLabel}</span><span style="font-weight:600;color:#1f2937;">${m(totals.kdv_total)}</span></div>
+          <div class="totrow grand"><span>GENEL TOPLAM</span><span>${m(totals.grand_total)}</span></div>
+        </div>
+      </td>
+    </tr></table>
 
-  ${desc ? `<div style="margin-top:22px;font-size:12px;color:#4b5563;line-height:1.6;white-space:pre-wrap;">${desc}</div>` : ""}
+    ${desc ? `<div style="margin-top:20px;padding:15px 17px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.6;white-space:pre-wrap;">${desc}</div>` : ""}
 
-  <div class="closing">
-    Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
-    <div style="margin-top:22px;">Saygılarımızla,</div>
-    <div style="margin-top:4px;font-weight:700;color:#111827;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
-    <div style="font-size:11px;color:#6b7280;margin-top:4px;">+90 312 232 02 88 · info@lidernetwork.com.tr · www.lidernetwork.com.tr</div>
+    <div style="font-size:12px;color:#374151;margin-top:34px;line-height:1.6;">
+      Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
+      <div style="margin-top:20px;">Saygılarımızla,</div>
+      <div style="margin-top:3px;font-weight:700;color:#0f172a;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <strong style="color:#fff;letter-spacing:1px;">LİDER NETWORK</strong> &nbsp;·&nbsp; +90 312 232 02 88 &nbsp;·&nbsp; info@lidernetwork.com.tr &nbsp;·&nbsp; www.lidernetwork.com.tr
   </div>
   <script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>
 </body></html>`;
