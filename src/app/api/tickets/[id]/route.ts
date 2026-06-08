@@ -92,3 +92,23 @@ export async function PATCH(
     return NextResponse.json({ error: "Sunucu hatası" }, { status: 500 });
   }
 }
+
+// DELETE — talebi ve bağlı mesajlarını kalıcı sil (yalnızca admin)
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const isAdmin = await getAdminSession();
+  if (!isAdmin)
+    return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
+
+  const { id } = await params;
+
+  // Önce bağlı mesajları sil (FK kısıtı için), sonra talebi
+  await supabase.from("ticket_messages").delete().eq("ticket_id", id);
+
+  const { error } = await supabase.from("tickets").delete().eq("id", id);
+  if (error) return NextResponse.json({ error: "Silme hatası" }, { status: 500 });
+
+  return NextResponse.json({ success: true });
+}

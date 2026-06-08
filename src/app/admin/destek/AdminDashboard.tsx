@@ -8,7 +8,7 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote,
+  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote, Trash2,
 } from "lucide-react";
 import IsPlani from "./IsPlani";
 import PersonelNotlari from "./PersonelNotlari";
@@ -408,6 +408,15 @@ export default function AdminDashboard() {
       setNtError(json.error || "Hata oluştu");
     }
     setNtSaving(false);
+  }
+
+  // ── Talep silme (yalnızca yönetici) ─────────────────────────────────────────
+  async function deleteTicket(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Bu talebi kalıcı olarak silmek istediğinize emin misiniz?\nBu işlem geri alınamaz.")) return;
+    const r = await fetch(`/api/tickets/${id}`, { method: "DELETE" });
+    if (r.ok) { fetchTickets(); fetchStats(); }
+    else { const j = await r.json().catch(() => ({})); alert("Silinemedi: " + (j.error || "hata")); }
   }
 
   // ── Staff setup ────────────────────────────────────────────────────────────
@@ -929,7 +938,16 @@ export default function AdminDashboard() {
                               <span style={{ fontSize: "12px", fontWeight: 600, color: sla.color, background: sla.bg, padding: "3px 8px", borderRadius: "6px" }}>{sla.label}</span>
                             </td>
                             <td style={{ padding: "14px", fontSize: "12px", color: "#9ca3af", whiteSpace: "nowrap" }}>{timeAgo(t.created_at)}</td>
-                            <td style={{ padding: "14px" }}><ArrowUpRight size={14} color="#d1d5db" /></td>
+                            <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: "8px", justifyContent: "flex-end" }}>
+                                {sessionRole === "super_admin" && (
+                                  <button onClick={(e) => deleteTicket(t.id, e)} title="Talebi sil" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 26, height: 26, borderRadius: "7px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}>
+                                    <Trash2 size={13} />
+                                  </button>
+                                )}
+                                <ArrowUpRight size={14} color="#d1d5db" />
+                              </div>
+                            </td>
                           </tr>
                         );
                       })}
