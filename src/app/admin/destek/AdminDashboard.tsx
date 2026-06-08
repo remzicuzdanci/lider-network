@@ -129,6 +129,8 @@ export default function AdminDashboard() {
 
   const [tab, setTab] = useState<Tab>("tickets");
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [quoteCounts, setQuoteCounts] = useState<Record<string, number>>({});
+  const [quotesFilterCompany, setQuotesFilterCompany] = useState("");
 
   // Session
   const [sessionName, setSessionName] = useState("Admin");
@@ -261,6 +263,18 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (tab === "customers") fetchCustomers(); }, [tab, fetchCustomers]);
   useEffect(() => { if (tab === "companies") fetchCompanies(); }, [tab, fetchCompanies]);
+  // Şirket başına teklif sayısı (Şirketler ve Teklifler sekmesinde gösterilir)
+  useEffect(() => {
+    if (tab !== "companies" && tab !== "quotes") return;
+    let active = true;
+    fetch("/api/admin/quotes").then(r => r.ok ? r.json() : { quotes: [] }).then(d => {
+      if (!active) return;
+      const counts: Record<string, number> = {};
+      (d.quotes || []).forEach((q: { company_id?: string }) => { if (q.company_id) counts[q.company_id] = (counts[q.company_id] || 0) + 1; });
+      setQuoteCounts(counts);
+    }).catch(() => {});
+    return () => { active = false; };
+  }, [tab]);
   useEffect(() => { if (tab === "staff") fetchStaff(); }, [tab, fetchStaff]);
 
   async function logout() { await fetch("/api/admin/auth", { method: "DELETE" }); router.push("/admin/login"); }
@@ -1051,7 +1065,13 @@ export default function AdminDashboard() {
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "14px" }}>
                       <div>
                         <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#1a1d2e" }}>{c.name}</p>
-                        {c.sector && <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#0052ff", fontWeight: 600, background: "#eff6ff", display: "inline-block", padding: "2px 8px", borderRadius: "4px" }}>{c.sector}</p>}
+                        <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
+                          {c.sector && <span style={{ fontSize: "11px", color: "#0052ff", fontWeight: 600, background: "#eff6ff", padding: "2px 8px", borderRadius: "4px" }}>{c.sector}</span>}
+                          <button onClick={() => { setQuotesFilterCompany(c.id); setTab("quotes"); }} title="Bu müşterinin tekliflerini gör"
+                            style={{ fontSize: "11px", fontWeight: 700, color: quoteCounts[c.id] ? "#15803d" : "#9ca3af", background: quoteCounts[c.id] ? "#f0fdf4" : "#f4f6fb", border: `1px solid ${quoteCounts[c.id] ? "#bbf7d0" : "#e5e7ef"}`, padding: "2px 8px", borderRadius: "4px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}>
+                            📄 {quoteCounts[c.id] || 0} teklif
+                          </button>
+                        </div>
                       </div>
                       <div style={{ display: "flex", gap: "6px" }}>
                         <button onClick={() => setCompModal(c)} style={{ padding: "5px 10px", background: "#f4f6fb", border: "1px solid #e5e7ef", borderRadius: "6px", fontSize: "12px", color: "#6b7280", cursor: "pointer" }}>Düzenle</button>
@@ -1419,7 +1439,7 @@ export default function AdminDashboard() {
 
         {tab === "quotes" && (
           <div style={{ padding: "24px 28px" }}>
-            <Teklifler companies={companies} currentUserName={sessionName} />
+            <Teklifler companies={companies} currentUserName={sessionName} initialCompanyId={quotesFilterCompany} />
           </div>
         )}
       </main>

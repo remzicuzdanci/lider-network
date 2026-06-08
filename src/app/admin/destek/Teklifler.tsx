@@ -31,11 +31,15 @@ const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n ||
 const today = () => new Date().toISOString().slice(0, 10);
 function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
 
-export default function Teklifler({ companies = [] }: { companies?: Company[]; currentUserName?: string }) {
+export default function Teklifler({ companies = [], initialCompanyId = "" }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "edit">("list");
   const [editId, setEditId] = useState<string | null>(null);
+  const [listSearch, setListSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [companyFilter, setCompanyFilter] = useState<string>(initialCompanyId);
+  useEffect(() => { setCompanyFilter(initialCompanyId); }, [initialCompanyId]);
 
   // form
   const [companyId, setCompanyId] = useState("");
@@ -288,9 +292,27 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
 
   /* ── LİSTE ── */
   if (view === "list") {
+    const s = listSearch.trim().toLowerCase();
+    const filtered = quotes.filter(q => {
+      if (companyFilter && q.company_id !== companyFilter) return false;
+      if (statusFilter !== "all" && q.status !== statusFilter) return false;
+      if (s) { const hay = `${q.quote_no} ${q.customer_name || ""} ${q.companies?.name || ""}`.toLowerCase(); if (!hay.includes(s)) return false; }
+      return true;
+    });
+    const stats = [
+      { id: "all", label: "Toplam", value: quotes.length, color: "#0052ff" },
+      { id: "draft", label: "Taslak", value: quotes.filter(q => q.status === "draft").length, color: "#64748b" },
+      { id: "sent", label: "Gönderildi", value: quotes.filter(q => q.status === "sent").length, color: "#0891b2" },
+      { id: "accepted", label: "Kabul", value: quotes.filter(q => q.status === "accepted").length, color: "#15803d" },
+    ];
+    const companyFilterName = companies.find(c => c.id === companyFilter)?.name;
+    const STFILT = [["all", "Tümü"], ["draft", "Taslak"], ["sent", "Gönderildi"], ["accepted", "Kabul"], ["rejected", "Red"]];
+    const initials = (n: string) => n.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
+    const avatarBg = (n: string) => { const c = ["#0052ff", "#7c3aed", "#15803d", "#d97706", "#dc2626", "#0891b2"]; let h = 0; for (const ch of n) h = ch.charCodeAt(0) + h; return c[h % c.length]; };
+
     return (
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "20px" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
           <div>
             <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>📄 Teklifler</h2>
             <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Fiyat teklifleri oluştur, PDF indir, e-posta gönder</p>
@@ -300,32 +322,72 @@ export default function Teklifler({ companies = [] }: { companies?: Company[]; c
           </button>
         </div>
 
+        {/* Özet kartları */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit,minmax(130px,1fr))", gap: "12px", marginBottom: "16px" }}>
+          {stats.map(s2 => (
+            <div key={s2.id} onClick={() => setStatusFilter(s2.id)} style={{ background: "#fff", border: `1px solid ${statusFilter === s2.id ? s2.color : "#e5e7ef"}`, borderTop: `3px solid ${s2.color}`, borderRadius: "12px", padding: "14px 16px", cursor: "pointer", boxShadow: statusFilter === s2.id ? `0 2px 10px ${s2.color}22` : "none" }}>
+              <p style={{ fontSize: "24px", fontWeight: 900, color: s2.color, margin: "0 0 2px", lineHeight: 1 }}>{s2.value}</p>
+              <p style={{ fontSize: "11.5px", color: "#9ca3af", margin: 0 }}>{s2.label}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Arama + filtre çubuğu */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "0 12px", background: "#fff", flex: "1 1 240px", minWidth: "200px" }}>
+            <Search size={15} color="#64748b" />
+            <input value={listSearch} onChange={e => setListSearch(e.target.value)} placeholder="Müşteri veya teklif no ara…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", color: "#1a1d2e", outline: "none" }} />
+            {listSearch && <button onClick={() => setListSearch("")} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer" }}><X size={15} /></button>}
+          </div>
+          <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", padding: "4px", overflowX: "auto" }}>
+            {STFILT.map(([id, label]) => (
+              <button key={id} onClick={() => setStatusFilter(id)} style={{ padding: "7px 13px", borderRadius: "7px", border: "none", whiteSpace: "nowrap", fontSize: "12.5px", fontWeight: statusFilter === id ? 700 : 500, cursor: "pointer", background: statusFilter === id ? "linear-gradient(135deg,#0038c7,#0052ff)" : "transparent", color: statusFilter === id ? "#fff" : "#64748b" }}>{label}</button>
+            ))}
+          </div>
+          {companyFilter && (
+            <button onClick={() => setCompanyFilter("")} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 12px", borderRadius: "20px", border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#0052ff", fontSize: "12.5px", fontWeight: 700, cursor: "pointer" }}>
+              🏢 {companyFilterName} <X size={13} />
+            </button>
+          )}
+        </div>
+
         {loading ? <p style={{ color: "#94a3b8" }}>Yükleniyor…</p> : quotes.length === 0 ? (
           <div style={{ textAlign: "center", padding: "60px 20px", color: "#94a3b8" }}>
             <FileText size={40} color="#cbd5e1" style={{ marginBottom: "12px" }} />
             <p style={{ fontSize: "14px", margin: 0 }}>Henüz teklif yok. "Yeni Teklif" ile başlayın.</p>
           </div>
+        ) : filtered.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "50px 20px", color: "#94a3b8" }}>
+            <Search size={36} color="#cbd5e1" style={{ marginBottom: "10px" }} />
+            <p style={{ fontSize: "14px", margin: 0 }}>Aramaya uygun teklif bulunamadı.</p>
+          </div>
         ) : (
           <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "13px", overflow: "hidden" }}>
             <div style={{ overflowX: "auto" }}>
-              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "640px" }}>
+              <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "680px" }}>
                 <thead><tr style={{ background: "#f8fafc" }}>
                   {["Teklif No", "Müşteri", "Tarih", "Tutar", "Durum", ""].map((h, i) => (
-                    <th key={i} style={{ padding: "12px 14px", fontSize: "11px", fontWeight: 700, color: "#64748b", textTransform: "uppercase", textAlign: i === 3 ? "right" : "left", whiteSpace: "nowrap" }}>{h}</th>
+                    <th key={i} style={{ padding: "12px 16px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: ".3px", textAlign: i === 3 ? "right" : "left", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr></thead>
                 <tbody>
-                  {quotes.map(q => {
+                  {filtered.map(q => {
                     const st = STATUS[q.status] || STATUS.draft;
+                    const cname = q.companies?.name || q.customer_name || "—";
                     return (
                       <tr key={q.id} onClick={() => openEdit(q)} style={{ borderTop: "1px solid #f0f2f8", cursor: "pointer" }}
-                        onMouseEnter={e => (e.currentTarget.style.background = "#f8fafc")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        <td style={{ padding: "12px 14px", fontSize: "13px", fontWeight: 800, color: "#0052ff", whiteSpace: "nowrap" }}>{q.quote_no}</td>
-                        <td style={{ padding: "12px 14px", fontSize: "13px", color: "#1a1d2e", fontWeight: 600 }}>{q.companies?.name || q.customer_name || "—"}</td>
-                        <td style={{ padding: "12px 14px", fontSize: "12px", color: "#64748b", whiteSpace: "nowrap" }}>{q.quote_date ? new Date(q.quote_date).toLocaleDateString("tr-TR") : "—"}</td>
-                        <td style={{ padding: "12px 14px", fontSize: "13px", fontWeight: 800, color: "#1a1d2e", textAlign: "right", whiteSpace: "nowrap" }}>{money(q.grand_total, q.currency)}</td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap" }}><span style={{ fontSize: "11px", fontWeight: 700, padding: "3px 10px", borderRadius: "6px", background: st.bg, color: st.color }}>{st.label}</span></td>
-                        <td style={{ padding: "12px 14px", whiteSpace: "nowrap", textAlign: "right" }}>
+                        onMouseEnter={e => (e.currentTarget.style.background = "#f8faff")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                        <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#0052ff", whiteSpace: "nowrap" }}>{q.quote_no}</td>
+                        <td style={{ padding: "10px 16px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                            <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "8px", background: avatarBg(cname), color: "#fff", fontSize: "11px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials(cname)}</span>
+                            <span style={{ fontSize: "13px", color: "#1a1d2e", fontWeight: 600 }}>{cname}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b", whiteSpace: "nowrap" }}>{q.quote_date ? new Date(q.quote_date).toLocaleDateString("tr-TR") : "—"}</td>
+                        <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#1a1d2e", textAlign: "right", whiteSpace: "nowrap" }}>{money(q.grand_total, q.currency)}</td>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}><span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 11px", borderRadius: "6px", background: st.bg, color: st.color }}>{st.label}</span></td>
+                        <td style={{ padding: "12px 16px", whiteSpace: "nowrap", textAlign: "right" }}>
                           <button onClick={e => { e.stopPropagation(); del(q.id); }} title="Sil" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "7px", padding: "5px 7px", cursor: "pointer" }}><Trash2 size={13} /></button>
                         </td>
                       </tr>
