@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History } from "lucide-react";
+import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil } from "lucide-react";
 
 interface Company {
   id: string; name: string;
@@ -25,6 +25,7 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
   sent:     { label: "Gönderildi", color: "#0052ff", bg: "#eff6ff" },
   accepted: { label: "Kabul",      color: "#15803d", bg: "#f0fdf4" },
   rejected: { label: "Red",        color: "#dc2626", bg: "#fef2f2" },
+  ordered:  { label: "Siparişe Döndü", color: "#7c3aed", bg: "#f5f3ff" },
 };
 const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
@@ -38,6 +39,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [editId, setEditId] = useState<string | null>(null);
   const [listSearch, setListSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [mainTab, setMainTab] = useState<"quotes" | "products">("quotes");
   const [companyFilter, setCompanyFilter] = useState<string>(initialCompanyId);
   useEffect(() => { setCompanyFilter(initialCompanyId); }, [initialCompanyId]);
 
@@ -50,6 +52,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [rate, setRate] = useState("");
   const [desc, setDesc] = useState("");
   const [preparedBy, setPreparedBy] = useState(currentUserName);
+  const [status, setStatus] = useState("draft");
   const [items, setItems] = useState<Item[]>([]);
   const [saving, setSaving] = useState(false);
 
@@ -91,13 +94,13 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   }, [items]);
 
   function resetForm() {
-    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setPreparedBy(currentUserName); setItems([]); setSearch(""); setResults([]);
+    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setPreparedBy(currentUserName); setStatus("draft"); setItems([]); setSearch(""); setResults([]);
   }
   function openNew() { resetForm(); setEditId(null); setView("edit"); }
   function openEdit(q: Quote) {
     setEditId(q.id); setCompanyId(q.company_id || ""); setQuoteNo(q.quote_no || "");
     setQDate(q.quote_date || today()); setValidUntil(q.valid_until || ""); setCurrency(q.currency || "TL");
-    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setItems(q.items || []);
+    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []);
     setSearch(""); setResults([]); setView("edit");
   }
 
@@ -120,7 +123,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       quote_no: quoteNo || undefined,
       quote_date: qDate, valid_until: validUntil || null,
       currency, exchange_rate: rate ? Number(rate) : 1, description: desc, items,
-      created_by: preparedBy || currentUserName || null,
+      created_by: preparedBy || currentUserName || null, status,
     };
     try {
       const r = await fetch("/api/admin/quotes", { method: editId ? "PATCH" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -137,6 +140,16 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     if (!confirm("Bu teklifi silmek istiyor musunuz?")) return;
     await fetch("/api/admin/quotes", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
     setQuotes(p => p.filter(q => q.id !== id));
+  }
+
+  // Hızlı durum değişimi (Kabul/Red/Sipariş) — gerekiyorsa önce kaydeder
+  async function quickStatus(st: string) {
+    setStatus(st);
+    let id = editId;
+    if (!id) { const s = await save(); if (!s) return; id = s.id; }
+    const r = await fetch("/api/admin/quotes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: st }) });
+    if (r.ok) await loadQuotes();
+    else alert("Durum güncellenemedi");
   }
 
   // Profesyonel teklif belgesi (HTML) — Türkçe sorunsuz, yazdır/PDF için
@@ -309,12 +322,28 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       { id: "accepted", label: "Kabul", value: quotes.filter(q => q.status === "accepted").length, color: "#15803d" },
     ];
     const companyFilterName = companies.find(c => c.id === companyFilter)?.name;
-    const STFILT = [["all", "Tümü"], ["draft", "Taslak"], ["sent", "Gönderildi"], ["accepted", "Kabul"], ["rejected", "Red"]];
+    const STFILT = [["all", "Tümü"], ["draft", "Taslak"], ["sent", "Gönderildi"], ["accepted", "Kabul"], ["ordered", "Sipariş"], ["rejected", "Red"]];
     const initials = (n: string) => n.split(" ").filter(Boolean).map(w => w[0]).slice(0, 2).join("").toUpperCase();
     const avatarBg = (n: string) => { const c = ["#0052ff", "#7c3aed", "#15803d", "#d97706", "#dc2626", "#0891b2"]; let h = 0; for (const ch of n) h = ch.charCodeAt(0) + h; return c[h % c.length]; };
 
+    if (mainTab === "products") {
+      return (
+        <div>
+          <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "11px", padding: "4px", width: "fit-content", marginBottom: "18px" }}>
+            <button onClick={() => setMainTab("quotes")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: "transparent", color: "#64748b" }}>📄 Teklifler</button>
+            <button onClick={() => setMainTab("products")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg,#16a34a,#22c55e)", color: "#fff" }}>🛒 Ürünler</button>
+          </div>
+          <ProductsView defaultCurrency="TL" />
+        </div>
+      );
+    }
+
     return (
       <div>
+        <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "11px", padding: "4px", width: "fit-content", marginBottom: "18px" }}>
+          <button onClick={() => setMainTab("quotes")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 700, cursor: "pointer", background: "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff" }}>📄 Teklifler</button>
+          <button onClick={() => setMainTab("products")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: 600, cursor: "pointer", background: "transparent", color: "#64748b" }}>🛒 Ürünler</button>
+        </div>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "18px" }}>
           <div>
             <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>📄 Teklifler</h2>
@@ -414,7 +443,11 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       {/* Üst aksiyon barı */}
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px", alignItems: "center" }}>
         <button onClick={() => { setView("list"); resetForm(); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 14px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}><ArrowLeft size={15} /> Geri</button>
+        {editId && <span style={{ fontSize: "12px", fontWeight: 700, padding: "5px 11px", borderRadius: "7px", background: (STATUS[status] || STATUS.draft).bg, color: (STATUS[status] || STATUS.draft).color }}>{(STATUS[status] || STATUS.draft).label}</span>}
         <div style={{ flex: 1 }} />
+        <button onClick={() => quickStatus("accepted")} title="Teklifi kabul edildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✓ Kabul</button>
+        <button onClick={() => quickStatus("rejected")} title="Teklifi reddedildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✕ Red</button>
+        <button onClick={() => quickStatus("ordered")} title="Siparişe çevir" style={{ padding: "9px 13px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#6d28d9,#7c3aed)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>🛒 Siparişe Çevir</button>
         <button onClick={save} disabled={saving} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: saving ? "#9ca3af" : "linear-gradient(135deg,#15803d,#22c55e)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}><Save size={15} /> {saving ? "Kaydediliyor…" : "Teklifi Kaydet"}</button>
         <button onClick={exportPDF} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: "#b91c1c", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><FileText size={15} /> PDF</button>
         <button onClick={printQuote} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Printer size={15} /> Yazdır</button>
@@ -453,6 +486,11 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             ) : (
               <input value={preparedBy} onChange={e => setPreparedBy(e.target.value)} placeholder="Hazırlayan kişi" style={inp} />
             )}
+          </div>
+          <div style={{ marginBottom: "12px" }}><label style={lbl}>Durum</label>
+            <select value={status} onChange={e => setStatus(e.target.value)} style={inp}>
+              {Object.entries(STATUS).map(([id, s]) => <option key={id} value={id}>{s.label}</option>)}
+            </select>
           </div>
           <div><label style={lbl}>Açıklama</label>
             <textarea value={desc} onChange={e => setDesc(e.target.value)} rows={4} placeholder="Teklif notu, şartlar…" style={{ ...inp, resize: "vertical", lineHeight: 1.5 }} />
@@ -543,6 +581,85 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   );
 }
 
+/* ── Ürün Kataloğu Yönetimi ── */
+function ProductsView({ defaultCurrency }: { defaultCurrency: string }) {
+  const [list, setList] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [modal, setModal] = useState<Product | "new" | null>(null);
+
+  const load = useCallback(async (term = "") => {
+    setLoading(true);
+    const r = await fetch(`/api/admin/products${term ? `?q=${encodeURIComponent(term)}` : ""}`);
+    if (r.ok) setList((await r.json()).products || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { const t = setTimeout(() => load(q.trim()), 250); return () => clearTimeout(t); }, [q, load]);
+
+  async function del(id: string) {
+    if (!confirm("Bu ürünü katalogdan kaldırmak istiyor musunuz?")) return;
+    await fetch("/api/admin/products", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setList(p => p.filter(x => x.id !== id));
+  }
+
+  return (
+    <div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px", marginBottom: "16px" }}>
+        <div>
+          <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>🛒 Ürün Kataloğu</h2>
+          <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Tekliflerde kullanılan ürünleri yönetin</p>
+        </div>
+        <button onClick={() => setModal("new")} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#16a34a,#22c55e)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(34,197,94,.25)" }}>
+          <Plus size={16} /> Yeni Ürün
+        </button>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "0 12px", background: "#fff", marginBottom: "16px", maxWidth: "360px" }}>
+        <Search size={15} color="#64748b" />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Ürün ara…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", color: "#1a1d2e", outline: "none" }} />
+        {q && <button onClick={() => setQ("")} style={{ background: "none", border: "none", color: "#9ca3af", cursor: "pointer" }}><X size={15} /></button>}
+      </div>
+
+      {loading ? <p style={{ color: "#94a3b8" }}>Yükleniyor…</p> : list.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px 20px", color: "#94a3b8" }}>
+          <FileText size={36} color="#cbd5e1" style={{ marginBottom: "10px" }} />
+          <p style={{ fontSize: "14px", margin: 0 }}>{q ? "Aramaya uygun ürün yok." : "Henüz ürün yok. \"Yeni Ürün\" ile başlayın."}</p>
+        </div>
+      ) : (
+        <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "13px", overflow: "hidden" }}>
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
+              <thead><tr style={{ background: "#f8fafc" }}>
+                {["Ürün", "Kod", "Birim Fiyat", "KDV", "Birim", ""].map((h, i) => (
+                  <th key={i} style={{ padding: "12px 16px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", textAlign: i === 2 ? "right" : "left", whiteSpace: "nowrap" }}>{h}</th>
+                ))}
+              </tr></thead>
+              <tbody>
+                {list.map(p => (
+                  <tr key={p.id} onClick={() => setModal(p)} style={{ borderTop: "1px solid #f0f2f8", cursor: "pointer" }}
+                    onMouseEnter={e => (e.currentTarget.style.background = "#f8faff")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{p.name}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b" }}>{p.code || "—"}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#15803d", textAlign: "right", whiteSpace: "nowrap" }}>{money(p.unit_price, p.currency)}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b" }}>%{p.kdv_rate}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b" }}>{p.unit}</td>
+                    <td style={{ padding: "12px 16px", whiteSpace: "nowrap", textAlign: "right" }}>
+                      <button onClick={e => { e.stopPropagation(); setModal(p); }} title="Düzenle" style={{ background: "#eff6ff", border: "1px solid #bfdbfe", color: "#0052ff", borderRadius: "7px", padding: "5px 7px", cursor: "pointer", marginRight: "5px" }}><Pencil size={13} /></button>
+                      <button onClick={e => { e.stopPropagation(); del(p.id); }} title="Sil" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "7px", padding: "5px 7px", cursor: "pointer" }}><Trash2 size={13} /></button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {modal && <NewProductModal currency={defaultCurrency} product={modal === "new" ? undefined : modal} onClose={() => setModal(null)} onSaved={() => { setModal(null); load(q.trim()); }} />}
+    </div>
+  );
+}
+
 /* ── Fiyat Geçmişi Modalı ── */
 function HistoryModal({ target, onClose }: { target: { product_id?: string | null; name: string }; onClose: () => void }) {
   const [rows, setRows] = useState<{ quote_no: string; customer_name: string; quote_date: string; unit_price: number; quantity: number; discount: number; currency: string }[]>([]);
@@ -591,15 +708,16 @@ function HistoryModal({ target, onClose }: { target: { product_id?: string | nul
   );
 }
 
-/* ── Yeni Ürün Modalı ── */
-function NewProductModal({ currency, onClose, onSaved }: { currency: string; onClose: () => void; onSaved: (p: Product) => void }) {
-  const [name, setName] = useState("");
-  const [code, setCode] = useState("");
-  const [price, setPrice] = useState("");
-  const [cur, setCur] = useState(currency);
-  const [kdv, setKdv] = useState("20");
-  const [unit, setUnit] = useState("Adet");
+/* ── Yeni/Düzenle Ürün Modalı ── */
+function NewProductModal({ currency, product, onClose, onSaved }: { currency: string; product?: Product; onClose: () => void; onSaved: (p: Product) => void }) {
+  const [name, setName] = useState(product?.name || "");
+  const [code, setCode] = useState(product?.code || "");
+  const [price, setPrice] = useState(product ? String(product.unit_price ?? "") : "");
+  const [cur, setCur] = useState(product?.currency || currency);
+  const [kdv, setKdv] = useState(product ? String(product.kdv_rate ?? 20) : "20");
+  const [unit, setUnit] = useState(product?.unit || "Adet");
   const [saving, setSaving] = useState(false);
+  const isEdit = !!product?.id;
 
   const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const };
   const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", display: "block", marginBottom: "6px", textTransform: "uppercase" as const, letterSpacing: ".3px" };
@@ -607,7 +725,11 @@ function NewProductModal({ currency, onClose, onSaved }: { currency: string; onC
   async function save() {
     if (!name.trim()) { alert("Ürün adı gerekli"); return; }
     setSaving(true);
-    const r = await fetch("/api/admin/products", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, code, unit_price: price ? Number(price) : 0, currency: cur, kdv_rate: kdv ? Number(kdv) : 20, unit }) });
+    const payload = { name, code, unit_price: price ? Number(price) : 0, currency: cur, kdv_rate: kdv ? Number(kdv) : 20, unit };
+    const r = await fetch("/api/admin/products", {
+      method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(isEdit ? { id: product!.id, ...payload } : payload),
+    });
     setSaving(false);
     if (r.ok) onSaved(await r.json());
     else alert("Kaydedilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
@@ -618,11 +740,11 @@ function NewProductModal({ currency, onClose, onSaved }: { currency: string; onC
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
       <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "460px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px", background: "linear-gradient(135deg,#16a34a,#22c55e)" }}>
-          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "7px" }}>🛒 Yeni Ürün Kaydı</h3>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "7px" }}>🛒 {isEdit ? "Ürün Düzenle" : "Yeni Ürün Kaydı"}</h3>
           <button onClick={onClose} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
         </div>
         <div style={{ padding: "22px" }}>
-        <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 16px", lineHeight: 1.5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 12px" }}>Ürün kataloğa eklenir, sonraki tekliflerde aratıp seçebilirsiniz. Detayları sonra düzenleyebilirsiniz.</p>
+        {!isEdit && <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 16px", lineHeight: 1.5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 12px" }}>Ürün kataloğa eklenir, sonraki tekliflerde aratıp seçebilirsiniz. Detayları sonra düzenleyebilirsiniz.</p>}
         <div style={{ marginBottom: "12px" }}><label style={lbl}>Ürün Adı *</label><input value={name} onChange={e => setName(e.target.value)} autoFocus placeholder="ör. Viewsonic 32 Monitör" style={inp} /></div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
           <div><label style={lbl}>Ürün Kodu</label><input value={code} onChange={e => setCode(e.target.value)} placeholder="opsiyonel" style={inp} /></div>
