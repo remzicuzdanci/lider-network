@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import Turnstile, { TURNSTILE_ENABLED } from "@/components/Turnstile";
 
 export default function LoginForm() {
   const router = useRouter();
@@ -10,17 +11,20 @@ export default function LoginForm() {
   const [password, setPassword] = useState("");
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
+  const [captcha, setCaptcha]   = useState("");
   const [focusedField, setFocusedField] = useState<"email"|"password"|null>(null);
+  const onToken = useCallback((t: string) => setCaptcha(t), []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (TURNSTILE_ENABLED && !captcha) { setError("Lütfen robot doğrulamasını tamamlayın."); return; }
     setLoading(true);
     setError("");
     try {
       const res  = await fetch("/api/admin/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim(), password }),
+        body: JSON.stringify({ email: email.trim(), password, turnstileToken: captcha }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -245,10 +249,13 @@ export default function LoginForm() {
               )}
             </div>
 
+            {/* Robot doğrulama (Cloudflare Turnstile) */}
+            <Turnstile onToken={onToken} />
+
             {/* Buton */}
             <button
               type="submit"
-              disabled={loading || !password || !email}
+              disabled={loading || !password || !email || (TURNSTILE_ENABLED && !captcha)}
               style={{
                 width: "100%",
                 padding: "14px",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,6 +8,7 @@ import { useLocale } from "next-intl";
 import { createSupabaseBrowser } from "@/lib/supabase-browser";
 import { useDestekPaths } from "@/lib/destek-path";
 import { Eye, EyeOff, LogIn, AlertCircle, Clock } from "lucide-react";
+import Turnstile, { TURNSTILE_ENABLED } from "@/components/Turnstile";
 
 export default function GirisClient() {
   const router = useRouter();
@@ -19,13 +20,16 @@ export default function GirisClient() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [pending, setPending]   = useState(false);
+  const [captcha, setCaptcha]   = useState("");
+  const onToken = useCallback((t: string) => setCaptcha(t), []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (TURNSTILE_ENABLED && !captcha) { setError("Lütfen robot doğrulamasını tamamlayın."); return; }
     setLoading(true); setError(""); setPending(false);
 
     const sb = createSupabaseBrowser();
-    const { data, error: authErr } = await sb.auth.signInWithPassword({ email, password });
+    const { data, error: authErr } = await sb.auth.signInWithPassword({ email, password, options: TURNSTILE_ENABLED ? { captchaToken: captcha } : undefined });
 
     if (authErr) {
       setError(authErr.message.includes("Invalid login") ? "E-posta veya şifre hatalı." : authErr.message);
@@ -151,7 +155,9 @@ export default function GirisClient() {
               </div>
             </div>
 
-            <button type="submit" disabled={loading || !email || !password}
+            <Turnstile onToken={onToken} />
+
+            <button type="submit" disabled={loading || !email || !password || (TURNSTILE_ENABLED && !captcha)}
               style={{
                 width: "100%", padding: "13px",
                 background: loading || !email || !password ? "#d1d5db" : "#0052ff",

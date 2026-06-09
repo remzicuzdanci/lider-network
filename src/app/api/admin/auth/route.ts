@@ -9,6 +9,7 @@ import {
   COOKIE_NAME,
 } from "@/lib/admin-auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
+import { verifyTurnstile } from "@/lib/turnstile";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -39,9 +40,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { email, password } = body as { email?: string; password?: string };
+    const { email, password, turnstileToken } = body as { email?: string; password?: string; turnstileToken?: string };
 
     if (!password) return NextResponse.json({ error: "Şifre gerekli" }, { status: 400 });
+
+    // ── Robot doğrulaması (Cloudflare Turnstile) — yapılandırılmamışsa atlanır ──
+    const human = await verifyTurnstile(turnstileToken, ip);
+    if (!human) {
+      return NextResponse.json({ error: "Robot doğrulaması başarısız. Lütfen tekrar deneyin." }, { status: 400 });
+    }
 
     // ── Named staff login ──────────────────────────────────────────────────────
     if (email && email.trim()) {
