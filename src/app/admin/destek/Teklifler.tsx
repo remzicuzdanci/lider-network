@@ -208,10 +208,10 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   <div class="band">
     <table style="width:100%;border:0;border-collapse:collapse;"><tr>
       <td style="border:0;vertical-align:middle;">
-        <span style="display:inline-block;background:#ffffff;border-radius:12px;padding:12px 18px;box-shadow:0 4px 14px rgba(0,0,0,.18);">
-          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:66px;width:auto;display:block;" />
+        <span style="display:inline-block;background:#ffffff;border-radius:14px;padding:16px 26px;box-shadow:0 6px 18px rgba(0,0,0,.22);">
+          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:92px;width:auto;display:block;" />
         </span>
-        <div style="color:#cdd9ff;font-size:12px;margin-top:13px;font-weight:600;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+        <div style="color:#eaf0ff;font-size:13px;margin-top:15px;font-weight:700;letter-spacing:.3px;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
       </td>
       <td style="border:0;vertical-align:middle;text-align:right;">
         <div class="doctitle">FİYAT TEKLİFİ</div>
@@ -269,11 +269,30 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 
     ${desc ? `<div style="margin-top:20px;padding:15px 17px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.6;white-space:pre-wrap;">${desc}</div>` : ""}
 
-    <div style="font-size:12px;color:#374151;margin-top:34px;line-height:1.6;">
+    <div style="font-size:12px;color:#374151;margin-top:30px;line-height:1.6;">
       Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
-      <div style="margin-top:20px;">Saygılarımızla,</div>
-      <div style="margin-top:3px;font-weight:700;color:#0f172a;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+      <div style="margin-top:16px;">Saygılarımızla,</div>
     </div>
+
+    <!-- İmza / kaşe alanları -->
+    <table style="width:100%;border:0;border-collapse:collapse;margin-top:48px;"><tr>
+      <td style="border:0;width:50%;padding-right:28px;vertical-align:top;">
+        <div style="height:58px;"></div>
+        <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151;">
+          <div style="font-weight:800;color:#0f172a;">Teklifi Veren</div>
+          <div style="margin-top:2px;">${preparedBy || "Lider Network"}</div>
+          <div style="color:#94a3b8;font-size:11px;margin-top:3px;">Kaşe / İmza</div>
+        </div>
+      </td>
+      <td style="border:0;width:50%;padding-left:28px;vertical-align:top;">
+        <div style="height:58px;"></div>
+        <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151;">
+          <div style="font-weight:800;color:#0f172a;">Müşteri Onayı</div>
+          <div style="margin-top:2px;">${c?.name || customerName(companyId)}</div>
+          <div style="color:#94a3b8;font-size:11px;margin-top:3px;">Kaşe / İmza / Tarih</div>
+        </div>
+      </td>
+    </tr></table>
   </div>
 
   <div class="footer">
