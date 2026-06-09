@@ -50,6 +50,10 @@ export interface Company {
   sector: string | null;
   notes: string | null;
   active: boolean;
+  customer_type?: string | null;
+  address?: string | null;
+  tax_office?: string | null;
+  tax_no?: string | null;
   created_at: string;
 }
 

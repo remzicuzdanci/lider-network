@@ -64,7 +64,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "staff" | "reports" | "isplan" | "notes" | "quotes";
+type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
@@ -262,10 +262,10 @@ export default function AdminDashboard() {
   }, [ntCompanyId]);
 
   useEffect(() => { if (tab === "customers") fetchCustomers(); }, [tab, fetchCustomers]);
-  useEffect(() => { if (tab === "companies") fetchCompanies(); }, [tab, fetchCompanies]);
+  useEffect(() => { if (tab === "companies" || tab === "prospects") fetchCompanies(); }, [tab, fetchCompanies]);
   // Şirket başına teklif sayısı (Şirketler ve Teklifler sekmesinde gösterilir)
   useEffect(() => {
-    if (tab !== "companies" && tab !== "quotes") return;
+    if (tab !== "companies" && tab !== "prospects" && tab !== "quotes") return;
     let active = true;
     fetch("/api/admin/quotes").then(r => r.ok ? r.json() : { quotes: [] }).then(d => {
       if (!active) return;
@@ -513,6 +513,11 @@ export default function AdminDashboard() {
   const pending = customers.filter(c=>!c.approved).length;
 
   const activeCompanies = companies.filter(c=>c.active);
+  const contractedCompanies = activeCompanies.filter(c => (c.customer_type || "contracted") !== "external");
+  const externalCompanies = activeCompanies.filter(c => c.customer_type === "external");
+  const isProspect = tab === "prospects";
+  const companyList = isProspect ? externalCompanies : contractedCompanies;
+  const newCompanyType = isProspect ? "external" : "contracted";
 
   // ── Password change ────────────────────────────────────────────────────────
   async function changePassword() {
@@ -717,7 +722,8 @@ export default function AdminDashboard() {
           <SideSection label="Yönetim" />
           <NavItem icon={<TicketCheck size={15} />} label="Talepler" active={tab==="tickets"} badge={total} badgeColor="#0052ff" onClick={() => setTab("tickets")} />
           <NavItem icon={<Users size={15} />} label="Müşteriler" active={tab==="customers"} badge={pending} badgeColor="#ef4444" onClick={() => setTab("customers")} />
-          <NavItem icon={<Building2 size={15} />} label="Şirketler" active={tab==="companies"} badge={activeCompanies.length || undefined} badgeColor="#6b7280" onClick={() => setTab("companies")} />
+          <NavItem icon={<Building2 size={15} />} label="Sözleşmeli Şirketler" active={tab==="companies"} badge={contractedCompanies.length || undefined} badgeColor="#6b7280" onClick={() => setTab("companies")} />
+          <NavItem icon={<Users size={15} />} label="Dış Müşteriler" active={tab==="prospects"} badge={externalCompanies.length || undefined} badgeColor="#7c3aed" onClick={() => setTab("prospects")} />
 
           {sessionRole === "super_admin" && (
             <NavItem icon={<UserCog size={15} />} label="Personel" active={tab==="staff"} onClick={() => setTab("staff")} />
@@ -809,10 +815,10 @@ export default function AdminDashboard() {
               color: "#1a1d2e",
               margin: "0 0 3px"
             }}>
-              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : "Raporlar"}
+              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
-              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${activeCompanies.length} aktif şirket` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
+              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
@@ -831,16 +837,16 @@ export default function AdminDashboard() {
               </>
             )}
             {tab==="companies" && (
-              <>
-                <button onClick={() => sendMonthlyToCompany()}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                  📧 Tüm Şirketlere Aylık Rapor
-                </button>
-                <button onClick={() => setCompModal({})}
-                  style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
-                  <Plus size={15} /> Şirket Ekle
-                </button>
-              </>
+              <button onClick={() => sendMonthlyToCompany()}
+                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 14px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "10px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                📧 Tüm Şirketlere Aylık Rapor
+              </button>
+            )}
+            {(tab==="companies" || tab==="prospects") && (
+              <button onClick={() => setCompModal({ customer_type: newCompanyType } as Partial<Company>)}
+                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: isProspect ? "#7c3aed" : "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                <Plus size={15} /> {isProspect ? "Dış Müşteri Ekle" : "Şirket Ekle"}
+              </button>
             )}
             <button onClick={() => { fetchTickets(); fetchStats(); fetchAllTickets(); if(tab==="customers") fetchCustomers(); if(tab==="companies") fetchCompanies(); if(tab==="staff") fetchStaff(); }}
               style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
@@ -1047,20 +1053,20 @@ export default function AdminDashboard() {
         )}
 
         {/* ══════════════════════════ COMPANIES TAB */}
-        {tab === "companies" && (
+        {(tab === "companies" || tab === "prospects") && (
           <>
             {compLoading ? <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
-            : activeCompanies.length === 0 ? (
+            : companyList.length === 0 ? (
               <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "56px", textAlign: "center" }}>
                 <Building2 size={40} color="#e5e7ef" style={{ marginBottom: "12px" }} />
-                <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 16px" }}>Henüz sözleşmeli şirket yok.</p>
-                <button onClick={() => setCompModal({})} style={{ padding: "10px 20px", background: "#0052ff", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>
-                  İlk Şirketi Ekle
+                <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 16px" }}>{isProspect ? "Henüz dış müşteri yok. Teklif isteyenleri buraya ekleyin." : "Henüz sözleşmeli şirket yok."}</p>
+                <button onClick={() => setCompModal({ customer_type: newCompanyType } as Partial<Company>)} style={{ padding: "10px 20px", background: isProspect ? "#7c3aed" : "#0052ff", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>
+                  {isProspect ? "İlk Dış Müşteriyi Ekle" : "İlk Şirketi Ekle"}
                 </button>
               </div>
             ) : (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(320px,1fr))", gap: "14px" }}>
-                {activeCompanies.map(c => (
+                {companyList.map(c => (
                   <div key={c.id} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 22px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "14px" }}>
                       <div>
@@ -1472,7 +1478,7 @@ export default function AdminDashboard() {
                 <label style={{ fontSize: "11px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".6px", display: "block", marginBottom: "6px" }}>🏢 Şirket *</label>
                 <select value={ntCompanyId} onChange={e => setNtCompanyId(e.target.value)} style={inpS}>
                   <option value="">— Şirket seçin —</option>
-                  {activeCompanies.map(c => <option key={c.id} value={c.id}>{c.name} — {c.contact_name}</option>)}
+                  {contractedCompanies.map(c => <option key={c.id} value={c.id}>{c.name} — {c.contact_name}</option>)}
                 </select>
               </div>
 
@@ -1655,7 +1661,7 @@ export default function AdminDashboard() {
           onClick={e => { if (e.target === e.currentTarget) setCompModal(null); }}>
           <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "520px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 24px", borderBottom: "1px solid #e5e7ef" }}>
-              <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: "#1a1d2e" }}>{compModal.id ? "Şirket Düzenle" : "Yeni Şirket Ekle"}</h2>
+              <h2 style={{ margin: 0, fontSize: "17px", fontWeight: 800, color: "#1a1d2e" }}>{compModal.customer_type === "external" ? (compModal.id ? "Dış Müşteri Düzenle" : "Yeni Dış Müşteri") : (compModal.id ? "Şirket Düzenle" : "Yeni Şirket Ekle")}</h2>
               <button onClick={() => setCompModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={20} /></button>
             </div>
             <div style={{ padding: "24px" }}>

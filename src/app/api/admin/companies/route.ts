@@ -13,6 +13,7 @@ const schema = z.object({
   address:       z.string().max(300).optional().nullable(),
   tax_office:    z.string().max(120).optional().nullable(),
   tax_no:        z.string().max(40).optional().nullable(),
+  customer_type: z.string().max(20).optional().nullable(),
 });
 
 // GET — list all companies
