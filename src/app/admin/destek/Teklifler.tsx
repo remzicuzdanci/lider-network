@@ -111,11 +111,17 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []);
     setSearch(""); setResults([]); setView("edit");
   }
-  // Bir teklifi YENİ teklif olarak kopyala (orijinal korunur). keepCustomer=false ise müşteri boşaltılır.
-  function copyQuote(q: Quote, keepCustomer: boolean) {
+  // Sonraki revize numarası: TKF-2026-0001 -> TKF-2026-0001-R2 -> -R3 ...
+  function nextRevisionNo(no?: string): string {
+    if (!no) return "";
+    const m = no.match(/^(.*)-R(\d+)$/);
+    return m ? `${m[1]}-R${Number(m[2]) + 1}` : `${no}-R2`;
+  }
+  // Bir teklifi YENİ teklif olarak kopyala. keepCustomer=false → müşteri boş; asRevision=true → revize no'su atanır.
+  function copyQuote(q: Quote, keepCustomer: boolean, asRevision = false) {
     setEditId(null);
     setCompanyId(keepCustomer ? (q.company_id || "") : "");
-    setQuoteNo(""); // kaydedince yeni teklif no üretilir
+    setQuoteNo(asRevision ? nextRevisionNo(q.quote_no) : ""); // revize ise -R no, değilse yeni otomatik no
     setQDate(today()); setValidUntil(""); setCurrency(q.currency || "TL");
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus("draft");
     setItems((q.items || []).map(it => ({ ...it }))); setSearch(""); setResults([]);
@@ -357,12 +363,16 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
           <button onClick={() => setCopySource(null)} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
         </div>
         <div style={{ padding: "22px" }}>
-          <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 18px", lineHeight: 1.55 }}>Teklif <strong>yeni bir teklif</strong> olarak kopyalanır — orijinal korunur ve <strong>yeni teklif no</strong> verilir.</p>
-          <button onClick={() => copyQuote(copySource, true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", marginBottom: "10px", borderRadius: "11px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
-            <span style={{ fontSize: "20px" }}>👥</span>
-            <span>Aynı Müşteri İçin<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Revize teklif — müşteri aynı kalır</span></span>
+          <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 18px", lineHeight: 1.55 }}>Orijinal teklif <strong>korunur</strong>. Nasıl kopyalansın?</p>
+          <button onClick={() => copyQuote(copySource, true, true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", marginBottom: "10px", borderRadius: "11px", border: "1.5px solid #fde68a", background: "#fffbeb", color: "#b45309", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+            <span style={{ fontSize: "20px" }}>📝</span>
+            <span>Revize Et<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Aynı müşteri — orijinalin yeni sürümü ({nextRevisionNo(copySource.quote_no)})</span></span>
           </button>
-          <button onClick={() => copyQuote(copySource, false)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", borderRadius: "11px", border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#0052ff", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+          <button onClick={() => copyQuote(copySource, true, false)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", marginBottom: "10px", borderRadius: "11px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+            <span style={{ fontSize: "20px" }}>📄</span>
+            <span>Yeni Teklif (Aynı Müşteri)<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>İçerik değişti — bağımsız yeni teklif, revize değil</span></span>
+          </button>
+          <button onClick={() => copyQuote(copySource, false, false)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", borderRadius: "11px", border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#0052ff", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
             <span style={{ fontSize: "20px" }}>🔄</span>
             <span>Başka Müşteri İçin<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Müşteri boş gelir, yenisini seçersin</span></span>
           </button>
@@ -474,7 +484,10 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                     return (
                       <tr key={q.id} onClick={() => openEdit(q)} style={{ borderTop: "1px solid #f0f2f8", cursor: "pointer" }}
                         onMouseEnter={e => (e.currentTarget.style.background = "#f8faff")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                        <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#0052ff", whiteSpace: "nowrap" }}>{q.quote_no}</td>
+                        <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#0052ff", whiteSpace: "nowrap" }}>
+                          {q.quote_no}
+                          {/-R\d+$/.test(q.quote_no || "") && <span style={{ marginLeft: "6px", fontSize: "10px", fontWeight: 800, padding: "2px 6px", borderRadius: "5px", background: "#fffbeb", color: "#b45309", border: "1px solid #fde68a" }}>REVİZE</span>}
+                        </td>
                         <td style={{ padding: "10px 16px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "8px", background: avatarBg(cname), color: "#fff", fontSize: "11px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials(cname)}</span>
