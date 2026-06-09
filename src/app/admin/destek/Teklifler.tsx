@@ -8,7 +8,13 @@ interface Company {
   contact_name?: string | null; contact_email?: string | null; phone?: string | null;
   address?: string | null; tax_office?: string | null; tax_no?: string | null;
 }
-interface Product { id: string; name: string; code?: string; unit_price: number; currency: string; kdv_rate: number; unit: string; }
+interface Product { id: string; name: string; code?: string; unit_price: number; currency: string; kdv_rate: number; unit: string; type?: string; }
+
+const PRODUCT_TYPES: { id: string; label: string }[] = [
+  { id: "stoklu", label: "Stoklu Ürün" },
+  { id: "stoksuz", label: "Stoksuz Ürün" },
+  { id: "hizmet", label: "Hizmet" },
+];
 interface Item { product_id?: string | null; description: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit: string; }
 interface Quote {
   id: string; quote_no: string; company_id?: string; customer_name?: string;
@@ -638,7 +644,12 @@ function ProductsView({ defaultCurrency }: { defaultCurrency: string }) {
                 {list.map(p => (
                   <tr key={p.id} onClick={() => setModal(p)} style={{ borderTop: "1px solid #f0f2f8", cursor: "pointer" }}
                     onMouseEnter={e => (e.currentTarget.style.background = "#f8faff")} onMouseLeave={e => (e.currentTarget.style.background = "transparent")}>
-                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{p.name}</td>
+                    <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+                        {p.name}
+                        {p.type && <span style={{ fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "5px", background: p.type === "hizmet" ? "#f5f3ff" : "#eff6ff", color: p.type === "hizmet" ? "#7c3aed" : "#0052ff" }}>{PRODUCT_TYPES.find(t => t.id === p.type)?.label || p.type}</span>}
+                      </div>
+                    </td>
                     <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b" }}>{p.code || "—"}</td>
                     <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#15803d", textAlign: "right", whiteSpace: "nowrap" }}>{money(p.unit_price, p.currency)}</td>
                     <td style={{ padding: "12px 16px", fontSize: "12px", color: "#64748b" }}>%{p.kdv_rate}</td>
@@ -716,6 +727,7 @@ function NewProductModal({ currency, product, onClose, onSaved }: { currency: st
   const [cur, setCur] = useState(product?.currency || currency);
   const [kdv, setKdv] = useState(product ? String(product.kdv_rate ?? 20) : "20");
   const [unit, setUnit] = useState(product?.unit || "Adet");
+  const [type, setType] = useState(product?.type || "stoklu");
   const [saving, setSaving] = useState(false);
   const isEdit = !!product?.id;
 
@@ -725,7 +737,7 @@ function NewProductModal({ currency, product, onClose, onSaved }: { currency: st
   async function save() {
     if (!name.trim()) { alert("Ürün adı gerekli"); return; }
     setSaving(true);
-    const payload = { name, code, unit_price: price ? Number(price) : 0, currency: cur, kdv_rate: kdv ? Number(kdv) : 20, unit };
+    const payload = { name, code, unit_price: price ? Number(price) : 0, currency: cur, kdv_rate: kdv ? Number(kdv) : 20, unit, type };
     const r = await fetch("/api/admin/products", {
       method: isEdit ? "PATCH" : "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(isEdit ? { id: product!.id, ...payload } : payload),
@@ -745,7 +757,10 @@ function NewProductModal({ currency, product, onClose, onSaved }: { currency: st
         </div>
         <div style={{ padding: "22px" }}>
         {!isEdit && <p style={{ fontSize: "12px", color: "#64748b", margin: "0 0 16px", lineHeight: 1.5, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 12px" }}>Ürün kataloğa eklenir, sonraki tekliflerde aratıp seçebilirsiniz. Detayları sonra düzenleyebilirsiniz.</p>}
-        <div style={{ marginBottom: "12px" }}><label style={lbl}>Ürün Adı *</label><input value={name} onChange={e => setName(e.target.value)} autoFocus placeholder="ör. Viewsonic 32 Monitör" style={inp} /></div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 150px", gap: "10px", marginBottom: "12px" }}>
+          <div><label style={lbl}>Ürün Adı *</label><input value={name} onChange={e => setName(e.target.value)} autoFocus placeholder="ör. Viewsonic 32 Monitör" style={inp} /></div>
+          <div><label style={lbl}>Ürün Tipi</label><select value={type} onChange={e => setType(e.target.value)} style={inp}>{PRODUCT_TYPES.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}</select></div>
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
           <div><label style={lbl}>Ürün Kodu</label><input value={code} onChange={e => setCode(e.target.value)} placeholder="opsiyonel" style={inp} /></div>
           <div><label style={lbl}>Birim</label><input value={unit} onChange={e => setUnit(e.target.value)} style={inp} /></div>
