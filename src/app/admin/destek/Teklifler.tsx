@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil } from "lucide-react";
+import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy } from "lucide-react";
 
 interface Company {
   id: string; name: string;
@@ -108,6 +108,18 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     setQDate(q.quote_date || today()); setValidUntil(q.valid_until || ""); setCurrency(q.currency || "TL");
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []);
     setSearch(""); setResults([]); setView("edit");
+  }
+  // Bir teklifi YENİ teklif olarak kopyala (orijinal korunur)
+  function copyQuote(q: Quote) {
+    setEditId(null); setCompanyId(q.company_id || ""); setQuoteNo("");
+    setQDate(today()); setValidUntil(""); setCurrency(q.currency || "TL");
+    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus("draft");
+    setItems((q.items || []).map(it => ({ ...it }))); setSearch(""); setResults([]); setView("edit");
+  }
+  // Editördeki mevcut teklifi kopyaya çevir (kaydedince yeni teklif olur)
+  function makeCopy() {
+    setEditId(null); setQuoteNo(""); setStatus("draft"); setQDate(today()); setValidUntil("");
+    alert("Bu teklifin kopyası oluşturuldu.\nDüzenleyip 'Teklifi Kaydet' deyince YENİ bir teklif olarak kaydedilir; orijinal teklif korunur.\nBaşka müşteri için kopyalamak istiyorsanız 'Müşteri' alanını değiştirin.");
   }
 
   function addProduct(p: Product) {
@@ -448,6 +460,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                         <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#1a1d2e", textAlign: "right", whiteSpace: "nowrap" }}>{money(q.grand_total, q.currency)}</td>
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}><span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 11px", borderRadius: "6px", background: st.bg, color: st.color }}>{st.label}</span></td>
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap", textAlign: "right" }}>
+                          <button onClick={e => { e.stopPropagation(); copyQuote(q); }} title="Kopyala (yeni teklif olarak)" style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#b45309", borderRadius: "7px", padding: "5px 7px", cursor: "pointer", marginRight: "5px" }}><Copy size={13} /></button>
                           <button onClick={e => { e.stopPropagation(); del(q.id); }} title="Sil" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "7px", padding: "5px 7px", cursor: "pointer" }}><Trash2 size={13} /></button>
                         </td>
                       </tr>
@@ -469,6 +482,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px", alignItems: "center" }}>
         <button onClick={() => { setView("list"); resetForm(); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 14px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}><ArrowLeft size={15} /> Geri</button>
         {editId && <span style={{ fontSize: "12px", fontWeight: 700, padding: "5px 11px", borderRadius: "7px", background: (STATUS[status] || STATUS.draft).bg, color: (STATUS[status] || STATUS.draft).color }}>{(STATUS[status] || STATUS.draft).label}</span>}
+        {editId && <button onClick={makeCopy} title="Bu teklifi yeni bir teklif olarak kopyala (orijinal korunur)" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fde68a", background: "#fffbeb", color: "#b45309", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Copy size={14} /> Kopyala</button>}
         <div style={{ flex: 1 }} />
         <button onClick={() => quickStatus("accepted")} title="Teklifi kabul edildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✓ Kabul</button>
         <button onClick={() => quickStatus("rejected")} title="Teklifi reddedildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✕ Red</button>
