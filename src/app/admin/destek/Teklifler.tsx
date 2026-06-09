@@ -69,6 +69,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 
   // fiyat geçmişi
   const [histFor, setHistFor] = useState<{ product_id?: string | null; name: string } | null>(null);
+  // kopyalama seçimi (aynı/başka müşteri)
+  const [copySource, setCopySource] = useState<Quote | null>(null);
 
   const loadQuotes = useCallback(async () => {
     setLoading(true);
@@ -109,17 +111,19 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []);
     setSearch(""); setResults([]); setView("edit");
   }
-  // Bir teklifi YENİ teklif olarak kopyala (orijinal korunur)
-  function copyQuote(q: Quote) {
-    setEditId(null); setCompanyId(q.company_id || ""); setQuoteNo("");
+  // Bir teklifi YENİ teklif olarak kopyala (orijinal korunur). keepCustomer=false ise müşteri boşaltılır.
+  function copyQuote(q: Quote, keepCustomer: boolean) {
+    setEditId(null);
+    setCompanyId(keepCustomer ? (q.company_id || "") : "");
+    setQuoteNo(""); // kaydedince yeni teklif no üretilir
     setQDate(today()); setValidUntil(""); setCurrency(q.currency || "TL");
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus("draft");
-    setItems((q.items || []).map(it => ({ ...it }))); setSearch(""); setResults([]); setView("edit");
+    setItems((q.items || []).map(it => ({ ...it }))); setSearch(""); setResults([]);
+    setCopySource(null); setView("edit");
   }
-  // Editördeki mevcut teklifi kopyaya çevir (kaydedince yeni teklif olur)
-  function makeCopy() {
-    setEditId(null); setQuoteNo(""); setStatus("draft"); setQDate(today()); setValidUntil("");
-    alert("Bu teklifin kopyası oluşturuldu.\nDüzenleyip 'Teklifi Kaydet' deyince YENİ bir teklif olarak kaydedilir; orijinal teklif korunur.\nBaşka müşteri için kopyalamak istiyorsanız 'Müşteri' alanını değiştirin.");
+  // Editördeki mevcut formdan bir kaynak teklif kur (kopyalama seçimi için)
+  function currentAsQuote(): Quote {
+    return { id: "", quote_no: quoteNo, company_id: companyId, customer_name: companies.find(c => c.id === companyId)?.name, quote_date: qDate, valid_until: validUntil, currency, exchange_rate: rate ? Number(rate) : 1, description: desc, items, subtotal: 0, discount_total: 0, net_total: 0, kdv_total: 0, grand_total: 0, status, created_by: preparedBy, created_at: "" };
   }
 
   function addProduct(p: Product) {
@@ -343,6 +347,30 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
   const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", textTransform: "uppercase" as const, letterSpacing: ".4px", display: "block", marginBottom: "6px" };
 
+  // Kopyalama seçim modalı (hem liste hem editör görünümünde gösterilir)
+  const copyModal = copySource ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.45)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+      onClick={e => { if (e.target === e.currentTarget) setCopySource(null); }}>
+      <div style={{ background: "#fff", borderRadius: "16px", width: "100%", maxWidth: "420px", boxShadow: "0 20px 60px rgba(0,0,0,.25)", overflow: "hidden" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 22px", background: "linear-gradient(135deg,#b45309,#d97706)" }}>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#fff", display: "flex", alignItems: "center", gap: "7px" }}><Copy size={16} /> Teklifi Kopyala</h3>
+          <button onClick={() => setCopySource(null)} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        </div>
+        <div style={{ padding: "22px" }}>
+          <p style={{ fontSize: "13px", color: "#64748b", margin: "0 0 18px", lineHeight: 1.55 }}>Teklif <strong>yeni bir teklif</strong> olarak kopyalanır — orijinal korunur ve <strong>yeni teklif no</strong> verilir.</p>
+          <button onClick={() => copyQuote(copySource, true)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", marginBottom: "10px", borderRadius: "11px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+            <span style={{ fontSize: "20px" }}>👥</span>
+            <span>Aynı Müşteri İçin<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Revize teklif — müşteri aynı kalır</span></span>
+          </button>
+          <button onClick={() => copyQuote(copySource, false)} style={{ width: "100%", display: "flex", alignItems: "center", gap: "10px", padding: "13px 16px", borderRadius: "11px", border: "1.5px solid #bfdbfe", background: "#eff6ff", color: "#0052ff", fontSize: "14px", fontWeight: 700, cursor: "pointer", textAlign: "left" }}>
+            <span style={{ fontSize: "20px" }}>🔄</span>
+            <span>Başka Müşteri İçin<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Müşteri boş gelir, yenisini seçersin</span></span>
+          </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
   /* ── LİSTE ── */
   if (view === "list") {
     const s = listSearch.trim().toLowerCase();
@@ -460,7 +488,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                         <td style={{ padding: "12px 16px", fontSize: "13px", fontWeight: 800, color: "#1a1d2e", textAlign: "right", whiteSpace: "nowrap" }}>{money(q.grand_total, q.currency)}</td>
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap" }}><span style={{ fontSize: "11px", fontWeight: 700, padding: "4px 11px", borderRadius: "6px", background: st.bg, color: st.color }}>{st.label}</span></td>
                         <td style={{ padding: "12px 16px", whiteSpace: "nowrap", textAlign: "right" }}>
-                          <button onClick={e => { e.stopPropagation(); copyQuote(q); }} title="Kopyala (yeni teklif olarak)" style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#b45309", borderRadius: "7px", padding: "5px 7px", cursor: "pointer", marginRight: "5px" }}><Copy size={13} /></button>
+                          <button onClick={e => { e.stopPropagation(); setCopySource(q); }} title="Kopyala (yeni teklif olarak)" style={{ background: "#fffbeb", border: "1px solid #fde68a", color: "#b45309", borderRadius: "7px", padding: "5px 7px", cursor: "pointer", marginRight: "5px" }}><Copy size={13} /></button>
                           <button onClick={e => { e.stopPropagation(); del(q.id); }} title="Sil" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "7px", padding: "5px 7px", cursor: "pointer" }}><Trash2 size={13} /></button>
                         </td>
                       </tr>
@@ -471,6 +499,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             </div>
           </div>
         )}
+        {copyModal}
       </div>
     );
   }
@@ -482,7 +511,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", marginBottom: "18px", alignItems: "center" }}>
         <button onClick={() => { setView("list"); resetForm(); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 14px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}><ArrowLeft size={15} /> Geri</button>
         {editId && <span style={{ fontSize: "12px", fontWeight: 700, padding: "5px 11px", borderRadius: "7px", background: (STATUS[status] || STATUS.draft).bg, color: (STATUS[status] || STATUS.draft).color }}>{(STATUS[status] || STATUS.draft).label}</span>}
-        {editId && <button onClick={makeCopy} title="Bu teklifi yeni bir teklif olarak kopyala (orijinal korunur)" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fde68a", background: "#fffbeb", color: "#b45309", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Copy size={14} /> Kopyala</button>}
+        {editId && <button onClick={() => setCopySource(currentAsQuote())} title="Bu teklifi yeni bir teklif olarak kopyala (orijinal korunur)" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fde68a", background: "#fffbeb", color: "#b45309", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Copy size={14} /> Kopyala</button>}
         <div style={{ flex: 1 }} />
         <button onClick={() => quickStatus("accepted")} title="Teklifi kabul edildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✓ Kabul</button>
         <button onClick={() => quickStatus("rejected")} title="Teklifi reddedildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✕ Red</button>
@@ -616,6 +645,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 
       {newProd && <NewProductModal currency={currency} onClose={() => setNewProd(false)} onSaved={(p) => { addProduct(p); setNewProd(false); }} />}
       {histFor && <HistoryModal target={histFor} onClose={() => setHistFor(null)} />}
+      {copyModal}
     </div>
   );
 }
