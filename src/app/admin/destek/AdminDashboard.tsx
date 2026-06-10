@@ -8,11 +8,12 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote, Trash2, FileText,
+  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote, Trash2, FileText, Shield,
 } from "lucide-react";
 import IsPlani from "./IsPlani";
 import PersonelNotlari from "./PersonelNotlari";
 import Teklifler from "./Teklifler";
+import FortigateAssist from "./FortigateAssist";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -64,7 +65,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes";
+type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
@@ -825,6 +826,7 @@ export default function AdminDashboard() {
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
           <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
           <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
+          <NavItem icon={<Shield size={15} />} label="FortiGate Destek" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
           <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
 
           {stats && (
@@ -909,7 +911,7 @@ export default function AdminDashboard() {
               color: "#1a1d2e",
               margin: "0 0 3px"
             }}>
-              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : "Raporlar"}
+              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
               {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
@@ -1540,6 +1542,12 @@ export default function AdminDashboard() {
         {tab === "quotes" && (
           <div style={{ padding: "24px 28px" }}>
             <Teklifler companies={companies} currentUserName={sessionName} staff={staff.map(s => s.name)} initialCompanyId={quotesFilterCompany} />
+          </div>
+        )}
+
+        {tab === "fortigate" && (
+          <div style={{ padding: "24px 28px" }}>
+            <FortigateAssist />
           </div>
         )}
       </main>
