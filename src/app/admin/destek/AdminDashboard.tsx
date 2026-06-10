@@ -987,7 +987,7 @@ export default function AdminDashboard() {
         {tab === "tickets" && (
           <>
             {stats && (
-              <div style={{ display: "flex", gap: "12px", marginBottom: "20px", flexWrap: "wrap" }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(auto-fit, minmax(150px, 1fr))", gap: "12px", marginBottom: "20px" }}>
                 <StatCard label="Açık Talepler"  value={stats.open}           color="#3b82f6" bg="#eff6ff" border="#bfdbfe" icon={<Clock size={18} color="#3b82f6" />} />
                 <StatCard label="İşlemde"         value={stats.in_progress}    color="#8b5cf6" bg="#f5f3ff" border="#ddd6fe" icon={<Activity size={18} color="#8b5cf6" />} />
                 <StatCard label="Bugün Çözüldü"   value={stats.resolved_today} color="#22c55e" bg="#f0fdf4" border="#bbf7d0" icon={<CheckCircle size={18} color="#22c55e" />} />
