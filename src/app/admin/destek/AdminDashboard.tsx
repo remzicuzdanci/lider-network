@@ -251,6 +251,17 @@ export default function AdminDashboard() {
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
   useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
+
+  // Otomatik tazeleme: 60 sn'de bir, sayfa görünürken ve modal açık değilken
+  // talep listesi + istatistikler + rozetler arka planda güncellenir (sayfa yenilenmez)
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      if (newTicketModal || compModal) return; // form açıkken bölme
+      fetchTickets(); fetchStats(); fetchAllTickets();
+    }, 60000);
+    return () => clearInterval(id);
+  }, [fetchTickets, fetchStats, fetchAllTickets, newTicketModal, compModal]);
   // Şirket seçilince o şirkete ait daha önce kullanılmış bildirim e-postalarını getir
   useEffect(() => {
     if (!ntCompanyId) { setNtCompanyEmails([]); return; }
