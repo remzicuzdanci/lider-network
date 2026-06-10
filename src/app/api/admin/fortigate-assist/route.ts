@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Anthropic from "@anthropic-ai/sdk";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
+import { supabase } from "@/lib/supabase";
 import { posts } from "@/data/blog";
 
 export const maxDuration = 60;
@@ -103,8 +104,33 @@ ${refsText}`;
       return NextResponse.json({ error: "AI yapılandırılmış yanıt vermedi" }, { status: 502 });
     }
 
+    const result = toolUse.input as { adimlar?: Array<{ baslik?: string; aciklama?: string; gui?: string; gorsel?: { url: string; title: string } }> };
+
+    // ── Her adıma en uygun ekran görüntüsünü eşleştir (kütüphaneden) ──
+    try {
+      const { data: shots } = await supabase
+        .from("fg_screenshots")
+        .select("title, tags, menu_path, image_url");
+      if (shots?.length && Array.isArray(result.adimlar)) {
+        const norm = (s: string) => (s || "").toLowerCase();
+        for (const adim of result.adimlar) {
+          const text = norm(`${adim.baslik || ""} ${adim.gui || ""} ${adim.aciklama || ""}`);
+          let best: { image_url: string; title: string } | null = null;
+          let bestScore = 0;
+          for (const sh of shots) {
+            const hay = norm(`${sh.title} ${sh.tags || ""} ${sh.menu_path || ""}`);
+            const words = [...new Set(hay.split(/[^a-z0-9çğıöşü]+/).filter(w => w.length >= 3))];
+            let score = 0;
+            for (const w of words) if (text.includes(w)) score++;
+            if (score > bestScore) { bestScore = score; best = sh; }
+          }
+          if (best && bestScore >= 1) adim.gorsel = { url: best.image_url, title: best.title };
+        }
+      }
+    } catch { /* görsel eşleştirme opsiyonel */ }
+
     return NextResponse.json({
-      ...(toolUse.input as object),
+      ...result,
       relatedPosts: refs.map(p => ({ slug: p.slug, title: p.title })),
     });
   } catch (e) {

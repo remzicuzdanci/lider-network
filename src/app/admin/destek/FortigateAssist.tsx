@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import { Shield, Sparkles, Copy, Check, AlertTriangle, Terminal, MousePointerClick, BookOpen } from "lucide-react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { Shield, Sparkles, Copy, Check, AlertTriangle, Terminal, MousePointerClick, BookOpen, Image as ImageIcon, Upload, Trash2, X, Search } from "lucide-react";
 
-interface Step { baslik: string; aciklama: string; gui?: string | null; cli?: string[] }
+interface Step { baslik: string; aciklama: string; gui?: string | null; cli?: string[]; gorsel?: { url: string; title: string } }
 interface Result {
   ozet: string; olasiSebepler: string[]; adimlar: Step[];
   diyagram?: string; uyari?: string | null;
@@ -54,6 +54,8 @@ function CliBlock({ cmds }: { cmds: string[] }) {
 }
 
 export default function FortigateAssist() {
+  const [subTab, setSubTab] = useState<"asistan" | "kutuphane">("asistan");
+  const [lightbox, setLightbox] = useState<string | null>(null);
   const [problem, setProblem] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -75,6 +77,14 @@ export default function FortigateAssist() {
 
   return (
     <div style={{ maxWidth: "900px" }}>
+      {/* Alt sekme: Asistan / Ekran Görüntüleri */}
+      <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "11px", padding: "4px", width: "fit-content", marginBottom: "18px" }}>
+        <button onClick={() => setSubTab("asistan")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: subTab === "asistan" ? 700 : 500, cursor: "pointer", background: subTab === "asistan" ? "linear-gradient(135deg,#EE3124,#b91c1c)" : "transparent", color: subTab === "asistan" ? "#fff" : "#64748b" }}>🛡️ Asistan</button>
+        <button onClick={() => setSubTab("kutuphane")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: subTab === "kutuphane" ? 700 : 500, cursor: "pointer", background: subTab === "kutuphane" ? "linear-gradient(135deg,#EE3124,#b91c1c)" : "transparent", color: subTab === "kutuphane" ? "#fff" : "#64748b" }}>📸 Ekran Görüntüleri</button>
+      </div>
+
+      {subTab === "kutuphane" ? <ScreenshotLibrary onPreview={setLightbox} /> : (
+      <>
       <div style={{ marginBottom: "18px" }}>
         <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "9px" }}>
           <span style={{ width: 34, height: 34, borderRadius: "9px", background: "linear-gradient(135deg,#EE3124,#b91c1c)", display: "flex", alignItems: "center", justifyContent: "center" }}><Shield size={19} color="#fff" /></span>
@@ -148,6 +158,13 @@ export default function FortigateAssist() {
                           <div style={{ fontSize: "13.5px", color: "#4c1d95", fontWeight: 600, lineHeight: 1.5 }}>{st.gui}</div>
                         </div>
                       )}
+                      {st.gorsel && (
+                        <div style={{ marginTop: "9px" }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={st.gorsel.url} alt={st.gorsel.title} onClick={() => setLightbox(st.gorsel!.url)} style={{ maxWidth: "100%", maxHeight: "260px", borderRadius: "9px", border: "1px solid #e5e7ef", cursor: "zoom-in", display: "block" }} />
+                          <div style={{ fontSize: "11px", color: "#9ca3af", marginTop: "4px", display: "flex", alignItems: "center", gap: "4px" }}><ImageIcon size={11} /> {st.gorsel.title}</div>
+                        </div>
+                      )}
                       {st.cli && st.cli.length > 0 && (
                         <details style={{ marginTop: "8px" }}>
                           <summary style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11.5px", color: "#94a3b8", fontWeight: 600, cursor: "pointer", listStyle: "none" }}><Terminal size={12} /> CLI alternatifi (göster)</summary>
@@ -182,6 +199,117 @@ export default function FortigateAssist() {
           )}
 
           <p style={{ fontSize: "11.5px", color: "#9ca3af", margin: "0 0 8px", lineHeight: 1.5 }}>⚠️ Yapay zeka tarafından üretilmiştir; kritik işlemlerden önce doğrulayın ve yapılandırma yedeği alın.</p>
+        </div>
+      )}
+      </>
+      )}
+
+      {/* Görsel büyütme (lightbox) */}
+      {lightbox && (
+        <div onClick={() => setLightbox(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,.8)", zIndex: 1200, display: "flex", alignItems: "center", justifyContent: "center", padding: "24px", cursor: "zoom-out" }}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={lightbox} alt="Ekran görüntüsü" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "8px", boxShadow: "0 20px 60px rgba(0,0,0,.5)" }} />
+          <button onClick={() => setLightbox(null)} style={{ position: "fixed", top: 18, right: 18, background: "rgba(255,255,255,.15)", border: "none", color: "#fff", borderRadius: "8px", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><X size={20} /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface Shot { id: string; title: string; tags?: string | null; menu_path?: string | null; image_url: string; created_at: string }
+
+function ScreenshotLibrary({ onPreview }: { onPreview: (url: string) => void }) {
+  const [list, setList] = useState<Shot[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [title, setTitle] = useState("");
+  const [tags, setTags] = useState("");
+  const [menuPath, setMenuPath] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await fetch("/api/admin/fg-screenshots");
+    if (r.ok) setList((await r.json()).screenshots || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function upload() {
+    if (!file) { alert("Görsel seçin"); return; }
+    if (!title.trim()) { alert("Başlık girin"); return; }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file); fd.append("title", title); fd.append("tags", tags); fd.append("menu_path", menuPath);
+    const r = await fetch("/api/admin/fg-screenshots", { method: "POST", body: fd });
+    setUploading(false);
+    if (r.ok) {
+      setTitle(""); setTags(""); setMenuPath(""); setFile(null);
+      if (fileRef.current) fileRef.current.value = "";
+      load();
+    } else alert("Yüklenemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
+  }
+
+  async function del(id: string) {
+    if (!confirm("Bu ekran görüntüsünü silmek istiyor musunuz?")) return;
+    await fetch("/api/admin/fg-screenshots", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setList(p => p.filter(s => s.id !== id));
+  }
+
+  const filtered = list.filter(s => { const t = q.trim().toLowerCase(); return !t || `${s.title} ${s.tags || ""} ${s.menu_path || ""}`.toLowerCase().includes(t); });
+  const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const };
+  const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", display: "block", marginBottom: "5px", textTransform: "uppercase" as const, letterSpacing: ".3px" };
+
+  return (
+    <div>
+      <div style={{ marginBottom: "16px" }}>
+        <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>📸 Ekran Görüntüsü Kütüphanesi</h2>
+        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>FortiGate arayüz görsellerini etiketleyerek yükleyin; asistan ilgili adıma otomatik gösterir.</p>
+      </div>
+
+      {/* Yükleme */}
+      <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #EE3124", borderRadius: "13px", padding: "16px", marginBottom: "18px" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+          <div><label style={lbl}>Başlık *</label><input value={title} onChange={e => setTitle(e.target.value)} placeholder="ör. IPsec Phase 2 Selector ekranı" style={inp} /></div>
+          <div><label style={lbl}>Menü Yolu</label><input value={menuPath} onChange={e => setMenuPath(e.target.value)} placeholder="VPN > IPsec Tunnels > Phase 2" style={inp} /></div>
+        </div>
+        <div style={{ marginBottom: "12px" }}><label style={lbl}>Etiketler (boşlukla ayır)</label><input value={tags} onChange={e => setTags(e.target.value)} placeholder="ipsec vpn phase2 selector dns split tunnel forticlient" style={inp} /></div>
+        <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
+          <input ref={fileRef} type="file" accept="image/*" onChange={e => setFile(e.target.files?.[0] || null)} style={{ fontSize: "13px" }} />
+          <button onClick={upload} disabled={uploading || !file || !title.trim()} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 18px", borderRadius: "10px", border: "none", background: uploading || !file || !title.trim() ? "#e2e8f0" : "linear-gradient(135deg,#EE3124,#b91c1c)", color: uploading || !file || !title.trim() ? "#94a3b8" : "#fff", fontSize: "13px", fontWeight: 700, cursor: uploading || !file || !title.trim() ? "not-allowed" : "pointer" }}>
+            {uploading ? "Yükleniyor…" : <><Upload size={15} /> Yükle</>}
+          </button>
+        </div>
+        <p style={{ fontSize: "11px", color: "#9ca3af", margin: "10px 2px 0", lineHeight: 1.5 }}>💡 İyi etiketleme = iyi eşleşme. Asistan, etiket/menü yolu/başlık ile adımları karşılaştırır.</p>
+      </div>
+
+      {/* Arama */}
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "0 12px", background: "#fff", marginBottom: "16px", maxWidth: "360px" }}>
+        <Search size={15} color="#64748b" />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Görsellerde ara…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", color: "#1a1d2e", outline: "none" }} />
+      </div>
+
+      {loading ? <p style={{ color: "#94a3b8" }}>Yükleniyor…</p> : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px 20px", color: "#94a3b8" }}>
+          <ImageIcon size={36} color="#cbd5e1" style={{ marginBottom: "10px" }} />
+          <p style={{ fontSize: "14px", margin: 0 }}>{q ? "Aramaya uygun görsel yok." : "Henüz görsel yok. Yukarıdan yükleyin."}</p>
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(220px,1fr))", gap: "14px" }}>
+          {filtered.map(s => (
+            <div key={s.id} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", overflow: "hidden" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={s.image_url} alt={s.title} onClick={() => onPreview(s.image_url)} style={{ width: "100%", height: "130px", objectFit: "cover", cursor: "zoom-in", display: "block", background: "#f1f5f9" }} />
+              <div style={{ padding: "10px 12px" }}>
+                <div style={{ fontSize: "13px", fontWeight: 700, color: "#1a1d2e", lineHeight: 1.35 }}>{s.title}</div>
+                {s.menu_path && <div style={{ fontSize: "11px", color: "#7c3aed", marginTop: "3px" }}>{s.menu_path}</div>}
+                {s.tags && <div style={{ fontSize: "10.5px", color: "#94a3b8", marginTop: "4px", lineHeight: 1.4 }}>{s.tags}</div>}
+                <button onClick={() => del(s.id)} style={{ marginTop: "8px", display: "inline-flex", alignItems: "center", gap: "5px", background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "6px", padding: "4px 9px", fontSize: "11px", fontWeight: 600, cursor: "pointer" }}><Trash2 size={11} /> Sil</button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
