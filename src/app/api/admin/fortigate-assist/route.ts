@@ -45,40 +45,58 @@ KURALLAR:
 - Yalnızca FortiGate/Fortinet (ve ilgili ağ) bağlamında, pratik ve doğru adımlar ver.
 - Emin olmadığın bir komutu uydurma; genel ve güvenli yönlendirme yap.
 - GUI yollarını "Menü > Alt Menü" biçiminde, CLI komutlarını gerçekçi FortiOS sözdizimiyle ver.
-- Yanıtı SADECE geçerli JSON olarak ver. Markdown, açıklama, kod bloğu kullanma.
-
-JSON ŞEMASI:
-{
-  "ozet": "1-2 cümle durum/çözüm özeti",
-  "olasiSebepler": ["olası sebep", "..."],
-  "adimlar": [
-    { "baslik": "kısa adım başlığı", "aciklama": "ne yapılacağı", "gui": "System > ... (yoksa null)", "cli": ["komut", "..."] }
-  ],
-  "diyagram": "Mermaid flowchart kodu. 'flowchart TD' ile başla, kısa Türkçe düğümler, karar noktaları kullan. Sadece diyagram kodu.",
-  "uyari": "varsa kritik uyarı, yoksa null"
-}
+- Diyagram için Mermaid 'flowchart TD' sözdizimi kullan; kısa Türkçe düğüm metinleri, karar noktaları. Düğüm metinlerinde parantez, tırnak, noktalı virgül kullanma.
+- Yanıtını yalnızca 'cozum_sun' aracını çağırarak ver.
 
 Dahili bilgi kaynakları (Lider Network blog) — uygunsa adımları bunlarla tutarlı kur:
 ${refsText}`;
+
+  const tool: Anthropic.Tool = {
+    name: "cozum_sun",
+    description: "FortiGate sorununa yapılandırılmış çözüm sunar.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ozet: { type: "string", description: "1-2 cümle durum/çözüm özeti" },
+        olasiSebepler: { type: "array", items: { type: "string" } },
+        adimlar: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              baslik: { type: "string" },
+              aciklama: { type: "string" },
+              gui: { type: "string", description: "GUI menü yolu, yoksa boş bırak" },
+              cli: { type: "array", items: { type: "string" } },
+            },
+            required: ["baslik", "aciklama"],
+          },
+        },
+        diyagram: { type: "string", description: "Mermaid flowchart TD kodu" },
+        uyari: { type: "string", description: "Varsa kritik uyarı" },
+      },
+      required: ["ozet", "olasiSebepler", "adimlar", "diyagram"],
+    },
+  };
 
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const msg = await client.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 2500,
       system,
-      messages: [{ role: "user", content: `Destek ekibinin karşılaştığı sorun:\n\n"${String(problem).trim()}"\n\nLütfen şemaya uygun JSON yanıtı ver.` }],
+      tools: [tool],
+      tool_choice: { type: "tool", name: "cozum_sun" },
+      messages: [{ role: "user", content: `Destek ekibinin karşılaştığı sorun:\n\n"${String(problem).trim()}"` }],
     });
 
-    const raw = msg.content.filter(c => c.type === "text").map(c => (c as { text: string }).text).join("").trim();
-    const jsonStr = raw.replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/```\s*$/i, "").trim();
-
-    let parsed: unknown;
-    try { parsed = JSON.parse(jsonStr); }
-    catch { return NextResponse.json({ error: "AI yanıtı işlenemedi", raw }, { status: 502 }); }
+    const toolUse = msg.content.find(c => c.type === "tool_use");
+    if (!toolUse || toolUse.type !== "tool_use") {
+      return NextResponse.json({ error: "AI yapılandırılmış yanıt vermedi" }, { status: 502 });
+    }
 
     return NextResponse.json({
-      ...(parsed as object),
+      ...(toolUse.input as object),
       relatedPosts: refs.map(p => ({ slug: p.slug, title: p.title })),
     });
   } catch (e) {
