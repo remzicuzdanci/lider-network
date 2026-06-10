@@ -802,7 +802,7 @@ export default function AdminDashboard() {
       fontFamily: "var(--font-family-body)",
       position: "relative",
       width: "100%",
-      overflow: "hidden"
+      overflowX: "hidden"
     }}>
 
       {/* ══════════════════════════════════════════════════════ SIDEBAR */}
