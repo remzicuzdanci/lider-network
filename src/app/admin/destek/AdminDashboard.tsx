@@ -814,20 +814,25 @@ export default function AdminDashboard() {
         </div>
 
         <nav style={{ flex: 1, padding: "10px 8px" }}>
-          <SideSection label="Yönetim" />
+          <SideSection label="Destek" />
           <NavItem icon={<TicketCheck size={15} />} label="Talepler" active={tab==="tickets"} badge={total} badgeColor="#0052ff" onClick={() => setTab("tickets")} />
-          <NavItem icon={<Users size={15} />} label="Müşteriler" active={tab==="customers"} badge={pending} badgeColor="#ef4444" onClick={() => setTab("customers")} />
+          <NavItem icon={<Users size={15} />} label="Web Üyeleri" active={tab==="customers"} badge={pending} badgeColor="#ef4444" onClick={() => setTab("customers")} />
+          <NavItem icon={<Shield size={15} />} label="FortiGate Destek" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
+
+          <SideSection label="Müşteriler & Firmalar" />
           <NavItem icon={<Building2 size={15} />} label="Sözleşmeli Şirketler" active={tab==="companies"} badge={contractedCompanies.length || undefined} badgeColor="#6b7280" onClick={() => setTab("companies")} />
           <NavItem icon={<Users size={15} />} label="Dış Müşteriler" active={tab==="prospects"} badge={externalCompanies.length || undefined} badgeColor="#7c3aed" onClick={() => setTab("prospects")} />
+          <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
 
+          <SideSection label="Operasyon" />
+          <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
+          <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
+
+          <SideSection label="Yönetim" />
           {sessionRole === "super_admin" && (
             <NavItem icon={<UserCog size={15} />} label="Personel" active={tab==="staff"} onClick={() => setTab("staff")} />
           )}
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
-          <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
-          <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
-          <NavItem icon={<Shield size={15} />} label="FortiGate Destek" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
-          <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
 
           {stats && (
             <>
@@ -911,10 +916,10 @@ export default function AdminDashboard() {
               color: "#1a1d2e",
               margin: "0 0 3px"
             }}>
-              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Müşteriler" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
+              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Web Üyeleri" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
-              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} kayıtlı müşteri` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
+              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} web üyesi (siteden kayıt)` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
