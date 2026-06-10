@@ -820,6 +820,7 @@ export default function AdminDashboard() {
         overflowY: "auto",
         zIndex: isMobile ? 999 : "auto",
         boxShadow: isMobile && sidebarOpen ? "0 8px 24px rgba(0,0,0,.12)" : "none",
+        paddingTop: isMobile ? "env(safe-area-inset-top)" : 0,
         transition: "all .2s"
       }}>
         <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid #f0f2f8" }}>
@@ -901,7 +902,7 @@ export default function AdminDashboard() {
       <main style={{
         flex: 1,
         width: isMobile ? "100%" : "auto",
-        padding: isMobile ? "16px" : isTablet ? "20px 24px" : "28px 32px",
+        padding: isMobile ? "calc(14px + env(safe-area-inset-top)) 14px calc(20px + env(safe-area-inset-bottom))" : isTablet ? "20px 24px" : "28px 32px",
         minWidth: 0,
         overflowX: "hidden",
         position: "relative"
@@ -1034,6 +1035,29 @@ export default function AdminDashboard() {
                 <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
               ) : tickets.length === 0 ? (
                 <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Talep bulunamadı</div>
+              ) : isMobile ? (
+                <div style={{ padding: "10px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                  {tickets.map((t) => {
+                    const sla=slaDue(t); const sc=STATUS_STYLE[t.status]||STATUS_STYLE.open; const pc=PRI_COLOR[t.priority]||PRI_COLOR.medium;
+                    return (
+                      <div key={t.id} onClick={() => router.push(`/admin/destek/${t.id}`)} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "13px 14px", cursor: "pointer" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", marginBottom: "7px" }}>
+                          <span style={{ fontSize: "12px", fontWeight: 800, color: "#0052ff", background: "#eff6ff", borderRadius: "6px", padding: "3px 8px" }}>#{String(t.ticket_number).padStart(4,"0")}</span>
+                          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "8px", background: sc.bg, fontSize: "12px", fontWeight: 600, color: sc.text }}><span style={{ width: 6, height: 6, borderRadius: "50%", background: sc.dot }} />{STATUS_LABEL[t.status]}</span>
+                        </div>
+                        <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{t.customer_name}{t.company ? <span style={{ fontWeight: 400, color: "#9ca3af", fontSize: "12px" }}> · {t.company}</span> : null}</p>
+                        <p style={{ margin: "0 0 10px", fontSize: "13px", color: "#475569", lineHeight: 1.4 }}>{t.subject}</p>
+                        <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+                          <span style={{ fontSize: "11px", fontWeight: 700, color: pc.text, background: pc.bg, padding: "3px 9px", borderRadius: "6px" }}>{PRI_LABEL[t.priority]}</span>
+                          <span style={{ fontSize: "11px", color: "#6b7280", background: "#f1f5f9", padding: "3px 8px", borderRadius: "6px" }}>{CAT_LABEL[t.category]}</span>
+                          <span style={{ fontSize: "11px", fontWeight: 600, color: sla.color, background: sla.bg, padding: "3px 8px", borderRadius: "6px" }}>{sla.label}</span>
+                          <span style={{ fontSize: "11px", color: "#9ca3af", marginLeft: "auto" }}>{timeAgo(t.created_at)}</span>
+                          {sessionRole === "super_admin" && <button onClick={(e) => deleteTicket(t.id, e)} style={{ display: "inline-flex", width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: "7px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}><Trash2 size={13} /></button>}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <div style={{ overflowX: "auto" }}>
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
@@ -1118,7 +1142,8 @@ export default function AdminDashboard() {
               {custLoading ? <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
               : customers.length === 0 ? <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Kayıtlı müşteri bulunamadı</div>
               : (
-                <table style={{ width: "100%", borderCollapse: "collapse" }}>
+                <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "720px" }}>
                   <thead>
                     <tr style={{ background: "#f8f9fb", borderBottom: "1px solid #e5e7ef" }}>
                       {["Ad Soyad","Şirket","E-posta","Telefon","Durum","Kayıt Tarihi","İşlem"].map(h => (
@@ -1162,6 +1187,7 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
           </>

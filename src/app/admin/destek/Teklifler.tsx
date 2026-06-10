@@ -535,7 +535,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
         <button onClick={sendEmail} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Mail size={15} /> Gönder</button>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0,340px) 1fr", gap: "18px", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 330px), 1fr))", gap: "18px", alignItems: "start" }}>
         {/* Sol: teklif bilgileri */}
         <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #0052ff", borderRadius: "13px", padding: "18px" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: "14px", fontWeight: 800, color: "#0052ff", display: "flex", alignItems: "center", gap: "7px" }}>📋 Teklif Bilgileri</h3>

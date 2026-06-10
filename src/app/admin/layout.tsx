@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Hanken_Grotesk, Inter } from "next/font/google";
 import "../globals.css";
 
@@ -19,6 +19,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Admin Panel | Lider Network Destek",
   robots: { index: false, follow: false },
+  appleWebApp: {
+    capable: true,
+    title: "Lider Destek",
+    statusBarStyle: "default",
+  },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
+  themeColor: "#ffffff",
 };
 
 export default function AdminLayout({
@@ -29,7 +42,8 @@ export default function AdminLayout({
   return (
     <html lang="tr" className={`${hanken.variable} ${inter.variable}`}>
       <head>
-        <meta name="theme-color" content="#101415" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body style={{ fontFamily: "var(--font-family-body)" }}>
         {children}
