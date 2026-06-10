@@ -5,7 +5,7 @@ import { posts } from "@/data/blog";
 
 export const maxDuration = 60;
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-3-5-sonnet-latest";
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
 
 // Soruyla en alakalı blog yazılarını basit anahtar kelime eşleşmesiyle bul
 function relevantPosts(problem: string, limit = 4) {
