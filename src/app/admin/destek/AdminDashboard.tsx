@@ -826,9 +826,9 @@ export default function AdminDashboard() {
         paddingTop: isMobile ? "env(safe-area-inset-top)" : 0,
         transition: "all .2s"
       }}>
-        <div style={{ padding: "22px 18px 16px", borderBottom: "1px solid #f0f2f8" }}>
-          <Image src="/logo.png" alt="Lider Network" width={156} height={47} style={{ objectFit: "contain", width: "auto", height: "47px" }} />
-          <div style={{ marginTop: "8px", fontSize: "10px", fontWeight: 700, color: "#0052ff", letterSpacing: "1.5px", textTransform: "uppercase" }}>Admin Paneli</div>
+        <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid #f0f2f8" }}>
+          <Image src="/logo.png" alt="Lider Network" width={210} height={62} style={{ objectFit: "contain", width: "auto", height: "60px", maxWidth: "100%" }} priority />
+          <div style={{ marginTop: "10px", fontSize: "10px", fontWeight: 800, color: "#0052ff", letterSpacing: "1.5px", textTransform: "uppercase" }}>Admin Paneli</div>
         </div>
 
         <nav style={{ flex: 1, padding: "10px 8px" }}>
