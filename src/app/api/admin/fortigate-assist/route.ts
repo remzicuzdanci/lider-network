@@ -6,10 +6,12 @@ import { posts } from "@/data/blog";
 
 export const maxDuration = 60;
 
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-6";
+// Maliyet için varsayılan Haiku (hızlı/ucuz). Zor vakalar için
+// ANTHROPIC_MODEL=claude-sonnet-4-6 ile Sonnet'e geçilebilir.
+const MODEL = process.env.ANTHROPIC_MODEL || "claude-haiku-4-5";
 
 // Soruyla en alakalı blog yazılarını basit anahtar kelime eşleşmesiyle bul
-function relevantPosts(problem: string, limit = 4) {
+function relevantPosts(problem: string, limit = 3) {
   const stop = new Set(["için", "veya", "gibi", "olan", "nedir", "nasıl", "sorun", "hata", "ama", "the", "and", "için"]);
   const tokens = problem.toLowerCase().replace(/[^\wçğıöşü\s]/gi, " ").split(/\s+/).filter(w => w.length >= 3 && !stop.has(w));
   const scored = posts.map(p => {
@@ -38,7 +40,7 @@ export async function POST(req: NextRequest) {
 
   const refs = relevantPosts(problemText);
   const refsText = refs.length
-    ? refs.map((p, i) => `[${i + 1}] ${p.title}\nÖzet: ${p.excerpt}`).join("\n\n")
+    ? refs.map((p, i) => `[${i + 1}] ${p.title}: ${p.excerpt.slice(0, 140)}`).join("\n")
     : "(İlgili dahili makale bulunamadı.)";
 
   const system = `Sen FortiGate ve Fortinet ürünlerinde uzman, deneyimli bir kıdemli ağ güvenliği mühendisisin. Lider Network'ün teknik destek ekibine, müşteri sorunlarını çözmeleri için Türkçe, net ve uygulanabilir rehberlik veriyorsun.
@@ -57,10 +59,7 @@ KURALLAR:
 - 'cli' yalnızca EK/alternatif olarak, GUI mümkün değilse ver. Her adımda CLI zorunlu değildir.
 - Emin olmadığın bir komutu/menüyü uydurma; genel ama güvenli yönlendirme yap.
 - Diyagram için Mermaid 'flowchart TD' sözdizimi kullan; kısa Türkçe düğüm metinleri, karar noktaları. Düğüm metinlerinde parantez, tırnak, noktalı virgül kullanma.
-- Yanıtını yalnızca 'cozum_sun' aracını çağırarak ver.
-
-Dahili bilgi kaynakları (Lider Network blog) — uygunsa adımları bunlarla tutarlı kur:
-${refsText}`;
+- Yanıtını yalnızca 'cozum_sun' aracını çağırarak ver.`;
 
   const tool: Anthropic.Tool = {
     name: "cozum_sun",
@@ -109,9 +108,13 @@ ${refsText}`;
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const msg = await client.messages.create({
       model: MODEL,
-      max_tokens: 2500,
-      system,
-      tools: [tool],
+      max_tokens: 1800,
+      // Statik talimatı önbelleğe al (ardışık sorgularda input maliyeti ~%90 düşer)
+      system: [
+        { type: "text", text: system, cache_control: { type: "ephemeral" } },
+        { type: "text", text: `İlgili dahili kaynaklar (uygunsa tutarlı ol):\n${refsText}` },
+      ],
+      tools: [{ ...tool, cache_control: { type: "ephemeral" } }],
       tool_choice: { type: "tool", name: "cozum_sun" },
       messages: [{ role: "user", content: userContent }],
     });
