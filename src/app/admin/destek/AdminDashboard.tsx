@@ -434,6 +434,24 @@ export default function AdminDashboard() {
       "Lisans / kullanıcı sayısı artırımı",
       "Diğer lisans talebi",
     ]},
+    yetkilendirme: { label: "Yetkilendirme & Erişim", emoji: "🔑", items: [
+      "Active Directory kullanıcı şifre sıfırlama",
+      "Windows oturum şifresi sıfırlama",
+      "Active Directory'de USB açma / kapatma yetkisi",
+      "Synology ortak klasöre erişim yetkisi",
+      "Paylaşımlı klasör / dosya erişim yetkisi",
+      "Klasör yazma / okuma izni değişikliği",
+      "Yeni kullanıcı hesabı oluşturma (Active Directory)",
+      "Kullanıcı hesabı kapatma / pasife alma",
+      "VPN erişim yetkisi tanımlama",
+      "Uzak masaüstü (RDP) erişim yetkisi",
+      "Yazıcı / cihaz erişim yetkisi",
+      "Uygulama / program erişim yetkisi",
+      "E-posta grup / dağıtım listesi yetkisi",
+      "İnternet / web sitesi erişim izni (engel kaldırma)",
+      "Yönetici (admin) yetkisi talebi",
+      "Diğer yetkilendirme / erişim talebi",
+    ]},
     kurulum: { label: "Kurulum & Proje", emoji: "🚀", items: [
       "Yeni bilgisayar / cihaz kurulumu",
       "Yeni kullanıcı / çalışma istasyonu hazırlığı",
@@ -455,12 +473,12 @@ export default function AdminDashboard() {
     internet_ag: "technical", fortinet: "technical", donanim: "technical", yazilim: "technical",
     eposta: "technical", sunucu: "technical", depolama: "technical", kamera: "technical",
     telefon: "technical", bulut: "technical", guvenlik: "technical", kurulum: "technical",
-    lisans: "billing", diger: "general",
+    yetkilendirme: "technical", lisans: "billing", diger: "general",
   };
   const NT_PRI_SUGGEST: Record<string, string> = {
     guvenlik: "urgent", fortinet: "high", sunucu: "high", internet_ag: "high",
     depolama: "high", telefon: "high",
-    donanim: "medium", yazilim: "medium", eposta: "medium", kamera: "medium", bulut: "medium",
+    donanim: "medium", yazilim: "medium", eposta: "medium", kamera: "medium", bulut: "medium", yetkilendirme: "medium",
     lisans: "low", kurulum: "low", diger: "low",
   };
   const NT_AFFECTED_LABELS: Record<string, string> = {
