@@ -68,8 +68,8 @@ interface StaffMember { id: string; email: string; name: string; role: string; a
 type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
-function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
-  icon: React.ReactNode; label: string; active?: boolean; badge?: number; badgeColor?: string; onClick?: () => void;
+function NavItem({ icon, label, active, badge, badgeColor, tag, onClick }: {
+  icon: React.ReactNode; label: string; active?: boolean; badge?: number; badgeColor?: string; tag?: string; onClick?: () => void;
 }) {
   return (
     <button onClick={onClick} style={{
@@ -83,6 +83,9 @@ function NavItem({ icon, label, active, badge, badgeColor, onClick }: {
     onMouseLeave={(e) => { if (!active) (e.currentTarget as HTMLElement).style.background = "transparent"; }}>
       <span style={{ color: active ? "#0052ff" : "#9ca3af", display: "flex" }}>{icon}</span>
       <span style={{ flex: 1 }}>{label}</span>
+      {tag && (
+        <span style={{ background: "linear-gradient(135deg,#7c3aed,#0052ff)", color: "#fff", borderRadius: "6px", padding: "1px 6px", fontSize: "9px", fontWeight: 800, letterSpacing: ".5px", display: "inline-flex", alignItems: "center", gap: "2px" }}>✨ {tag}</span>
+      )}
       {badge !== undefined && badge > 0 && (
         <span style={{ background: badgeColor || "#0052ff", color: "#fff", borderRadius: "10px", padding: "1px 7px", fontSize: "10px", fontWeight: 700 }}>{badge}</span>
       )}
@@ -828,7 +831,7 @@ export default function AdminDashboard() {
           <SideSection label="Destek" />
           <NavItem icon={<TicketCheck size={15} />} label="Talepler" active={tab==="tickets"} badge={total} badgeColor="#0052ff" onClick={() => setTab("tickets")} />
           <NavItem icon={<Users size={15} />} label="Web Üyeleri" active={tab==="customers"} badge={pending} badgeColor="#ef4444" onClick={() => setTab("customers")} />
-          <NavItem icon={<Shield size={15} />} label="FortiGate Destek" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
+          <NavItem icon={<Shield size={15} />} label="FortiGate Destek" tag="AI" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
 
           <SideSection label="Müşteriler & Firmalar" />
           <NavItem icon={<Building2 size={15} />} label="Sözleşmeli Şirketler" active={tab==="companies"} badge={contractedCompanies.length || undefined} badgeColor="#6b7280" onClick={() => setTab("companies")} />

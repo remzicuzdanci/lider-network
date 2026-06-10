@@ -111,11 +111,12 @@ export default function FortigateAssist() {
        subTab === "gecmis" ? <SolutionHistory onOpen={(p, res) => { setProblem(p); setResult(res); setError(""); setSubTab("asistan"); }} /> : (
       <>
       <div style={{ marginBottom: "18px" }}>
-        <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "9px" }}>
+        <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "9px", flexWrap: "wrap" }}>
           <span style={{ width: 34, height: 34, borderRadius: "9px", background: "linear-gradient(135deg,#EE3124,#b91c1c)", display: "flex", alignItems: "center", justifyContent: "center" }}><Shield size={19} color="#fff" /></span>
           FortiGate Destek Asistanı
+          <span style={{ background: "linear-gradient(135deg,#7c3aed,#0052ff)", color: "#fff", borderRadius: "7px", padding: "3px 9px", fontSize: "11px", fontWeight: 800, letterSpacing: ".5px" }}>✨ Yapay Zeka</span>
         </h2>
-        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Sorunu yaz, adım adım çözüm yolu + akış diyagramı + ilgili kaynaklar üretilsin.</p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Yapay zeka destekli. Sorunu yaz, adım adım çözüm yolu + akış diyagramı + ilgili kaynaklar üretilsin.</p>
       </div>
 
       {/* Giriş */}
