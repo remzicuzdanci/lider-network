@@ -93,7 +93,10 @@ function NavItem({ icon, label, active, badge, badgeColor, tag, onClick }: {
   );
 }
 function SideSection({ label }: { label: string }) {
-  return <p style={{ fontSize: "10px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".8px", padding: "12px 12px 4px", margin: 0 }}>{label}</p>;
+  return <p style={{ fontSize: "11px", fontWeight: 800, color: "#0f172a", textTransform: "uppercase", letterSpacing: ".7px", padding: "16px 12px 6px", margin: 0, display: "flex", alignItems: "center", gap: "8px" }}>
+    <span style={{ width: 4, height: 13, borderRadius: "3px", background: "#0052ff", display: "inline-block" }} />
+    {label}
+  </p>;
 }
 function Fbtn({ val, cur, set, label }: { val: string; cur: string; set: (v: string) => void; label: string }) {
   const a = cur === val;
@@ -823,9 +826,9 @@ export default function AdminDashboard() {
         paddingTop: isMobile ? "env(safe-area-inset-top)" : 0,
         transition: "all .2s"
       }}>
-        <div style={{ padding: "20px 18px 16px", borderBottom: "1px solid #f0f2f8" }}>
-          <Image src="/logo.png" alt="Lider Network" width={120} height={36} style={{ objectFit: "contain" }} />
-          <div style={{ marginTop: "5px", fontSize: "10px", fontWeight: 700, color: "#0052ff", letterSpacing: "1.5px", textTransform: "uppercase" }}>Admin Paneli</div>
+        <div style={{ padding: "22px 18px 16px", borderBottom: "1px solid #f0f2f8" }}>
+          <Image src="/logo.png" alt="Lider Network" width={156} height={47} style={{ objectFit: "contain", width: "auto", height: "47px" }} />
+          <div style={{ marginTop: "8px", fontSize: "10px", fontWeight: 700, color: "#0052ff", letterSpacing: "1.5px", textTransform: "uppercase" }}>Admin Paneli</div>
         </div>
 
         <nav style={{ flex: 1, padding: "10px 8px" }}>
@@ -837,9 +840,9 @@ export default function AdminDashboard() {
           <SideSection label="Müşteriler & Firmalar" />
           <NavItem icon={<Building2 size={15} />} label="Sözleşmeli Şirketler" active={tab==="companies"} badge={contractedCompanies.length || undefined} badgeColor="#6b7280" onClick={() => setTab("companies")} />
           <NavItem icon={<Users size={15} />} label="Dış Müşteriler" active={tab==="prospects"} badge={externalCompanies.length || undefined} badgeColor="#7c3aed" onClick={() => setTab("prospects")} />
-          <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
 
           <SideSection label="Operasyon" />
+          <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
           <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
           <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
 
