@@ -129,10 +129,23 @@ ${refsText}`;
       }
     } catch { /* görsel eşleştirme opsiyonel */ }
 
-    return NextResponse.json({
+    const payload = {
       ...result,
       relatedPosts: refs.map(p => ({ slug: p.slug, title: p.title })),
-    });
+    };
+
+    // Çözümü geçmişe kaydet (bilgi bankası)
+    let solutionId: string | null = null;
+    try {
+      const { data: saved } = await supabase
+        .from("fg_solutions")
+        .insert({ problem: String(problem).trim(), result: payload, created_by: user?.name || null })
+        .select("id")
+        .single();
+      solutionId = saved?.id ?? null;
+    } catch { /* geçmiş kaydı opsiyonel */ }
+
+    return NextResponse.json({ ...payload, id: solutionId });
   } catch (e) {
     console.error("FortiGate asistan hatası:", e);
     return NextResponse.json({ error: "AI çağrısı başarısız: " + (e instanceof Error ? e.message : "hata") }, { status: 500 });

@@ -54,7 +54,7 @@ function CliBlock({ cmds }: { cmds: string[] }) {
 }
 
 export default function FortigateAssist() {
-  const [subTab, setSubTab] = useState<"asistan" | "kutuphane">("asistan");
+  const [subTab, setSubTab] = useState<"asistan" | "gecmis" | "kutuphane">("asistan");
   const [lightbox, setLightbox] = useState<string | null>(null);
   const [problem, setProblem] = useState("");
   const [loading, setLoading] = useState(false);
@@ -78,12 +78,14 @@ export default function FortigateAssist() {
   return (
     <div style={{ maxWidth: "900px" }}>
       {/* Alt sekme: Asistan / Ekran Görüntüleri */}
-      <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "11px", padding: "4px", width: "fit-content", marginBottom: "18px" }}>
-        <button onClick={() => setSubTab("asistan")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: subTab === "asistan" ? 700 : 500, cursor: "pointer", background: subTab === "asistan" ? "linear-gradient(135deg,#EE3124,#b91c1c)" : "transparent", color: subTab === "asistan" ? "#fff" : "#64748b" }}>🛡️ Asistan</button>
-        <button onClick={() => setSubTab("kutuphane")} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: subTab === "kutuphane" ? 700 : 500, cursor: "pointer", background: subTab === "kutuphane" ? "linear-gradient(135deg,#EE3124,#b91c1c)" : "transparent", color: subTab === "kutuphane" ? "#fff" : "#64748b" }}>📸 Ekran Görüntüleri</button>
+      <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "11px", padding: "4px", width: "fit-content", marginBottom: "18px", flexWrap: "wrap" }}>
+        {([["asistan", "🛡️ Asistan"], ["gecmis", "🕘 Geçmiş"], ["kutuphane", "📸 Ekran Görüntüleri"]] as const).map(([id, label]) => (
+          <button key={id} onClick={() => setSubTab(id)} style={{ padding: "8px 18px", borderRadius: "8px", border: "none", fontSize: "13px", fontWeight: subTab === id ? 700 : 500, cursor: "pointer", background: subTab === id ? "linear-gradient(135deg,#EE3124,#b91c1c)" : "transparent", color: subTab === id ? "#fff" : "#64748b" }}>{label}</button>
+        ))}
       </div>
 
-      {subTab === "kutuphane" ? <ScreenshotLibrary onPreview={setLightbox} /> : (
+      {subTab === "kutuphane" ? <ScreenshotLibrary onPreview={setLightbox} /> :
+       subTab === "gecmis" ? <SolutionHistory onOpen={(p, res) => { setProblem(p); setResult(res); setError(""); setSubTab("asistan"); }} /> : (
       <>
       <div style={{ marginBottom: "18px" }}>
         <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "9px" }}>
@@ -210,6 +212,76 @@ export default function FortigateAssist() {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={lightbox} alt="Ekran görüntüsü" style={{ maxWidth: "100%", maxHeight: "100%", borderRadius: "8px", boxShadow: "0 20px 60px rgba(0,0,0,.5)" }} />
           <button onClick={() => setLightbox(null)} style={{ position: "fixed", top: 18, right: 18, background: "rgba(255,255,255,.15)", border: "none", color: "#fff", borderRadius: "8px", width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><X size={20} /></button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+interface HistItem { id: string; problem: string; created_by?: string | null; created_at: string }
+
+function SolutionHistory({ onOpen }: { onOpen: (problem: string, result: Result) => void }) {
+  const [list, setList] = useState<HistItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [q, setQ] = useState("");
+  const [opening, setOpening] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    const r = await fetch("/api/admin/fg-solutions");
+    if (r.ok) setList((await r.json()).solutions || []);
+    setLoading(false);
+  }, []);
+  useEffect(() => { load(); }, [load]);
+
+  async function open(id: string) {
+    setOpening(id);
+    const r = await fetch(`/api/admin/fg-solutions?id=${id}`);
+    setOpening(null);
+    if (r.ok) { const d = await r.json(); onOpen(d.problem, d.result as Result); }
+    else alert("Kayıt açılamadı");
+  }
+  async function del(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    if (!confirm("Bu çözüm kaydını silmek istiyor musunuz?")) return;
+    await fetch("/api/admin/fg-solutions", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    setList(p => p.filter(s => s.id !== id));
+  }
+
+  const filtered = list.filter(s => { const t = q.trim().toLowerCase(); return !t || s.problem.toLowerCase().includes(t); });
+  const fmt = (s: string) => new Date(s).toLocaleString("tr-TR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
+
+  return (
+    <div>
+      <div style={{ marginBottom: "16px" }}>
+        <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>🕘 Çözüm Geçmişi</h2>
+        <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Daha önce sorulan sorunlar ve üretilen çözümler. Tıklayınca tekrar açılır.</p>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: "8px", border: "1.5px solid #cbd5e1", borderRadius: "10px", padding: "0 12px", background: "#fff", marginBottom: "16px", maxWidth: "400px" }}>
+        <Search size={15} color="#64748b" />
+        <input value={q} onChange={e => setQ(e.target.value)} placeholder="Geçmişte ara…" style={{ flex: 1, border: "none", background: "transparent", padding: "10px 0", fontSize: "13px", color: "#1a1d2e", outline: "none" }} />
+      </div>
+
+      {loading ? <p style={{ color: "#94a3b8" }}>Yükleniyor…</p> : filtered.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "50px 20px", color: "#94a3b8" }}>
+          <p style={{ fontSize: "14px", margin: 0 }}>{q ? "Aramaya uygun kayıt yok." : "Henüz kayıt yok. Asistan'da bir soru sorun."}</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "9px" }}>
+          {filtered.map(s => (
+            <div key={s.id} onClick={() => open(s.id)} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "11px", padding: "13px 16px", cursor: "pointer", display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px" }}
+              onMouseEnter={e => (e.currentTarget.style.background = "#fff7f6")} onMouseLeave={e => (e.currentTarget.style.background = "#fff")}>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: "14px", fontWeight: 600, color: "#1a1d2e", lineHeight: 1.4 }}>{s.problem}</div>
+                <div style={{ fontSize: "11.5px", color: "#9ca3af", marginTop: "3px" }}>{fmt(s.created_at)}{s.created_by ? ` · ${s.created_by}` : ""}</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", flexShrink: 0 }}>
+                {opening === s.id && <span style={{ fontSize: "11px", color: "#94a3b8" }}>Açılıyor…</span>}
+                <button onClick={e => del(s.id, e)} title="Sil" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "7px", padding: "5px 7px", cursor: "pointer" }}><Trash2 size={13} /></button>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>
