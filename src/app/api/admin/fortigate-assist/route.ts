@@ -41,10 +41,18 @@ export async function POST(req: NextRequest) {
 
   const system = `Sen FortiGate ve Fortinet ürünlerinde uzman, deneyimli bir kıdemli ağ güvenliği mühendisisin. Lider Network'ün teknik destek ekibine, müşteri sorunlarını çözmeleri için Türkçe, net ve uygulanabilir rehberlik veriyorsun.
 
+ÖNEMLİ — ARAYÜZ ÖNCELİĞİ:
+- Destek ekibimiz çoğunlukla FortiGate ve FortiClient ARAYÜZÜNÜ (GUI) kullanır, CLI'a nadiren girer.
+- Bu yüzden HER adımda ÖNCELİKLE arayüzde tam olarak ne yapılacağını yaz: hangi menü/sekme, hangi KUTUCUK (checkbox), açılır liste veya ALAN değiştirilecek — somut isimleriyle.
+  Örnek: "VPN > IPsec Tunnels > [tünel] > Edit; Phase 2 Selectors altında Source ve Destination address'i 0.0.0.0/0 yap"
+  Örnek: "FortiClient > VPN Bağlantısı > Ayarlar; 'DNS Mode / Otomatik DNS' kutucuğunu KALDIR ve manuel DNS gir (ör. 9.9.9.9)"
+- Çoğu sorunun çözümü arayüzdeki BASİT bir ayar veya kutucuktur — önce bu pratik GUI çözümlerini düşün, derin CLI'a yönelme.
+- Hem FortiGate (sunucu) hem FortiClient (istemci) tarafındaki ayarları değerlendir.
+
 KURALLAR:
-- Yalnızca FortiGate/Fortinet (ve ilgili ağ) bağlamında, pratik ve doğru adımlar ver.
-- Emin olmadığın bir komutu uydurma; genel ve güvenli yönlendirme yap.
-- GUI yollarını "Menü > Alt Menü" biçiminde, CLI komutlarını gerçekçi FortiOS sözdizimiyle ver.
+- 'gui' alanına net, tıklanabilir arayüz yolunu VE yapılacak işlemi (kutucuk işaretle/kaldır, alana değer gir vb.) yaz. Bu alanı boş bırakma.
+- 'cli' yalnızca EK/alternatif olarak, GUI mümkün değilse ver. Her adımda CLI zorunlu değildir.
+- Emin olmadığın bir komutu/menüyü uydurma; genel ama güvenli yönlendirme yap.
 - Diyagram için Mermaid 'flowchart TD' sözdizimi kullan; kısa Türkçe düğüm metinleri, karar noktaları. Düğüm metinlerinde parantez, tırnak, noktalı virgül kullanma.
 - Yanıtını yalnızca 'cozum_sun' aracını çağırarak ver.
 
@@ -66,8 +74,8 @@ ${refsText}`;
             properties: {
               baslik: { type: "string" },
               aciklama: { type: "string" },
-              gui: { type: "string", description: "GUI menü yolu, yoksa boş bırak" },
-              cli: { type: "array", items: { type: "string" } },
+              gui: { type: "string", description: "Arayüzde tam yol + yapılacak işlem (menü/sekme/kutucuk/alan). Mutlaka doldur." },
+              cli: { type: "array", items: { type: "string" }, description: "Yalnızca ek/alternatif CLI komutları (zorunlu değil)" },
             },
             required: ["baslik", "aciklama"],
           },

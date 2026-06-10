@@ -142,9 +142,18 @@ export default function FortigateAssist() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{st.baslik}</div>
                       {st.aciklama && <div style={{ fontSize: "13.5px", color: "#475569", marginTop: "3px", lineHeight: 1.55 }}>{st.aciklama}</div>}
-                      {st.gui && <div style={{ display: "inline-flex", alignItems: "center", gap: "5px", marginTop: "7px", fontSize: "12px", color: "#7c3aed", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "6px", padding: "4px 9px", fontWeight: 600 }}><MousePointerClick size={12} /> {st.gui}</div>}
-                      {st.cli && st.cli.length > 0 && <div style={{ display: "flex", alignItems: "center", gap: "5px", marginTop: "8px", fontSize: "11px", color: "#94a3b8", fontWeight: 600 }}><Terminal size={12} /> CLI</div>}
-                      {st.cli && st.cli.length > 0 && <CliBlock cmds={st.cli} />}
+                      {st.gui && (
+                        <div style={{ marginTop: "9px", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "9px", padding: "10px 12px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 800, color: "#7c3aed", textTransform: "uppercase", letterSpacing: ".4px", marginBottom: "4px" }}><MousePointerClick size={13} /> FortiGate Arayüzünde</div>
+                          <div style={{ fontSize: "13.5px", color: "#4c1d95", fontWeight: 600, lineHeight: 1.5 }}>{st.gui}</div>
+                        </div>
+                      )}
+                      {st.cli && st.cli.length > 0 && (
+                        <details style={{ marginTop: "8px" }}>
+                          <summary style={{ display: "inline-flex", alignItems: "center", gap: "5px", fontSize: "11.5px", color: "#94a3b8", fontWeight: 600, cursor: "pointer", listStyle: "none" }}><Terminal size={12} /> CLI alternatifi (göster)</summary>
+                          <CliBlock cmds={st.cli} />
+                        </details>
+                      )}
                     </div>
                   </div>
                 ))}
