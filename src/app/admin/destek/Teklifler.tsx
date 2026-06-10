@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy } from "lucide-react";
+import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown } from "lucide-react";
 
 interface Company {
   id: string; name: string;
@@ -139,6 +139,15 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   function addBlank() { setItems(prev => [...prev, emptyItem()]); }
   function setItem(i: number, patch: Partial<Item>) { setItems(prev => prev.map((it, idx) => idx === i ? { ...it, ...patch } : it)); }
   function delItem(i: number) { setItems(prev => prev.filter((_, idx) => idx !== i)); }
+  function moveItem(i: number, dir: -1 | 1) {
+    setItems(prev => {
+      const j = i + dir;
+      if (j < 0 || j >= prev.length) return prev;
+      const next = [...prev];
+      [next[i], next[j]] = [next[j], next[i]];
+      return next;
+    });
+  }
 
   async function save(): Promise<Quote | null> {
     if (!companyId) { alert("Müşteri seçin"); return null; }
@@ -612,6 +621,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "560px" }}>
                 <thead><tr style={{ borderBottom: "2px solid #e5e7ef" }}>
+                  <th style={{ width: 26 }} />
                   {["Açıklama", "Miktar", "Fiyat", "İsk.%", "KDV%", "Net", ""].map((h, i) => (
                     <th key={i} style={{ padding: "8px 6px", fontSize: "11px", fontWeight: 800, color: "#475569", textTransform: "uppercase", letterSpacing: ".3px", textAlign: i >= 1 && i <= 5 ? "right" : "left" }}>{h}</th>
                   ))}
@@ -620,8 +630,15 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                   {items.map((it, i) => {
                     const gross = (+it.quantity || 0) * (+it.unit_price || 0); const net = gross - gross * (+it.discount || 0) / 100;
                     const cell = { width: "100%", border: "1.5px solid #cbd5e1", borderRadius: "6px", padding: "6px 7px", fontSize: "12px", color: "#1a1d2e", background: "#fff", textAlign: "right" as const, boxSizing: "border-box" as const, outline: "none" };
+                    const mvBtn = { background: "#f1f5f9", border: "1px solid #e2e8f0", borderRadius: "5px", width: 22, height: 18, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", color: "#475569", padding: 0 } as const;
                     return (
                       <tr key={i}>
+                        <td style={{ padding: "4px 2px", verticalAlign: "middle" }}>
+                          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
+                            <button onClick={() => moveItem(i, -1)} disabled={i === 0} title="Yukarı taşı" style={{ ...mvBtn, opacity: i === 0 ? .35 : 1, cursor: i === 0 ? "default" : "pointer" }}><ChevronUp size={13} /></button>
+                            <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1} title="Aşağı taşı" style={{ ...mvBtn, opacity: i === items.length - 1 ? .35 : 1, cursor: i === items.length - 1 ? "default" : "pointer" }}><ChevronDown size={13} /></button>
+                          </div>
+                        </td>
                         <td style={{ padding: "4px 5px" }}><input value={it.description} onChange={e => setItem(i, { description: e.target.value })} placeholder="Açıklama" style={{ ...cell, textAlign: "left" }} /></td>
                         <td style={{ padding: "4px 5px", width: "70px" }}><input type="number" step="any" value={it.quantity} onChange={e => setItem(i, { quantity: +e.target.value })} style={cell} /></td>
                         <td style={{ padding: "4px 5px", width: "90px" }}><input type="number" step="any" value={it.unit_price} onChange={e => setItem(i, { unit_price: +e.target.value })} style={cell} /></td>
