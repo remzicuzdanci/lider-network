@@ -30,12 +30,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "AI yapılandırılmamış: ANTHROPIC_API_KEY ekleyin." }, { status: 503 });
   }
 
-  const { problem } = await req.json();
-  if (!problem || !String(problem).trim()) {
-    return NextResponse.json({ error: "Sorun açıklaması gerekli" }, { status: 400 });
+  const { problem, image } = await req.json() as { problem?: string; image?: { data: string; media_type: string } };
+  const problemText = (problem || "").trim();
+  if (!problemText && !image?.data) {
+    return NextResponse.json({ error: "Sorun açıklaması veya ekran görüntüsü gerekli" }, { status: 400 });
   }
 
-  const refs = relevantPosts(String(problem));
+  const refs = relevantPosts(problemText);
   const refsText = refs.length
     ? refs.map((p, i) => `[${i + 1}] ${p.title}\nÖzet: ${p.excerpt}`).join("\n\n")
     : "(İlgili dahili makale bulunamadı.)";
@@ -51,6 +52,7 @@ export async function POST(req: NextRequest) {
 - Hem FortiGate (sunucu) hem FortiClient (istemci) tarafındaki ayarları değerlendir.
 
 KURALLAR:
+- Eğer mesaja bir EKRAN GÖRÜNTÜSÜ eklenmişse: üzerindeki hata mesajını, menü/sekmeyi, ayar adlarını ve değerleri dikkatle oku; teşhisini ve adımlarını görseldeki gerçek duruma göre kur. Gördüğün spesifik öğelere atıfta bulun.
 - 'gui' alanına net, tıklanabilir arayüz yolunu VE yapılacak işlemi (kutucuk işaretle/kaldır, alana değer gir vb.) yaz. Bu alanı boş bırakma.
 - 'cli' yalnızca EK/alternatif olarak, GUI mümkün değilse ver. Her adımda CLI zorunlu değildir.
 - Emin olmadığın bir komutu/menüyü uydurma; genel ama güvenli yönlendirme yap.
@@ -88,6 +90,21 @@ ${refsText}`;
     },
   };
 
+  // Kullanıcı mesajı: metin ve/veya ekran görüntüsü
+  const userContent: Anthropic.ContentBlockParam[] = [];
+  if (image?.data) {
+    userContent.push({
+      type: "image",
+      source: { type: "base64", media_type: (image.media_type || "image/png") as "image/png" | "image/jpeg" | "image/gif" | "image/webp", data: image.data },
+    });
+  }
+  userContent.push({
+    type: "text",
+    text: problemText
+      ? `Destek ekibinin karşılaştığı sorun:\n\n"${problemText}"${image?.data ? "\n\nEkteki FortiGate ekran görüntüsünü de incele (hata mesajı, ayar, log vb.)." : ""}`
+      : "Ekteki FortiGate ekran görüntüsünü dikkatlice incele; üzerindeki hata mesajı/ayar/log'a göre sorunu teşhis et ve çözüm üret.",
+  });
+
   try {
     const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
     const msg = await client.messages.create({
@@ -96,7 +113,7 @@ ${refsText}`;
       system,
       tools: [tool],
       tool_choice: { type: "tool", name: "cozum_sun" },
-      messages: [{ role: "user", content: `Destek ekibinin karşılaştığı sorun:\n\n"${String(problem).trim()}"` }],
+      messages: [{ role: "user", content: userContent }],
     });
 
     const toolUse = msg.content.find(c => c.type === "tool_use");
@@ -139,7 +156,7 @@ ${refsText}`;
     try {
       const { data: saved } = await supabase
         .from("fg_solutions")
-        .insert({ problem: String(problem).trim(), result: payload, created_by: user?.name || null })
+        .insert({ problem: problemText || "📷 Ekran görüntüsü ile soruldu", result: payload, created_by: user?.name || null })
         .select("id")
         .single();
       solutionId = saved?.id ?? null;

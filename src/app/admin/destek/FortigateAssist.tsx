@@ -60,14 +60,37 @@ export default function FortigateAssist() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState<Result | null>(null);
+  const [image, setImage] = useState<{ data: string; media_type: string; preview: string } | null>(null);
+  const imgRef = useRef<HTMLInputElement>(null);
+
+  function loadImageFile(file: File | null | undefined) {
+    if (!file || !file.type.startsWith("image/")) return;
+    if (file.size > 4 * 1024 * 1024) { setError("Görsel 4MB'tan büyük olamaz."); return; }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const url = reader.result as string; // data:image/png;base64,XXXX
+      const data = url.slice(url.indexOf(",") + 1);
+      const media_type = url.slice(5, url.indexOf(";"));
+      setImage({ data, media_type, preview: url });
+      setError("");
+    };
+    reader.readAsDataURL(file);
+  }
+  function onPaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+    for (const it of items) {
+      if (it.type.startsWith("image/")) { loadImageFile(it.getAsFile()); e.preventDefault(); return; }
+    }
+  }
 
   async function run(text?: string) {
     const p = (text ?? problem).trim();
-    if (!p) return;
+    if (!p && !image) return;
     if (text) setProblem(text);
     setLoading(true); setError(""); setResult(null);
     try {
-      const r = await fetch("/api/admin/fortigate-assist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ problem: p }) });
+      const r = await fetch("/api/admin/fortigate-assist", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ problem: p, image: image ? { data: image.data, media_type: image.media_type } : undefined }) });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || "Hata");
       setResult(d);
@@ -96,13 +119,29 @@ export default function FortigateAssist() {
       </div>
 
       {/* Giriş */}
-      <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #EE3124", borderRadius: "13px", padding: "16px" }}>
-        <textarea value={problem} onChange={e => setProblem(e.target.value)} rows={3} placeholder="Örn: SSL VPN bağlanıyor ama iç ağdaki sunucuya erişemiyorum…"
-          onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") run(); }}
+      <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderTop: "3px solid #EE3124", borderRadius: "13px", padding: "16px" }}
+        onDragOver={e => e.preventDefault()} onDrop={e => { e.preventDefault(); loadImageFile(e.dataTransfer.files?.[0]); }}>
+        <textarea value={problem} onChange={e => setProblem(e.target.value)} rows={3} placeholder="Örn: SSL VPN bağlanıyor ama iç ağdaki sunucuya erişemiyorum…  (ya da ekran görüntüsünü buraya yapıştır)"
+          onKeyDown={e => { if ((e.ctrlKey || e.metaKey) && e.key === "Enter") run(); }} onPaste={onPaste}
           style={{ width: "100%", border: "1.5px solid #cbd5e1", borderRadius: "9px", padding: "11px 13px", fontSize: "14px", color: "#1a1d2e", resize: "vertical", outline: "none", boxSizing: "border-box", lineHeight: 1.5 }} />
+
+        {/* Eklenen görsel önizleme */}
+        {image && (
+          <div style={{ marginTop: "10px", display: "inline-flex", alignItems: "center", gap: "10px", background: "#f8fafc", border: "1px solid #e5e7ef", borderRadius: "10px", padding: "8px 10px" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={image.preview} alt="Eklenen görsel" style={{ width: 52, height: 52, objectFit: "cover", borderRadius: "7px", border: "1px solid #e5e7ef" }} />
+            <span style={{ fontSize: "12.5px", color: "#475569", fontWeight: 600 }}>📷 Ekran görüntüsü eklendi</span>
+            <button onClick={() => { setImage(null); if (imgRef.current) imgRef.current.value = ""; }} title="Kaldır" style={{ background: "#fef2f2", border: "1px solid #fecaca", color: "#dc2626", borderRadius: "6px", width: 26, height: 26, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer" }}><X size={14} /></button>
+          </div>
+        )}
+
+        <input ref={imgRef} type="file" accept="image/*" onChange={e => loadImageFile(e.target.files?.[0])} style={{ display: "none" }} />
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "10px", flexWrap: "wrap", gap: "8px" }}>
-          <span style={{ fontSize: "11px", color: "#9ca3af" }}>İpucu: Ctrl+Enter ile gönder</span>
-          <button onClick={() => run()} disabled={loading || !problem.trim()} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 20px", borderRadius: "10px", border: "none", background: loading || !problem.trim() ? "#e2e8f0" : "linear-gradient(135deg,#EE3124,#b91c1c)", color: loading || !problem.trim() ? "#94a3b8" : "#fff", fontSize: "14px", fontWeight: 700, cursor: loading || !problem.trim() ? "not-allowed" : "pointer" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+            <button onClick={() => imgRef.current?.click()} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 13px", borderRadius: "9px", border: "1.5px solid #cbd5e1", background: "#fff", color: "#475569", fontSize: "12.5px", fontWeight: 600, cursor: "pointer" }}><ImageIcon size={14} /> Görsel Ekle</button>
+            <span style={{ fontSize: "11px", color: "#9ca3af" }}>Yapıştır (Ctrl+V), sürükle-bırak veya seç · Ctrl+Enter ile gönder</span>
+          </div>
+          <button onClick={() => run()} disabled={loading || (!problem.trim() && !image)} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 20px", borderRadius: "10px", border: "none", background: loading || (!problem.trim() && !image) ? "#e2e8f0" : "linear-gradient(135deg,#EE3124,#b91c1c)", color: loading || (!problem.trim() && !image) ? "#94a3b8" : "#fff", fontSize: "14px", fontWeight: 700, cursor: loading || (!problem.trim() && !image) ? "not-allowed" : "pointer" }}>
             {loading ? <>Üretiliyor…</> : <><Sparkles size={16} /> Çözüm Üret</>}
           </button>
         </div>
