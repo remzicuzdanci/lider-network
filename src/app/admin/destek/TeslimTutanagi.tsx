@@ -137,6 +137,8 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
   const [search, setSearch] = useState("");
   const [modal, setModal] = useState<Partial<DeliveryNote> | null>(null);
   const [saving, setSaving] = useState(false);
+  // Cari kart detayları (firma seçilince adres/e-posta/telefon otomatik çekmek için)
+  const [cariMap, setCariMap] = useState<Record<string, { name: string; address: string | null; email: string | null; phone: string | null }>>({});
 
   async function load() {
     setLoading(true);
@@ -147,6 +149,17 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
     } finally { setLoading(false); }
   }
   useEffect(() => { load(); }, []);
+
+  // Tam firma verisini (adres dahil) çek
+  useEffect(() => {
+    fetch("/api/admin/companies").then(r => r.json()).then(d => {
+      const m: Record<string, { name: string; address: string | null; email: string | null; phone: string | null }> = {};
+      for (const c of (d.companies || [])) {
+        m[c.id] = { name: c.name, address: c.address || null, email: c.contact_email || null, phone: c.phone || null };
+      }
+      setCariMap(m);
+    }).catch(() => {});
+  }, []);
 
   const filtered = list.filter(n => !search.trim() || `${n.note_no} ${n.customer_name || ""}`.toLowerCase().includes(search.toLowerCase()));
 
@@ -262,8 +275,18 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
                 <div>
                   <label style={lblS}>Firma / Müşteri *</label>
                   <select style={inpS} value={modal.company_id || ""} onChange={e => {
-                    const co = companies.find(x => x.id === e.target.value);
-                    setModal({ ...modal, company_id: e.target.value || null, customer_name: co?.name || modal.customer_name });
+                    const id = e.target.value;
+                    const cari = id ? cariMap[id] : null;
+                    const co = companies.find(x => x.id === id);
+                    setModal({
+                      ...modal,
+                      company_id: id || null,
+                      customer_name: cari?.name || co?.name || modal.customer_name,
+                      // Cari kartta tanımlıysa otomatik çek (yoksa mevcut değeri koru)
+                      customer_address: cari?.address ?? modal.customer_address,
+                      customer_email: cari?.email ?? modal.customer_email,
+                      customer_phone: cari?.phone ?? modal.customer_phone,
+                    });
                   }}>
                     <option value="">— Firma seç (veya elle yaz) —</option>
                     {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
