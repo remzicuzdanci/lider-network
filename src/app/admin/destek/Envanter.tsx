@@ -35,18 +35,12 @@ const TYPE_ICON: Record<string, string> = {
   camera: "📹", phone: "☎️", ups: "🔋", printer: "🖨️", pc: "💻", other: "📦",
 };
 
-// Dahili görsel kataloğu — sık kullanılan FortiGate modelleri (model yazılınca otomatik gelir)
-const FG_CATALOG: { key: string; img: string }[] = [
-  { key: "120g", img: "/devices/fortigate-120g.svg" },
-  { key: "100f", img: "/devices/fortigate-100f.svg" },
-  { key: "70g",  img: "/devices/fortigate-70g.svg" },
-  { key: "50g",  img: "/devices/fortigate-50g.svg" },
-  { key: "30g",  img: "/devices/fortigate-30g.svg" },
-];
-function catalogImage(model?: string | null): string | null {
-  if (!model) return null;
-  const norm = model.toLowerCase().replace(/[^a-z0-9]/g, "");
-  for (const c of FG_CATALOG) if (norm.includes(c.key)) return c.img;
+// Tüm FortiGate/firewall cihazlar için varsayılan ürün görseli (yüklenmemişse gösterilir)
+const FG_IMG = "/devices/fortigate.svg";
+// Bir cihazın gösterilecek görseli: yüklenen görsel > firewall/router ise FortiGate görseli > yok (ikon)
+function deviceImage(a: { image_url?: string | null; type?: string | null }): string | null {
+  if (a.image_url) return a.image_url;
+  if (a.type === "firewall" || a.type === "router") return FG_IMG;
   return null;
 }
 
@@ -117,16 +111,6 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   const warrantyAlerts = useMemo(() =>
     list.filter(a => a.status === "active" && a.licensed !== false && (() => { const d = daysLeft(a.warranty_end); return d !== null && d <= 60; })()).length
   , [list]);
-
-  // Görsel öner: önce dahili katalog (100F/120G/70G/50G/30G), sonra aynı modelden yüklenmiş görsel
-  function imageForModel(model?: string | null): string | null {
-    if (!model) return null;
-    const cat = catalogImage(model);
-    if (cat) return cat;
-    const key = model.trim().toLowerCase();
-    const hit = list.find(a => a.image_url && (a.model || "").trim().toLowerCase() === key);
-    return hit?.image_url || null;
-  }
 
   async function uploadImage(file: File) {
     if (file.size > 5 * 1024 * 1024) { alert("Dosya 5MB'tan büyük olamaz."); return; }
@@ -207,8 +191,8 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                       const wb = licenseBadge(a);
                       return (
                         <div key={a.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid #f5f7fa" }}>
-                          {a.image_url
-                            ? <img src={a.image_url} alt={a.model || ""} style={{ width: 46, height: 46, objectFit: "contain", borderRadius: "8px", border: "1px solid #eef2f7", background: "#fff", flexShrink: 0 }} />
+                          {deviceImage(a)
+                            ? <img src={deviceImage(a)!} alt={a.model || ""} style={{ width: 56, height: 40, objectFit: "contain", borderRadius: "8px", border: "1px solid #eef2f7", background: "#fff", flexShrink: 0 }} />
                             : <span style={{ fontSize: "22px", width: 46, textAlign: "center", flexShrink: 0 }}>{TYPE_ICON[a.type] || "📦"}</span>}
                           <div style={{ flex: 1, minWidth: "180px" }}>
                             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
@@ -269,12 +253,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                 </div>
                 <div>
                   <label style={lblS}>Model</label>
-                  <input style={inpS} value={modal.model || ""} onChange={e => {
-                    const model = e.target.value;
-                    // Aynı modelden görsel daha önce yüklendiyse otomatik öner
-                    const sug = !modal.image_url ? imageForModel(model) : null;
-                    setModal({ ...modal, model, image_url: sug || modal.image_url });
-                  }} placeholder="FortiGate 100F" />
+                  <input style={inpS} value={modal.model || ""} onChange={e => setModal({ ...modal, model: e.target.value })} placeholder="FortiGate 100F" />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
@@ -335,7 +314,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                 <label style={lblS}>Cihaz Görseli</label>
                 <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
                   <div style={{ width: 64, height: 64, borderRadius: "10px", border: "1px solid #e5e7ef", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                    {modal.image_url ? <img src={modal.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <ImageIcon size={22} color="#cbd5e1" />}
+                    {deviceImage(modal) ? <img src={deviceImage(modal)!} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <ImageIcon size={22} color="#cbd5e1" />}
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "12.5px", fontWeight: 700, cursor: uploading ? "default" : "pointer", opacity: uploading ? .6 : 1 }}>
