@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, FileText, AlertTriangle, CalendarClock, ShieldCheck, RefreshCw } from "lucide-react";
+import { Plus, Pencil, Trash2, FileText, AlertTriangle, CalendarClock, ShieldCheck, RefreshCw, Mail } from "lucide-react";
 
 interface Company { id: string; name: string; contact_name?: string; }
 interface Contract {
@@ -73,6 +73,7 @@ export default function Sozlesmeler({ companies, currentUserName, canSeeMoney, i
   const [filter, setFilter] = useState<"all" | "soon" | "expired" | "active">("all");
   const [modal, setModal] = useState<Partial<Contract> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mailing, setMailing] = useState(false);
 
   async function load() {
     setLoading(true);
@@ -132,6 +133,17 @@ export default function Sozlesmeler({ companies, currentUserName, canSeeMoney, i
     await fetch("/api/admin/contracts", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id }) });
     await load();
   }
+  async function sendReminder() {
+    setMailing(true);
+    try {
+      const r = await fetch("/api/admin/contracts/check-renewals");
+      const d = await r.json();
+      if (!r.ok) { alert("Hata: " + (d.error || "gönderilemedi")); return; }
+      if (d.sent) alert(`✅ ${d.count} sözleşme için hatırlatma maili gönderildi → ${d.to}`);
+      else alert("Şu an 30 gün içinde bitecek veya süresi geçmiş sözleşme yok, mail gönderilmedi.");
+    } catch { alert("Mail gönderilemedi."); }
+    finally { setMailing(false); }
+  }
 
   return (
     <div>
@@ -151,8 +163,12 @@ export default function Sozlesmeler({ companies, currentUserName, canSeeMoney, i
           ))}
         </div>
         <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Sözleşme, firma, seri no ara..." style={{ ...inpS, flex: 1, minWidth: "160px", maxWidth: "320px" }} />
+        <button onClick={sendReminder} disabled={mailing} title="Yaklaşan sözleşmeler için fortigate@lidernetwork.com.tr adresine hatırlatma maili gönder"
+          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 15px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#475569", fontSize: "12.5px", fontWeight: 700, cursor: mailing ? "default" : "pointer", marginLeft: "auto", opacity: mailing ? .6 : 1 }}>
+          <Mail size={15} /> {mailing ? "Gönderiliyor…" : "Hatırlatma Maili"}
+        </button>
         <button onClick={() => setModal({ type: "fortinet", currency: "TL", status: "active", auto_remind: true, end_date: "" })}
-          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
           <Plus size={15} /> Sözleşme Ekle
         </button>
       </div>
