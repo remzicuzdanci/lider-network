@@ -134,7 +134,7 @@ export async function sendDeliveryNoteEmail(d: DeliveryMailData): Promise<void> 
         </td></tr>
 
       </table>
-      <div style="font-size:11px;color:#9aa4b2;margin-top:12px;font-family:Arial,sans-serif">Bu tutanak Lider Network Destek Paneli üzerinden oluşturulmuştur.</div>
+      <div style="font-size:11px;color:#9aa4b2;margin-top:12px;line-height:1.6;font-family:Arial,sans-serif;max-width:600px">İşbu teslim tutanağı, yukarıda belirtilen ürünlerin eksiksiz ve sağlam şekilde teslim alındığını teyit eder. Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti. tarafından düzenlenmiştir.</div>
     </td></tr></table>
   </body></html>`;
 
