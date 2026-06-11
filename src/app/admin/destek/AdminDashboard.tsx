@@ -8,12 +8,13 @@ import {
   TicketCheck, Users, BarChart2, LogOut, RefreshCw,
   Clock, Activity, CheckCircle, AlertCircle, Building2,
   UserCog, Plus, X, ArrowUpRight, TrendingUp, Filter,
-  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote, Trash2, FileText, Shield,
+  Zap, ShieldCheck, ChevronRight, ListTodo, Menu, StickyNote, Trash2, FileText, Shield, ScrollText,
 } from "lucide-react";
 import IsPlani from "./IsPlani";
 import PersonelNotlari from "./PersonelNotlari";
 import Teklifler from "./Teklifler";
 import FortigateAssist from "./FortigateAssist";
+import Sozlesmeler from "./Sozlesmeler";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -65,7 +66,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate";
+type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate" | "contracts";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, tag, onClick }: {
@@ -138,6 +139,7 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [quoteCounts, setQuoteCounts] = useState<Record<string, number>>({});
   const [quotesFilterCompany, setQuotesFilterCompany] = useState("");
+  const [renewalCount, setRenewalCount] = useState(0);
 
   // Session
   const [sessionName, setSessionName] = useState("Admin");
@@ -227,6 +229,15 @@ export default function AdminDashboard() {
       if (d.role) setSessionRole(d.role);
     });
   }, []);
+
+  // ── Yaklaşan/geçmiş sözleşme uyarı sayacı (nav rozeti) ──────────────────────
+  useEffect(() => {
+    fetch("/api/admin/contracts").then(r => r.json()).then(d => {
+      const arr = (d.contracts || []) as Array<{ status: string; end_date: string }>;
+      const n = arr.filter(c => c.status === "active" && Math.ceil((new Date(c.end_date + "T00:00:00").getTime() - Date.now()) / 86400000) <= 30).length;
+      setRenewalCount(n);
+    }).catch(() => {});
+  }, [tab]);
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchTickets = useCallback(async () => {
@@ -842,6 +853,7 @@ export default function AdminDashboard() {
           <NavItem icon={<Users size={15} />} label="Dış Müşteriler" active={tab==="prospects"} badge={externalCompanies.length || undefined} badgeColor="#7c3aed" onClick={() => setTab("prospects")} />
 
           <SideSection label="Operasyon" />
+          <NavItem icon={<ScrollText size={15} />} label="Sözleşmeler" active={tab==="contracts"} badge={renewalCount || undefined} badgeColor="#ea580c" onClick={() => setTab("contracts")} />
           <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
           <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
           <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
@@ -934,10 +946,10 @@ export default function AdminDashboard() {
               color: "#1a1d2e",
               margin: "0 0 3px"
             }}>
-              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Web Üyeleri" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
+              {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Web Üyeleri" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="contracts" ? "Sözleşmeler & Yenileme" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
-              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} web üyesi (siteden kayıt)` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : "Filtreli rapor ve istatistikler"}
+              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} web üyesi (siteden kayıt)` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : tab==="contracts" ? (renewalCount > 0 ? `⚠ ${renewalCount} sözleşme 30 gün içinde bitiyor` : "Lisans, destek ve bakım sözleşmeleri") : "Filtreli rapor ve istatistikler"}
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
@@ -1591,6 +1603,16 @@ export default function AdminDashboard() {
           <div style={{ padding: "24px 28px" }}>
             <Teklifler companies={companies} currentUserName={sessionName} staff={staff.map(s => s.name)} initialCompanyId={quotesFilterCompany} />
           </div>
+        )}
+
+        {tab === "contracts" && (
+          <Sozlesmeler
+            companies={contractedCompanies}
+            currentUserName={sessionName}
+            canSeeMoney={sessionRole === "super_admin"}
+            isMobile={isMobile}
+            onCreateRenewalQuote={(companyId) => { setQuotesFilterCompany(companyId); setTab("quotes"); }}
+          />
         )}
 
         {tab === "fortigate" && (
