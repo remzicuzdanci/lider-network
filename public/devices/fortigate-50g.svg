@@ -1,30 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 250" width="440" height="250">
   <defs>
     <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#3b4049"/><stop offset="1" stop-color="#23262c"/>
+      <stop offset="0" stop-color="#ffffff"/><stop offset="0.5" stop-color="#eef1f5"/><stop offset="1" stop-color="#dce2e9"/>
     </linearGradient>
-    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#4d535d"/><stop offset="1" stop-color="#383d45"/>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f6f8fa"/><stop offset="1" stop-color="#e6ebf1"/>
     </linearGradient>
   </defs>
   <rect width="440" height="250" fill="#ffffff"/>
-  <ellipse cx="220" cy="208" rx="120" ry="12" fill="#0f172a" opacity="0.07"/>
-  <rect x="104" y="84" width="232" height="110" rx="10" fill="url(#body)"/>
-  <path d="M104 96 Q104 84 116 84 L324 84 Q336 84 336 96 L336 104 L104 104 Z" fill="url(#top)"/>
-  <rect x="116" y="112" width="208" height="74" rx="6" fill="#1b1e23"/>
-  <rect x="116" y="112" width="208" height="5" rx="2.5" fill="#ee2e3a"/>
-  <g>
-    <circle cx="134" cy="130" r="3" fill="#3ddc6d"/>
-    <circle cx="145" cy="130" r="3" fill="#3ddc6d"/>
-    <circle cx="156" cy="130" r="3" fill="#f5c518"/>
+  <ellipse cx="220" cy="204" rx="124" ry="12" fill="#0f172a" opacity="0.06"/>
+  <rect x="104" y="84" width="232" height="110" rx="11" fill="url(#body)" stroke="#cfd6df"/>
+  <rect x="104" y="84" width="232" height="15" rx="11" fill="#ffffff" opacity="0.6"/>
+  <rect x="116" y="108" width="208" height="76" rx="6" fill="url(#face)" stroke="#d7dde4"/>
+  <g transform="translate(130,119)">
+    <path d="M0 12 L9 0 L16 0 L7 12 Z" fill="#ee2e3a"/>
+    <path d="M10 12 L19 0 L26 0 L17 12 Z" fill="#ee2e3a"/>
+    <text x="32" y="11" font-family="Arial, sans-serif" font-size="13" font-weight="800" fill="#11243f">Fortinet</text>
   </g>
-  <text x="316" y="133" text-anchor="end" font-family="Arial, sans-serif" font-size="10" font-weight="700" letter-spacing="2" fill="#9aa3ad">FORTINET</text>
-  <g fill="#0c0e11" stroke="#3a3f46" stroke-width="1">
-    <rect x="132" y="152" width="20" height="18" rx="2"/>
-    <rect x="158" y="152" width="20" height="18" rx="2"/>
-    <rect x="184" y="152" width="20" height="18" rx="2"/>
-    <rect x="210" y="152" width="20" height="18" rx="2"/>
-    <rect x="236" y="152" width="20" height="18" rx="2"/>
+  <g><circle cx="132" cy="150" r="2.6" fill="#27c24c"/><circle cx="142" cy="150" r="2.6" fill="#27c24c"/><circle cx="152" cy="150" r="2.6" fill="#f5b40a"/></g>
+  <g fill="#222831" stroke="#10141a" stroke-width="0.8">
+    <rect x="168" y="156" width="19" height="18" rx="2"/><rect x="191" y="156" width="19" height="18" rx="2"/>
+    <rect x="214" y="156" width="19" height="18" rx="2"/><rect x="237" y="156" width="19" height="18" rx="2"/>
   </g>
+  <g fill="#2f3640"><rect x="280" y="156" width="20" height="18" rx="2"/></g>
   <text x="220" y="230" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#0f172a">FortiGate 50G</text>
 </svg>
