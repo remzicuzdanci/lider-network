@@ -845,7 +845,7 @@ export default function AdminDashboard() {
 
         <nav style={{ flex: 1, padding: "10px 8px" }}>
           <SideSection label="Destek" />
-          <NavItem icon={<TicketCheck size={15} />} label="Talepler" active={tab==="tickets"} badge={total} badgeColor="#0052ff" onClick={() => setTab("tickets")} />
+          <NavItem icon={<TicketCheck size={15} />} label="Talepler" active={tab==="tickets"} badge={stats?.total ?? total} badgeColor="#0052ff" onClick={() => setTab("tickets")} />
           <NavItem icon={<Users size={15} />} label="Web Üyeleri" active={tab==="customers"} badge={pending} badgeColor="#ef4444" onClick={() => setTab("customers")} />
           <NavItem icon={<Shield size={15} />} label="FortiGate Destek" tag="AI" active={tab==="fortigate"} onClick={() => setTab("fortigate")} />
 
@@ -951,7 +951,7 @@ export default function AdminDashboard() {
               {tab==="tickets" ? "Destek Talepleri" : tab==="customers" ? "Web Üyeleri" : tab==="companies" ? "Sözleşmeli Şirketler" : tab==="prospects" ? "Dış Müşteriler" : tab==="staff" ? "Personel" : tab==="isplan" ? "İş Planı" : tab==="notes" ? "Personel Notları" : tab==="quotes" ? "Teklifler" : tab==="contracts" ? "Sözleşmeler & Yenileme" : tab==="assets" ? "Cihaz Envanteri" : tab==="fortigate" ? "FortiGate Destek Asistanı" : "Raporlar"}
             </h1>
             <p style={{ color: "#6b7280", fontSize: isMobile ? "12px" : "14px", margin: 0 }}>
-              {tab==="tickets" ? `${total} talep` : tab==="customers" ? `${customers.length} web üyesi (siteden kayıt)` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : tab==="contracts" ? (renewalCount > 0 ? `⚠ ${renewalCount} sözleşme 30 gün içinde bitiyor` : "Lisans, destek ve bakım sözleşmeleri") : tab==="assets" ? "Müşteri cihaz ve donanım envanteri" : "Filtreli rapor ve istatistikler"}
+              {tab==="tickets" ? ((statusF==="all" && priorityF==="all" && categoryF==="all" && dateF==="all" && !search) ? `${stats?.total ?? total} talep` : `${total} sonuç (filtreli)`) : tab==="customers" ? `${customers.length} web üyesi (siteden kayıt)` : tab==="companies" ? `${contractedCompanies.length} sözleşmeli şirket` : tab==="prospects" ? `${externalCompanies.length} dış müşteri (teklif isteyen)` : tab==="staff" ? `${staff.length} personel` : tab==="contracts" ? (renewalCount > 0 ? `⚠ ${renewalCount} sözleşme 30 gün içinde bitiyor` : "Lisans, destek ve bakım sözleşmeleri") : tab==="assets" ? "Müşteri cihaz ve donanım envanteri" : "Filtreli rapor ve istatistikler"}
             </p>
           </div>
           <div style={{ display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap" }}>
