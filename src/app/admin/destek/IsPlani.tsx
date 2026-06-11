@@ -6,8 +6,9 @@ import {
   MoreHorizontal, Edit2, Trash2, Clock, ChevronLeft,
   ChevronRight, CheckCircle2, Circle, Columns,
   FolderKanban, CalendarDays, TrendingUp, AlertTriangle, Receipt,
-  BarChart3, FileSpreadsheet, FileText, Download,
+  BarChart3, FileSpreadsheet, FileText, Download, PackageCheck,
 } from "lucide-react";
+import TeslimTutanagi from "./TeslimTutanagi";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -1363,7 +1364,7 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
   );
 }
 
-type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı" | "raporlar";
+type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı" | "teslimat" | "raporlar";
 
 export default function IsPlani({ companies, staff = [], currentUserName = "", currentUserRole = "staff" }: { companies: Company[]; staff?: string[]; currentUserName?: string; currentUserRole?: string }) {
   const { width } = useWindowSize();
@@ -1474,6 +1475,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "", c
     { id:"kanban",   label:"Kanban Board",    icon:<Columns size={14}/> },
     { id:"projeler", label:"Projeler",        icon:<FolderKanban size={14}/> },
     { id:"faturalandı", label:"Faturalanacak",  icon:<Receipt size={14}/> },
+    { id:"teslimat", label:"Teslim Tutanağı", icon:<PackageCheck size={14}/> },
     ...(isSuperAdmin ? [{ id:"raporlar" as InnerTab, label:"Raporlar", icon:<BarChart3 size={14}/> }] : []),
   ];
 
@@ -1565,6 +1567,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "", c
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
+      {innerTab==="teslimat" && <TeslimTutanagi companies={companies} currentUserName={currentUserName} staff={staff} isMobile={isMobile} />}
       {innerTab==="raporlar" && isSuperAdmin && tasksLoaded && <RaporlarTab tasks={tasks} companies={companies} staff={staff} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onSend={sendServiceForm} onClose={()=>setServiceFormModal(false)} />}
