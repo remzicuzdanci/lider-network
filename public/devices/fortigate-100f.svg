@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 250" width="440" height="250">
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3b4049"/><stop offset="1" stop-color="#23262c"/>
+    </linearGradient>
+    <linearGradient id="top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4d535d"/><stop offset="1" stop-color="#383d45"/>
+    </linearGradient>
+  </defs>
+  <rect width="440" height="250" fill="#ffffff"/>
+  <ellipse cx="220" cy="210" rx="158" ry="14" fill="#0f172a" opacity="0.07"/>
+  <!-- chassis -->
+  <rect x="62" y="74" width="316" height="126" rx="11" fill="url(#body)"/>
+  <path d="M62 86 Q62 74 74 74 L366 74 Q378 74 378 86 L378 98 L62 98 Z" fill="url(#top)"/>
+  <!-- front panel -->
+  <rect x="74" y="106" width="292" height="84" rx="7" fill="#1b1e23"/>
+  <rect x="74" y="106" width="292" height="5" rx="2.5" fill="#ee2e3a"/>
+  <!-- LEDs -->
+  <g>
+    <circle cx="92" cy="124" r="3.2" fill="#3ddc6d"/>
+    <circle cx="104" cy="124" r="3.2" fill="#3ddc6d"/>
+    <circle cx="116" cy="124" r="3.2" fill="#f5c518"/>
+  </g>
+  <!-- brand -->
+  <text x="358" y="127" text-anchor="end" font-family="Arial, sans-serif" font-size="11" font-weight="700" letter-spacing="2" fill="#9aa3ad">FORTINET</text>
+  <!-- ports row -->
+  <g fill="#0c0e11" stroke="#3a3f46" stroke-width="1">
+    <rect x="90"  y="150" width="22" height="20" rx="2"/>
+    <rect x="118" y="150" width="22" height="20" rx="2"/>
+    <rect x="146" y="150" width="22" height="20" rx="2"/>
+    <rect x="174" y="150" width="22" height="20" rx="2"/>
+    <rect x="202" y="150" width="22" height="20" rx="2"/>
+    <rect x="230" y="150" width="22" height="20" rx="2"/>
+    <rect x="258" y="150" width="22" height="20" rx="2"/>
+    <rect x="286" y="150" width="22" height="20" rx="2"/>
+  </g>
+  <g fill="#2a2f36">
+    <rect x="320" y="150" width="18" height="20" rx="2"/>
+    <rect x="342" y="150" width="18" height="20" rx="2"/>
+  </g>
+  <!-- model label -->
+  <text x="220" y="234" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="800" fill="#0f172a">FortiGate 100F</text>
+</svg>

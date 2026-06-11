@@ -35,6 +35,21 @@ const TYPE_ICON: Record<string, string> = {
   camera: "📹", phone: "☎️", ups: "🔋", printer: "🖨️", pc: "💻", other: "📦",
 };
 
+// Dahili görsel kataloğu — sık kullanılan FortiGate modelleri (model yazılınca otomatik gelir)
+const FG_CATALOG: { key: string; img: string }[] = [
+  { key: "120g", img: "/devices/fortigate-120g.svg" },
+  { key: "100f", img: "/devices/fortigate-100f.svg" },
+  { key: "70g",  img: "/devices/fortigate-70g.svg" },
+  { key: "50g",  img: "/devices/fortigate-50g.svg" },
+  { key: "30g",  img: "/devices/fortigate-30g.svg" },
+];
+function catalogImage(model?: string | null): string | null {
+  if (!model) return null;
+  const norm = model.toLowerCase().replace(/[^a-z0-9]/g, "");
+  for (const c of FG_CATALOG) if (norm.includes(c.key)) return c.img;
+  return null;
+}
+
 function daysLeft(end: string | null): number | null {
   if (!end) return null;
   return Math.ceil((new Date(end + "T00:00:00").getTime() - Date.now()) / 86400000);
@@ -103,9 +118,11 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
     list.filter(a => a.status === "active" && a.licensed !== false && (() => { const d = daysLeft(a.warranty_end); return d !== null && d <= 60; })()).length
   , [list]);
 
-  // Aynı modelden daha önce yüklenmiş görseli bul (otomatik öneri)
+  // Görsel öner: önce dahili katalog (100F/120G/70G/50G/30G), sonra aynı modelden yüklenmiş görsel
   function imageForModel(model?: string | null): string | null {
     if (!model) return null;
+    const cat = catalogImage(model);
+    if (cat) return cat;
     const key = model.trim().toLowerCase();
     const hit = list.find(a => a.image_url && (a.model || "").trim().toLowerCase() === key);
     return hit?.image_url || null;
