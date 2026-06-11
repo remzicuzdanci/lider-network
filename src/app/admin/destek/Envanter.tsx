@@ -1,8 +1,8 @@
-"use client";
+﻿"use client";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Server, ShieldAlert, Cpu, Search, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Pencil, Trash2, Server, ShieldAlert, Cpu, Search, ChevronDown, ChevronRight, Upload, ImageIcon, BadgeCheck, BadgeX } from "lucide-react";
 
-interface Company { id: string; name: string; }
+interface Company { id: string; name: string; address?: string | null; }
 interface Asset {
   id: string;
   company_id: string | null;
@@ -14,8 +14,11 @@ interface Asset {
   firmware: string | null;
   ip_address: string | null;
   location: string | null;
+  address: string | null;
   purchase_date: string | null;
-  warranty_end: string | null;
+  warranty_end: string | null;   // Lisans bitiş tarihi
+  licensed: boolean;
+  image_url: string | null;
   status: string;
   notes: string | null;
   created_by: string | null;
@@ -40,12 +43,13 @@ function fmtDate(s: string | null) {
   if (!s) return "—";
   return new Date(s).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 }
-function warrantyBadge(end: string | null): { label: string; color: string; bg: string } | null {
-  const d = daysLeft(end);
-  if (d === null) return null;
-  if (d < 0) return { label: "Garanti bitti", color: "#dc2626", bg: "#fef2f2" };
-  if (d <= 60) return { label: `Garanti ${d}g`, color: "#ea580c", bg: "#fff7ed" };
-  return { label: "Garantili", color: "#15803d", bg: "#f0fdf4" };
+function licenseBadge(a: Pick<Asset, "licensed" | "warranty_end">): { label: string; color: string; bg: string } | null {
+  if (a.licensed === false) return { label: "Lisanssız", color: "#6b7280", bg: "#f3f4f6" };
+  const d = daysLeft(a.warranty_end);
+  if (d === null) return { label: "Lisanslı", color: "#15803d", bg: "#f0fdf4" };
+  if (d < 0) return { label: "Lisans bitti", color: "#dc2626", bg: "#fef2f2" };
+  if (d <= 60) return { label: `Lisans ${d}g`, color: "#ea580c", bg: "#fff7ed" };
+  return { label: "Lisanslı", color: "#15803d", bg: "#f0fdf4" };
 }
 
 const inpS: React.CSSProperties = {
@@ -62,6 +66,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   const [typeF, setTypeF] = useState("all");
   const [modal, setModal] = useState<Partial<Asset> | null>(null);
   const [saving, setSaving] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [openCo, setOpenCo] = useState<Record<string, boolean>>({});
 
   async function load() {
@@ -95,8 +100,28 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   }, [filtered]);
 
   const warrantyAlerts = useMemo(() =>
-    list.filter(a => a.status === "active" && (() => { const d = daysLeft(a.warranty_end); return d !== null && d <= 60; })()).length
+    list.filter(a => a.status === "active" && a.licensed !== false && (() => { const d = daysLeft(a.warranty_end); return d !== null && d <= 60; })()).length
   , [list]);
+
+  // Aynı modelden daha önce yüklenmiş görseli bul (otomatik öneri)
+  function imageForModel(model?: string | null): string | null {
+    if (!model) return null;
+    const key = model.trim().toLowerCase();
+    const hit = list.find(a => a.image_url && (a.model || "").trim().toLowerCase() === key);
+    return hit?.image_url || null;
+  }
+
+  async function uploadImage(file: File) {
+    if (file.size > 5 * 1024 * 1024) { alert("Dosya 5MB'tan büyük olamaz."); return; }
+    setUploading(true);
+    try {
+      const fd = new FormData(); fd.append("file", file);
+      const r = await fetch("/api/admin/assets/upload", { method: "POST", body: fd });
+      const d = await r.json();
+      if (!r.ok) { alert("Yükleme hatası: " + (d.error || "")); return; }
+      setModal(m => m ? { ...m, image_url: d.url } : m);
+    } finally { setUploading(false); }
+  }
 
   async function save() {
     if (!modal?.model && !modal?.type) { alert("Cihaz tipi ve model gerekli."); return; }
@@ -121,7 +146,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap: "14px", marginBottom: "18px" }}>
         <SumCard icon={<Server size={18} />} value={list.length} label="Toplam Cihaz" color="#0052ff" bg="#eff6ff" />
         <SumCard icon={<Cpu size={18} />} value={grouped.length} label="Müşteri" color="#7c3aed" bg="#f5f3ff" />
-        <SumCard icon={<ShieldAlert size={18} />} value={warrantyAlerts} label="Garanti Uyarısı (60g)" color="#ea580c" bg="#fff7ed" />
+        <SumCard icon={<ShieldAlert size={18} />} value={warrantyAlerts} label="Lisans Uyarısı (60g)" color="#ea580c" bg="#fff7ed" />
       </div>
 
       {/* Üst bar */}
@@ -134,7 +159,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
           <option value="all">Tüm Tipler</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{TYPE_ICON[k]} {v}</option>)}
         </select>
-        <button onClick={() => setModal({ type: "firewall", brand: "Fortinet", status: "active" })}
+        <button onClick={() => setModal({ type: "firewall", brand: "Fortinet", status: "active", licensed: true })}
           style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>
           <Plus size={15} /> Cihaz Ekle
         </button>
@@ -146,7 +171,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
       ) : grouped.length === 0 ? (
         <div style={{ textAlign: "center", padding: "50px 20px", background: "#fff", borderRadius: "14px", border: "1px dashed #e5e7ef" }}>
           <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 14px" }}>Kayıtlı cihaz yok.</p>
-          <button onClick={() => setModal({ type: "firewall", brand: "Fortinet", status: "active" })} style={{ padding: "10px 20px", background: "#0052ff", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>İlk Cihazı Ekle</button>
+          <button onClick={() => setModal({ type: "firewall", brand: "Fortinet", status: "active", licensed: true })} style={{ padding: "10px 20px", background: "#0052ff", color: "#fff", border: "none", borderRadius: "8px", fontSize: "14px", fontWeight: 700, cursor: "pointer" }}>İlk Cihazı Ekle</button>
         </div>
       ) : (
         <div style={{ display: "grid", gap: "12px" }}>
@@ -162,10 +187,12 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                 {open && (
                   <div style={{ display: "grid", gap: "0" }}>
                     {items.map(a => {
-                      const wb = warrantyBadge(a.warranty_end);
+                      const wb = licenseBadge(a);
                       return (
                         <div key={a.id} style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center", padding: "13px 18px", borderBottom: "1px solid #f5f7fa" }}>
-                          <span style={{ fontSize: "22px", flexShrink: 0 }}>{TYPE_ICON[a.type] || "📦"}</span>
+                          {a.image_url
+                            ? <img src={a.image_url} alt={a.model || ""} style={{ width: 46, height: 46, objectFit: "contain", borderRadius: "8px", border: "1px solid #eef2f7", background: "#fff", flexShrink: 0 }} />
+                            : <span style={{ fontSize: "22px", width: 46, textAlign: "center", flexShrink: 0 }}>{TYPE_ICON[a.type] || "📦"}</span>}
                           <div style={{ flex: 1, minWidth: "180px" }}>
                             <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "8px" }}>
                               <span style={{ fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{a.brand ? a.brand + " " : ""}{a.model || TYPE_LABEL[a.type]}</span>
@@ -174,10 +201,10 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                               {a.status !== "active" && <span style={{ fontSize: "10.5px", fontWeight: 700, color: "#6b7280", background: "#f3f4f6", padding: "1px 8px", borderRadius: "20px" }}>Pasif</span>}
                             </div>
                             <p style={{ margin: "2px 0 0", fontSize: "12px", color: "#6b7280" }}>
-                              {[a.serial_no && `SN: ${a.serial_no}`, a.ip_address && `IP: ${a.ip_address}`, a.location].filter(Boolean).join(" · ") || "—"}
+                              {[a.serial_no && `SN: ${a.serial_no}`, a.ip_address && `IP: ${a.ip_address}`, a.location || a.address].filter(Boolean).join(" · ") || "—"}
                             </p>
                           </div>
-                          <span style={{ fontSize: "11.5px", color: "#9ca3af", minWidth: "90px" }}>Garanti: {fmtDate(a.warranty_end)}</span>
+                          <span style={{ fontSize: "11.5px", color: "#9ca3af", minWidth: "90px" }}>{a.licensed === false ? "Lisanssız cihaz" : `Lisans: ${fmtDate(a.warranty_end)}`}</span>
                           <div style={{ display: "flex", gap: "6px", flexShrink: 0 }}>
                             <button onClick={() => setModal(a)} title="Düzenle" style={{ width: 32, height: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid #e5e7ef", background: "#fff", color: "#475569", cursor: "pointer" }}><Pencil size={13} /></button>
                             <button onClick={() => remove(a)} title="Sil" style={{ width: 32, height: 32, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}><Trash2 size={13} /></button>
@@ -204,7 +231,8 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                   <label style={lblS}>Firma</label>
                   <select style={inpS} value={modal.company_id || ""} onChange={e => {
                     const co = companies.find(x => x.id === e.target.value);
-                    setModal({ ...modal, company_id: e.target.value || null, company_name: co?.name || null });
+                    // Cari kartta adres tanımlıysa otomatik çek (mevcut değeri koru)
+                    setModal({ ...modal, company_id: e.target.value || null, company_name: co?.name || null, address: co?.address ?? modal.address });
                   }}>
                     <option value="">— Seçiniz —</option>
                     {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
@@ -224,7 +252,12 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                 </div>
                 <div>
                   <label style={lblS}>Model</label>
-                  <input style={inpS} value={modal.model || ""} onChange={e => setModal({ ...modal, model: e.target.value })} placeholder="FortiGate 100F" />
+                  <input style={inpS} value={modal.model || ""} onChange={e => {
+                    const model = e.target.value;
+                    // Aynı modelden görsel daha önce yüklendiyse otomatik öner
+                    const sug = !modal.image_url ? imageForModel(model) : null;
+                    setModal({ ...modal, model, image_url: sug || modal.image_url });
+                  }} placeholder="FortiGate 100F" />
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
@@ -247,16 +280,57 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
                   <input style={inpS} value={modal.location || ""} onChange={e => setModal({ ...modal, location: e.target.value })} placeholder="Merkez sistem odası" />
                 </div>
               </div>
+              <div>
+                <label style={lblS}>Adres (kayıtlı/kurulu olduğu)</label>
+                <input style={inpS} value={modal.address || ""} onChange={e => setModal({ ...modal, address: e.target.value })} placeholder="Firma seçilince cari karttan otomatik gelir" />
+              </div>
+
+              {/* Lisans durumu */}
+              <div>
+                <label style={lblS}>Lisans Durumu</label>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button type="button" onClick={() => setModal({ ...modal, licensed: true })}
+                    style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 12px", borderRadius: "9px", border: `1.5px solid ${modal.licensed !== false ? "#15803d" : "#e5e7ef"}`, background: modal.licensed !== false ? "#f0fdf4" : "#fff", color: modal.licensed !== false ? "#15803d" : "#6b7280", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                    <BadgeCheck size={15} /> Lisanslı
+                  </button>
+                  <button type="button" onClick={() => setModal({ ...modal, licensed: false })}
+                    style={{ flex: 1, display: "inline-flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "9px 12px", borderRadius: "9px", border: `1.5px solid ${modal.licensed === false ? "#6b7280" : "#e5e7ef"}`, background: modal.licensed === false ? "#f3f4f6" : "#fff", color: modal.licensed === false ? "#374151" : "#6b7280", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                    <BadgeX size={15} /> Lisanssız (sadece destek)
+                  </button>
+                </div>
+              </div>
+
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
                 <div>
                   <label style={lblS}>Alım Tarihi</label>
                   <input type="date" style={inpS} value={modal.purchase_date || ""} onChange={e => setModal({ ...modal, purchase_date: e.target.value })} />
                 </div>
-                <div>
-                  <label style={lblS}>Garanti Bitiş</label>
-                  <input type="date" style={inpS} value={modal.warranty_end || ""} onChange={e => setModal({ ...modal, warranty_end: e.target.value })} />
+                {modal.licensed !== false && (
+                  <div>
+                    <label style={lblS}>Lisans Bitiş</label>
+                    <input type="date" style={inpS} value={modal.warranty_end || ""} onChange={e => setModal({ ...modal, warranty_end: e.target.value })} />
+                  </div>
+                )}
+              </div>
+
+              {/* Görsel */}
+              <div>
+                <label style={lblS}>Cihaz Görseli</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ width: 64, height: 64, borderRadius: "10px", border: "1px solid #e5e7ef", background: "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                    {modal.image_url ? <img src={modal.image_url} alt="" style={{ width: "100%", height: "100%", objectFit: "contain" }} /> : <ImageIcon size={22} color="#cbd5e1" />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "12.5px", fontWeight: 700, cursor: uploading ? "default" : "pointer", opacity: uploading ? .6 : 1 }}>
+                      <Upload size={14} /> {uploading ? "Yükleniyor…" : (modal.image_url ? "Görseli Değiştir" : "Görsel Yükle")}
+                      <input type="file" accept="image/*" style={{ display: "none" }} disabled={uploading} onChange={e => { const f = e.target.files?.[0]; if (f) uploadImage(f); e.target.value = ""; }} />
+                    </label>
+                    {modal.image_url && <button type="button" onClick={() => setModal({ ...modal, image_url: null })} style={{ marginLeft: "8px", padding: "8px 12px", borderRadius: "8px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Kaldır</button>}
+                    <p style={{ margin: "6px 0 0", fontSize: "11px", color: "#9ca3af" }}>Aynı modeli sonra eklediğinde görsel otomatik gelir.</p>
+                  </div>
                 </div>
               </div>
+
               <div>
                 <label style={lblS}>Not</label>
                 <textarea style={{ ...inpS, minHeight: "60px", resize: "vertical" }} value={modal.notes || ""} onChange={e => setModal({ ...modal, notes: e.target.value })} />

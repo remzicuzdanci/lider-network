@@ -40,8 +40,11 @@ export async function POST(req: NextRequest) {
     firmware:      b.firmware || null,
     ip_address:    b.ip_address || null,
     location:      b.location || null,
+    address:       b.address || null,
     purchase_date: b.purchase_date || null,
     warranty_end:  b.warranty_end || null,
+    licensed:      b.licensed !== false,
+    image_url:     b.image_url || null,
     status:        b.status || "active",
     notes:         b.notes || null,
     created_by:    user.name || null,
@@ -60,7 +63,7 @@ export async function PATCH(req: NextRequest) {
   const { id, ...updates } = await req.json();
   if (!id) return NextResponse.json({ error: "ID gerekli" }, { status: 400 });
 
-  const allowed = ["company_id", "company_name", "type", "brand", "model", "serial_no", "firmware", "ip_address", "location", "purchase_date", "warranty_end", "status", "notes"];
+  const allowed = ["company_id", "company_name", "type", "brand", "model", "serial_no", "firmware", "ip_address", "location", "address", "purchase_date", "warranty_end", "licensed", "image_url", "status", "notes"];
   const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
   for (const k of allowed) if (k in updates) patch[k] = updates[k];
 
