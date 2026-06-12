@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import { companyLogo } from "@/data/customer-logos";
 
 interface Company {
   id: string; name: string;
@@ -193,6 +194,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   function quoteDocHtml(no: string): string {
     const cur = currency;
     const c = companies.find(x => x.id === companyId);
+    const cLogo = companyLogo(c || { name: customerName(companyId) });
     const m = (n: number) => `${SYM[cur] || cur} ${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
     const dt = (d?: string) => d ? new Date(d).toLocaleDateString("tr-TR") : "—";
     const kdvRates = [...new Set(items.map(i => +i.kdv_rate || 0))];
@@ -256,9 +258,14 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     <table style="width:100%;border:0;border-collapse:separate;border-spacing:0;"><tr>
       <td style="border:0;vertical-align:top;width:58%;padding-right:14px;">
         <div class="card" style="border-left:4px solid #0052ff;">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;font-weight:800;margin-bottom:6px;">Müşteri</div>
-          <div style="font-weight:800;font-size:14px;color:#0f172a;">${c?.name || customerName(companyId)}</div>
-          ${addrLine}${taxLine}${attn}
+          <table style="width:100%;border:0;border-collapse:collapse;"><tr>
+            <td style="border:0;vertical-align:top;">
+              <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;font-weight:800;margin-bottom:6px;">Müşteri</div>
+              <div style="font-weight:800;font-size:14px;color:#0f172a;">${c?.name || customerName(companyId)}</div>
+              ${addrLine}${taxLine}${attn}
+            </td>
+            ${cLogo?.logo ? `<td style="border:0;width:96px;text-align:right;vertical-align:top;"><img src="${cLogo.logo}" alt="" style="max-width:92px;max-height:48px;object-fit:contain;"/></td>` : ""}
+          </tr></table>
         </div>
       </td>
       <td style="border:0;vertical-align:top;width:42%;">
@@ -499,7 +506,9 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                         </td>
                         <td style={{ padding: "10px 16px" }}>
                           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "8px", background: avatarBg(cname), color: "#fff", fontSize: "11px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials(cname)}</span>
+                            {(() => { const cl = companyLogo(companies.find(c => c.id === q.company_id) || { name: cname }); return cl?.logo
+                              ? <span style={{ flexShrink: 0, width: 38, height: 30, borderRadius: "8px", background: cl.logoBg || "#fff", border: "1px solid #eef2f7", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", padding: "2px" }}><img src={cl.logo} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /></span>
+                              : <span style={{ flexShrink: 0, width: 30, height: 30, borderRadius: "8px", background: avatarBg(cname), color: "#fff", fontSize: "11px", fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>{initials(cname)}</span>; })()}
                             <div>
                               <div style={{ fontSize: "13px", color: "#1a1d2e", fontWeight: 600 }}>{cname}</div>
                               {q.created_by && <div style={{ fontSize: "11px", color: "#9ca3af" }}>👤 {q.created_by}</div>}

@@ -16,7 +16,7 @@ import Teklifler from "./Teklifler";
 import FortigateAssist from "./FortigateAssist";
 import Sozlesmeler from "./Sozlesmeler";
 import Envanter from "./Envanter";
-import { findCustomerLogo } from "@/data/customer-logos";
+import { companyLogo, clients as CLIENT_LOGOS } from "@/data/customer-logos";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -1229,7 +1229,7 @@ export default function AdminDashboard() {
                   <div key={c.id} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 22px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "14px" }}>
                       <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                        {(() => { const lg = findCustomerLogo(c.name); return lg?.logo ? (
+                        {(() => { const lg = companyLogo(c); return lg?.logo ? (
                           <span style={{ width: 46, height: 46, borderRadius: "9px", background: lg.logoBg || "#fff", border: "1px solid #eef2f7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", padding: "4px" }}>
                             <img src={lg.logo} alt={c.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
                           </span>) : null; })()}
@@ -1870,6 +1870,26 @@ export default function AdminDashboard() {
                   <option value="">— Seçin —</option>
                   {SECTORS.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
+              </div>
+              <div style={{ marginBottom: "14px" }}>
+                <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Logo</label>
+                <div style={{ display: "flex", gap: "10px", alignItems: "flex-start" }}>
+                  {(() => { const lg = companyLogo(compModal); return (
+                    <span style={{ width: 52, height: 52, borderRadius: "9px", border: "1px solid #e5e7ef", background: lg?.logoBg || "#f8fafc", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0, padding: "4px" }}>
+                      {lg?.logo ? <img src={lg.logo} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /> : <span style={{ fontSize: "9px", color: "#cbd5e1" }}>Logo</span>}
+                    </span>); })()}
+                  <div style={{ flex: 1 }}>
+                    <select value="" onChange={e => { const cl = CLIENT_LOGOS.find(x => x.name === e.target.value); if (cl?.logo) setCompModal(p => ({ ...p!, logo_url: cl.logo })); }} style={inpS}>
+                      <option value="">— Hazır logolardan seç —</option>
+                      {[...CLIENT_LOGOS].filter(c => c.logo).sort((a, b) => a.name.localeCompare(b.name, "tr")).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
+                    </select>
+                    <div style={{ display: "flex", gap: "6px", marginTop: "6px" }}>
+                      <input value={compModal.logo_url || ""} onChange={e => setCompModal(p => ({ ...p!, logo_url: e.target.value }))} placeholder="veya logo URL yapıştır" style={{ ...inpS, fontSize: "12px" }} />
+                      <button type="button" onClick={() => setCompModal(p => ({ ...p!, logo_url: null }))} title="Firma adından otomatik eşleştir" style={{ padding: "8px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", background: "#fff", color: "#6b7280", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Otomatik</button>
+                    </div>
+                    <p style={{ margin: "5px 0 0", fontSize: "11px", color: "#9ca3af" }}>Boş bırakırsan firma adından otomatik eşleşir.</p>
+                  </div>
+                </div>
               </div>
               <div style={{ marginBottom: "20px" }}>
                 <label style={{ fontSize: "12px", fontWeight: 700, color: "#6b7280", textTransform: "uppercase", letterSpacing: ".5px", display: "block", marginBottom: "6px" }}>Notlar</label>

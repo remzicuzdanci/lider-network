@@ -81,11 +81,30 @@ function norm(s: string): string {
     .replace(/[^a-z0-9]/g, "");
 }
 
+// Elle tanımlı eşlemeler — admin firma adı (içerik) → clients listesindeki isim.
+// Otomatik eşleşmeyen veya farklı isimle kayıtlı firmalar için.
+const ALIASES: { key: string; client: string }[] = [
+  { key: "ulusoybakir", client: "UCI" },
+  { key: "uci",         client: "UCI" },
+  { key: "mkg",         client: "ETS" },
+  { key: "ankamall",    client: "Ankamall" },
+  { key: "sodesign",    client: "DesignOn" },
+  { key: "sodizayn",    client: "DesignOn" },
+  { key: "designon",    client: "DesignOn" },
+];
+
 // Firma adına göre logo bul (esnek eşleşme). Bulamazsa null.
 export function findCustomerLogo(name: string): CustomerLogo | null {
   if (!name) return null;
   const n = norm(name);
   if (!n) return null;
+  // 0) Elle tanımlı eşleme
+  for (const a of ALIASES) {
+    if (n.includes(a.key)) {
+      const c = clients.find(x => norm(x.name) === norm(a.client));
+      if (c) return c;
+    }
+  }
   // 1) Birebir
   let hit = clients.find(c => norm(c.name) === n);
   if (hit) return hit;
@@ -99,4 +118,11 @@ export function findCustomerLogo(name: string): CustomerLogo | null {
     if (hit) return hit;
   }
   return null;
+}
+
+/** Bir firmanın logosu: önce firma kaydındaki logo_url (override), yoksa isim eşlemesi. */
+export function companyLogo(company?: { name?: string | null; logo_url?: string | null } | null): { logo: string; logoBg?: string } | null {
+  if (company?.logo_url) return { logo: company.logo_url };
+  const m = company?.name ? findCustomerLogo(company.name) : null;
+  return m?.logo ? { logo: m.logo, logoBg: m.logoBg } : null;
 }

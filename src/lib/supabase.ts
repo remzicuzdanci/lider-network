@@ -54,6 +54,7 @@ export interface Company {
   address?: string | null;
   tax_office?: string | null;
   tax_no?: string | null;
+  logo_url?: string | null;
   created_at: string;
 }
 
