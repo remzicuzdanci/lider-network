@@ -38,6 +38,9 @@ export interface RenewalItem {
 const TYPE_LABEL: Record<string, string> = {
   fortinet: "Fortinet Lisans/Bundle", destek: "Destek Sözleşmesi", bakim: "Bakım",
   lisans: "Yazılım Lisansı", donanim: "Donanım Garanti", diger: "Diğer",
+  // Cihaz envanteri tipleri
+  firewall: "Firewall / FortiGate", switch: "Switch", ap: "Access Point", router: "Router",
+  server: "Sunucu", nas: "NAS / Depolama", camera: "Kamera / NVR", phone: "IP Telefon",
 };
 
 function fmtDate(s: string) {
@@ -71,7 +74,7 @@ export async function sendRenewalReminderEmail(items: RenewalItem[]): Promise<vo
     <h3 style="font-size:14px;color:${accent};margin:22px 0 8px">${title} (${arr.length})</h3>
     <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #eef2f7;border-radius:8px;overflow:hidden">
       <thead><tr style="background:#f8fafc">
-        <th style="padding:9px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Sözleşme</th>
+        <th style="padding:9px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Cihaz</th>
         <th style="padding:9px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Firma</th>
         <th style="padding:9px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Tür</th>
         <th style="padding:9px 12px;text-align:left;font-size:11px;color:#94a3b8;text-transform:uppercase">Bitiş</th>
@@ -85,11 +88,11 @@ export async function sendRenewalReminderEmail(items: RenewalItem[]): Promise<vo
   <body style="font-family:Arial,sans-serif;background:#f4f6fb;margin:0;padding:24px">
     <div style="max-width:680px;margin:0 auto;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.07)">
       <div style="background:linear-gradient(135deg,#0052ff,#3730a3);padding:26px 30px">
-        <h1 style="color:#fff;margin:0;font-size:20px">🔔 Sözleşme Yenileme Hatırlatması</h1>
-        <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Lider Network — Lisans & Sözleşme Takibi · ${new Date().toLocaleDateString("tr-TR")}</p>
+        <h1 style="color:#fff;margin:0;font-size:20px">🔔 Lisans / Garanti Yenileme Hatırlatması</h1>
+        <p style="color:#c7d2fe;margin:6px 0 0;font-size:13px">Lider Network — Cihaz Envanteri Lisans Takibi · ${new Date().toLocaleDateString("tr-TR")}</p>
       </div>
       <div style="padding:24px 30px">
-        <p style="font-size:14px;color:#475569;margin:0 0 6px">Aşağıdaki sözleşmelerin bitiş tarihi yaklaşıyor. Yenileme tekliflerini hazırlamak için panele giriş yapın.</p>
+        <p style="font-size:14px;color:#475569;margin:0 0 6px">Aşağıdaki cihazların lisans/garanti bitiş tarihi yaklaşıyor. Yenileme tekliflerini hazırlamak için panele giriş yapın.</p>
         ${section("⛔ Süresi Geçmiş", expired, "#dc2626")}
         ${section("🔴 7 Gün İçinde Bitecek", urgent, "#ea580c")}
         ${section("🟡 30 Gün İçinde Bitecek", soon, "#d97706")}
@@ -103,7 +106,7 @@ export async function sendRenewalReminderEmail(items: RenewalItem[]): Promise<vo
   await transporter.sendMail({
     from: `"Lider Network" <${FROM}>`,
     to: RENEWAL_NOTIFY_TO,
-    subject: `🔔 ${items.length} sözleşme yenileme zamanı yaklaşıyor`,
+    subject: `🔔 ${items.length} cihazın lisans/garanti yenileme zamanı yaklaşıyor`,
     html,
     replyTo: FROM,
   });

@@ -3,13 +3,12 @@ import { supabase } from "@/lib/supabase";
 import { getAdminSession } from "@/lib/admin-auth";
 import { sendRenewalReminderEmail, RENEWAL_NOTIFY_TO, type RenewalItem } from "@/lib/contract-mail";
 
-/* ── GET /api/admin/contracts/check-renewals ───────────────────────
-   Her sabah çalışır (Vercel Cron). 30 gün içinde bitecek veya süresi
-   geçmiş aktif sözleşmeleri tek bir özet mail olarak fortigate@... adresine yollar.
+/* ── GET /api/admin/assets/check-renewals ──────────────────────────
+   Her sabah çalışır (Vercel Cron). Lisanslı cihazlardan, lisans/garanti
+   bitişi 30 gün içinde olan veya yeni süresi geçenleri tek özet mail
+   olarak fortigate@... adresine yollar.
 
-   Yetki:
-   - Vercel Cron: Authorization: Bearer ${CRON_SECRET}
-   - Manuel test:  ?key=${CRON_SECRET}  veya admin oturumu
+   Yetki: Vercel Cron (Bearer ${CRON_SECRET}) · ?key=${CRON_SECRET} · admin oturumu
 ─────────────────────────────────────────────────────────────────── */
 export async function GET(req: NextRequest) {
   const authHeader = req.headers.get("authorization");
@@ -24,33 +23,33 @@ export async function GET(req: NextRequest) {
   }
 
   const { data, error } = await supabase
-    .from("contracts")
+    .from("assets")
     .select("*")
     .eq("status", "active");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const items: RenewalItem[] = [];
-  for (const c of data || []) {
-    if (!c.end_date) continue;
-    if (c.auto_remind === false) continue;
-    const d = Math.ceil((new Date(c.end_date + "T00:00:00").getTime() - today.getTime()) / 86400000);
-    // 30 gün içinde bitecek VEYA son 30 gün içinde süresi geçmiş
+  for (const a of data || []) {
+    if (a.licensed === false) continue;       // lisanssız cihazlar hatırlatılmaz
+    if (!a.warranty_end) continue;
+    const d = Math.ceil((new Date(a.warranty_end + "T00:00:00").getTime() - today.getTime()) / 86400000);
+    // 30 gün içinde bitecek VEYA son 30 gün içinde bitmiş
     if (d <= 30 && d >= -30) {
+      const title = `${a.brand ? a.brand + " " : ""}${a.model || a.type}`.trim();
       items.push({
-        title: c.title, company_name: c.company_name, type: c.type,
-        serial_no: c.serial_no, end_date: c.end_date, amount: Number(c.amount) || 0,
-        currency: c.currency || "TL", daysLeft: d,
+        title, company_name: a.company_name, type: a.type || "lisans",
+        serial_no: a.serial_no, end_date: a.warranty_end, amount: 0,
+        currency: "TL", daysLeft: d,
       });
     }
   }
 
   if (!items.length) {
-    return NextResponse.json({ success: true, sent: false, message: "Hatırlatılacak sözleşme yok." });
+    return NextResponse.json({ success: true, sent: false, message: "Hatırlatılacak lisans yok." });
   }
 
-  // En yakın bitenden uzağa sırala
-  items.sort((a, b) => a.daysLeft - b.daysLeft);
+  items.sort((x, y) => x.daysLeft - y.daysLeft);
 
   try {
     await sendRenewalReminderEmail(items);

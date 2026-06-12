@@ -1,6 +1,6 @@
 ﻿"use client";
 import { useEffect, useMemo, useState } from "react";
-import { Plus, Pencil, Trash2, Server, ShieldAlert, Cpu, Search, ChevronDown, ChevronRight, Upload, ImageIcon, BadgeCheck, BadgeX } from "lucide-react";
+import { Plus, Pencil, Trash2, Server, ShieldAlert, Cpu, Search, ChevronDown, ChevronRight, Upload, ImageIcon, BadgeCheck, BadgeX, Mail } from "lucide-react";
 
 interface Company { id: string; name: string; address?: string | null; }
 interface Asset {
@@ -76,6 +76,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   const [modal, setModal] = useState<Partial<Asset> | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [mailing, setMailing] = useState(false);
   const [openCo, setOpenCo] = useState<Record<string, boolean>>({});
 
   async function load() {
@@ -140,6 +141,17 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
     await fetch("/api/admin/assets", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id }) });
     await load();
   }
+  async function sendReminder() {
+    setMailing(true);
+    try {
+      const r = await fetch("/api/admin/assets/check-renewals");
+      const d = await r.json();
+      if (!r.ok) { alert("Hata: " + (d.error || "gönderilemedi")); return; }
+      if (d.sent) alert(`✅ ${d.count} cihaz için lisans hatırlatma maili gönderildi → ${d.to}`);
+      else alert("Şu an 30 gün içinde bitecek/bitmiş lisanslı cihaz yok, mail gönderilmedi.");
+    } catch { alert("Mail gönderilemedi."); }
+    finally { setMailing(false); }
+  }
 
   return (
     <div>
@@ -160,8 +172,12 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
           <option value="all">Tüm Tipler</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{TYPE_ICON[k]} {v}</option>)}
         </select>
+        <button onClick={sendReminder} disabled={mailing} title="Lisansı yaklaşan cihazlar için fortigate@lidernetwork.com.tr adresine hatırlatma maili gönder"
+          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 15px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#475569", fontSize: "12.5px", fontWeight: 700, cursor: mailing ? "default" : "pointer", marginLeft: "auto", opacity: mailing ? .6 : 1 }}>
+          <Mail size={15} /> {mailing ? "Gönderiliyor…" : "Hatırlatma Maili"}
+        </button>
         <button onClick={() => setModal({ type: "firewall", brand: "Fortinet", status: "active", licensed: true })}
-          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
           <Plus size={15} /> Cihaz Ekle
         </button>
       </div>

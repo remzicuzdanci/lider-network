@@ -5,7 +5,7 @@
       "schedule": "0 5 * * *"
     },
     {
-      "path": "/api/admin/contracts/check-renewals",
+      "path": "/api/admin/assets/check-renewals",
       "schedule": "0 6 * * *"
     }
   ]
