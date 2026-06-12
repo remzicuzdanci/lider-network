@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown } from "lucide-react";
 import { companyLogo } from "@/data/customer-logos";
+import QRCode from "qrcode";
 
 interface Company {
   id: string; name: string;
@@ -191,7 +192,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   }
 
   // Profesyonel teklif belgesi (HTML) — Türkçe sorunsuz, yazdır/PDF için
-  function quoteDocHtml(no: string): string {
+  function quoteDocHtml(no: string, qr = ""): string {
     const cur = currency;
     const c = companies.find(x => x.id === companyId);
     const cLogo = companyLogo(c || { name: customerName(companyId) });
@@ -312,8 +313,12 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       <div style="margin-top:10px;">Saygılarımızla,</div>
     </div>
 
-    <!-- İmza / kaşe alanları -->
+    <!-- İmza / kaşe alanları (+ onay QR) -->
     <table style="width:100%;border:0;border-collapse:collapse;margin-top:26px;"><tr>
+      ${qr ? `<td style="border:0;width:128px;vertical-align:top;padding-right:20px;text-align:center;">
+        <img src="${qr}" alt="Onay QR" style="width:104px;height:104px;display:block;border:1px solid #e8edf3;border-radius:8px;margin:0 auto;" />
+        <div style="font-size:9.5px;color:#475569;margin-top:5px;line-height:1.4;font-weight:700;">📱 Telefonla okutup<br/>onaylayın</div>
+      </td>` : ""}
       <td style="border:0;width:50%;padding-right:28px;vertical-align:top;">
         <div style="height:42px;"></div>
         <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151;">
@@ -340,18 +345,26 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 </body></html>`;
   }
 
-  function openDoc(no: string) {
+  async function openDoc(no: string, id?: string | null) {
+    // Onay QR'ı: kayıtlı teklif için herkese açık onay linkini üret
+    let qr = "";
+    if (id) {
+      try {
+        const url = `${window.location.origin}/teklif/onay/${id}`;
+        qr = await QRCode.toDataURL(url, { margin: 1, width: 240, color: { dark: "#0f172a", light: "#ffffff" } });
+      } catch { /* QR opsiyonel */ }
+    }
     const w = window.open("", "_blank");
     if (!w) { alert("Açılır pencere engellendi. Tarayıcı pop-up iznini verin."); return; }
-    w.document.write(quoteDocHtml(no));
+    w.document.write(quoteDocHtml(no, qr));
     w.document.close();
   }
   async function exportPDF() {
-    let no = quoteNo;
-    if (!editId) { const s = await save(); if (!s) return; no = s.quote_no; }
-    openDoc(no || "TASLAK");
+    let no = quoteNo, id = editId;
+    if (!editId) { const s = await save(); if (!s) return; no = s.quote_no; id = s.id; }
+    openDoc(no || "TASLAK", id);
   }
-  function printQuote() { openDoc(quoteNo || "TASLAK"); }
+  function printQuote() { openDoc(quoteNo || "TASLAK", editId); }
 
   function customerName(id: string) { return companies.find(c => c.id === id)?.name || "—"; }
 
