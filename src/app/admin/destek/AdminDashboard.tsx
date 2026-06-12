@@ -16,6 +16,7 @@ import Teklifler from "./Teklifler";
 import FortigateAssist from "./FortigateAssist";
 import Sozlesmeler from "./Sozlesmeler";
 import Envanter from "./Envanter";
+import { findCustomerLogo } from "@/data/customer-logos";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -1227,7 +1228,12 @@ export default function AdminDashboard() {
                 {companyList.map(c => (
                   <div key={c.id} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 22px" }}>
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: "14px" }}>
-                      <div>
+                      <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                        {(() => { const lg = findCustomerLogo(c.name); return lg?.logo ? (
+                          <span style={{ width: 46, height: 46, borderRadius: "9px", background: lg.logoBg || "#fff", border: "1px solid #eef2f7", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden", padding: "4px" }}>
+                            <img src={lg.logo} alt={c.name} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                          </span>) : null; })()}
+                        <div>
                         <p style={{ margin: 0, fontSize: "15px", fontWeight: 800, color: "#1a1d2e" }}>{c.name}</p>
                         <div style={{ display: "flex", gap: "6px", marginTop: "4px", flexWrap: "wrap" }}>
                           {c.sector && <span style={{ fontSize: "11px", color: "#0052ff", fontWeight: 600, background: "#eff6ff", padding: "2px 8px", borderRadius: "4px" }}>{c.sector}</span>}
@@ -1235,6 +1241,7 @@ export default function AdminDashboard() {
                             style={{ fontSize: "11px", fontWeight: 700, color: quoteCounts[c.id] ? "#15803d" : "#9ca3af", background: quoteCounts[c.id] ? "#f0fdf4" : "#f4f6fb", border: `1px solid ${quoteCounts[c.id] ? "#bbf7d0" : "#e5e7ef"}`, padding: "2px 8px", borderRadius: "4px", cursor: "pointer", display: "inline-flex", alignItems: "center", gap: "4px" }}>
                             📄 {quoteCounts[c.id] || 0} teklif
                           </button>
+                        </div>
                         </div>
                       </div>
                       <div style={{ display: "flex", gap: "6px" }}>
