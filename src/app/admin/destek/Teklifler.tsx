@@ -203,12 +203,12 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       const net = gross - gross * (+it.discount || 0) / 100;
       const bg = i % 2 ? "#f5f8ff" : "#ffffff";
       return `<tr style="background:${bg};">
-        <td style="padding:11px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}</td>
-        <td style="padding:11px 12px;font-size:12px;text-align:center;white-space:nowrap;color:#475569;">${it.quantity} ${it.unit || ""}</td>
-        <td style="padding:11px 12px;font-size:12px;text-align:right;white-space:nowrap;color:#475569;">${m(it.unit_price)}</td>
-        <td style="padding:11px 12px;font-size:12px;text-align:center;color:#475569;">%${it.discount || 0}</td>
-        <td style="padding:11px 12px;font-size:12px;text-align:center;color:#475569;">%${it.kdv_rate || 0}</td>
-        <td style="padding:11px 14px;font-size:12.5px;text-align:right;font-weight:800;white-space:nowrap;color:#0f172a;">${m(net)}</td>
+        <td style="padding:8px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:center;white-space:nowrap;color:#475569;">${it.quantity} ${it.unit || ""}</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:right;white-space:nowrap;color:#475569;">${m(it.unit_price)}</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:center;color:#475569;">%${it.discount || 0}</td>
+        <td style="padding:8px 12px;font-size:12px;text-align:center;color:#475569;">%${it.kdv_rate || 0}</td>
+        <td style="padding:8px 14px;font-size:12.5px;text-align:right;font-weight:800;white-space:nowrap;color:#0f172a;">${m(net)}</td>
       </tr>`;
     }).join("");
 
@@ -222,27 +222,27 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   *{ box-sizing:border-box; }
   html,body{ margin:0; padding:0; }
   body{ font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif; color:#1f2937; font-size:12px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
-  .band{ background:#0052ff; background:linear-gradient(120deg,#0038c7 0%,#0052ff 55%,#3b74ff 100%); padding:28px 40px; }
+  .band{ background:#0052ff; background:linear-gradient(120deg,#0038c7 0%,#0052ff 55%,#3b74ff 100%); padding:16px 40px; }
   .accent{ height:5px; background:#ff5e07; }
-  .content{ padding:30px 40px 0; }
-  .doctitle{ color:#ffffff; font-size:27px; font-weight:800; letter-spacing:1px; margin:0; }
-  .card{ background:#f8fafc; border:1px solid #e8edf3; border-radius:11px; padding:15px 17px; }
-  .intro{ color:#0052ff; font-size:12.5px; margin:20px 0 6px; font-weight:500; }
-  table.items{ width:100%; border-collapse:collapse; margin-top:8px; border-radius:9px; overflow:hidden; box-shadow:0 1px 4px rgba(15,23,42,.06); }
-  table.items thead th{ background:#0f172a; color:#ffffff; font-size:10.5px; font-weight:700; padding:12px 12px; letter-spacing:.4px; }
-  .totbox{ background:#eef4ff; border:1px solid #cfe0ff; border-radius:12px; padding:15px 19px; }
-  .totrow{ display:flex; justify-content:space-between; padding:4px 0; font-size:12.5px; color:#475569; }
-  .grand{ border-top:2px solid #0052ff; margin-top:9px; padding-top:10px; font-weight:800; font-size:17px; color:#0052ff; }
-  .footer{ background:#0f172a; color:#cbd5e1; padding:18px 40px; margin-top:40px; font-size:11px; text-align:center; }
+  .content{ padding:18px 40px 0; }
+  .doctitle{ color:#ffffff; font-size:24px; font-weight:800; letter-spacing:1px; margin:0; }
+  .card{ background:#f8fafc; border:1px solid #e8edf3; border-radius:11px; padding:11px 15px; }
+  .intro{ color:#0052ff; font-size:12.5px; margin:12px 0 5px; font-weight:500; }
+  table.items{ width:100%; border-collapse:collapse; margin-top:6px; border-radius:9px; overflow:hidden; box-shadow:0 1px 4px rgba(15,23,42,.06); }
+  table.items thead th{ background:#0f172a; color:#ffffff; font-size:10.5px; font-weight:700; padding:9px 12px; letter-spacing:.4px; }
+  .totbox{ background:#eef4ff; border:1px solid #cfe0ff; border-radius:12px; padding:12px 18px; }
+  .totrow{ display:flex; justify-content:space-between; padding:3px 0; font-size:12.5px; color:#475569; }
+  .grand{ border-top:2px solid #0052ff; margin-top:7px; padding-top:8px; font-weight:800; font-size:17px; color:#0052ff; }
+  .footer{ background:#0f172a; color:#cbd5e1; padding:14px 40px; margin-top:22px; font-size:11px; text-align:center; }
 </style></head><body>
 
   <div class="band">
     <table style="width:100%;border:0;border-collapse:collapse;"><tr>
       <td style="border:0;vertical-align:middle;">
-        <span style="display:inline-block;background:#ffffff;border-radius:14px;padding:16px 26px;box-shadow:0 6px 18px rgba(0,0,0,.22);">
-          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:92px;width:auto;display:block;" />
+        <span style="display:inline-block;background:#ffffff;border-radius:12px;padding:10px 20px;box-shadow:0 6px 18px rgba(0,0,0,.22);">
+          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:64px;width:auto;display:block;" />
         </span>
-        <div style="color:#eaf0ff;font-size:13px;margin-top:15px;font-weight:700;letter-spacing:.3px;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+        <div style="color:#eaf0ff;font-size:12px;margin-top:9px;font-weight:700;letter-spacing:.3px;">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
       </td>
       <td style="border:0;vertical-align:middle;text-align:right;">
         <div class="doctitle">FİYAT TEKLİFİ</div>
@@ -298,17 +298,17 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       </td>
     </tr></table>
 
-    ${desc ? `<div style="margin-top:20px;padding:15px 17px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.6;white-space:pre-wrap;">${desc}</div>` : ""}
+    ${desc ? `<div style="margin-top:14px;padding:12px 15px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.55;white-space:pre-wrap;">${desc}</div>` : ""}
 
-    <div style="font-size:12px;color:#374151;margin-top:30px;line-height:1.6;">
+    <div style="font-size:12px;color:#374151;margin-top:18px;line-height:1.55;">
       Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
-      <div style="margin-top:16px;">Saygılarımızla,</div>
+      <div style="margin-top:10px;">Saygılarımızla,</div>
     </div>
 
     <!-- İmza / kaşe alanları -->
-    <table style="width:100%;border:0;border-collapse:collapse;margin-top:48px;"><tr>
+    <table style="width:100%;border:0;border-collapse:collapse;margin-top:26px;"><tr>
       <td style="border:0;width:50%;padding-right:28px;vertical-align:top;">
-        <div style="height:58px;"></div>
+        <div style="height:42px;"></div>
         <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151;">
           <div style="font-weight:800;color:#0f172a;">Teklifi Veren</div>
           <div style="margin-top:2px;">${preparedBy || "Lider Network"}</div>
@@ -316,7 +316,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
         </div>
       </td>
       <td style="border:0;width:50%;padding-left:28px;vertical-align:top;">
-        <div style="height:58px;"></div>
+        <div style="height:42px;"></div>
         <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151;">
           <div style="font-weight:800;color:#0f172a;">Müşteri Onayı</div>
           <div style="margin-top:2px;">${c?.name || customerName(companyId)}</div>
