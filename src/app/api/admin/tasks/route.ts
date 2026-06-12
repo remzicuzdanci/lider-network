@@ -9,6 +9,16 @@ interface TaskRow {
   assigned_to?: string | null; company_id?: string | null;
 }
 
+// Tekrar periyoduna göre bir sonraki tarihi hesapla (YYYY-MM-DD)
+function advanceDate(d: string, rec: string): string {
+  const dt = new Date(d + "T00:00:00");
+  if (rec === "daily") dt.setDate(dt.getDate() + 1);
+  else if (rec === "weekly") dt.setDate(dt.getDate() + 7);
+  else if (rec === "monthly") dt.setMonth(dt.getMonth() + 1);
+  else if (rec === "yearly") dt.setFullYear(dt.getFullYear() + 1);
+  return dt.toISOString().slice(0, 10);
+}
+
 /* Göreve atanan personele anında bildirim e-postası gönderir.
    Hata olursa API isteğini düşürmez; yalnızca loglar. */
 async function notifyAssignment(task: TaskRow, assignedBy?: string) {
@@ -83,6 +93,7 @@ export async function POST(req: NextRequest) {
       billed_date:  body.billed_date  || null,
       products:     body.products     || null,
       amount:       body.amount ?? null,
+      recurrence:   body.recurrence   || "none",
       created_by:   user.name,
     })
     .select()
@@ -108,22 +119,19 @@ export async function PATCH(req: NextRequest) {
   if (!id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
 
   // Yalnızca gerçek kolonları güncelle (join'li 'companies' gibi alanları ele)
-  const ALLOWED = ["title","description","category","priority","status","assigned_to","company_id","due_date","billed","billed_date","products","amount"] as const;
+  const ALLOWED = ["title","description","category","priority","status","assigned_to","company_id","due_date","billed","billed_date","products","amount","recurrence"] as const;
   const fields: Record<string, unknown> = {};
   for (const k of ALLOWED) {
     if (k in body) fields[k] = body[k];
   }
 
-  // Atanan kişi değişti mi? (yalnızca değişince mail atmak için eski değeri al)
-  let prevAssignee: string | null = null;
-  if ("assigned_to" in fields) {
-    const { data: prev } = await supabase
-      .from("work_tasks")
-      .select("assigned_to")
-      .eq("id", id)
-      .maybeSingle();
-    prevAssignee = prev?.assigned_to ?? null;
-  }
+  // Önceki durumu al (atama maili + tekrarlayan görev tetiği için)
+  const { data: prev } = await supabase
+    .from("work_tasks")
+    .select("assigned_to, status")
+    .eq("id", id)
+    .maybeSingle();
+  const prevAssignee: string | null = prev?.assigned_to ?? null;
 
   const { data, error } = await supabase
     .from("work_tasks")
@@ -138,6 +146,23 @@ export async function PATCH(req: NextRequest) {
   const user = await getSessionUser();
   if (data?.assigned_to && data.assigned_to !== prevAssignee) {
     await notifyAssignment(data, user?.name);
+  }
+
+  // Tekrarlayan görev tamamlandıysa bir sonraki örneğini otomatik oluştur
+  try {
+    const rec = (data?.recurrence as string) || "none";
+    if (rec !== "none" && data?.status === "done" && prev?.status !== "done") {
+      const base = (data.due_date as string) || new Date().toISOString().slice(0, 10);
+      await supabase.from("work_tasks").insert({
+        title: data.title, description: data.description, category: data.category,
+        priority: data.priority, status: "todo", assigned_to: data.assigned_to,
+        company_id: data.company_id, due_date: advanceDate(base, rec),
+        products: data.products, amount: data.amount, recurrence: rec,
+        created_by: data.created_by,
+      });
+    }
+  } catch (e) {
+    console.error("Tekrarlayan görev oluşturulamadı:", e);
   }
 
   return NextResponse.json(data);

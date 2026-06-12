@@ -25,6 +25,7 @@ interface WorkTask {
   created_at: string; updated_at?: string;
   billed?: boolean; billed_date?: string;
   products?: string; amount?: number;
+  recurrence?: string;
   companies?: { name: string };
 }
 
@@ -202,6 +203,16 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
                 {KAN_COLS.map(c=><option key={c.id} value={c.id}>{c.label}</option>)}
               </select>
             </div>
+          </div>
+          <div><label style={lbl}>🔁 Tekrar</label>
+            <select value={form.recurrence??"none"} style={inp} onChange={e=>set("recurrence",e.target.value)}>
+              <option value="none">Tekrarlanmaz (tek seferlik)</option>
+              <option value="daily">Her gün</option>
+              <option value="weekly">Her hafta</option>
+              <option value="monthly">Her ay</option>
+              <option value="yearly">Her yıl</option>
+            </select>
+            {form.recurrence && form.recurrence!=="none" && <p style={{ margin:"4px 0 0",fontSize:"11px",color:"#9ca3af" }}>Görev tamamlandığında bir sonraki tarih otomatik oluşturulur.</p>}
           </div>
           <div style={{ display:"flex",flexDirection:"column",gap:isMobile?"12px":"10px",padding:isMobile?"14px":"12px 14px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
             <div style={{ display:"flex",alignItems:"center",gap:isMobile?"10px":"8px" }}>
@@ -679,6 +690,7 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                         <div style={{ display:"flex",alignItems:"center",gap:"6px",marginBottom:"4px" }}>
                           <span style={{ fontSize:"13px" }}>{cat.emoji}</span>
                           <span style={{ fontSize:"13.5px",fontWeight:700,color:"#1a1d2e",textDecoration:done?"line-through":"none" }}>{task.title}</span>
+                          {task.recurrence && task.recurrence!=="none" && <span title="Tekrarlayan görev" style={{ fontSize:"10px",fontWeight:800,padding:"1px 6px",borderRadius:"5px",background:"#eef2ff",color:"#4338ca" }}>🔁 {({daily:"Günlük",weekly:"Haftalık",monthly:"Aylık",yearly:"Yıllık"} as Record<string,string>)[task.recurrence]}</span>}
                         </div>
                         {task.description && <p style={{ margin:"0 0 6px",fontSize:"12px",color:"#64748b",lineHeight:1.5 }}>{task.description}</p>}
                         <div style={{ display:"flex",alignItems:"center",gap:"6px",flexWrap:"wrap" }}>
@@ -797,7 +809,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                       </div>
                     </div>
 
-                    <p style={{ margin:"0 0 8px",fontSize:"13px",fontWeight:700,color:"#1a1d2e",lineHeight:1.4,textDecoration:task.status==="done"?"line-through":"none",opacity:task.status==="done"?.6:1 }}>{task.title}</p>
+                    <p style={{ margin:"0 0 8px",fontSize:"13px",fontWeight:700,color:"#1a1d2e",lineHeight:1.4,textDecoration:task.status==="done"?"line-through":"none",opacity:task.status==="done"?.6:1 }}>{task.recurrence && task.recurrence!=="none" && <span title="Tekrarlayan görev" style={{ marginRight:"5px" }}>🔁</span>}{task.title}</p>
                     {task.companies?.name && <div style={{ display:"flex",alignItems:"center",gap:"3px",marginBottom:"7px" }}><Building2 size={10} color="#94a3b8"/><span style={{ fontSize:"11px",color:"#64748b" }}>{task.companies.name}</span></div>}
 
                     <div style={{ display:"flex",flexWrap:"wrap",alignItems:"center",gap:"5px" }}>
