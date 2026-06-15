@@ -19,6 +19,10 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/dns" || pathname.startsWith("/dns/")) {
     return NextResponse.next();
   }
+  // Teklif onay sayfası locale'siz; intl /tr/teklif'e yönlendirip 404 yapmasın
+  if (pathname === "/teklif" || pathname.startsWith("/teklif/")) {
+    return NextResponse.next();
+  }
 
   // ── destek.lidernetwork.com.tr subdomain ──────────────────────
   if (hostname.startsWith("destek.")) {

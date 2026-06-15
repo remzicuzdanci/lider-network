@@ -24,21 +24,33 @@ export interface QuoteMailData {
   kdv_total: number;
   grand_total: number;
   toEmail: string;
+  pdf?: Buffer;        // ekli gönderilecek teklif PDF'i
+  pdfName?: string;
 }
 
+// Teklifler teklif@lidernetwork.com.tr hesabından gider (Gmail).
+// SMTP_TEKLIF_USER/PASS yoksa destek hesabına düşer.
 function createTransporter() {
   return nodemailer.createTransport({
     host: process.env.SMTP_HOST || "smtp.gmail.com",
     port: parseInt(process.env.SMTP_PORT || "587"),
     secure: process.env.SMTP_SECURE === "true",
     auth: {
-      user: process.env.SMTP_DESTEK_USER || process.env.SMTP_USER,
-      pass: process.env.SMTP_DESTEK_PASS || process.env.SMTP_PASS,
+      user: process.env.SMTP_TEKLIF_USER || process.env.SMTP_DESTEK_USER || process.env.SMTP_USER,
+      pass: process.env.SMTP_TEKLIF_PASS || process.env.SMTP_DESTEK_PASS || process.env.SMTP_PASS,
     },
   });
 }
 
-const FROM = process.env.SMTP_DESTEK_FROM || process.env.SMTP_FROM || process.env.SMTP_DESTEK_USER || process.env.SMTP_USER;
+const FROM =
+  process.env.SMTP_TEKLIF_FROM ||
+  process.env.SMTP_TEKLIF_USER ||
+  "teklif@lidernetwork.com.tr";
+
+// Teklif maillerinde her zaman CC'lenecekler (env ile değiştirilebilir)
+const QUOTE_CC = (process.env.QUOTE_CC ||
+  "remzi.cuzdanci@lidernetwork.com.tr,yunus.oztekin@lidernetwork.com.tr")
+  .split(",").map(s => s.trim()).filter(Boolean);
 
 function esc(s: string): string {
   return (s ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
@@ -140,9 +152,12 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
   await transporter.sendMail({
     from: `"Lider Network" <${FROM}>`,
     to: data.toEmail,
-    bcc: process.env.SMTP_DESTEK_USER || undefined,
+    cc: QUOTE_CC.length ? QUOTE_CC : undefined,
     replyTo: FROM,
     subject,
     html,
+    attachments: data.pdf
+      ? [{ filename: data.pdfName || `Teklif-${data.quote_no}.pdf`, content: data.pdf, contentType: "application/pdf" }]
+      : undefined,
   });
 }
