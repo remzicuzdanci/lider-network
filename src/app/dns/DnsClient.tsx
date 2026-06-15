@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 type Tab = "records" | "mail" | "whois" | "ssl" | "propagation";
 const TABS: { id: Tab; label: string; icon: string }[] = [
@@ -22,9 +22,26 @@ export default function DnsClient() {
   const [domain, setDomain] = useState("");
   const [tab, setTab] = useState<Tab>("records");
   const [cache, setCache] = useState<Record<string, State>>({});
+  const [toast, setToast] = useState("");
 
   const key = (t: Tab, d: string) => `${t}:${d}`;
   const cur = cache[key(tab, domain)];
+
+  function doCopy(v: string) {
+    navigator.clipboard?.writeText(v);
+    setToast("Kopyalandı ✓");
+    setTimeout(() => setToast(""), 1200);
+  }
+
+  // Paylaşılabilir link: ?d=domain ile açılırsa otomatik sorgula
+  useEffect(() => {
+    const d = new URLSearchParams(window.location.search).get("d");
+    if (d) {
+      const cd = d.trim().toLowerCase().replace(/^https?:\/\//, "").replace(/\/.*$/, "").replace(/^www\./, "");
+      if (cd) { setInput(cd); setDomain(cd); loadTab("records", cd); }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function loadTab(t: Tab, d: string) {
     const k = key(t, d);
@@ -45,6 +62,7 @@ export default function DnsClient() {
     if (!d) return;
     setDomain(d);
     setTab("records");
+    try { window.history.replaceState(null, "", `?d=${encodeURIComponent(d)}`); } catch { /* yoksay */ }
     if (!cache[key("records", d)]) loadTab("records", d);
   }
   function selectTab(t: Tab) {
@@ -61,9 +79,9 @@ export default function DnsClient() {
           <a href="https://www.lidernetwork.com.tr" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="https://www.lidernetwork.com.tr/Fortinet-logo-rgb-white-red.png" alt="" style={{ display: "none" }} />
-            <span style={{ background: "#fff", borderRadius: 11, padding: "8px 16px", display: "inline-flex", boxShadow: "0 4px 18px rgba(0,0,0,.25)" }}>
+            <span style={{ background: "#fff", borderRadius: 13, padding: "10px 20px", display: "inline-flex", boxShadow: "0 6px 22px rgba(0,0,0,.3)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 40 }} />
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 56 }} />
             </span>
           </a>
           <a href="https://www.lidernetwork.com.tr" style={{ color: C.sub, fontSize: 13, textDecoration: "none" }}>lidernetwork.com.tr ↗</a>
@@ -96,13 +114,17 @@ export default function DnsClient() {
 
             {/* Result */}
             <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: "20px 22px", minHeight: 160 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
                 <span style={{ fontSize: 13, color: C.sub }}>Sonuçlar:</span>
                 <span style={{ fontWeight: 800, fontSize: 16, color: C.blue }}>{domain}</span>
+                <button onClick={() => doCopy(`${window.location.origin}${window.location.pathname}?d=${domain}`)}
+                  style={{ marginLeft: "auto", fontSize: 12, fontWeight: 700, color: C.sub, background: C.card2, border: `1px solid ${C.line}`, borderRadius: 8, padding: "5px 11px", cursor: "pointer" }}>
+                  🔗 Linki kopyala
+                </button>
               </div>
               {cur?.loading ? <Loading /> :
                 cur?.error ? <ErrorBox msg={cur.error} /> :
-                  cur?.data ? <Result tab={tab} data={cur.data} /> :
+                  cur?.data ? <Result tab={tab} data={cur.data} onCopy={doCopy} /> :
                     <p style={{ color: C.sub }}>Sekme yükleniyor…</p>}
             </div>
           </>
@@ -115,6 +137,12 @@ export default function DnsClient() {
           <div>Fortinet Yetkili Partner · Siber Güvenlik & BT Altyapı · +90 312 232 02 88</div>
         </footer>
       </div>
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 24, left: "50%", transform: "translateX(-50%)", background: C.green, color: "#04240f", fontWeight: 800, fontSize: 13.5, padding: "10px 20px", borderRadius: 30, boxShadow: "0 8px 28px rgba(0,0,0,.4)", zIndex: 100 }}>
+          {toast}
+        </div>
+      )}
     </main>
   );
 }
@@ -129,7 +157,6 @@ function Loading() {
 function ErrorBox({ msg }: { msg: string }) {
   return <div style={{ background: "rgba(251,113,133,.1)", border: "1px solid rgba(251,113,133,.3)", borderRadius: 10, padding: "14px 16px", color: C.red, fontSize: 14 }}>⚠ {msg}</div>;
 }
-function copy(v: string) { navigator.clipboard?.writeText(v); }
 
 function Pill({ ok, children }: { ok: boolean; children: React.ReactNode }) {
   return <span style={{ fontSize: 11.5, fontWeight: 800, padding: "3px 10px", borderRadius: 20, background: ok ? "rgba(52,211,153,.15)" : "rgba(251,113,133,.15)", color: ok ? C.green : C.red, border: `1px solid ${ok ? "rgba(52,211,153,.35)" : "rgba(251,113,133,.35)"}` }}>{children}</span>;
@@ -142,7 +169,7 @@ function Row({ label, value, mono }: { label?: string; value: React.ReactNode; m
 }
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
-function Result({ tab, data }: { tab: Tab; data: any }) {
+function Result({ tab, data, onCopy }: { tab: Tab; data: any; onCopy: (v: string) => void }) {
   if (tab === "records") {
     const order = ["A", "AAAA", "MX", "NS", "TXT", "CNAME", "SOA", "CAA"];
     const has = order.filter(t => (data[t] || []).length);
@@ -152,7 +179,7 @@ function Result({ tab, data }: { tab: Tab; data: any }) {
         <div key={t}>
           <div style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1, color: C.blue, marginBottom: 6 }}>{t}</div>
           {(data[t] as any[]).map((rec, i) => (
-            <div key={i} onClick={() => copy(rec.value)} title="Kopyala" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: C.card2, borderRadius: 9, marginBottom: 6 }}>
+            <div key={i} onClick={() => onCopy(rec.value)} title="Kopyala" style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: C.card2, borderRadius: 9, marginBottom: 6 }}>
               {rec.priority !== undefined && <span style={{ fontSize: 11, fontWeight: 700, color: C.amber, background: "rgba(251,191,36,.12)", padding: "2px 7px", borderRadius: 5 }}>öncelik {rec.priority}</span>}
               <span style={{ flex: 1, fontFamily: "ui-monospace, monospace", fontSize: 13, wordBreak: "break-all" }}>{rec.value}</span>
               <span style={{ fontSize: 11, color: C.sub }}>TTL {rec.ttl}</span>
