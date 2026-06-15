@@ -69,17 +69,57 @@ async function getMail(domain: string) {
     if (v) dkim.push({ selector: sel, value: v });
   }));
 
+  // Autodiscover (Microsoft için kritik)
+  const adAns = await doh(`autodiscover.${domain}`, "CNAME");
+  const autodiscover = adAns.map(a => a.data.replace(/\.$/, "")).find(Boolean) || null;
+
   // Sağlayıcı tahmini (MX'e göre)
   let provider = "Bilinmiyor";
   const mxStr = mx.map(m => m.host).join(" ").toLowerCase();
+  const spfStr = (spf || "").toLowerCase();
+  const dkimSel = dkim.map(d => d.selector);
   if (/google|googlemail|aspmx/.test(mxStr)) provider = "Google Workspace";
-  else if (/outlook|office365|microsoft/.test(mxStr)) provider = "Microsoft 365";
+  else if (/outlook|office365|microsoft|protection\.outlook/.test(mxStr)) provider = "Microsoft 365 / Exchange";
   else if (/yandex/.test(mxStr)) provider = "Yandex";
   else if (/zoho/.test(mxStr)) provider = "Zoho";
-  else if (/protonmail/.test(mxStr)) provider = "Proton";
+  else if (/protonmail|proton\.me/.test(mxStr)) provider = "Proton";
   else if (mxStr) provider = "Özel / Hosting";
 
-  return { mx, spf, dmarc, dkim, provider, hasMx: mx.length > 0 };
+  const chk = (ok: boolean, label: string, found: string, expected: string) => ({ ok, label, found, expected });
+
+  // Google Workspace beklenen yapılandırma
+  const gMxOk = /aspmx\.l\.google\.com|smtp\.google\.com|googlemail\.com/.test(mxStr);
+  const gSpfOk = /_spf\.google\.com/.test(spfStr);
+  const gDkimOk = dkimSel.includes("google");
+  const google = {
+    detected: gMxOk,
+    score: [gMxOk, gSpfOk, gDkimOk, !!dmarc].filter(Boolean).length,
+    items: [
+      chk(gMxOk, "MX kaydı", mx.map(m => m.host).join(", ") || "—", "smtp.google.com (veya aspmx.l.google.com)"),
+      chk(gSpfOk, "SPF", spf || "—", "include:_spf.google.com"),
+      chk(gDkimOk, "DKIM", gDkimOk ? "google._domainkey ✓" : "—", "google._domainkey (Workspace > kimlik doğrulama)"),
+      chk(!!dmarc, "DMARC", dmarc || "—", "v=DMARC1; p=quarantine/reject"),
+    ],
+  };
+
+  // Microsoft 365 / Exchange beklenen yapılandırma
+  const mMxOk = /mail\.protection\.outlook\.com/.test(mxStr);
+  const mSpfOk = /spf\.protection\.outlook\.com/.test(spfStr);
+  const mAdOk = !!autodiscover && /outlook\.com/.test(autodiscover.toLowerCase());
+  const mDkimOk = dkimSel.includes("selector1") || dkimSel.includes("selector2");
+  const microsoft = {
+    detected: mMxOk,
+    score: [mMxOk, mSpfOk, mAdOk, mDkimOk, !!dmarc].filter(Boolean).length,
+    items: [
+      chk(mMxOk, "MX kaydı", mx.map(m => m.host).join(", ") || "—", "<domain>.mail.protection.outlook.com"),
+      chk(mSpfOk, "SPF", spf || "—", "include:spf.protection.outlook.com"),
+      chk(mAdOk, "Autodiscover", autodiscover || "—", "autodiscover.outlook.com (CNAME)"),
+      chk(mDkimOk, "DKIM", mDkimOk ? "selector1/2._domainkey ✓" : "—", "selector1 & selector2._domainkey (CNAME)"),
+      chk(!!dmarc, "DMARC", dmarc || "—", "v=DMARC1; p=quarantine/reject"),
+    ],
+  };
+
+  return { mx, spf, dmarc, dkim, provider, hasMx: mx.length > 0, autodiscover, google, microsoft };
 }
 
 interface RdapEntity { roles?: string[]; vcardArray?: unknown[] }

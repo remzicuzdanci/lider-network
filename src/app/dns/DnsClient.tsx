@@ -189,6 +189,12 @@ function Result({ tab, data }: { tab: Tab; data: any }) {
         <div style={{ fontSize: 12, fontWeight: 800, color: C.blue, marginBottom: 6 }}>DKIM</div>
         {data.dkim.length ? data.dkim.map((d: any, i: number) => <Row key={i} label={d.selector} value={d.value.slice(0, 80) + (d.value.length > 80 ? "…" : "")} mono />) : <p style={{ color: C.sub, fontSize: 13 }}>Yaygın seçicilerde DKIM bulunamadı (özel seçici kullanılıyor olabilir).</p>}
       </div>
+
+      {/* Sağlayıcıya özel kurulum kontrolü */}
+      <div style={{ display: "grid", gap: 14, gridTemplateColumns: "1fr", marginTop: 4 }}>
+        <ProviderCard title="Google Workspace" logo="🟦 G" accent="#4285F4" p={data.google} max={4} />
+        <ProviderCard title="Microsoft 365 / Exchange" logo="🟧 M" accent="#EA3E23" p={data.microsoft} max={5} />
+      </div>
     </div>;
   }
 
@@ -237,6 +243,31 @@ function Result({ tab, data }: { tab: Tab; data: any }) {
     </div>;
   }
   return null;
+}
+
+function ProviderCard({ title, logo, accent, p, max }: { title: string; logo: string; accent: string; p: any; max: number }) {
+  if (!p) return null;
+  return (
+    <div style={{ border: `1px solid ${p.detected ? accent : C.line}`, borderRadius: 12, padding: "14px 16px", background: p.detected ? `${accent}14` : C.card2 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+        <span style={{ fontWeight: 800, fontSize: 14.5 }}>{logo} {title}</span>
+        {p.detected && <span style={{ fontSize: 11, fontWeight: 800, color: "#fff", background: accent, padding: "2px 9px", borderRadius: 20 }}>BU DOMAINDE AKTİF</span>}
+        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 800, color: p.score === max ? C.green : C.amber }}>{p.score}/{max}</span>
+      </div>
+      <div style={{ display: "grid", gap: 8 }}>
+        {p.items.map((it: any, i: number) => (
+          <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+            <span style={{ fontSize: 14, flexShrink: 0, color: it.ok ? C.green : C.red }}>{it.ok ? "✓" : "✗"}</span>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, fontWeight: 700 }}>{it.label}</div>
+              <div style={{ fontSize: 12, color: it.ok ? C.sub : C.text, fontFamily: "ui-monospace, monospace", wordBreak: "break-all" }}>{it.found}</div>
+              {!it.ok && <div style={{ fontSize: 11.5, color: C.amber, marginTop: 1 }}>Beklenen: {it.expected}</div>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function Examples({ onPick }: { onPick: (d: string) => void }) {
