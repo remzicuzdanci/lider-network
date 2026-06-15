@@ -24,6 +24,7 @@ export default function Footer() {
     { href: `/${locale}/hakkimizda`, label: t("nav.about") },
     { href: `/${locale}/iletisim`, label: t("nav.contact") },
     { href: "https://destek.lidernetwork.com.tr", label: locale === "tr" ? "🎧 Destek Portalı" : "🎧 Support Portal", external: true },
+    { href: "https://dns.lidernetwork.com.tr", label: locale === "tr" ? "🌐 DNS Aracı" : "🌐 DNS Tool", external: true },
   ];
 
   const solutions = [
