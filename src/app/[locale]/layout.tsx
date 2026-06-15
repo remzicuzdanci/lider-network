@@ -178,56 +178,6 @@ const websiteSchema = {
   publisher: { "@id": `${baseUrl}/#local-business` },
 };
 
-// AI özetleri (Google AI Overviews, ChatGPT, Perplexity) ve zengin sonuçlar
-// için sık sorulan sorular. Doğrudan, doğru ve özlü cevaplar AI'nın bizi
-// kaynak göstermesini kolaylaştırır.
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: [
-    {
-      "@type": "Question",
-      name: "Lider Network nedir ve hangi hizmetleri sunar?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lider Network, 2006'dan beri faaliyet gösteren bir bilişim teknolojileri firmasıdır ve Fortinet Yetkili Partner'dır. Siber güvenlik, ağ altyapısı, veri depolama, bulut çözümleri, sanallaştırma, sistem entegrasyonu ve BT danışmanlığı hizmetleri sunar. 500'den fazla başarılı projeye imza atmıştır.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Lider Network Fortinet partneri mi?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Evet, Lider Network resmi Fortinet Yetkili Partner'dır. FortiGate (NGFW), FortiSwitch, FortiAP, SD-WAN ve endpoint güvenliği dahil tüm Fortinet ürün ailesinde satış, kurulum, yapılandırma ve 7/24 teknik destek sağlar.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Lider Network nerede bulunuyor?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lider Network, Birlik Mahallesi 448. Cadde No:119/2, Çankaya, Ankara adresinde bulunmaktadır. Türkiye genelinde kurumsal müşterilere hizmet vermektedir.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Lider Network ile nasıl iletişime geçebilirim?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lider Network'e +90 312 232 02 88 numaralı telefondan veya info@lidernetwork.com.tr e-posta adresinden ulaşabilirsiniz. Çalışma saatleri hafta içi 09:00-18:00'dir. Web sitesi: www.lidernetwork.com.tr",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Lider Network hangi sektörlere ve ölçekteki firmalara hizmet veriyor?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Lider Network, KOBİ'lerden büyük kurumsal işletmelere kadar her ölçekte firmaya enterprise düzeyde siber güvenlik ve BT altyapı çözümleri sunar. Kamu, finans, sağlık, üretim ve hizmet sektörlerinde deneyime sahiptir.",
-      },
-    },
-  ],
-};
-
 interface LocaleLayoutProps {
   children: React.ReactNode;
   params: Promise<{ locale: string }>;
@@ -276,10 +226,6 @@ export default async function LocaleLayout({
             <script
               type="application/ld+json"
               dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
-            />
-            <script
-              type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
             />
           </>
         )}
