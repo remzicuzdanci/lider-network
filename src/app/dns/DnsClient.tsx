@@ -61,9 +61,9 @@ export default function DnsClient() {
           <a href="https://www.lidernetwork.com.tr" style={{ display: "inline-flex", alignItems: "center", gap: 10, textDecoration: "none" }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="https://www.lidernetwork.com.tr/Fortinet-logo-rgb-white-red.png" alt="" style={{ display: "none" }} />
-            <span style={{ background: "#fff", borderRadius: 9, padding: "6px 12px", display: "inline-flex" }}>
+            <span style={{ background: "#fff", borderRadius: 11, padding: "8px 16px", display: "inline-flex", boxShadow: "0 4px 18px rgba(0,0,0,.25)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 30 }} />
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 40 }} />
             </span>
           </a>
           <a href="https://www.lidernetwork.com.tr" style={{ color: C.sub, fontSize: 13, textDecoration: "none" }}>lidernetwork.com.tr ↗</a>
@@ -108,7 +108,7 @@ export default function DnsClient() {
           </>
         )}
 
-        {!domain && <Examples onPick={(d) => { setInput(d); setDomain(d); setTab("records"); loadTab("records", d); }} />}
+        {!domain && <Landing onPick={(d) => { setInput(d); setDomain(d); setTab("records"); loadTab("records", d); }} />}
 
         <footer style={{ textAlign: "center", marginTop: 40, color: C.sub, fontSize: 12.5, lineHeight: 1.7 }}>
           <div style={{ marginBottom: 6 }}>Bu araç <a href="https://www.lidernetwork.com.tr" style={{ color: C.blue, textDecoration: "none" }}>Lider Network</a> tarafından ücretsiz sunulmaktadır.</div>
@@ -200,16 +200,29 @@ function Result({ tab, data }: { tab: Tab; data: any }) {
 
   if (tab === "whois") {
     if (data.error) return <ErrorBox msg={data.error} />;
-    const fmt = (s: string | null) => s ? new Date(s).toLocaleString("tr-TR") : "—";
+    const fmt = (s: string | null) => {
+      if (!s) return "—";
+      const d = new Date(s);
+      return isNaN(d.getTime()) ? s : d.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
+    };
     return <div>
+      <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 4 }}>
+        <span style={{ fontSize: 10.5, fontWeight: 800, color: C.sub, border: `1px solid ${C.line}`, padding: "2px 8px", borderRadius: 20 }}>kaynak: {data.source || "—"}</span>
+      </div>
       <Row label="Alan adı" value={data.domain} mono />
       <Row label="Registrar" value={data.registrar || "—"} />
       <Row label="Oluşturma" value={fmt(data.created)} />
-      <Row label="Son güncelleme" value={fmt(data.updated)} />
+      {data.updated && <Row label="Son güncelleme" value={fmt(data.updated)} />}
       <Row label="Bitiş" value={fmt(data.expires)} />
-      <Row label="DNSSEC" value={data.dnssec === true ? <Pill ok>Aktif</Pill> : data.dnssec === false ? <Pill ok={false}>Pasif</Pill> : "—"} />
+      {data.dnssec !== null && data.dnssec !== undefined && <Row label="DNSSEC" value={data.dnssec ? <Pill ok>Aktif</Pill> : <Pill ok={false}>Pasif</Pill>} />}
       <Row label="Durum" value={(data.status || []).join(", ") || "—"} />
       <Row label="Name server" value={(data.nameservers || []).join("  ·  ") || "—"} mono />
+      {data.raw && (
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ cursor: "pointer", color: C.blue, fontSize: 13, fontWeight: 700 }}>Ham WHOIS çıktısı</summary>
+          <pre style={{ marginTop: 8, padding: 12, background: C.card2, borderRadius: 9, fontSize: 11.5, color: C.sub, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 320, overflow: "auto" }}>{data.raw}</pre>
+        </details>
+      )}
     </div>;
   }
 
@@ -270,10 +283,34 @@ function ProviderCard({ title, logo, accent, p, max }: { title: string; logo: st
   );
 }
 
-function Examples({ onPick }: { onPick: (d: string) => void }) {
+function Landing({ onPick }: { onPick: (d: string) => void }) {
   const ex = ["lidernetwork.com.tr", "google.com", "fortinet.com"];
-  return <div style={{ textAlign: "center", color: C.sub, fontSize: 13, marginTop: 8 }}>
-    <span style={{ marginRight: 8 }}>Örnek:</span>
-    {ex.map(d => <button key={d} onClick={() => onPick(d)} style={{ margin: "0 5px", padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.line}`, background: C.card, color: C.blue, fontSize: 13, cursor: "pointer" }}>{d}</button>)}
-  </div>;
+  const feats = [
+    { icon: "🗂️", title: "DNS Kayıtları", desc: "A, AAAA, MX, TXT, NS, CNAME, SOA, CAA — TTL'li, tek tıkla kopyalanır.", accent: C.blue },
+    { icon: "✉️", title: "Gelişmiş Mail Kontrolü", desc: "Google Workspace ve Microsoft 365 / Exchange ayrı ayrı: MX, SPF, DKIM, DMARC, Autodiscover doğrulaması.", accent: "#34d399", highlight: true },
+    { icon: "🔎", title: "WHOIS", desc: "Sahip, registrar, kayıt/bitiş tarihi, name server — .tr (TRABIS) dahil.", accent: "#a78bfa" },
+    { icon: "🔒", title: "SSL Sertifika", desc: "Geçerlilik, kalan gün, veren CA ve kapsanan alan adları (SAN).", accent: "#fbbf24" },
+    { icon: "🌍", title: "DNS Propagasyon", desc: "Google, Cloudflare, AdGuard, DNS.SB çözücülerinde yayılma tutarlılığı.", accent: "#fb7185" },
+  ];
+  return (
+    <div style={{ marginTop: 6 }}>
+      <div style={{ textAlign: "center", color: C.sub, fontSize: 13, marginBottom: 26 }}>
+        <span style={{ marginRight: 8 }}>Hızlı dene:</span>
+        {ex.map(d => <button key={d} onClick={() => onPick(d)} style={{ margin: "4px 5px", padding: "7px 14px", borderRadius: 8, border: `1px solid ${C.line}`, background: C.card, color: C.blue, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>{d}</button>)}
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
+        {feats.map(f => (
+          <div key={f.title} style={{ background: f.highlight ? `${f.accent}10` : C.card, border: `1px solid ${f.highlight ? f.accent + "55" : C.line}`, borderRadius: 14, padding: "18px 18px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+              <span style={{ fontSize: 22, width: 42, height: 42, display: "inline-flex", alignItems: "center", justifyContent: "center", background: `${f.accent}1e`, borderRadius: 11 }}>{f.icon}</span>
+              <span style={{ fontWeight: 800, fontSize: 15 }}>{f.title}</span>
+              {f.highlight && <span style={{ marginLeft: "auto", fontSize: 9.5, fontWeight: 800, color: "#04240f", background: f.accent, padding: "2px 7px", borderRadius: 20 }}>YENİ</span>}
+            </div>
+            <p style={{ margin: 0, color: C.sub, fontSize: 13, lineHeight: 1.55 }}>{f.desc}</p>
+          </div>
+        ))}
+      </div>
+      <p style={{ textAlign: "center", color: C.sub, fontSize: 13, marginTop: 22 }}>👆 Yukarıya bir alan adı girip <b style={{ color: C.text }}>Sorgula</b>'ya basın.</p>
+    </div>
+  );
 }

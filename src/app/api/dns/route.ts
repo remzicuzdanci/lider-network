@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import tls from "tls";
+import net from "net";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -124,34 +125,103 @@ async function getMail(domain: string) {
 
 interface RdapEntity { roles?: string[]; vcardArray?: unknown[] }
 interface RdapEvent { eventAction: string; eventDate: string }
+
+// Ham WHOIS sorgusu (port 43)
+function whoisRaw(server: string, query: string, timeout = 6000): Promise<string> {
+  return new Promise((resolve, reject) => {
+    let data = ""; let settled = false;
+    const sock = net.connect(43, server);
+    sock.setTimeout(timeout);
+    sock.on("connect", () => sock.write(query + "\r\n"));
+    sock.on("data", d => { data += d.toString("utf8"); });
+    sock.on("end", () => { if (!settled) { settled = true; resolve(data); } });
+    sock.on("timeout", () => { sock.destroy(); if (!settled) { settled = true; data ? resolve(data) : reject(new Error("timeout")); } });
+    sock.on("error", e => { if (!settled) { settled = true; reject(e); } });
+  });
+}
+async function whoisLookup(domain: string): Promise<string> {
+  const tld = domain.split(".").pop() || "";
+  const known: Record<string, string> = { tr: "whois.trabis.gov.tr" };
+  let server = known[tld] || "";
+  if (!server) {
+    try {
+      const iana = await whoisRaw("whois.iana.org", tld);
+      const m = iana.match(/refer:\s*(\S+)/i);
+      if (m) server = m[1];
+    } catch { /* yoksa aşağıda boş kalır */ }
+  }
+  if (!server) throw new Error("whois sunucusu bulunamadı");
+  return whoisRaw(server, domain);
+}
+function parseWhois(text: string) {
+  const pick = (re: RegExp) => { const m = text.match(re); return m ? m[1].trim() : null; };
+  const registrar = pick(/Organization Name[.\s]*:\s*(.+)/i) || pick(/Registrar[^\n:]*:\s*(.+)/i) || pick(/Sponsoring Registrar[^\n:]*:\s*(.+)/i);
+  const created = pick(/Created on[.\s]*:\s*(.+)/i) || pick(/Creation Date[.\s]*:\s*(.+)/i) || pick(/Created[.\s]*:\s*(.+)/i);
+  const expires = pick(/Expires on[.\s]*:\s*(.+)/i) || pick(/Expir\w*\s*Date[.\s]*:\s*(.+)/i) || pick(/Expiry[.\s]*:\s*(.+)/i);
+  const updated = pick(/Updated Date[.\s]*:\s*(.+)/i) || pick(/Last Updated[.\s]*:\s*(.+)/i);
+  // Name server'lar
+  const ns = new Set<string>();
+  const nsRe = /(?:Name Server|Domain Server)[s]?[.\s]*:?\s*([a-z0-9.-]+\.[a-z]{2,})/gi;
+  let mm: RegExpExecArray | null;
+  while ((mm = nsRe.exec(text))) ns.add(mm[1].toLowerCase());
+  // nic.tr blok formatı: "** Domain Servers:" sonrası satırlar
+  const blk = text.split(/\*\*\s*Domain Servers?:/i)[1];
+  if (blk) for (const line of blk.split("\n").slice(0, 12)) { const h = line.trim().match(/^([a-z0-9.-]+\.[a-z]{2,})/i); if (h) ns.add(h[1].toLowerCase()); else if (/\*\*/.test(line)) break; }
+  const statusM = [...text.matchAll(/Status[.\s]*:\s*(.+)/gi)].map(x => x[1].trim()).slice(0, 6);
+  return { registrar, created, updated, expires, nameservers: [...ns].slice(0, 8), status: statusM };
+}
+
 async function getWhois(domain: string) {
+  // 1) RDAP (gTLD'ler için en temiz, yapısal)
   try {
     const r = await fetch(`https://rdap.org/domain/${domain}`, { headers: { accept: "application/rdap+json" }, redirect: "follow", cache: "no-store" });
-    if (!r.ok) return { error: "WHOIS bilgisi alınamadı (bu uzantı RDAP desteklemiyor olabilir, ör. .com.tr)." };
-    const j = await r.json();
-    const events: RdapEvent[] = j.events || [];
-    const ev = (a: string) => events.find(e => e.eventAction === a)?.eventDate || null;
-    let registrar: string | null = null;
-    for (const e of (j.entities || []) as RdapEntity[]) {
-      if (e.roles?.includes("registrar")) {
-        const vc = (e.vcardArray?.[1] as unknown[]) || [];
-        const fn = (vc as unknown[]).find((x) => Array.isArray(x) && (x as unknown[])[0] === "fn") as unknown[] | undefined;
-        registrar = (fn?.[3] as string) || null;
+    if (r.ok) {
+      const j = await r.json();
+      const events: RdapEvent[] = j.events || [];
+      const ev = (a: string) => events.find(e => e.eventAction === a)?.eventDate || null;
+      let registrar: string | null = null;
+      for (const e of (j.entities || []) as RdapEntity[]) {
+        if (e.roles?.includes("registrar")) {
+          const vc = (e.vcardArray?.[1] as unknown[]) || [];
+          const fn = (vc as unknown[]).find((x) => Array.isArray(x) && (x as unknown[])[0] === "fn") as unknown[] | undefined;
+          registrar = (fn?.[3] as string) || null;
+        }
       }
+      return {
+        source: "RDAP",
+        domain: j.ldhName || domain,
+        status: (j.status || []) as string[],
+        registrar,
+        created: ev("registration"),
+        updated: ev("last changed"),
+        expires: ev("expiration"),
+        nameservers: ((j.nameservers || []) as { ldhName?: string }[]).map(n => (n.ldhName || "").toLowerCase()),
+        dnssec: j.secureDNS?.delegationSigned ?? null,
+      };
     }
-    return {
-      domain: j.ldhName || domain,
-      status: (j.status || []) as string[],
-      registrar,
-      created: ev("registration"),
-      updated: ev("last changed"),
-      expires: ev("expiration"),
-      nameservers: ((j.nameservers || []) as { ldhName?: string }[]).map(n => (n.ldhName || "").toLowerCase()),
-      dnssec: j.secureDNS?.delegationSigned ?? null,
-    };
-  } catch {
-    return { error: "WHOIS sorgusu başarısız oldu." };
-  }
+  } catch { /* RDAP yoksa port-43'e düş */ }
+
+  // 2) Port-43 WHOIS (.tr ve RDAP olmayan uzantılar)
+  try {
+    const text = await whoisLookup(domain);
+    if (text && text.trim().length > 20) {
+      const p = parseWhois(text);
+      return {
+        source: "WHOIS",
+        domain,
+        registrar: p.registrar,
+        created: p.created,
+        updated: p.updated,
+        expires: p.expires,
+        status: p.status,
+        nameservers: p.nameservers,
+        dnssec: null,
+        raw: text.replace(/\r/g, "").trim().slice(0, 4000),
+      };
+    }
+  } catch { /* aşağıda hata döner */ }
+
+  return { error: "WHOIS bilgisi alınamadı. Sunucu yanıt vermedi veya bu uzantı sorgulanamıyor." };
 }
 
 function getSsl(domain: string): Promise<Record<string, unknown>> {
