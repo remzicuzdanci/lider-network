@@ -279,7 +279,7 @@ export async function GET(req: NextRequest) {
   const domain = cleanDomain(sp.get("domain") || "");
   const type = sp.get("type") || "records";
   if (!domain || !isValidDomain(domain)) {
-    return NextResponse.json({ error: "Geçerli bir alan adı girin (ör. example.com)" }, { status: 400 });
+    return NextResponse.json({ error: "Geçerli bir alan adı girin (ör. example.com)" }, { status: 400, headers: CORS });
   }
 
   try {
@@ -290,10 +290,20 @@ export async function GET(req: NextRequest) {
       case "whois":       data = await getWhois(domain); break;
       case "ssl":         data = await getSsl(domain); break;
       case "propagation": data = await getPropagation(domain); break;
-      default: return NextResponse.json({ error: "Geçersiz sorgu tipi" }, { status: 400 });
+      default: return NextResponse.json({ error: "Geçersiz sorgu tipi" }, { status: 400, headers: CORS });
     }
-    return NextResponse.json({ domain, type, data });
+    return NextResponse.json({ domain, type, data }, { headers: CORS });
   } catch (e) {
-    return NextResponse.json({ error: "Sorgu başarısız: " + (e instanceof Error ? e.message : "hata") }, { status: 500 });
+    return NextResponse.json({ error: "Sorgu başarısız: " + (e instanceof Error ? e.message : "hata") }, { status: 500, headers: CORS });
   }
+}
+
+// Chrome eklentisi / dış kullanım için CORS (herkese açık, salt-okunur araç)
+const CORS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+export function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS });
 }

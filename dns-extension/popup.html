@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root{ --bg:#0a0e27; --card:#141a3a; --card2:#1b2350; --line:#283166; --text:#e8ecff; --sub:#9aa6d6; --blue:#4f7cff; --green:#34d399; --red:#fb7185; --amber:#fbbf24; }
+  *{ box-sizing:border-box; }
+  body{ width:390px; margin:0; background:var(--bg); color:var(--text); font-family:'Segoe UI',system-ui,Arial,sans-serif; font-size:13px; }
+  .wrap{ padding:14px; }
+  header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; }
+  .logo{ background:#fff; border-radius:8px; padding:5px 10px; display:inline-flex; }
+  .logo img{ height:22px; display:block; }
+  .full{ color:var(--sub); font-size:11px; text-decoration:none; }
+  form{ display:flex; gap:7px; margin-bottom:10px; }
+  input{ flex:1; min-width:0; padding:10px 12px; border-radius:9px; border:1px solid var(--line); background:var(--card); color:var(--text); font-size:13px; outline:none; }
+  button.go{ padding:10px 14px; border:none; border-radius:9px; background:linear-gradient(135deg,#3a63ff,var(--blue)); color:#fff; font-weight:700; cursor:pointer; }
+  .tabs{ display:flex; gap:5px; overflow-x:auto; margin-bottom:10px; padding-bottom:3px; }
+  .tabs button{ white-space:nowrap; padding:7px 11px; border-radius:8px; border:1px solid var(--line); background:var(--card); color:var(--sub); font-size:12px; font-weight:700; cursor:pointer; }
+  .tabs button.active{ border-color:var(--blue); background:rgba(79,124,255,.15); color:var(--text); }
+  .result{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:13px; min-height:120px; max-height:400px; overflow-y:auto; }
+  .muted{ color:var(--sub); }
+  .err{ background:rgba(251,113,133,.1); border:1px solid rgba(251,113,133,.3); color:var(--red); border-radius:8px; padding:10px 12px; }
+  .grp{ margin-bottom:12px; }
+  .grp h4{ margin:0 0 5px; font-size:11px; letter-spacing:1px; color:var(--blue); }
+  .rec{ display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--card2); border-radius:7px; margin-bottom:4px; cursor:pointer; }
+  .rec .v{ flex:1; font-family:ui-monospace,monospace; font-size:12px; word-break:break-all; }
+  .rec .ttl{ font-size:10px; color:var(--sub); }
+  .pri{ font-size:10px; font-weight:700; color:var(--amber); background:rgba(251,191,36,.12); padding:1px 6px; border-radius:4px; }
+  .row{ display:flex; gap:10px; padding:7px 0; border-bottom:1px solid var(--line); }
+  .row .l{ color:var(--sub); min-width:96px; flex-shrink:0; font-size:12px; }
+  .row .r{ flex:1; font-size:12.5px; word-break:break-all; }
+  .pill{ font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px; }
+  .ok{ color:var(--green); background:rgba(52,211,153,.15); }
+  .no{ color:var(--red); background:rgba(251,113,133,.15); }
+  .pcard{ border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:10px; }
+  .pcard .h{ display:flex; align-items:center; gap:8px; margin-bottom:8px; font-weight:800; font-size:13px; }
+  .item{ display:flex; gap:8px; align-items:flex-start; margin-bottom:6px; }
+  .item .ic{ flex-shrink:0; }
+  .item .lab{ font-size:12px; font-weight:700; }
+  .item .fnd{ font-size:11px; color:var(--sub); font-family:ui-monospace,monospace; word-break:break-all; }
+  .item .exp{ font-size:10.5px; color:var(--amber); }
+  .toast{ position:fixed; bottom:10px; left:50%; transform:translateX(-50%); background:var(--green); color:#04240f; font-weight:800; font-size:12px; padding:7px 14px; border-radius:20px; opacity:0; transition:opacity .2s; }
+  .toast.show{ opacity:1; }
+  pre{ background:var(--card2); padding:10px; border-radius:8px; font-size:11px; color:var(--sub); white-space:pre-wrap; word-break:break-word; max-height:240px; overflow:auto; }
+  details summary{ cursor:pointer; color:var(--blue); font-weight:700; font-size:12px; }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <a class="logo" href="https://www.lidernetwork.com.tr" target="_blank" rel="noopener"><img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" /></a>
+      <a class="full" id="openFull" href="#" target="_blank" rel="noopener">Tam araç ↗</a>
+    </header>
+    <form id="form">
+      <input id="domain" placeholder="alan adı — ör. example.com" autocomplete="off" />
+      <button class="go" type="submit">Sorgula</button>
+    </form>
+    <div class="tabs" id="tabs"></div>
+    <div class="result" id="result"><p class="muted">Bir alan adı girip Sorgula'ya basın.</p></div>
+  </div>
+  <div class="toast" id="toast">Kopyalandı ✓</div>
+  <script src="popup.js"></script>
+</body>
+</html>

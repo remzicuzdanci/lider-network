@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "Lider Network — DNS & Domain Checker",
+  "version": "1.0.0",
+  "description": "DNS kayıtları, mail ayarları (SPF/DKIM/DMARC), WHOIS, SSL ve propagasyon — tek tıkla. Lider Network tarafından ücretsiz.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "DNS & Domain Checker"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": ["activeTab"],
+  "host_permissions": [
+    "https://www.lidernetwork.com.tr/*",
+    "https://dns.lidernetwork.com.tr/*"
+  ]
+}
