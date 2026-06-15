@@ -95,8 +95,11 @@ export const metadata: Metadata = {
   verification: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
     ? { google: process.env.NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION }
     : undefined,
+  // NOT: Buraya statik 'canonical' KOYMA. Layout metadata'sı tüm alt sayfalara
+  // miras geçer; sabit bir canonical, kendi canonical'ı olmayan sayfaların
+  // (Fortinet alt sayfaları, blog index vb.) ana sayfanın kopyası gibi
+  // görünmesine ve indekslenmemesine yol açar. Her sayfa kendi canonical'ını verir.
   alternates: {
-    canonical: baseUrl,
     languages: {
       tr: `${baseUrl}/tr`,
       en: `${baseUrl}/en`,
