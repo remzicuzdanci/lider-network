@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       toEmail: email,
       pdf,
       pdfName: `Teklif-${q.quote_no}.pdf`,
+      approvalUrl: `${SITE_BASE}/teklif/onay/${id}`,
     });
   } catch (e) {
     console.error("Teklif maili gönderilemedi:", e);

@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import QRCode from "qrcode";
 
 export interface QuoteItem {
   description: string;
@@ -24,8 +25,9 @@ export interface QuoteMailData {
   kdv_total: number;
   grand_total: number;
   toEmail: string;
-  pdf?: Buffer;        // ekli gönderilecek teklif PDF'i
+  pdf?: Buffer;
   pdfName?: string;
+  approvalUrl?: string;
 }
 
 // Teklifler teklif@lidernetwork.com.tr hesabından gider (Gmail).
@@ -70,6 +72,14 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
   const transporter = createTransporter();
   const cur = data.currency;
   const subject = `Lider Network — Teklif ${data.quote_no}`;
+
+  // QR kodu (onay URL'i varsa)
+  let qrBuffer: Buffer | null = null;
+  if (data.approvalUrl) {
+    try {
+      qrBuffer = await QRCode.toBuffer(data.approvalUrl, { margin: 1, width: 200, color: { dark: "#0f172a", light: "#ffffff" } });
+    } catch { /* opsiyonel */ }
+  }
 
   const rows = data.items.map((it, i) => {
     const gross = it.quantity * it.unit_price;
@@ -136,6 +146,26 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
           </table>
 
           ${data.description ? `<div style="margin-top:18px;padding:14px 16px;background:#f8fafc;border-radius:10px;font-size:13px;color:#475569;line-height:1.6;white-space:pre-wrap;">${esc(data.description)}</div>` : ""}
+
+          ${qrBuffer ? `
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px;">
+            <tr>
+              <td style="background:#f0f4ff;border-radius:14px;padding:20px 24px;">
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="vertical-align:middle;padding-right:20px;">
+                      <img src="cid:qr-approval" width="100" height="100" alt="Onay QR" style="display:block;border-radius:8px;border:3px solid #ffffff;box-shadow:0 2px 10px rgba(0,82,255,0.15);" />
+                    </td>
+                    <td style="vertical-align:middle;">
+                      <div style="font-size:14px;font-weight:800;color:#0f172a;margin-bottom:6px;">Teklifi Onaylayın veya Reddedin</div>
+                      <div style="font-size:12px;color:#64748b;line-height:1.6;margin-bottom:12px;">QR kodu telefonunuzla okutarak teklife hızlıca yanıt verebilirsiniz.</div>
+                      <a href="${data.approvalUrl}" style="display:inline-block;background:#0052ff;color:#ffffff;font-size:12px;font-weight:700;padding:8px 18px;border-radius:8px;text-decoration:none;">Teklifi İncele →</a>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>` : ""}
         </td></tr>
 
         <tr><td style="padding:8px 32px 24px;"><p style="font-size:13px;color:#64748b;margin:0;">Teklifimizle ilgili her türlü sorunuz için bu e-postayı yanıtlayabilirsiniz. Bizi tercih ettiğiniz için teşekkür ederiz.</p></td></tr>
@@ -156,8 +186,9 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
     replyTo: FROM,
     subject,
     html,
-    attachments: data.pdf
-      ? [{ filename: data.pdfName || `Teklif-${data.quote_no}.pdf`, content: data.pdf, contentType: "application/pdf" }]
-      : undefined,
+    attachments: [
+      ...(data.pdf ? [{ filename: data.pdfName || `Teklif-${data.quote_no}.pdf`, content: data.pdf, contentType: "application/pdf" }] : []),
+      ...(qrBuffer ? [{ filename: "qr.png", content: qrBuffer, contentType: "image/png", cid: "qr-approval" }] : []),
+    ],
   });
 }
