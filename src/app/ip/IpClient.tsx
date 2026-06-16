@@ -204,19 +204,20 @@ export default function IpClient() {
     value: { fontSize: "13px", color: C.text, textAlign: "right" as const, wordBreak: "break-all" as const, fontWeight: 500 },
     valueMono: { fontSize: "12px", color: C.text, textAlign: "right" as const, wordBreak: "break-all" as const, fontFamily: "monospace", fontWeight: 500 },
 
-    // Status badge
-    pill: (ok: boolean) => ({
+    // Skeleton
+    skel: { height: "16px", background: C.card2, borderRadius: "6px", animation: "shimmer 1.4s ease infinite" },
+  };
+
+  function pillStyle(ok: boolean): React.CSSProperties {
+    return {
       display: "inline-flex", alignItems: "center", gap: "5px",
       fontSize: "12px", fontWeight: 500, padding: "2px 9px",
       borderRadius: "999px",
       background: ok ? "rgba(251,113,133,0.12)" : "rgba(52,211,153,0.1)",
       color: ok ? C.red : C.green,
       border: `1px solid ${ok ? "rgba(251,113,133,0.25)" : "rgba(52,211,153,0.2)"}`,
-    }),
-
-    // Skeleton
-    skel: { height: "16px", background: C.card2, borderRadius: "6px", animation: "shimmer 1.4s ease infinite" },
-  };
+    };
+  }
 
   function Row({ label, value, mono, last }: { label: string; value?: string | null; mono?: boolean; last?: boolean }) {
     return (
@@ -228,7 +229,7 @@ export default function IpClient() {
   }
 
   function Pill({ active, labelOn, labelOff }: { active: boolean; labelOn: string; labelOff: string }) {
-    return <span style={S.pill(active)}>{active ? "⚠ " + labelOn : "✓ " + labelOff}</span>;
+    return <span style={pillStyle(active)}>{active ? "⚠ " + labelOn : "✓ " + labelOff}</span>;
   }
 
   return (
