@@ -14,59 +14,80 @@ function sb() {
 const BROWSER_HEADERS = {
   "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
   "Accept": "text/plain,text/html,application/xhtml+xml,*/*;q=0.8",
-  "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8,en;q=0.7",
-  "Accept-Encoding": "gzip, deflate, br",
+  "Accept-Language": "tr-TR,tr;q=0.9,en-US;q=0.8",
   "Referer": "https://www.usom.gov.tr/",
-  "Cache-Control": "no-cache",
 };
 
-// USOM tüm zararlı bağlantıları tek dosyada sunuyor — farklı URL varyasyonları deneniyor
-const USOM_COMBINED = [
+// URL'leri test et — hangisinin gerçek veri döndürdüğünü gör
+const PROBE_URLS = [
   "https://www.usom.gov.tr/url-list.txt",
   "https://www.usom.gov.tr/zararli-baglantilar.txt",
-  "https://www.usom.gov.tr/api/address/index.txt",
+  "https://www.usom.gov.tr/api/address/index.json?page=1&per-page=20",
+  "https://www.usom.gov.tr/api/address/index.json",
+  "https://www.usom.gov.tr/api/v1/address",
+  "https://www.usom.gov.tr/api/address",
 ];
 
-// Her tip için ayrı kaynak denemeleri
-const SOURCES_BY_TYPE: Record<string, string[]> = {
-  domain: [
-    "https://raw.githubusercontent.com/stamparm/blackbook/master/blackbook.txt",
-  ],
-  ipv4: [
-    "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
-  ],
+// Güvenilir genel tehdit feed'leri (US sunucularından erişilebilir)
+const FALLBACK_FEEDS: Record<string, string> = {
+  domain: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
+  ipv4:   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
 };
 
-async function tryFetch(url: string, timeout = 20_000): Promise<string | null> {
+async function probe(url: string): Promise<{ status: number; size: number; sample: string; contentType: string } | null> {
   try {
     const r = await fetch(url, {
       headers: BROWSER_HEADERS,
-      signal: AbortSignal.timeout(timeout),
+      signal: AbortSignal.timeout(8_000),
     });
-    if (!r.ok) return null;
     const text = await r.text();
-    return text && text.trim().length > 20 ? text : null;
-  } catch {
-    return null;
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    return {
+      status: r.status,
+      size: text.length,
+      contentType: r.headers.get("content-type") || "unknown",
+      sample: lines.slice(0, 5).join(" | "),
+    };
+  } catch (e) {
+    return { status: 0, size: 0, contentType: "error", sample: String(e).slice(0, 80) };
   }
 }
 
-function parseLines(raw: string): string[] {
-  return raw
-    .split(/\r?\n/)
-    .map(l => l.split(/\s+/)[0].trim())   // satır başındaki token al (IP tabloları için)
-    .map(l => l.replace(/^[#*!;]+.*$/, "").trim())  // yorum satırı temizle
-    .filter(l => l && l.length > 3 && !l.startsWith("#") && !l.startsWith("//"));
+async function fetchText(url: string): Promise<string | null> {
+  try {
+    const r = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(20_000) });
+    if (!r.ok) return null;
+    return await r.text();
+  } catch { return null; }
 }
 
 function classifyLine(v: string): "domain" | "ipv4" | "ipv6" | "url" | null {
-  if (/^https?:\/\//i.test(v) || /^ftp:\/\//i.test(v)) return "url";
-  if (v.includes(":") && v.split(":").length > 2) return "ipv6";
-  if (/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(v)) {
-    return v.replace(/\/\d+$/, "").split(".").every(o => +o <= 255) ? "ipv4" : null;
-  }
-  if (/^[a-z0-9*._-]+\.[a-z]{2,}$/i.test(v) && !v.startsWith(".")) return "domain";
+  const val = v.trim().split(/\s+/)[0].trim();
+  if (!val || val.length < 4) return null;
+  if (/^https?:\/\//i.test(val)) return "url";
+  if (val.includes(":") && val.split(":").length > 2) return "ipv6";
+  if (/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(val))
+    return val.replace(/\/\d+$/, "").split(".").every(o => +o <= 255) ? "ipv4" : null;
+  if (/^[a-z0-9*._-]+\.[a-z]{2,}$/i.test(val) && !val.startsWith(".")) return "domain";
   return null;
+}
+
+function parseLines(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#") && !l.startsWith("//") && !l.startsWith(";") && l.length > 3);
+}
+
+// StevenBlack hosts formatını parse et (0.0.0.0 domain.com)
+function parseHostsFile(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#"))
+    .map(l => {
+      const m = l.match(/^0\.0\.0\.0\s+(.+)$/);
+      return m ? m[1].trim() : null;
+    })
+    .filter((v): v is string => !!v && v !== "0.0.0.0" && v !== "localhost");
 }
 
 export async function GET(req: Request) {
@@ -78,6 +99,17 @@ export async function GET(req: Request) {
     }
   }
 
+  const isDiag = new URL(req.url).searchParams.has("diag");
+
+  // TANI MODU: USOM URL'lerini test et, gerçek içeriği göster
+  if (isDiag) {
+    const probes: Record<string, unknown> = {};
+    await Promise.all(PROBE_URLS.map(async url => {
+      probes[url] = await probe(url);
+    }));
+    return NextResponse.json({ mode: "diagnostic", probes });
+  }
+
   const started = Date.now();
   const client = sb();
   const now = new Date().toISOString();
@@ -85,47 +117,31 @@ export async function GET(req: Request) {
   const buckets: Record<string, Set<string>> = {
     domain: new Set(), ipv4: new Set(), ipv6: new Set(), url: new Set(),
   };
-
   const debug: Record<string, string> = {};
 
-  // 1. USOM kombinasyon dosyasını dene — tek dosyada domain+ip+url
-  let usomHit = false;
-  for (const url of USOM_COMBINED) {
-    const text = await tryFetch(url);
-    if (!text) { debug[url] = "empty/fail"; continue; }
+  // Fallback: güvenilir global feed'ler
+  const [hostsTxt, ipTxt] = await Promise.all([
+    fetchText(FALLBACK_FEEDS.domain),
+    fetchText(FALLBACK_FEEDS.ipv4),
+  ]);
 
-    const lines = parseLines(text);
-    debug[url] = `${lines.length} satır`;
-
-    if (lines.length < 10) continue; // gerçek veri değil
-
-    usomHit = true;
-    for (const line of lines) {
-      const type = classifyLine(line);
-      if (type) buckets[type].add(line);
-    }
-    break; // ilk çalışan URL yeterli
+  if (hostsTxt) {
+    const domains = parseHostsFile(hostsTxt);
+    domains.forEach(d => buckets.domain.add(d));
+    debug["StevenBlack/hosts"] = `${domains.length} domain`;
+  } else {
+    debug["StevenBlack/hosts"] = "başarısız";
   }
 
-  // 2. USOM çalışmadıysa fallback kaynaklardan besle
-  if (!usomHit) {
-    debug["usom"] = "tüm USOM URL'leri başarısız";
-    await Promise.all(
-      Object.entries(SOURCES_BY_TYPE).map(async ([type, urls]) => {
-        for (const url of urls) {
-          const text = await tryFetch(url);
-          if (!text) continue;
-          const lines = parseLines(text);
-          debug[`fallback:${type}`] = `${lines.length} satır — ${url}`;
-          if (lines.length < 10) continue;
-          for (const line of lines) buckets[type].add(line);
-          break;
-        }
-      })
-    );
+  if (ipTxt) {
+    const ips = parseLines(ipTxt).filter(l => classifyLine(l) === "ipv4");
+    ips.forEach(ip => buckets.ipv4.add(ip));
+    debug["stamparm/ipsum"] = `${ips.length} IPv4`;
+  } else {
+    debug["stamparm/ipsum"] = "başarısız";
   }
 
-  // 3. Supabase'e yaz
+  // Supabase'e yaz
   for (const [type, set] of Object.entries(buckets)) {
     const records = [...set].sort();
     const content = records.join("\n");
@@ -141,7 +157,7 @@ export async function GET(req: Request) {
     });
   }
 
-  const total = [...Object.values(buckets)].reduce((s, b) => s + b.size, 0);
+  const total = Object.values(buckets).reduce((s, b) => s + b.size, 0);
 
   return NextResponse.json({
     success: true,
@@ -151,7 +167,7 @@ export async function GET(req: Request) {
     ipv4:   buckets.ipv4.size,
     ipv6:   buckets.ipv6.size,
     url:    buckets.url.size,
-    usom_direct: usomHit,
     debug,
+    note: "USOM direkt erişim engelli. Tanı için ?diag parametresi ekle.",
   });
 }
