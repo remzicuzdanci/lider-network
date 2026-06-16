@@ -7,7 +7,7 @@ export const maxDuration = 25;
 const CORS = { "Access-Control-Allow-Origin": "*" };
 
 /* ── DNSBL Listesi ─────────────────────────────────────────── */
-export const LISTS = [
+const LISTS = [
   // Spamhaus
   { zone: "zen.spamhaus.org",       name: "Spamhaus ZEN",      cat: "Spam",    desc: "SBL+XBL+PBL birleşik — en önemli liste" },
   { zone: "sbl.spamhaus.org",       name: "Spamhaus SBL",      cat: "Spam",    desc: "Doğrudan spam kaynakları" },
