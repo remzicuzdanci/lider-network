@@ -13,31 +13,48 @@ export async function GET() {
 
   const { data, error } = await sb
     .from("threat_feeds")
-    .select("feed_type, record_count, updated_at")
+    .select("feed_type, record_count, size_bytes, updated_at, pages_fetched, total_pages, partial")
     .order("feed_type");
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500, headers: CORS });
   }
 
-  const stats: Record<string, { count: number; updated_at: string | null }> = {
-    domain: { count: 0, updated_at: null },
-    ipv4:   { count: 0, updated_at: null },
-    ipv6:   { count: 0, updated_at: null },
-    url:    { count: 0, updated_at: null },
+  type FeedStat = {
+    count: number;
+    size_bytes: number;
+    updated_at: string | null;
+    partial: boolean;
+    pages_fetched: number | null;
+    total_pages: number | null;
+  };
+
+  const stats: Record<string, FeedStat> = {
+    domain: { count: 0, size_bytes: 0, updated_at: null, partial: false, pages_fetched: null, total_pages: null },
+    ipv4:   { count: 0, size_bytes: 0, updated_at: null, partial: false, pages_fetched: null, total_pages: null },
+    ipv6:   { count: 0, size_bytes: 0, updated_at: null, partial: false, pages_fetched: null, total_pages: null },
+    url:    { count: 0, size_bytes: 0, updated_at: null, partial: false, pages_fetched: null, total_pages: null },
   };
 
   for (const row of data ?? []) {
     if (row.feed_type in stats) {
       stats[row.feed_type] = {
-        count: row.record_count ?? 0,
-        updated_at: row.updated_at ?? null,
+        count:         row.record_count   ?? 0,
+        size_bytes:    row.size_bytes     ?? 0,
+        updated_at:    row.updated_at     ?? null,
+        partial:       row.partial        ?? false,
+        pages_fetched: row.pages_fetched  ?? null,
+        total_pages:   row.total_pages    ?? null,
       };
     }
   }
 
   const total = Object.values(stats).reduce((s, v) => s + v.count, 0);
-  const lastUpdated = data?.[0]?.updated_at ?? null;
+  const last_updated = data?.find(r => r.updated_at)?.updated_at ?? null;
+  const is_partial = Object.values(stats).some(v => v.partial);
 
-  return NextResponse.json({ stats, total, last_updated: lastUpdated }, { headers: CORS });
+  return NextResponse.json(
+    { stats, total, last_updated, is_partial },
+    { headers: CORS }
+  );
 }

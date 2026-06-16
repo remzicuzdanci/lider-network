@@ -2,9 +2,13 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
-export const maxDuration = 300;
+export const maxDuration = 60;
 
-// Supabase anon key yeterli — threat_feeds tablosunda RLS kapalı olmalı
+const USOM = "https://www.usom.gov.tr/api/address/index.json";
+const PER = 2000;
+const CONCURRENCY = 6;
+const TIMEOUT_MS = 50_000; // 50s bütçe — 60s limit içinde güvenli
+
 function sb() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -12,45 +16,88 @@ function sb() {
   );
 }
 
-const USOM = "https://www.usom.gov.tr/api/address/index.json";
-const PER = 2000;
-const CONCURRENCY = 8;
-
 interface UsomRecord {
-  url: string;
-  type: string;
+  url?: string;
+  addr?: string;
+  type?: string;
+  date?: string;
 }
 
-async function fetchPage(page: number): Promise<UsomRecord[] | null> {
+interface UsomResponse {
+  data?: UsomRecord[];
+  models?: UsomRecord[];
+  meta?: {
+    pagination?: {
+      "page-count"?: number;
+      "total-pages"?: number;
+      pageCount?: number;
+      totalPages?: number;
+      total?: number;
+      "per-page"?: number;
+    };
+  };
+}
+
+function getPageCount(j: UsomResponse): number {
+  const p = j?.meta?.pagination;
+  if (!p) return 1;
+  return (
+    p["page-count"] ??
+    p["total-pages"] ??
+    p.pageCount ??
+    p.totalPages ??
+    (p.total && p["per-page"] ? Math.ceil(p.total / p["per-page"]) : 1)
+  );
+}
+
+function getRecords(j: UsomResponse): UsomRecord[] {
+  return Array.isArray(j?.data) ? j.data : Array.isArray(j?.models) ? j.models : [];
+}
+
+async function fetchPage(page: number): Promise<{ records: UsomRecord[]; pageCount?: number } | null> {
   try {
     const r = await fetch(`${USOM}?page=${page}&per-page=${PER}`, {
-      headers: { "User-Agent": "LiderNetwork-ThreatFeed/1.0" },
-      signal: AbortSignal.timeout(12000),
+      headers: { "User-Agent": "LiderNetwork-ThreatFeed/1.0 (+https://threat.lidernetwork.com.tr)" },
+      signal: AbortSignal.timeout(10_000),
     });
     if (!r.ok) return null;
-    const j = await r.json();
-    return Array.isArray(j?.data) ? j.data : null;
+    const j: UsomResponse = await r.json();
+    return { records: getRecords(j), pageCount: page === 1 ? getPageCount(j) : undefined };
   } catch {
     return null;
   }
 }
 
-async function fetchTotalPages(): Promise<number> {
-  try {
-    const r = await fetch(`${USOM}?page=1&per-page=${PER}`, {
-      headers: { "User-Agent": "LiderNetwork-ThreatFeed/1.0" },
-      signal: AbortSignal.timeout(12000),
-    });
-    if (!r.ok) return 0;
-    const j = await r.json();
-    return j?.meta?.pagination?.["page-count"] ?? j?.meta?.pagination?.pageCount ?? 1;
-  } catch {
-    return 0;
+type FeedType = "domain" | "ipv4" | "ipv6" | "url";
+
+function classify(raw: string): FeedType | null {
+  const v = raw.trim();
+  if (!v || v.length < 3) return null;
+
+  // URL — protokol içeriyorsa
+  if (/^https?:\/\//i.test(v) || /^ftp:\/\//i.test(v)) return "url";
+
+  // IPv6 — birden fazla iki nokta üst üste
+  if (v.includes(":") && v.split(":").length > 2) return "ipv6";
+
+  // IPv4 (CIDR dahil)
+  if (/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(v)) {
+    return v.split(".").every(o => parseInt(o) <= 255) ? "ipv4" : null;
   }
+
+  // Domain — geçerli karakter seti ve en az bir nokta
+  if (/^[a-z0-9*_-]([a-z0-9*._-]*[a-z0-9-])?$/i.test(v) && v.includes(".")) {
+    return "domain";
+  }
+
+  return null;
+}
+
+function recordValue(r: UsomRecord): string {
+  return (r.url ?? r.addr ?? "").trim();
 }
 
 export async function GET(req: Request) {
-  // Vercel Cron, Authorization header ile CRON_SECRET gönderir
   const secret = process.env.CRON_SECRET;
   if (secret) {
     const auth = req.headers.get("authorization");
@@ -61,74 +108,82 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  const totalPages = await fetchTotalPages();
-  if (!totalPages) {
+  // İlk sayfayı al + toplam sayfa sayısını öğren
+  const first = await fetchPage(1);
+  if (!first) {
     return NextResponse.json({ error: "USOM API erişilemiyor" }, { status: 502 });
   }
 
-  const all: UsomRecord[] = [];
+  const totalPages = first.pageCount ?? 1;
+  const all: UsomRecord[] = [...first.records];
 
-  // İlk sayfayı zaten çektik (meta için), şimdi veriyi alalım
-  const firstData = await fetchPage(1);
-  if (firstData) all.push(...firstData);
-
-  // Kalan sayfaları CONCURRENCY kadar paralel çek
+  // Kalan sayfaları paralel chunk'larla çek
+  let pagesFetched = 1;
   for (let p = 2; p <= totalPages; p += CONCURRENCY) {
-    if (Date.now() - started > 240_000) break; // 4dk sınırı
-    const pages = Array.from(
+    if (Date.now() - started > TIMEOUT_MS) break;
+    const batch = Array.from(
       { length: Math.min(CONCURRENCY, totalPages - p + 1) },
       (_, i) => p + i
     );
-    const results = await Promise.all(pages.map(fetchPage));
-    for (const r of results) if (r) all.push(...r);
+    const results = await Promise.all(batch.map(fetchPage));
+    for (const r of results) if (r) { all.push(...r.records); pagesFetched++; }
   }
 
-  // Tip sınıflandır
-  const normalize = (s: string) => s.trim().toLowerCase();
-  const domains = all
-    .filter(r => normalize(r.type) === "domain")
-    .map(r => r.url.trim())
-    .filter(Boolean);
-  const ipv4 = all
-    .filter(r => normalize(r.type) === "ip" && !r.url.includes(":"))
-    .map(r => r.url.trim())
-    .filter(Boolean);
-  const ipv6 = all
-    .filter(r => normalize(r.type) === "ip" && r.url.includes(":"))
-    .map(r => r.url.trim())
-    .filter(Boolean);
-  const urls = all
-    .filter(r => normalize(r.type) === "url")
-    .map(r => r.url.trim())
-    .filter(Boolean);
+  // Tip sınıflandır + deduplicate
+  const buckets: Record<FeedType, Set<string>> = {
+    domain: new Set(), ipv4: new Set(), ipv6: new Set(), url: new Set(),
+  };
+
+  for (const r of all) {
+    const val = recordValue(r);
+    const apiType = (r.type ?? "").toLowerCase().trim();
+
+    let ft: FeedType | null = classify(val);
+
+    // API tipini de değerlendir: sınıflandırılamayan ama API tipi bilinen
+    if (!ft && apiType) {
+      if (apiType.includes("domain")) ft = "domain";
+      else if (apiType.includes("url")) ft = "url";
+      else if (apiType.includes("ip")) ft = val.includes(":") ? "ipv6" : "ipv4";
+    }
+
+    if (ft) buckets[ft].add(val);
+  }
 
   const client = sb();
   const now = new Date().toISOString();
 
-  const feeds = [
-    { feed_type: "domain", records: domains },
-    { feed_type: "ipv4",   records: ipv4 },
-    { feed_type: "ipv6",   records: ipv6 },
-    { feed_type: "url",    records: urls },
+  const feeds: { feed_type: string; records: string[] }[] = [
+    { feed_type: "domain", records: [...buckets.domain].sort() },
+    { feed_type: "ipv4",   records: [...buckets.ipv4].sort() },
+    { feed_type: "ipv6",   records: [...buckets.ipv6].sort() },
+    { feed_type: "url",    records: [...buckets.url] },
   ];
 
   for (const f of feeds) {
+    const content = f.records.join("\n");
     await client.from("threat_feeds").upsert({
       feed_type: f.feed_type,
-      content: f.records.join("\n"),
+      content,
       record_count: f.records.length,
+      size_bytes: Buffer.byteLength(content, "utf8"),
       updated_at: now,
+      pages_fetched: pagesFetched,
+      total_pages: totalPages,
+      partial: pagesFetched < totalPages,
     });
   }
 
   return NextResponse.json({
     success: true,
     elapsed_ms: Date.now() - started,
-    total: all.length,
-    domain: domains.length,
-    ipv4: ipv4.length,
-    ipv6: ipv6.length,
-    url: urls.length,
-    pages_fetched: totalPages,
+    total_raw: all.length,
+    domain: buckets.domain.size,
+    ipv4:   buckets.ipv4.size,
+    ipv6:   buckets.ipv6.size,
+    url:    buckets.url.size,
+    pages_fetched: pagesFetched,
+    total_pages: totalPages,
+    partial: pagesFetched < totalPages,
   });
 }
