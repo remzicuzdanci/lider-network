@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabase } from "@/lib/supabase";
+import { sendQuoteDecisionNotification } from "@/lib/quote-mail";
 
 /* ── Herkese açık teklif onay API'si (QR linki ile) ──────────────────
    GET  /api/teklif/:id        → teklifin özetini döner (müşteri görür)
@@ -28,7 +29,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: "Geçersiz işlem" }, { status: 400 });
   }
 
-  const { data: q, error: qErr } = await supabase.from("quotes").select("id, status").eq("id", id).single();
+  const { data: q, error: qErr } = await supabase
+    .from("quotes")
+    .select("id, status, quote_no, customer_name, grand_total, currency")
+    .eq("id", id)
+    .single();
   if (qErr || !q) return NextResponse.json({ error: "Teklif bulunamadı" }, { status: 404 });
 
   // Zaten karara bağlanmışsa tekrar değiştirme
@@ -37,11 +42,22 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const newStatus = action === "accept" ? "accepted" : "rejected";
+  const decidedAt = new Date().toISOString();
   const { error } = await supabase
     .from("quotes")
-    .update({ status: newStatus, approved_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+    .update({ status: newStatus, approved_at: decidedAt, updated_at: decidedAt })
     .eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+  // Ekibe bildirim maili gönder (hata olursa sessizce geç)
+  sendQuoteDecisionNotification({
+    quote_no: q.quote_no,
+    customer_name: q.customer_name,
+    grand_total: q.grand_total,
+    currency: q.currency || "TL",
+    action: newStatus,
+    decided_at: decidedAt,
+  }).catch(err => console.error("Karar bildirimi gönderilemedi:", err));
 
   return NextResponse.json({ success: true, status: newStatus });
 }

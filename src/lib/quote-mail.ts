@@ -67,6 +67,59 @@ function fmtDate(d?: string): string {
   return d ? new Date(d).toLocaleDateString("tr-TR") : "—";
 }
 
+export async function sendQuoteDecisionNotification(opts: {
+  quote_no: string;
+  customer_name?: string | null;
+  grand_total: number;
+  currency: string;
+  action: "accepted" | "rejected";
+  decided_at: string;
+}): Promise<void> {
+  const transporter = createTransporter();
+  const accepted = opts.action === "accepted";
+  const cur = opts.currency || "TL";
+  const subject = accepted
+    ? `✅ Teklif Onaylandı — ${opts.quote_no}`
+    : `↩️ Teklif Reddedildi — ${opts.quote_no}`;
+
+  const html = `
+<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"></head>
+<body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:28px 14px;">
+    <tr><td align="center">
+      <table role="presentation" width="540" cellpadding="0" cellspacing="0" style="max-width:540px;width:100%;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 20px rgba(15,23,42,.10);">
+        <tr><td style="background:${accepted ? "#15803d" : "#b91c1c"};padding:22px 28px;text-align:center;">
+          <div style="font-size:40px;margin-bottom:8px;">${accepted ? "✅" : "↩️"}</div>
+          <div style="color:#fff;font-size:20px;font-weight:800;">${accepted ? "Teklif Onaylandı" : "Teklif Reddedildi"}</div>
+        </td></tr>
+        <tr><td style="padding:24px 28px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr><td style="padding:8px 0;font-size:13px;color:#64748b;border-bottom:1px solid #eef2f7;">Teklif No</td>
+                <td align="right" style="padding:8px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #eef2f7;">${esc(opts.quote_no)}</td></tr>
+            <tr><td style="padding:8px 0;font-size:13px;color:#64748b;border-bottom:1px solid #eef2f7;">Müşteri</td>
+                <td align="right" style="padding:8px 0;font-size:13px;font-weight:700;color:#0f172a;border-bottom:1px solid #eef2f7;">${esc(opts.customer_name || "—")}</td></tr>
+            <tr><td style="padding:8px 0;font-size:13px;color:#64748b;border-bottom:1px solid #eef2f7;">Genel Toplam</td>
+                <td align="right" style="padding:8px 0;font-size:14px;font-weight:800;color:#0052ff;border-bottom:1px solid #eef2f7;">${money(opts.grand_total, cur)}</td></tr>
+            <tr><td style="padding:8px 0;font-size:13px;color:#64748b;">Tarih</td>
+                <td align="right" style="padding:8px 0;font-size:13px;color:#0f172a;">${new Date(opts.decided_at).toLocaleString("tr-TR")}</td></tr>
+          </table>
+        </td></tr>
+        <tr><td style="background:#0f172a;padding:14px 28px;text-align:center;">
+          <p style="color:#fff;font-size:12px;font-weight:700;margin:0;">LİDER NETWORK</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`.trim();
+
+  await transporter.sendMail({
+    from: `"Lider Network" <${FROM}>`,
+    to: QUOTE_CC,
+    subject,
+    html,
+  });
+}
+
 export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
   if (!data.toEmail) throw new Error("Alıcı e-postası yok");
   const transporter = createTransporter();
