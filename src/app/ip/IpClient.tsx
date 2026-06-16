@@ -18,42 +18,33 @@ interface IpData {
   is_mobile: boolean; is_proxy: boolean; is_hosting: boolean;
 }
 
-type IpTypeResult = { label: string; icon: string; detail: string; color: string };
+type IpTypeResult = { label: string; detail: string; color: string };
 
 function detectIpType(d: IpData): IpTypeResult {
   const ptr = (d.ptr || "").toLowerCase();
 
-  // Mobil → her zaman dinamik (çoğunlukla CGNAT)
+  // Mobil bağlantı → kesinlikle dinamik (CGNAT)
   if (d.is_mobile)
-    return { label: "Dinamik", icon: "⟳", detail: "Mobil bağlantılar dinamiktir ve genellikle CGNAT arkasındadır", color: "#fbbf24" };
+    return { label: "Dinamik", detail: "Mobil bağlantılar dinamiktir ve CGNAT arkasında olabilir", color: "#fbbf24" };
 
-  // Hosting / datacenter → statik
+  // Hosting / datacenter → kesinlikle statik
   if (d.is_hosting)
-    return { label: "Statik", icon: "⬛", detail: "Datacenter veya hosting IP'leri daima statiktir", color: "#34d399" };
+    return { label: "Statik", detail: "Datacenter ve hosting IP'leri daima statik olarak tahsis edilir", color: "#34d399" };
 
-  // PTR içinde IP okteti var mı? (otomatik üretilmiş = dinamik)
-  const ipDash = d.ip.replace(/\./g, "-");
-  const ipDot  = d.ip;
-  const autoPtr =
-    ptr.includes(ipDash) ||
-    ptr.includes(ipDot) ||
-    /\d{1,3}[.-]\d{1,3}[.-]\d{1,3}[.-]\d{1,3}/.test(ptr) ||
-    /^host-\d/.test(ptr) ||
-    /dynamic|dhcp|pool|pppoe|dial|broad|cable|dsl|adsl|vdsl|konut|residential/.test(ptr);
+  // PTR'de açıkça "dynamic/dhcp/pool/pppoe" geçiyorsa
+  if (/dynamic|dhcp|pool|pppoe|dial|residential/.test(ptr))
+    return { label: "Büyük İhtimalle Dinamik", detail: "PTR kaydı dinamik tahsise işaret ediyor; ISP'nizle teyit edin", color: "#fbbf24" };
 
-  if (autoPtr)
-    return { label: "Dinamik", icon: "⟳", detail: "PTR kaydı otomatik oluşturulmuş — ISP bu IP'yi dinamik olarak atıyor", color: "#fbbf24" };
+  // PTR'de açıkça "static/dedicated/fixed" geçiyorsa
+  if (/static|dedicated|fixed|sabit/.test(ptr))
+    return { label: "Statik", detail: "PTR kaydı statik tahsise işaret ediyor", color: "#34d399" };
 
-  // PTR'de "static" veya kurumsal isim var
-  if (ptr && /static|sabit|dedicated|fixed|business|kurumsal/.test(ptr))
-    return { label: "Statik", icon: "⬛", detail: "PTR kaydı statik IP'ye işaret ediyor", color: "#34d399" };
-
-  // Özel (IP içermeyen) PTR kaydı → büyük ihtimalle statik
-  if (ptr)
-    return { label: "Muhtemelen Statik", icon: "◈", detail: "Özel PTR kaydı var — kurumsal veya statik IP'lerde görülür", color: "#2dd4bf" };
-
-  // PTR yok, bilgi yetersiz
-  return { label: "Bilinmiyor", icon: "?", detail: "PTR kaydı bulunamadı; ISP'nizle teyit edin", color: "#9aa6d6" };
+  // Diğer tüm durumlar: PTR'den kesin sonuç çıkarılamaz
+  return {
+    label: "ISP'ye Bağlı",
+    detail: "Statik/dinamik bilgisi dışarıdan kesin olarak tespit edilemez — ISP'nizin size atama türünü kontrol edin",
+    color: "#9aa6d6",
+  };
 }
 
 function flag(code: string | null) {
