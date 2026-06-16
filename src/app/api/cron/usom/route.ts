@@ -4,11 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const USOM = "https://www.usom.gov.tr/api/address/index.json";
-const PER = 2000;
-const CONCURRENCY = 6;
-const TIMEOUT_MS = 50_000; // 50s bütçe — 60s limit içinde güvenli
-
 function sb() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -16,85 +11,59 @@ function sb() {
   );
 }
 
-interface UsomRecord {
-  url?: string;
-  addr?: string;
-  type?: string;
-  date?: string;
-}
+// USOM/SGB'nin herkese açık txt export URL'leri
+// Erişilemeyen varsa sonraki denenir (fallback zinciri)
+const SOURCES: Record<string, string[]> = {
+  domain: [
+    "https://www.usom.gov.tr/url-list.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",
+  ],
+  ipv4: [
+    "https://www.usom.gov.tr/ip-list.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
+  ],
+  url: [
+    "https://www.usom.gov.tr/zararli-baglantilar.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-url.txt",
+  ],
+};
 
-interface UsomResponse {
-  data?: UsomRecord[];
-  models?: UsomRecord[];
-  meta?: {
-    pagination?: {
-      "page-count"?: number;
-      "total-pages"?: number;
-      pageCount?: number;
-      totalPages?: number;
-      total?: number;
-      "per-page"?: number;
-    };
-  };
-}
+const HEADERS = {
+  "User-Agent": "Mozilla/5.0 (compatible; LiderNetwork-ThreatFeed/1.0; +https://threat.lidernetwork.com.tr)",
+  "Accept": "text/plain,text/html,*/*",
+  "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
+  "Referer": "https://www.usom.gov.tr/",
+};
 
-function getPageCount(j: UsomResponse): number {
-  const p = j?.meta?.pagination;
-  if (!p) return 1;
-  return (
-    p["page-count"] ??
-    p["total-pages"] ??
-    p.pageCount ??
-    p.totalPages ??
-    (p.total && p["per-page"] ? Math.ceil(p.total / p["per-page"]) : 1)
-  );
-}
-
-function getRecords(j: UsomResponse): UsomRecord[] {
-  return Array.isArray(j?.data) ? j.data : Array.isArray(j?.models) ? j.models : [];
-}
-
-async function fetchPage(page: number): Promise<{ records: UsomRecord[]; pageCount?: number } | null> {
-  try {
-    const r = await fetch(`${USOM}?page=${page}&per-page=${PER}`, {
-      headers: { "User-Agent": "LiderNetwork-ThreatFeed/1.0 (+https://threat.lidernetwork.com.tr)" },
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (!r.ok) return null;
-    const j: UsomResponse = await r.json();
-    return { records: getRecords(j), pageCount: page === 1 ? getPageCount(j) : undefined };
-  } catch {
-    return null;
+async function fetchText(urls: string[]): Promise<{ content: string; source: string } | null> {
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, {
+        headers: HEADERS,
+        signal: AbortSignal.timeout(20_000),
+      });
+      if (!r.ok) continue;
+      const text = await r.text();
+      if (text && text.trim().length > 10) {
+        return { content: text, source: url };
+      }
+    } catch {
+      continue;
+    }
   }
-}
-
-type FeedType = "domain" | "ipv4" | "ipv6" | "url";
-
-function classify(raw: string): FeedType | null {
-  const v = raw.trim();
-  if (!v || v.length < 3) return null;
-
-  // URL — protokol içeriyorsa
-  if (/^https?:\/\//i.test(v) || /^ftp:\/\//i.test(v)) return "url";
-
-  // IPv6 — birden fazla iki nokta üst üste
-  if (v.includes(":") && v.split(":").length > 2) return "ipv6";
-
-  // IPv4 (CIDR dahil)
-  if (/^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(v)) {
-    return v.split(".").every(o => parseInt(o) <= 255) ? "ipv4" : null;
-  }
-
-  // Domain — geçerli karakter seti ve en az bir nokta
-  if (/^[a-z0-9*_-]([a-z0-9*._-]*[a-z0-9-])?$/i.test(v) && v.includes(".")) {
-    return "domain";
-  }
-
   return null;
 }
 
-function recordValue(r: UsomRecord): string {
-  return (r.url ?? r.addr ?? "").trim();
+function isValidIpv4(s: string): boolean {
+  return /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(s) &&
+    s.replace(/\/\d+$/, "").split(".").every(o => parseInt(o) <= 255);
+}
+
+function parseLines(raw: string): string[] {
+  return raw
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#") && !l.startsWith("//") && l.length > 3);
 }
 
 export async function GET(req: Request) {
@@ -107,83 +76,52 @@ export async function GET(req: Request) {
   }
 
   const started = Date.now();
-
-  // İlk sayfayı al + toplam sayfa sayısını öğren
-  const first = await fetchPage(1);
-  if (!first) {
-    return NextResponse.json({ error: "USOM API erişilemiyor" }, { status: 502 });
-  }
-
-  const totalPages = first.pageCount ?? 1;
-  const all: UsomRecord[] = [...first.records];
-
-  // Kalan sayfaları paralel chunk'larla çek
-  let pagesFetched = 1;
-  for (let p = 2; p <= totalPages; p += CONCURRENCY) {
-    if (Date.now() - started > TIMEOUT_MS) break;
-    const batch = Array.from(
-      { length: Math.min(CONCURRENCY, totalPages - p + 1) },
-      (_, i) => p + i
-    );
-    const results = await Promise.all(batch.map(fetchPage));
-    for (const r of results) if (r) { all.push(...r.records); pagesFetched++; }
-  }
-
-  // Tip sınıflandır + deduplicate
-  const buckets: Record<FeedType, Set<string>> = {
-    domain: new Set(), ipv4: new Set(), ipv6: new Set(), url: new Set(),
-  };
-
-  for (const r of all) {
-    const val = recordValue(r);
-    const apiType = (r.type ?? "").toLowerCase().trim();
-
-    let ft: FeedType | null = classify(val);
-
-    // API tipini de değerlendir: sınıflandırılamayan ama API tipi bilinen
-    if (!ft && apiType) {
-      if (apiType.includes("domain")) ft = "domain";
-      else if (apiType.includes("url")) ft = "url";
-      else if (apiType.includes("ip")) ft = val.includes(":") ? "ipv6" : "ipv4";
-    }
-
-    if (ft) buckets[ft].add(val);
-  }
-
   const client = sb();
   const now = new Date().toISOString();
+  const results: Record<string, { count: number; source: string; ok: boolean }> = {};
 
-  const feeds: { feed_type: string; records: string[] }[] = [
-    { feed_type: "domain", records: [...buckets.domain].sort() },
-    { feed_type: "ipv4",   records: [...buckets.ipv4].sort() },
-    { feed_type: "ipv6",   records: [...buckets.ipv6].sort() },
-    { feed_type: "url",    records: [...buckets.url] },
-  ];
+  // Her feed tipi için paralel çekme
+  await Promise.all(
+    Object.entries(SOURCES).map(async ([type, urls]) => {
+      const res = await fetchText(urls);
+      if (!res) {
+        results[type] = { count: 0, source: "unavailable", ok: false };
+        return;
+      }
 
-  for (const f of feeds) {
-    const content = f.records.join("\n");
-    await client.from("threat_feeds").upsert({
-      feed_type: f.feed_type,
-      content,
-      record_count: f.records.length,
-      size_bytes: Buffer.byteLength(content, "utf8"),
-      updated_at: now,
-      pages_fetched: pagesFetched,
-      total_pages: totalPages,
-      partial: pagesFetched < totalPages,
-    });
-  }
+      let lines = parseLines(res.content);
+
+      // IPv4 listesi için geçerlilik filtresi
+      if (type === "ipv4") {
+        lines = lines.filter(l => isValidIpv4(l));
+      }
+
+      // Deduplicate + sırala
+      const unique = [...new Set(lines)].sort();
+      const content = unique.join("\n");
+
+      await client.from("threat_feeds").upsert({
+        feed_type: type,
+        content,
+        record_count: unique.length,
+        size_bytes: Buffer.byteLength(content, "utf8"),
+        updated_at: now,
+        pages_fetched: 1,
+        total_pages: 1,
+        partial: false,
+      });
+
+      results[type] = { count: unique.length, source: res.source, ok: true };
+    })
+  );
+
+  const total = Object.values(results).reduce((s, v) => s + v.count, 0);
+  const allOk = Object.values(results).every(v => v.ok);
 
   return NextResponse.json({
-    success: true,
+    success: allOk,
     elapsed_ms: Date.now() - started,
-    total_raw: all.length,
-    domain: buckets.domain.size,
-    ipv4:   buckets.ipv4.size,
-    ipv6:   buckets.ipv6.size,
-    url:    buckets.url.size,
-    pages_fetched: pagesFetched,
-    total_pages: totalPages,
-    partial: pagesFetched < totalPages,
+    total,
+    results,
   });
 }
