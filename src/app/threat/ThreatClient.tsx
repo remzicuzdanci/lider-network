@@ -9,10 +9,16 @@ const C = {
 };
 
 const FEEDS = [
-  { key: "domain", label: "Domain",  icon: "🌐", color: C.blue,   desc: "Zararlı alan adları" },
-  { key: "ipv4",   label: "IPv4",    icon: "🖥",  color: C.teal,   desc: "Zararlı IPv4 adresleri" },
-  { key: "url",    label: "URL",     icon: "🔗",  color: C.purple, desc: "Zararlı URL'ler" },
-  { key: "ipv6",   label: "IPv6",    icon: "⬡",   color: C.amber,  desc: "Zararlı IPv6 adresleri" },
+  { key: "domain", label: "Domain",  icon: "🌐", color: C.blue,   desc: "Zararlı alan adları",      src: "USOM" },
+  { key: "ipv4",   label: "IPv4",    icon: "🖥",  color: C.teal,   desc: "Zararlı IPv4 adresleri",   src: "USOM" },
+  { key: "url",    label: "URL",     icon: "🔗",  color: C.purple, desc: "Zararlı URL'ler",          src: "USOM + URLhaus" },
+  { key: "ipv6",   label: "IPv6",    icon: "⬡",   color: C.amber,  desc: "Zararlı IPv6 adresleri",   src: "USOM" },
+];
+
+const LITE_WINDOWS = [
+  { label: "90 Gün",  days: 90,  key: "90d"  },
+  { label: "180 Gün", days: 180, key: "180d" },
+  { label: "365 Gün", days: 365, key: "365d" },
 ];
 
 type FeedStat = {
@@ -93,6 +99,8 @@ export default function ThreatClient() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [copied, setCopied] = useState<string | null>(null);
   const [guide, setGuide] = useState(false);
+  const [liteOpen, setLiteOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<"full" | "lite">("full");
   const [origin, setOrigin] = useState("https://threat.lidernetwork.com.tr");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -142,6 +150,8 @@ export default function ThreatClient() {
         .fade{animation:fadein .3s ease}
         .row-hover:hover{border-color:rgba(79,124,255,.4)!important;background:${C.card2}!important}
         .copy-btn:hover{background:rgba(79,124,255,.12)!important;border-color:rgba(79,124,255,.35)!important}
+        .tab-btn{transition:all .15s;cursor:pointer;border:none}
+        .tab-btn:hover{opacity:.85}
         code{font-family:'Cascadia Code','Fira Code',monospace,sans-serif}
       `}</style>
 
@@ -162,8 +172,8 @@ export default function ThreatClient() {
           <nav style={{ display: "flex", gap: 6 }}>
             {[
               ["Kara Liste", "https://blacklist.lidernetwork.com.tr"],
-              ["IP Sorgu", "https://ip.lidernetwork.com.tr"],
-              ["DNS", "https://dns.lidernetwork.com.tr"],
+              ["IP Sorgu",   "https://ip.lidernetwork.com.tr"],
+              ["DNS",        "https://dns.lidernetwork.com.tr"],
             ].map(([label, href]) => (
               <a key={href} href={href}
                 style={{ color: C.sub, fontSize: 12, textDecoration: "none", padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.line}`, background: C.card, transition: "opacity .15s" }}>
@@ -178,7 +188,7 @@ export default function ThreatClient() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? C.green : C.amber, animation: "pulse 2.2s ease-in-out infinite", display: "inline-block" }} />
             <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".06em", color: isLive ? C.green : C.amber }}>
-              {isLive ? "CANLI" : stats ? "VERİ BEKLENIYOR" : "BAĞLANIYOR"}
+              {isLive ? "CANLI" : stats ? "VERİ BEKLENİYOR" : "BAĞLANIYOR"}
             </span>
           </div>
           <span style={{ color: C.line }}>|</span>
@@ -198,7 +208,6 @@ export default function ThreatClient() {
               </span>
             </>
           )}
-          {/* Countdown progress */}
           {stats?.last_updated && (
             <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ width: 80, height: 3, background: C.card, borderRadius: 999, overflow: "hidden" }}>
@@ -214,10 +223,23 @@ export default function ThreatClient() {
           <h1 style={{ margin: "0 0 10px", fontSize: 30, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1.2 }}>
             SGB / USOM Zararlı Bağlantı Feed&apos;i
           </h1>
-          <p style={{ margin: 0, color: C.sub, fontSize: 14, maxWidth: 580, lineHeight: 1.7 }}>
+          <p style={{ margin: "0 0 16px", color: C.sub, fontSize: 14, maxWidth: 580, lineHeight: 1.7 }}>
             Siber Güvenlik Başkanlığı&apos;nın güncel tehdit listelerini <span style={{ color: C.teal, fontWeight: 600 }}>FortiGate External Connector</span> ile uyumlu
-            TXT formatında sunar. Her saat otomatik güncelleme, sıfır kurulum.
+            TXT formatında sunar. Her 2 saatte bir otomatik güncelleme, sıfır kurulum.
           </p>
+          {/* Kaynak badge'leri */}
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {[
+              { label: "USOM / SGB", color: C.blue },
+              { label: "URLhaus", color: C.purple },
+              { label: "2 Saatlik Güncelleme", color: C.green },
+              { label: "FortiOS 6.4+", color: C.teal },
+            ].map(b => (
+              <span key={b.label} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".05em", color: b.color, background: `${b.color}12`, border: `1px solid ${b.color}28`, padding: "3px 9px", borderRadius: 99 }}>
+                {b.label}
+              </span>
+            ))}
+          </div>
         </section>
 
         {/* Stats grid */}
@@ -230,9 +252,15 @@ export default function ThreatClient() {
             return (
               <div key={f.key}
                 style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: "18px 18px 14px" }}>
-                <div style={{ fontSize: 22, marginBottom: 10 }}>{f.icon}</div>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                  <span style={{ fontSize: 20 }}>{f.icon}</span>
+                  <span style={{ fontSize: 9, color: C.dim, background: `${C.dim}18`, border: `1px solid ${C.dim}30`, padding: "1px 6px", borderRadius: 99, fontWeight: 600 }}>{f.src}</span>
+                </div>
                 <div style={{ fontSize: 26, fontWeight: 800, color: f.color, fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
-                  {count > 0 ? count.toLocaleString("tr-TR") : <span style={{ color: C.dim, fontSize: 18, animation: "shimmer 2s infinite" }}>—</span>}
+                  {count > 0
+                    ? count.toLocaleString("tr-TR")
+                    : <span style={{ color: C.dim, fontSize: 18, animation: stats ? "none" : "shimmer 2s infinite" }}>—</span>
+                  }
                 </div>
                 <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".07em", color: C.sub, marginTop: 4 }}>{f.label}</div>
                 <div style={{ fontSize: 11, color: C.dim, marginTop: 2 }}>{f.desc}</div>
@@ -240,6 +268,7 @@ export default function ThreatClient() {
                   <span style={{ fontSize: 10, color: C.dim }}>{fmtSize(size)}</span>
                   {partial && <span style={{ fontSize: 9, color: C.amber, fontWeight: 700, letterSpacing: ".05em" }}>KISMİ</span>}
                   {count > 0 && !partial && <span style={{ fontSize: 9, color: C.green, fontWeight: 700 }}>✓ TAM</span>}
+                  {count === 0 && stats && <span style={{ fontSize: 9, color: C.dim, fontWeight: 600 }}>BEKLENIYOR</span>}
                 </div>
               </div>
             );
@@ -247,7 +276,7 @@ export default function ThreatClient() {
 
           {/* Toplam */}
           <div style={{ background: `linear-gradient(140deg, #0f1e4a 0%, #0d1636 100%)`, border: `1px solid rgba(79,124,255,.25)`, borderRadius: 14, padding: "18px 18px 14px" }}>
-            <div style={{ fontSize: 22, marginBottom: 10 }}>🛡</div>
+            <div style={{ fontSize: 20, marginBottom: 10 }}>🛡</div>
             <div style={{ fontSize: 26, fontWeight: 800, color: "#fff", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>
               {stats ? stats.total.toLocaleString("tr-TR") : <span style={{ color: C.dim, fontSize: 18 }}>—</span>}
             </div>
@@ -260,66 +289,133 @@ export default function ThreatClient() {
           </div>
         </div>
 
-        {/* Feed URL'leri */}
+        {/* Feed URL'leri — Tam / Lite sekmeleri */}
         <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 10 }}>
             <h2 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: C.text }}>External Connector Feed URL&apos;leri</h2>
-            <span style={{ fontSize: 11, color: C.dim }}>FortiOS 6.4+ uyumlu · text/plain</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* Sekme: Tam / Lite */}
+              <div style={{ display: "flex", background: C.card2, border: `1px solid ${C.line}`, borderRadius: 10, padding: 3, gap: 2 }}>
+                {(["full", "lite"] as const).map(tab => (
+                  <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)}
+                    style={{
+                      padding: "5px 14px", borderRadius: 7, fontSize: 11, fontWeight: 700,
+                      background: activeTab === tab ? C.blue : "transparent",
+                      color: activeTab === tab ? "#fff" : C.sub,
+                    }}>
+                    {tab === "full" ? "TAM" : "LİTE"}
+                  </button>
+                ))}
+              </div>
+              <span style={{ fontSize: 11, color: C.dim }}>FortiOS 6.4+ · text/plain</span>
+            </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {FEEDS.map(f => {
-              const url = `${origin}/feeds/${f.key}.txt`;
-              const st = stats?.stats?.[f.key];
-              const count = st?.count ?? 0;
-              const copyKey = `feed-${f.key}`;
-              return (
-                <div key={f.key} className="row-hover"
-                  style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, transition: "all .15s" }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 8, background: `${f.color}14`, border: `1px solid ${f.color}28`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
-                    {f.icon}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{f.label}</span>
-                      {count > 0 && (
-                        <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "1px 7px", borderRadius: 99, fontWeight: 700 }}>
-                          {count.toLocaleString("tr-TR")} kayıt
-                        </span>
-                      )}
-                      <span style={{ fontSize: 10, color: C.dim }}>{f.desc}</span>
+
+          {/* Tam feed'ler */}
+          {activeTab === "full" && (
+            <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {FEEDS.map(f => {
+                const url = `${origin}/feeds/${f.key}.txt`;
+                const st = stats?.stats?.[f.key];
+                const count = st?.count ?? 0;
+                const copyKey = `feed-${f.key}`;
+                return (
+                  <div key={f.key} className="row-hover"
+                    style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "center", gap: 12, transition: "all .15s" }}>
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: `${f.color}14`, border: `1px solid ${f.color}28`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>
+                      {f.icon}
                     </div>
-                    <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{f.label}</span>
+                        {count > 0 && (
+                          <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "1px 7px", borderRadius: 99, fontWeight: 700 }}>
+                            {count.toLocaleString("tr-TR")} kayıt
+                          </span>
+                        )}
+                        <span style={{ fontSize: 9, color: C.dim, background: `${C.dim}18`, padding: "1px 6px", borderRadius: 99 }}>{f.src}</span>
+                      </div>
+                      <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
+                    </div>
+                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                      <button className="copy-btn" onClick={() => copy(url, copyKey)}
+                        style={{ padding: "7px 13px", borderRadius: 8, border: `1px solid ${C.line}`, background: copied === copyKey ? "rgba(45,212,160,.12)" : "transparent", color: copied === copyKey ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
+                        {copied === copyKey ? "✓ Kopyalandı" : "📋 Kopyala"}
+                      </button>
+                      <a href={url} target="_blank" rel="noopener noreferrer"
+                        style={{ padding: "7px 11px", borderRadius: 8, border: `1px solid ${C.line}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                        Aç ↗
+                      </a>
+                    </div>
                   </div>
-                  <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                    <button className="copy-btn" onClick={() => copy(url, copyKey)}
-                      style={{ padding: "7px 13px", borderRadius: 8, border: `1px solid ${C.line}`, background: copied === copyKey ? "rgba(45,212,160,.12)" : "transparent", color: copied === copyKey ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
-                      {copied === copyKey ? "✓ Kopyalandı" : "📋 Kopyala"}
-                    </button>
-                    <a href={url} target="_blank" rel="noopener noreferrer"
-                      style={{ padding: "7px 11px", borderRadius: 8, border: `1px solid ${C.line}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
-                      Aç ↗
-                    </a>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Lite feed'ler */}
+          {activeTab === "lite" && (
+            <div className="fade">
+              <div style={{ padding: "12px 16px", background: "rgba(79,124,255,.06)", border: `1px solid rgba(79,124,255,.18)`, borderRadius: 12, marginBottom: 12, fontSize: 12, color: C.sub, lineHeight: 1.6 }}>
+                <strong style={{ color: C.text }}>Lite Feed Nedir?</strong> — Küçük hafızalı cihazlar (FortiGate 60F/80F vb.) için son 90/180/365 gün içinde eklenen kayıtları içerir.
+                Tam listeye göre daha küçük boyutlu, aynı oranda etkili.
+              </div>
+              {FEEDS.filter(f => f.key === "domain" || f.key === "ipv4").map(f =>
+                LITE_WINDOWS.map(w => {
+                  const url = `${origin}/feeds/${f.key}-${w.key}.txt`;
+                  const copyKey = `lite-${f.key}-${w.key}`;
+                  return (
+                    <div key={copyKey} className="row-hover"
+                      style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 12, padding: "11px 16px", display: "flex", alignItems: "center", gap: 12, transition: "all .15s", marginBottom: 6 }}>
+                      <div style={{ width: 30, height: 30, borderRadius: 8, background: `${f.color}14`, border: `1px solid ${f.color}28`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, flexShrink: 0 }}>
+                        {f.icon}
+                      </div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: C.text }}>{f.label}</span>
+                          <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "1px 7px", borderRadius: 99, fontWeight: 700 }}>{w.label}</span>
+                        </div>
+                        <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
+                      </div>
+                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                        <button className="copy-btn" onClick={() => copy(url, copyKey)}
+                          style={{ padding: "7px 13px", borderRadius: 8, border: `1px solid ${C.line}`, background: copied === copyKey ? "rgba(45,212,160,.12)" : "transparent", color: copied === copyKey ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
+                          {copied === copyKey ? "✓ Kopyalandı" : "📋 Kopyala"}
+                        </button>
+                        <a href={url} target="_blank" rel="noopener noreferrer"
+                          style={{ padding: "7px 11px", borderRadius: 8, border: `1px solid ${C.line}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>
+                          Aç ↗
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
         </div>
 
         {/* Kaynak bilgisi */}
         <div style={{ background: "rgba(34,211,238,.04)", border: "1px solid rgba(34,211,238,.12)", borderRadius: 12, padding: "12px 18px", marginBottom: 20, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
           <div style={{ fontSize: 20 }}>ℹ</div>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 12, color: C.text, fontWeight: 600, marginBottom: 3 }}>Veri Kaynağı: Siber Güvenlik Başkanlığı (SGB) / USOM</div>
+            <div style={{ fontSize: 12, color: C.text, fontWeight: 600, marginBottom: 3 }}>Veri Kaynakları: SGB / USOM &amp; URLhaus</div>
             <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.6 }}>
-              Bu servis yalnızca <strong style={{ color: C.teal }}>veri dönüşümü ve dağıtımı</strong> yapar. Listelerin içeriği, doğruluğu ve güncelleme sıklığı tamamen SGB/USOM kaynağına aittir.
-              Listelenen bağlantılarla herhangi bir etkileşim gerçekleştirilmez.
+              Domain ve IP listeleri <strong style={{ color: C.teal }}>USOM/SGB</strong> kaynağından çekilir.
+              URL feed&apos;i ek olarak <strong style={{ color: C.purple }}>abuse.ch URLhaus</strong> ile zenginleştirilir.
+              Bu servis yalnızca veri dönüşümü ve dağıtımı yapar; içerik sorumluluğu kaynağa aittir.
             </div>
           </div>
-          <a href="https://www.usom.gov.tr" target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: 11, color: C.teal, textDecoration: "none", whiteSpace: "nowrap", border: "1px solid rgba(34,211,238,.25)", padding: "6px 12px", borderRadius: 8 }}>
-            usom.gov.tr ↗
-          </a>
+          <div style={{ display: "flex", gap: 6 }}>
+            <a href="https://www.usom.gov.tr" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, color: C.teal, textDecoration: "none", whiteSpace: "nowrap", border: "1px solid rgba(34,211,238,.25)", padding: "6px 12px", borderRadius: 8 }}>
+              usom.gov.tr ↗
+            </a>
+            <a href="https://urlhaus.abuse.ch" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, color: C.purple, textDecoration: "none", whiteSpace: "nowrap", border: "1px solid rgba(167,139,250,.25)", padding: "6px 12px", borderRadius: 8 }}>
+              URLhaus ↗
+            </a>
+          </div>
         </div>
 
         {/* FortiGate Kurulum Rehberi */}
@@ -357,7 +453,7 @@ export default function ThreatClient() {
                 {
                   n: "4",
                   t: "Yenileme aralığını ayarlayın",
-                  d: "\"Refresh Rate\" → 60 dakika olarak ayarlayın. Listeler saatte bir güncellenir, bu değer optimaldür.",
+                  d: "\"Refresh Rate\" → 60 dakika olarak ayarlayın. Listeler her 2 saatte bir güncellenir.",
                 },
                 {
                   n: "5",
@@ -377,7 +473,7 @@ export default function ThreatClient() {
               ))}
 
               <div style={{ marginTop: 14, padding: "12px 16px", background: "rgba(251,191,36,.05)", border: "1px solid rgba(251,191,36,.18)", borderRadius: 10, fontSize: 12, color: C.amber, lineHeight: 1.6 }}>
-                <strong>Not:</strong> FortiGate, TXT feed&apos;ini her yenileme aralığında çeker. DNS propagasyonu nedeniyle ilk aktivasyonda 5-10 dakika gecikme yaşanabilir.
+                <strong>Not:</strong> FortiGate, TXT feed&apos;ini her yenileme aralığında çeker. Daha küçük cihazlar için <strong>LİTE</strong> sekmesindeki kısa pencereli feed&apos;leri tercih edin.
                 Daha fazla bilgi için{" "}
                 <a href="https://docs.fortinet.com" target="_blank" rel="noopener noreferrer" style={{ color: C.amber }}>Fortinet dokümantasyonunu</a>{" "}
                 inceleyin.
@@ -388,8 +484,10 @@ export default function ThreatClient() {
 
         {/* Footer */}
         <p style={{ textAlign: "center", fontSize: 11, color: C.dim, lineHeight: 1.8 }}>
-          Veri kaynağı:{" "}
+          Veri kaynakları:{" "}
           <a href="https://www.usom.gov.tr" target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: "none" }}>usom.gov.tr</a>
+          {" · "}
+          <a href="https://urlhaus.abuse.ch" target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: "none" }}>URLhaus</a>
           {"  ·  "}
           <a href="https://blacklist.lidernetwork.com.tr" style={{ color: C.blue, textDecoration: "none" }}>IP Kara Liste Sorgu</a>
           {"  ·  "}
@@ -400,7 +498,7 @@ export default function ThreatClient() {
           <a href="https://www.lidernetwork.com.tr" style={{ color: C.blue, textDecoration: "none" }}>Lider Network</a>
           <br />
           <span style={{ fontSize: 10 }}>
-            Saatlik otomatik güncelleme · SGB/USOM kaynaklı · Veri doğruluğu kaynağa aittir
+            Her 2 saatte bir otomatik güncelleme · USOM/URLhaus kaynaklı · Veri doğruluğu kaynağa aittir
           </span>
         </p>
       </div>
