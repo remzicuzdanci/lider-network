@@ -10,13 +10,18 @@ export async function middleware(request: NextRequest) {
   const hostname = request.headers.get("host") || "";
 
   // ── dns.lidernetwork.com.tr subdomain → DNS aracı ─────────────
-  // Tek sayfa araç; /api ve statikler matcher'da hariç tutulduğu için
-  // doğrudan geçer. Sayfa istekleri /dns'e yönlendirilir.
   if (hostname.startsWith("dns.")) {
     return NextResponse.rewrite(new URL("/dns", request.url));
   }
-  // Ana domainde de /dns doğrudan çalışsın (intl /tr/dns'e yönlendirmesin)
   if (pathname === "/dns" || pathname.startsWith("/dns/")) {
+    return NextResponse.next();
+  }
+
+  // ── ip.lidernetwork.com.tr subdomain → IP aracı ─────────────
+  if (hostname.startsWith("ip.")) {
+    return NextResponse.rewrite(new URL("/ip", request.url));
+  }
+  if (pathname === "/ip" || pathname.startsWith("/ip/")) {
     return NextResponse.next();
   }
   // Teklif onay sayfası locale'siz; intl /tr/teklif'e yönlendirip 404 yapmasın
