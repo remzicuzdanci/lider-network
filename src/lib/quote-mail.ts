@@ -49,6 +49,8 @@ const FROM =
   process.env.SMTP_TEKLIF_USER ||
   "teklif@lidernetwork.com.tr";
 
+const FROM_NAME = process.env.SMTP_TEKLIF_FROM_NAME || "Lider Network Teklif Servisi";
+
 // Teklif maillerinde her zaman CC'lenecekler (env ile değiştirilebilir)
 const QUOTE_CC = (process.env.QUOTE_CC ||
   "remzi.cuzdanci@lidernetwork.com.tr,yunus.oztekin@lidernetwork.com.tr")
@@ -113,7 +115,7 @@ export async function sendQuoteDecisionNotification(opts: {
 </body></html>`.trim();
 
   await transporter.sendMail({
-    from: `"Lider Network" <${FROM}>`,
+    from: `"${FROM_NAME}" <${FROM}>`,
     to: QUOTE_CC,
     subject,
     html,
@@ -147,9 +149,12 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
       </tr>`;
   }).join("");
 
+  const preheader = `Teklif No: ${data.quote_no} · ${data.company_name || data.customer_name || ""} · Genel Toplam: ${money(data.grand_total, cur)}`;
+
   const html = `
 <!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
 <body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
+  <div style="display:none;max-height:0;overflow:hidden;mso-hide:all;">${esc(preheader)}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
   <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:28px 14px;">
     <tr><td align="center">
       <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="max-width:680px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
@@ -233,7 +238,7 @@ export async function sendQuoteEmail(data: QuoteMailData): Promise<void> {
 </body></html>`.trim();
 
   await transporter.sendMail({
-    from: `"Lider Network" <${FROM}>`,
+    from: `"${FROM_NAME}" <${FROM}>`,
     to: data.toEmail,
     cc: QUOTE_CC.length ? QUOTE_CC : undefined,
     replyTo: FROM,
