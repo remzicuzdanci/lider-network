@@ -8,6 +8,7 @@ import { routing } from "@/i18n/routing";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import WhatsAppButton from "@/components/ui/WhatsAppButton";
+import ITToolsWidget from "@/components/ui/ITToolsWidget";
 import BackToTop from "@/components/ui/BackToTop";
 import CookieBanner from "@/components/ui/CookieBanner";
 import "../globals.css";
@@ -243,6 +244,7 @@ export default async function LocaleLayout({
               <Navbar />
               <main id="main-content">{children}</main>
               <Footer />
+              <ITToolsWidget />
               <WhatsAppButton />
               <BackToTop />
               <CookieBanner />
