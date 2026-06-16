@@ -187,26 +187,31 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
   }
 
   // ── İmza alanları + QR ──
-  y += 8;
-  const sigY = y + 50;
-  // QR
+  y += 20;
+  const QR_SIZE = 68;
+  const SIG_LINE_Y = y + 50; // imza çizgisinin y pozisyonu
+
+  // QR sol tarafta, imza çizgisiyle aynı hizada
   if (data.approvalUrl) {
     try {
-      const qrPng = await QRCode.toBuffer(data.approvalUrl, { margin: 1, width: 240, color: { dark: "#0f172a", light: "#ffffff" } });
+      const qrPng = await QRCode.toBuffer(data.approvalUrl, { margin: 1, width: 200, color: { dark: "#0f172a", light: "#ffffff" } });
       const qr = await doc.embedPng(qrPng);
-      page.drawImage(qr, { x: M, y: H - sigY - 36, width: 78, height: 78 });
-      text(page, "Telefonla okutup", M + 88, sigY - 8, { size: 8.5, font: fBold, color: SLATE });
-      text(page, "teklifi onaylayın", M + 88, sigY + 3, { size: 8.5, font: fBold, color: SLATE });
+      page.drawImage(qr, { x: M, y: H - y - QR_SIZE, width: QR_SIZE, height: QR_SIZE });
+      text(page, "Telefonla okutup", M + QR_SIZE + 10, y + 26, { size: 8, font: fBold, color: BLUE });
+      text(page, "teklifi onaylayın", M + QR_SIZE + 10, y + 38, { size: 8, font: fBold, color: BLUE });
     } catch { /* QR opsiyonel */ }
   }
-  // İmza çizgileri (sağ tarafta)
-  const s1x = W - M - 360, s2x = W - M - 170, sw = 160;
-  page.drawLine({ start: { x: s1x, y: H - sigY }, end: { x: s1x + sw, y: H - sigY }, thickness: 1, color: SLATE });
-  page.drawLine({ start: { x: s2x, y: H - sigY }, end: { x: s2x + sw, y: H - sigY }, thickness: 1, color: SLATE });
-  text(page, "Teklifi Veren", s1x, sigY + 6, { size: 9, font: fBold });
-  text(page, data.prepared_by || "Lider Network", s1x, sigY + 18, { size: 8.5, color: SLATE });
-  text(page, "Müşteri Onayı", s2x, sigY + 6, { size: 9, font: fBold });
-  text(page, data.customer_name || "—", s2x, sigY + 18, { size: 8.5, color: SLATE });
+
+  // İmza çizgileri — sağ tarafta, QR üst üste binmeyecek şekilde
+  const s1x = W - M - 360, s2x = W - M - 170, sw = 155;
+  page.drawLine({ start: { x: s1x, y: H - SIG_LINE_Y }, end: { x: s1x + sw, y: H - SIG_LINE_Y }, thickness: 1, color: SLATE });
+  page.drawLine({ start: { x: s2x, y: H - SIG_LINE_Y }, end: { x: s2x + sw, y: H - SIG_LINE_Y }, thickness: 1, color: SLATE });
+  text(page, "Teklifi Veren", s1x, SIG_LINE_Y + 6, { size: 9, font: fBold });
+  text(page, data.prepared_by || "Lider Network", s1x, SIG_LINE_Y + 18, { size: 8.5, color: SLATE });
+  text(page, "Kaşe / İmza", s1x, SIG_LINE_Y + 30, { size: 7.5, color: SLATE });
+  text(page, "Müşteri Onayı", s2x, SIG_LINE_Y + 6, { size: 9, font: fBold });
+  text(page, data.customer_name || "—", s2x, SIG_LINE_Y + 18, { size: 8.5, color: SLATE });
+  text(page, "Kaşe / İmza / Tarih", s2x, SIG_LINE_Y + 30, { size: 7.5, color: SLATE });
 
   // ── Footer ──
   page.drawRectangle({ x: 0, y: 0, width: W, height: 40, color: DARK });
