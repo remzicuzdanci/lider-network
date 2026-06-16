@@ -18,6 +18,44 @@ interface IpData {
   is_mobile: boolean; is_proxy: boolean; is_hosting: boolean;
 }
 
+type IpTypeResult = { label: string; icon: string; detail: string; color: string };
+
+function detectIpType(d: IpData): IpTypeResult {
+  const ptr = (d.ptr || "").toLowerCase();
+
+  // Mobil → her zaman dinamik (çoğunlukla CGNAT)
+  if (d.is_mobile)
+    return { label: "Dinamik", icon: "⟳", detail: "Mobil bağlantılar dinamiktir ve genellikle CGNAT arkasındadır", color: "#fbbf24" };
+
+  // Hosting / datacenter → statik
+  if (d.is_hosting)
+    return { label: "Statik", icon: "⬛", detail: "Datacenter veya hosting IP'leri daima statiktir", color: "#34d399" };
+
+  // PTR içinde IP okteti var mı? (otomatik üretilmiş = dinamik)
+  const ipDash = d.ip.replace(/\./g, "-");
+  const ipDot  = d.ip;
+  const autoPtr =
+    ptr.includes(ipDash) ||
+    ptr.includes(ipDot) ||
+    /\d{1,3}[.-]\d{1,3}[.-]\d{1,3}[.-]\d{1,3}/.test(ptr) ||
+    /^host-\d/.test(ptr) ||
+    /dynamic|dhcp|pool|pppoe|dial|broad|cable|dsl|adsl|vdsl|konut|residential/.test(ptr);
+
+  if (autoPtr)
+    return { label: "Dinamik", icon: "⟳", detail: "PTR kaydı otomatik oluşturulmuş — ISP bu IP'yi dinamik olarak atıyor", color: "#fbbf24" };
+
+  // PTR'de "static" veya kurumsal isim var
+  if (ptr && /static|sabit|dedicated|fixed|business|kurumsal/.test(ptr))
+    return { label: "Statik", icon: "⬛", detail: "PTR kaydı statik IP'ye işaret ediyor", color: "#34d399" };
+
+  // Özel (IP içermeyen) PTR kaydı → büyük ihtimalle statik
+  if (ptr)
+    return { label: "Muhtemelen Statik", icon: "◈", detail: "Özel PTR kaydı var — kurumsal veya statik IP'lerde görülür", color: "#2dd4bf" };
+
+  // PTR yok, bilgi yetersiz
+  return { label: "Bilinmiyor", icon: "?", detail: "PTR kaydı bulunamadı; ISP'nizle teyit edin", color: "#9aa6d6" };
+}
+
 function flag(code: string | null) {
   if (!code) return "🌐";
   return code.toUpperCase().replace(/./g, c => String.fromCodePoint(127397 + c.charCodeAt(0)));
@@ -216,10 +254,26 @@ export default function IpClient() {
 
               {/* PTR */}
               {data.ptr && (
-                <div style={{ fontSize: 13, color: C.sub, fontFamily: "monospace", marginBottom: 18 }}>
+                <div style={{ fontSize: 13, color: C.sub, fontFamily: "monospace", marginBottom: 14 }}>
                   PTR&nbsp;&nbsp;<span style={{ color: C.teal }}>{data.ptr}</span>
                 </div>
               )}
+
+              {/* Statik / Dinamik banner */}
+              {(() => {
+                const t = detectIpType(data);
+                return (
+                  <div style={{ display: "inline-flex", alignItems: "flex-start", gap: 12, background: `${t.color}12`, border: `1px solid ${t.color}40`, borderRadius: 12, padding: "10px 16px", marginBottom: 20, maxWidth: "100%" }}>
+                    <span style={{ fontSize: 18, lineHeight: 1.2 }}>{t.label === "Statik" ? "⬛" : t.label === "Dinamik" ? "⟳" : t.label.includes("Statik") ? "◈" : "?"}</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: t.color, marginBottom: 2 }}>
+                        IP Tahsisi: {t.label}
+                      </div>
+                      <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.5 }}>{t.detail}</div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Butonlar */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -267,6 +321,17 @@ export default function IpClient() {
               {/* Güvenlik */}
               <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 16, padding: "22px 24px" }}>
                 <CardTitle icon="🛡" label="Güvenlik & Nitelikler" />
+                {(() => {
+                  const t = detectIpType(data);
+                  return (
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: `1px solid ${C.line}` }}>
+                      <span style={{ fontSize: 13, color: C.sub }}>IP Tahsisi</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: t.color, background: `${t.color}15`, border: `1px solid ${t.color}40`, padding: "2px 10px", borderRadius: 999 }}>
+                        {t.label}
+                      </span>
+                    </div>
+                  );
+                })()}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: `1px solid ${C.line}` }}>
                   <span style={{ fontSize: 13, color: C.sub }}>VPN / Proxy</span>
                   <PillStatus active={data.is_proxy} yes="Tespit edildi" no="Temiz" />
