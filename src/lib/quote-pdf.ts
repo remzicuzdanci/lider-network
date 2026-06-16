@@ -70,7 +70,7 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
   const fReg = await doc.embedFont(reg, { subset: true });
   const fBold = await doc.embedFont(bold, { subset: true });
   let logoImg = null;
-  try { logoImg = await doc.embedPng(await logo()); } catch { /* logo opsiyonel */ }
+  try { const l = await logo(); if (l) logoImg = await doc.embedPng(l); } catch { /* logo opsiyonel */ }
 
   const page = doc.addPage([595.28, 841.89]);
   const W = 595.28, H = 841.89, M = 40;
