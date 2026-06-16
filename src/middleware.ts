@@ -32,6 +32,18 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/blacklist" || pathname.startsWith("/blacklist/")) {
     return NextResponse.next();
   }
+
+  // ── threat.lidernetwork.com.tr subdomain → Tehdit feed servisi ──
+  if (hostname.startsWith("threat.")) {
+    // /feeds/* yolları doğrudan /threat/feeds/* rotasına ilet (FortiGate TXT dosyaları)
+    if (pathname.startsWith("/feeds/")) {
+      return NextResponse.rewrite(new URL(`/threat${pathname}`, request.url));
+    }
+    return NextResponse.rewrite(new URL("/threat", request.url));
+  }
+  if (pathname === "/threat" || pathname.startsWith("/threat/")) {
+    return NextResponse.next();
+  }
   // Teklif onay sayfası locale'siz; intl /tr/teklif'e yönlendirip 404 yapmasın
   if (pathname === "/teklif" || pathname.startsWith("/teklif/")) {
     return NextResponse.next();
