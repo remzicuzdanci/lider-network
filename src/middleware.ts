@@ -24,6 +24,14 @@ export async function middleware(request: NextRequest) {
   if (pathname === "/ip" || pathname.startsWith("/ip/")) {
     return NextResponse.next();
   }
+
+  // ── blacklist.lidernetwork.com.tr subdomain → Kara liste aracı ──
+  if (hostname.startsWith("blacklist.")) {
+    return NextResponse.rewrite(new URL("/blacklist", request.url));
+  }
+  if (pathname === "/blacklist" || pathname.startsWith("/blacklist/")) {
+    return NextResponse.next();
+  }
   // Teklif onay sayfası locale'siz; intl /tr/teklif'e yönlendirip 404 yapmasın
   if (pathname === "/teklif" || pathname.startsWith("/teklif/")) {
     return NextResponse.next();
