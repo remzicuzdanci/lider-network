@@ -7,7 +7,7 @@ const intl = createIntlMiddleware(routing);
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const hostname = request.headers.get("host") || "";
+  const hostname = request.nextUrl.hostname || request.headers.get("host")?.split(":")[0] || "";
 
   // ── dns.lidernetwork.com.tr subdomain → DNS aracı ─────────────
   if (hostname.startsWith("dns.")) {
