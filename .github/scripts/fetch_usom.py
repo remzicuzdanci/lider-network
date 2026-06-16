@@ -132,7 +132,40 @@ if not usom_ok:
     except Exception as e:
         print(f"  ipsum hatası: {e}")
 
-# ── 3. URLhaus ────────────────────────────────────────────────────────────────
+# ── 3. Feodo Tracker botnet C2 IP'leri ───────────────────────────────────────
+print("Feodo Tracker C2 IP'leri çekiliyor...")
+try:
+    r = requests.get("https://feodotracker.abuse.ch/downloads/ipblocklist.txt", timeout=20)
+    before = len(dated["ipv4"])
+    seen_ipv4 = {v for v, _ in dated["ipv4"]}
+    for line in r.text.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and re.match(r"^\d{1,3}(\.\d{1,3}){3}", line):
+            ip = line.split()[0]
+            if ip not in seen_ipv4:
+                seen_ipv4.add(ip)
+                dated["ipv4"].append((ip, None))
+    print(f"  Feodo: +{len(dated['ipv4']) - before} IP")
+except Exception as e:
+    print(f"  Feodo hatasi: {e}")
+
+# ── 4. CINS Score kotu aktör listesi ─────────────────────────────────────────
+print("CINS Score kotu aktör IP'leri çekiliyor...")
+try:
+    r = requests.get("https://cinsscore.com/list/ci-badguys.txt", timeout=20)
+    before = len(dated["ipv4"])
+    seen_ipv4 = {v for v, _ in dated["ipv4"]}
+    for line in r.text.splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and re.match(r"^\d{1,3}(\.\d{1,3}){3}", line):
+            if line not in seen_ipv4:
+                seen_ipv4.add(line)
+                dated["ipv4"].append((line, None))
+    print(f"  CINS: +{len(dated['ipv4']) - before} IP")
+except Exception as e:
+    print(f"  CINS hatasi: {e}")
+
+# ── 5. URLhaus ────────────────────────────────────────────────────────────────
 print("URLhaus malware URL'leri çekiliyor...")
 try:
     r = requests.get("https://urlhaus.abuse.ch/downloads/text/", timeout=30)
