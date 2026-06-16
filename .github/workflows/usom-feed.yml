@@ -8,33 +8,16 @@ on:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 20
 
     steps:
-      - name: Threat feed güncelle
+      - uses: actions/checkout@v4
+
+      - name: Python bağımlılıkları
+        run: pip install requests --quiet
+
+      - name: USOM + URLhaus feed güncelle
         env:
-          CRON_SECRET: ${{ secrets.CRON_SECRET }}
-        run: |
-          echo "Vercel cron tetikleniyor..."
-
-          RESPONSE=$(curl -sf \
-            "https://threat.lidernetwork.com.tr/api/cron/usom" \
-            -H "Authorization: Bearer ${CRON_SECRET}" \
-            --max-time 90 || echo '{"success":false,"error":"curl failed"}')
-
-          echo "Response: $RESPONSE"
-
-          SUCCESS=$(echo "$RESPONSE" | jq -r '.success // false')
-          DOMAIN=$(echo "$RESPONSE"  | jq -r '.fetched.domain // 0')
-          IPV4=$(echo "$RESPONSE"    | jq -r '.fetched.ipv4 // 0')
-          ELAPSED=$(echo "$RESPONSE" | jq -r '.elapsed_ms // 0')
-
-          echo "success:  $SUCCESS"
-          echo "domain:   $DOMAIN"
-          echo "ipv4:     $IPV4"
-          echo "elapsed:  ${ELAPSED}ms"
-
-          if [ "$SUCCESS" != "true" ]; then
-            echo "HATA: Feed güncellenemedi"
-            exit 1
-          fi
+          SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: python3 .github/scripts/fetch_usom.py
