@@ -141,11 +141,14 @@ export async function GET(req: Request) {
     debug["stamparm/ipsum"] = "başarısız";
   }
 
-  // Supabase'e yaz
+  // Supabase'e yaz — sadece temel kolonlar (ALTER TABLE çalıştırılmamış olabilir)
+  const writeErrors: string[] = [];
   for (const [type, set] of Object.entries(buckets)) {
     const records = [...set].sort();
     const content = records.join("\n");
-    await client.from("threat_feeds").upsert({
+
+    // Önce tam şema dene, hata alırsa temel şemaya düş
+    const { error: e1 } = await client.from("threat_feeds").upsert({
       feed_type: type,
       content,
       record_count: records.length,
@@ -155,18 +158,30 @@ export async function GET(req: Request) {
       total_pages: 1,
       partial: false,
     });
+
+    if (e1) {
+      // Kolon eksik — temel şema ile yaz
+      const { error: e2 } = await client.from("threat_feeds").upsert({
+        feed_type: type,
+        content,
+        record_count: records.length,
+        updated_at: now,
+      });
+      if (e2) writeErrors.push(`${type}: ${e2.message}`);
+    }
   }
 
   const total = Object.values(buckets).reduce((s, b) => s + b.size, 0);
 
   return NextResponse.json({
-    success: true,
+    success: writeErrors.length === 0,
     elapsed_ms: Date.now() - started,
     total,
     domain: buckets.domain.size,
     ipv4:   buckets.ipv4.size,
     ipv6:   buckets.ipv6.size,
     url:    buckets.url.size,
+    write_errors: writeErrors,
     debug,
     note: "USOM direkt erişim engelli. Tanı için ?diag parametresi ekle.",
   });

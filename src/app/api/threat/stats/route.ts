@@ -13,7 +13,7 @@ export async function GET() {
 
   const { data, error } = await sb
     .from("threat_feeds")
-    .select("feed_type, record_count, size_bytes, updated_at, pages_fetched, total_pages, partial")
+    .select("feed_type, record_count, updated_at")
     .order("feed_type");
 
   if (error) {
@@ -39,22 +39,21 @@ export async function GET() {
   for (const row of data ?? []) {
     if (row.feed_type in stats) {
       stats[row.feed_type] = {
-        count:         row.record_count   ?? 0,
-        size_bytes:    row.size_bytes     ?? 0,
-        updated_at:    row.updated_at     ?? null,
-        partial:       row.partial        ?? false,
-        pages_fetched: row.pages_fetched  ?? null,
-        total_pages:   row.total_pages    ?? null,
+        count:         row.record_count ?? 0,
+        size_bytes:    0,
+        updated_at:    row.updated_at  ?? null,
+        partial:       false,
+        pages_fetched: null,
+        total_pages:   null,
       };
     }
   }
 
   const total = Object.values(stats).reduce((s, v) => s + v.count, 0);
   const last_updated = data?.find(r => r.updated_at)?.updated_at ?? null;
-  const is_partial = Object.values(stats).some(v => v.partial);
 
   return NextResponse.json(
-    { stats, total, last_updated, is_partial },
+    { stats, total, last_updated, is_partial: false },
     { headers: CORS }
   );
 }
