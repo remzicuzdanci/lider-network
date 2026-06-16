@@ -1,25 +1,22 @@
 import { PDFDocument, rgb, PDFFont, PDFPage } from "pdf-lib";
 import fontkit from "@pdf-lib/fontkit";
 import QRCode from "qrcode";
+import fs from "fs";
+import path from "path";
 
 /* ── Sunucu tarafı teklif PDF'i (pdf-lib + DejaVu Türkçe font) ──────────
-   Maile ek olarak gönderilir. Logo ve fontlar public/ üzerinden çekilir. */
-
-const ASSET_BASE = process.env.PDF_ASSET_BASE || "https://www.lidernetwork.com.tr";
+   Maile ek olarak gönderilir. Fontlar ve logo dosya sisteminden okunur. */
 
 let _reg: Buffer | null = null, _bold: Buffer | null = null, _logo: Buffer | null = null;
-async function asset(path: string): Promise<Buffer> {
-  const r = await fetch(`${ASSET_BASE}${path}`, { cache: "no-store" });
-  if (!r.ok) throw new Error(`asset alınamadı: ${path}`);
-  return Buffer.from(await r.arrayBuffer());
-}
 async function fonts() {
-  if (!_reg) _reg = await asset("/fonts/DejaVuSans.ttf");
-  if (!_bold) _bold = await asset("/fonts/DejaVuSans-Bold.ttf");
+  if (!_reg) _reg = fs.readFileSync(path.join(process.cwd(), "public/fonts/DejaVuSans.ttf"));
+  if (!_bold) _bold = fs.readFileSync(path.join(process.cwd(), "public/fonts/DejaVuSans-Bold.ttf"));
   return { reg: _reg, bold: _bold };
 }
 async function logo() {
-  if (!_logo) _logo = await asset("/logo.png");
+  if (!_logo) {
+    try { _logo = fs.readFileSync(path.join(process.cwd(), "public/logo.png")); } catch { _logo = null; }
+  }
   return _logo;
 }
 
