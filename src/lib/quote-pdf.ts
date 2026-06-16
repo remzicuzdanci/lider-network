@@ -127,7 +127,7 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
   y += 18;
 
   // ── Kalemler tablosu ──
-  const cols = { no: M + 8, desc: M + 8, qty: W - M - 250, price: W - M - 185, disc: W - M - 110, kdv: W - M - 70, net: W - M - 8 };
+  const cols = { desc: M + 8, qty: W - M - 270, price: W - M - 202, disc: W - M - 148, kdv: W - M - 110, net: W - M - 8 };
   page.drawRectangle({ x: M, y: H - y - 20, width: W - M * 2, height: 20, color: DARK });
   text(page, "AÇIKLAMA", cols.desc, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
   rightText(page, "MİKTAR", cols.qty + 40, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
