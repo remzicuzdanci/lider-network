@@ -48,11 +48,29 @@ export async function GET(req: NextRequest) {
           });
         }
 
-        const issuer = cert.issuer
-          ? Object.entries(cert.issuer).map(([k, v]) => `${k}=${v}`).join(", ")
-          : "—";
+        const issuerObj = cert.issuer || {};
+        const subjectObj = cert.subject || {};
 
-        const subject = cert.subject?.CN || Object.entries(cert.subject || {}).map(([k, v]) => `${k}=${v}`).join(", ");
+        const issuerName = (issuerObj as Record<string, string>).O
+          || (issuerObj as Record<string, string>).CN
+          || Object.entries(issuerObj).map(([k, v]) => `${k}=${v}`).join(", ")
+          || "—";
+
+        const subject = (subjectObj as Record<string, string>).CN
+          || Object.entries(subjectObj).map(([k, v]) => `${k}=${v}`).join(", ");
+
+        // EV: subject.businessCategory or subject.serialNumber+O present
+        // OV: subject.O present but not EV
+        // DV: only CN
+        const subRec = subjectObj as Record<string, string>;
+        let certType: "DV" | "OV" | "EV" = "DV";
+        if (subRec.businessCategory || (subRec.serialNumber && subRec.O)) {
+          certType = "EV";
+        } else if (subRec.O) {
+          certType = "OV";
+        }
+
+        const isWildcard = subject.startsWith("*.");
 
         resolve(NextResponse.json({
           host,
@@ -61,10 +79,16 @@ export async function GET(req: NextRequest) {
           validFrom: validFrom.toISOString(),
           validTo:   validTo.toISOString(),
           subject,
-          issuer,
+          issuer: issuerName,
+          issuerFull: Object.entries(issuerObj).map(([k, v]) => `${k}=${v}`).join(", "),
           sans,
           protocol: socket.getProtocol() || "TLS",
-          selfSigned: cert.issuer?.CN === cert.subject?.CN,
+          selfSigned: (issuerObj as Record<string, string>).CN === (subjectObj as Record<string, string>).CN,
+          certType,
+          isWildcard,
+          fingerprint: ((cert as unknown) as Record<string, unknown>).fingerprint256 as string || ((cert as unknown) as Record<string, unknown>).fingerprint as string || null,
+          keyBits: ((cert as unknown) as Record<string, unknown>).bits as number || null,
+          serialNumber: ((cert as unknown) as Record<string, unknown>).serialNumber as string || null,
         }, { headers: { ...CORS, "Cache-Control": "no-store" } }));
       } catch {
         socket.destroy();
