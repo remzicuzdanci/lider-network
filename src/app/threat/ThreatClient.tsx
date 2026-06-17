@@ -2,17 +2,29 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 
 const C = {
-  bg: "#050917", card: "#0a1228", card2: "#0f1a38", line: "#162044",
-  text: "#e0e8ff", sub: "#6b7eb5", dim: "#2e3f6e",
-  blue: "#4f7cff", green: "#10d98a", red: "#ff4f6d", amber: "#fbbf24",
-  teal: "#00d4ff", purple: "#b06aff", orange: "#ff8c42",
+  bg:       "#070d1c",
+  bg2:      "#0c1427",
+  surface:  "#111d35",
+  surface2: "#162240",
+  border:   "#1f3155",
+  borderLo: "#172545",
+  text:     "#e8f0ff",
+  sub:      "#7a93c0",
+  dim:      "#38527a",
+  blue:     "#4d8cf5",
+  green:    "#1ed98a",
+  red:      "#f24f6a",
+  amber:    "#f5a623",
+  teal:     "#12d4ef",
+  purple:   "#a46fff",
+  orange:   "#ff8c42",
 };
 
 const FEEDS = [
-  { key: "domain", label: "Domain",  icon: "🌐", color: C.blue,   desc: "Zararlı alan adları",    src: "USOM" },
-  { key: "ipv4",   label: "IPv4",    icon: "🖥",  color: C.teal,   desc: "Zararlı IP adresleri",   src: "USOM · Feodo · CINS" },
-  { key: "url",    label: "URL",     icon: "🔗",  color: C.purple, desc: "Zararlı URL'ler",        src: "USOM · URLhaus" },
-  { key: "ipv6",   label: "IPv6",    icon: "⬡",   color: C.amber,  desc: "Zararlı IPv6 adresleri", src: "USOM" },
+  { key: "domain", label: "Domain",  icon: "🌐", color: C.blue,   desc: "Zararlı alan adları",    src: "SGB · USOM" },
+  { key: "ipv4",   label: "IPv4",    icon: "🖥",  color: C.teal,   desc: "Zararlı IP adresleri",   src: "SGB · Feodo · CINS · ET · Spamhaus" },
+  { key: "url",    label: "URL",     icon: "🔗",  color: C.purple, desc: "Zararlı URL'ler",        src: "SGB · URLhaus · ThreatFox · OpenPhish" },
+  { key: "ipv6",   label: "IPv6",    icon: "⬡",   color: C.amber,  desc: "Zararlı IPv6 adresleri", src: "SGB" },
 ];
 
 const LITE_WINDOWS = [
@@ -21,11 +33,61 @@ const LITE_WINDOWS = [
   { label: "365 Gün", days: 365, key: "365d" },
 ];
 
+const SOURCES = [
+  { icon: "🏛", name: "SGB / USOM",          desc: "Siber Güvenlik Başkanlığı — resmi Türkiye tehdit listesi (~477K kayıt)",        color: C.blue,   href: "https://siberguvenlik.gov.tr" },
+  { icon: "🦠", name: "URLhaus",              desc: "abuse.ch — aktif malware dağıtım URL'leri (~75K URL)",                          color: C.purple, href: "https://urlhaus.abuse.ch" },
+  { icon: "🤖", name: "Feodo Tracker",        desc: "abuse.ch — botnet Command & Control sunucu IP'leri",                            color: C.teal,   href: "https://feodotracker.abuse.ch" },
+  { icon: "📊", name: "CINS Score",           desc: "Collective Intelligence — kötü aktör IP listesi",                              color: C.orange, href: "https://cinsscore.com" },
+  { icon: "🦊", name: "ThreatFox",            desc: "abuse.ch — son 90 günlük IOC: domain, IP:port, URL",                           color: C.purple, href: "https://threatfox.abuse.ch" },
+  { icon: "⚡", name: "EmergingThreats",      desc: "ET — aktif olarak ele geçirilmiş IP adresleri",                                color: C.red,    href: "https://rules.emergingthreats.net" },
+  { icon: "🎣", name: "OpenPhish",            desc: "Gerçek zamanlı phishing URL tespit listesi",                                   color: C.amber,  href: "https://openphish.com" },
+  { icon: "🛡", name: "Spamhaus DROP/EDROP",  desc: "Spam kaynaklı subnet'ler — DROP ve EDROP listeleri",                           color: C.green,  href: "https://www.spamhaus.org/drop/" },
+];
+
+const STEPS = [
+  {
+    n: "1", icon: "🔒",
+    title: "Security Fabric → External Connectors",
+    body: "FortiGate web arayüzünden Security Fabric → External Connectors menüsüne gidin. Sağ üstten Create New butonuna tıklayın.",
+    tip: null,
+  },
+  {
+    n: "2", icon: "📋",
+    title: "Feed tipini seçin",
+    body: "Threat Feed seçeneğini işaretleyin. Tipe göre Connector türünü seçin:",
+    list: ["Domain listesi → Domain Name", "IPv4/IPv6 listesi → IP Address", "URL listesi → URL"],
+    tip: "Her feed türü için ayrı Connector oluşturmanız gerekir.",
+  },
+  {
+    n: "3", icon: "🔗",
+    title: "Feed URL'sini yapıştırın",
+    body: "URI alanına aşağıdaki adreslerden birini girin:",
+    urls: [
+      "https://threat.lidernetwork.com.tr/feeds/domain.txt",
+      "https://threat.lidernetwork.com.tr/feeds/ipv4.txt",
+      "https://threat.lidernetwork.com.tr/feeds/url.txt",
+    ],
+    tip: "60F / 80F gibi küçük cihazlar için Lite Feed sekmesindeki kısa URL'leri kullanın.",
+  },
+  {
+    n: "4", icon: "⏱",
+    title: "Yenileme aralığını 60 dakikaya ayarlayın",
+    body: "Refresh Rate değerini 60 dakika yapın. Feed'ler her 2 saatte bir otomatik güncellenir.",
+    tip: null,
+  },
+  {
+    n: "5", icon: "🚫",
+    title: "Firewall Policy'e ekleyin ve engellemeyi aktif edin",
+    body: "Policy & Objects → Firewall Policy bölümünden bir kural oluşturun. Connector'ları Destination olarak ekleyin ve Action'ı DENY yapın. Zararlı bağlantılar artık otomatik engellenir.",
+    tip: null,
+  },
+];
+
 type FeedStat = { count: number; size_bytes: number; updated_at: string | null; partial: boolean };
 interface Stats { stats: Record<string, FeedStat>; total: number; last_updated: string | null; is_partial: boolean }
 interface CheckResult { query: string; found: boolean; found_in: string[]; results: Record<string, boolean>; checked: string[] }
 
-function useCountUp(target: number, duration = 1200) {
+function useCountUp(target: number, duration = 1400) {
   const [val, setVal] = useState(0);
   const prev = useRef(0);
   useEffect(() => {
@@ -66,49 +128,72 @@ function useCountdown(lastUpdated: string | null) {
   useEffect(() => {
     function tick() {
       if (!lastUpdated) { setDisplay("—"); setPct(0); return; }
-      const rem = new Date(lastUpdated).getTime() + 3_600_000 - Date.now();
+      const rem = new Date(lastUpdated).getTime() + 7_200_000 - Date.now();
       if (rem <= 0) { setDisplay("Güncelleniyor…"); setPct(100); return; }
       const min = Math.floor(rem / 60000), sec = Math.floor((rem % 60000) / 1000);
       setDisplay(`${min}:${sec.toString().padStart(2, "0")}`);
-      setPct(Math.round(((3_600_000 - rem) / 3_600_000) * 100));
+      setPct(Math.round(((7_200_000 - rem) / 7_200_000) * 100));
     }
     tick(); const t = setInterval(tick, 1000); return () => clearInterval(t);
   }, [lastUpdated]);
   return { display, pct };
 }
 
-function StatCard({ feed, stat }: { feed: typeof FEEDS[0]; stat?: FeedStat }) {
+function useDailyNew(total: number | null) {
+  const [dailyNew, setDailyNew] = useState<number | null>(null);
+  const [syncsToday, setSyncsToday] = useState(1);
+  useEffect(() => {
+    const now = new Date();
+    const midnight = new Date(now); midnight.setHours(0, 0, 0, 0);
+    setSyncsToday(Math.max(1, Math.floor((now.getTime() - midnight.getTime()) / (2 * 3600_000))));
+  }, []);
+  useEffect(() => {
+    if (!total) return;
+    try {
+      const today = new Date().toDateString();
+      const storedDate = localStorage.getItem("tn-date");
+      const storedTotal = localStorage.getItem("tn-prev");
+      if (storedDate === today && storedTotal) {
+        const prev = parseInt(storedTotal);
+        if (total > prev) setDailyNew(total - prev);
+      } else {
+        localStorage.setItem("tn-date", today);
+        localStorage.setItem("tn-prev", String(total));
+      }
+    } catch {}
+  }, [total]);
+  return { dailyNew, syncsToday };
+}
+
+function StatCard({ feed, stat, max }: { feed: typeof FEEDS[0]; stat?: FeedStat; max: number }) {
   const count = useCountUp(stat?.count ?? 0);
   const hasData = (stat?.count ?? 0) > 0;
+  const pct = max > 0 ? Math.round(((stat?.count ?? 0) / max) * 100) : 0;
   return (
     <div style={{
-      background: `linear-gradient(145deg, ${C.card} 0%, ${C.card2} 100%)`,
-      border: `1px solid ${hasData ? feed.color + "30" : C.line}`,
-      borderRadius: 16, padding: "20px 20px 16px",
-      boxShadow: hasData ? `0 0 24px ${feed.color}12` : "none",
-      transition: "all .25s",
+      background: `linear-gradient(145deg, ${C.surface} 0%, ${C.surface2} 100%)`,
+      border: `1px solid ${hasData ? feed.color + "35" : C.borderLo}`,
+      borderRadius: 16, padding: "22px 22px 18px",
+      boxShadow: hasData ? `0 4px 32px ${feed.color}15` : "none",
+      transition: "all .22s",
       position: "relative", overflow: "hidden",
     }}>
-      {hasData && (
-        <div style={{ position: "absolute", top: -20, right: -20, width: 80, height: 80, borderRadius: "50%", background: `radial-gradient(circle, ${feed.color}18 0%, transparent 70%)` }} />
-      )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontSize: 24 }}>{feed.icon}</span>
-        <span style={{ fontSize: 9, color: hasData ? feed.color : C.dim, background: hasData ? `${feed.color}15` : `${C.dim}20`, border: `1px solid ${hasData ? feed.color + "30" : C.dim + "40"}`, padding: "2px 7px", borderRadius: 99, fontWeight: 700, letterSpacing: ".04em" }}>{feed.src}</span>
+      {hasData && <div style={{ position: "absolute", top: -30, right: -30, width: 100, height: 100, borderRadius: "50%", background: `radial-gradient(circle, ${feed.color}20 0%, transparent 70%)`, pointerEvents: "none" }} />}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{ width: 38, height: 38, borderRadius: 11, background: `${feed.color}18`, border: `1.5px solid ${feed.color}35`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{feed.icon}</div>
+        <span style={{ fontSize: 9, color: hasData ? feed.color : C.dim, background: `${hasData ? feed.color : C.dim}12`, border: `1px solid ${hasData ? feed.color : C.dim}28`, padding: "2px 8px", borderRadius: 99, fontWeight: 700, letterSpacing: ".04em" }}>
+          {hasData ? "AKTİF" : "BEKLENIYOR"}
+        </span>
       </div>
-      <div style={{ fontSize: 30, fontWeight: 900, color: hasData ? feed.color : C.dim, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: -1 }}>
-        {hasData ? count.toLocaleString("tr-TR") : <span style={{ fontSize: 20, animation: stat ? "none" : "shimmer 2s infinite" }}>—</span>}
+      <div style={{ fontSize: 32, fontWeight: 900, color: hasData ? feed.color : C.dim, fontVariantNumeric: "tabular-nums", lineHeight: 1, letterSpacing: -1.5 }}>
+        {hasData ? count.toLocaleString("tr-TR") : <span style={{ fontSize: 24 }}>—</span>}
       </div>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".08em", color: C.sub, marginTop: 6 }}>{feed.label}</div>
-      <div style={{ fontSize: 11, color: C.dim, marginTop: 2, marginBottom: 12 }}>{feed.desc}</div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: `1px solid ${C.line}` }}>
-        <div style={{ width: "100%", height: 2, background: C.card, borderRadius: 99, overflow: "hidden" }}>
-          <div style={{ height: "100%", width: `${hasData ? 100 : 0}%`, background: `linear-gradient(90deg,${feed.color},${feed.color}88)`, transition: "width 1.2s ease", borderRadius: 99 }} />
-        </div>
-        {(stat?.partial) && <span style={{ fontSize: 9, color: C.amber, fontWeight: 700, marginLeft: 8, whiteSpace: "nowrap" }}>KISMİ</span>}
-        {hasData && !stat?.partial && <span style={{ fontSize: 9, color: C.green, fontWeight: 700, marginLeft: 8, whiteSpace: "nowrap" }}>✓ TAM</span>}
-        {!hasData && stat && <span style={{ fontSize: 9, color: C.dim, fontWeight: 600, marginLeft: 8, whiteSpace: "nowrap" }}>BEKLENIYOR</span>}
+      <div style={{ fontSize: 13, fontWeight: 800, color: C.text, marginTop: 6 }}>{feed.label}</div>
+      <div style={{ fontSize: 11, color: C.sub, marginTop: 2, marginBottom: 14 }}>{feed.desc}</div>
+      <div style={{ width: "100%", height: 3, background: C.bg2, borderRadius: 99, overflow: "hidden", marginBottom: 6 }}>
+        <div style={{ height: "100%", width: `${pct}%`, background: `linear-gradient(90deg,${feed.color},${feed.color}88)`, transition: "width 1.2s ease", borderRadius: 99 }} />
       </div>
+      <div style={{ fontSize: 10, color: C.dim }}>{feed.src}</div>
     </div>
   );
 }
@@ -117,18 +202,13 @@ function ThreatCheck({ origin }: { origin: string }) {
   const [query, setQuery]   = useState("");
   const [result, setResult] = useState<CheckResult | null>(null);
   const [loading, setLoading] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   async function doCheck(q?: string) {
     const val = (q ?? query).trim();
     if (!val) return;
     setLoading(true); setResult(null);
     try {
-      const r = await fetch(`${origin}/api/threat/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: val }),
-      });
+      const r = await fetch(`${origin}/api/threat/check`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ query: val }) });
       setResult(await r.json());
     } catch { setResult(null); }
     setLoading(false);
@@ -137,108 +217,94 @@ function ThreatCheck({ origin }: { origin: string }) {
   const EXAMPLES = ["185.220.101.1", "malware.example.com", "https://phishing.site/login"];
 
   return (
-    <div style={{ marginBottom: 32 }}>
-      <div style={{
-        background: `linear-gradient(135deg, ${C.card} 0%, #0c1535 100%)`,
-        border: `1px solid ${C.line}`, borderRadius: 20,
-        padding: "24px 24px 20px",
-        boxShadow: "0 8px 40px rgba(0,0,0,.4)",
-      }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-          <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(79,124,255,.15)", border: "1px solid rgba(79,124,255,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔍</div>
-          <div>
-            <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Tehdit Sorgulama</div>
-            <div style={{ fontSize: 11, color: C.sub }}>IP adresi, domain veya URL'nin zararlı listede olup olmadığını anında kontrol edin</div>
-          </div>
+    <div style={{
+      background: `linear-gradient(135deg, ${C.surface} 0%, ${C.surface2} 100%)`,
+      border: `1px solid ${C.border}`,
+      borderRadius: 20, padding: "26px",
+      boxShadow: "0 8px 48px rgba(0,0,0,.35)",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 12, background: "rgba(77,140,245,.15)", border: "1.5px solid rgba(77,140,245,.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20, flexShrink: 0 }}>🔍</div>
+        <div>
+          <div style={{ fontSize: 16, fontWeight: 800, color: C.text }}>Anlık Tehdit Sorgulama</div>
+          <div style={{ fontSize: 12, color: C.sub, marginTop: 2 }}>IP adresi, domain veya URL'nin zararlı listede olup olmadığını saniyeler içinde kontrol edin</div>
         </div>
-
-        <div style={{ display: "flex", gap: 8 }}>
-          <input ref={inputRef} value={query} onChange={e => { setQuery(e.target.value); if (result) setResult(null); }}
-            onKeyDown={e => e.key === "Enter" && doCheck()}
-            placeholder="185.220.101.1 · kötü-domain.com · https://phishing.site/..."
-            style={{
-              flex: 1, padding: "13px 18px", borderRadius: 12,
-              background: C.bg, border: `1.5px solid ${C.line}`,
-              color: C.text, fontSize: 13, fontFamily: "'Cascadia Code',monospace,sans-serif",
-              outline: "none", transition: "border-color .15s",
-            }}
-            onFocus={e => { e.target.style.borderColor = C.blue; }}
-            onBlur={e => { e.target.style.borderColor = C.line; }}
-          />
-          <button onClick={() => doCheck()}
-            disabled={loading || !query.trim()}
-            style={{
-              padding: "13px 22px", borderRadius: 12, border: "none",
-              background: loading ? C.card2 : `linear-gradient(135deg,${C.blue},#3a5fd4)`,
-              color: loading ? C.sub : "#fff", fontSize: 13, fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap",
-              boxShadow: loading ? "none" : "0 4px 16px rgba(79,124,255,.35)",
-              transition: "all .15s",
-            }}>
-            {loading ? "⏳ Sorgulanıyor…" : "Sorgula →"}
-          </button>
-        </div>
-
-        {/* Örnek sorgular */}
-        {!result && !loading && (
-          <div style={{ display: "flex", gap: 6, marginTop: 10, flexWrap: "wrap" }}>
-            <span style={{ fontSize: 10, color: C.dim, alignSelf: "center" }}>Örnek:</span>
-            {EXAMPLES.map(ex => (
-              <button key={ex} onClick={() => { setQuery(ex); doCheck(ex); }}
-                style={{ fontSize: 10, color: C.sub, background: `${C.dim}20`, border: `1px solid ${C.line}`, padding: "3px 9px", borderRadius: 99, cursor: "pointer", fontFamily: "monospace" }}>
-                {ex}
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Sonuç */}
-        {result && (
-          <div style={{
-            marginTop: 14, padding: "14px 18px", borderRadius: 12,
-            background: result.found ? "rgba(255,79,109,.07)" : "rgba(16,217,138,.07)",
-            border: `1px solid ${result.found ? C.red + "40" : C.green + "40"}`,
-            animation: "fadein .25s ease",
-          }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: result.found ? 10 : 0 }}>
-              <span style={{ fontSize: 22 }}>{result.found ? "⚠️" : "✅"}</span>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 800, color: result.found ? C.red : C.green }}>
-                  {result.found ? "Zararlı Listede Bulundu!" : "Listede Bulunamadı"}
-                </div>
-                <div style={{ fontSize: 11, color: C.sub, marginTop: 2, fontFamily: "monospace" }}>
-                  {result.query}
-                </div>
-              </div>
-            </div>
-            {result.found && result.found_in.length > 0 && (
-              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                {result.found_in.map(f => (
-                  <span key={f} style={{ fontSize: 10, fontWeight: 700, color: C.red, background: "rgba(255,79,109,.12)", border: "1px solid rgba(255,79,109,.3)", padding: "3px 10px", borderRadius: 99, letterSpacing: ".04em" }}>
-                    {f.toUpperCase()} feed
-                  </span>
-                ))}
-              </div>
-            )}
-            {!result.found && (
-              <div style={{ fontSize: 11, color: C.dim, marginTop: 4 }}>
-                Kontrol edilen: {result.checked.join(", ")} feed · {new Date().toLocaleTimeString("tr-TR")}
-              </div>
-            )}
-          </div>
-        )}
       </div>
+
+      <div style={{ display: "flex", gap: 8 }}>
+        <input value={query} onChange={e => { setQuery(e.target.value); if (result) setResult(null); }}
+          onKeyDown={e => e.key === "Enter" && doCheck()}
+          placeholder="185.220.101.1  ·  kötü-site.com  ·  https://phishing.site/..."
+          style={{ flex: 1, padding: "14px 18px", borderRadius: 12, background: C.bg, border: `1.5px solid ${C.border}`, color: C.text, fontSize: 13, fontFamily: "monospace,sans-serif", outline: "none" }}
+          onFocus={e => e.target.style.borderColor = C.blue}
+          onBlur={e => e.target.style.borderColor = C.border}
+        />
+        <button onClick={() => doCheck()} disabled={loading || !query.trim()}
+          style={{ padding: "14px 24px", borderRadius: 12, border: "none", background: loading ? C.surface2 : `linear-gradient(135deg,${C.blue},#3060d0)`, color: loading ? C.sub : "#fff", fontSize: 13, fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", whiteSpace: "nowrap", boxShadow: loading ? "none" : "0 4px 20px rgba(77,140,245,.4)", transition: "all .15s" }}>
+          {loading ? "Sorgulanıyor…" : "Sorgula →"}
+        </button>
+      </div>
+
+      {!result && !loading && (
+        <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
+          <span style={{ fontSize: 11, color: C.dim }}>Örnek:</span>
+          {EXAMPLES.map(ex => (
+            <button key={ex} onClick={() => { setQuery(ex); doCheck(ex); }}
+              style={{ fontSize: 11, color: C.sub, background: `${C.dim}20`, border: `1px solid ${C.border}`, padding: "4px 12px", borderRadius: 99, cursor: "pointer", fontFamily: "monospace" }}>
+              {ex}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {result && (
+        <div style={{ marginTop: 16, padding: "18px 20px", borderRadius: 14, background: result.found ? "rgba(242,79,106,.06)" : "rgba(30,217,138,.06)", border: `1.5px solid ${result.found ? C.red + "45" : C.green + "45"}`, animation: "fadein .25s ease" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 28 }}>{result.found ? "⚠️" : "✅"}</span>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: result.found ? C.red : C.green }}>
+                {result.found ? "Zararlı Listede Bulundu!" : "Temiz — Listede Bulunamadı"}
+              </div>
+              <div style={{ fontSize: 12, color: C.sub, marginTop: 2, fontFamily: "monospace" }}>{result.query}</div>
+            </div>
+          </div>
+          {result.found && result.found_in.length > 0 && (
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginTop: 12 }}>
+              {result.found_in.map(f => (
+                <span key={f} style={{ fontSize: 11, fontWeight: 700, color: C.red, background: "rgba(242,79,106,.12)", border: "1px solid rgba(242,79,106,.3)", padding: "4px 12px", borderRadius: 99 }}>
+                  {f.toUpperCase()} feed
+                </span>
+              ))}
+            </div>
+          )}
+          {!result.found && (
+            <div style={{ fontSize: 11, color: C.dim, marginTop: 8 }}>
+              Kontrol edilen: {result.checked.join(", ")} · {new Date().toLocaleTimeString("tr-TR")}
+            </div>
+          )}
+        </div>
+      )}
     </div>
+  );
+}
+
+function CopyBtn({ text, label }: { text: string; label?: string }) {
+  const [done, setDone] = useState(false);
+  function copy() {
+    navigator.clipboard.writeText(text).then(() => { setDone(true); setTimeout(() => setDone(false), 2000); });
+  }
+  return (
+    <button onClick={copy} style={{ padding: "7px 14px", borderRadius: 9, border: `1px solid ${done ? C.green + "50" : C.border}`, background: done ? "rgba(30,217,138,.1)" : "transparent", color: done ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
+      {done ? "✓ Kopyalandı" : (label ?? "Kopyala")}
+    </button>
   );
 }
 
 export default function ThreatClient() {
   const [stats, setStats]   = useState<Stats | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
-  const [guide, setGuide]   = useState(false);
-  const [activeTab, setActiveTab] = useState<"full" | "lite">("full");
+  const [activeTab, setActiveTab] = useState<"feeds" | "install" | "sources">("feeds");
+  const [feedTab, setFeedTab]     = useState<"full" | "lite">("full");
   const [origin, setOrigin] = useState("https://threat.lidernetwork.com.tr");
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => { if (typeof window !== "undefined") setOrigin(window.location.origin); }, []);
 
@@ -248,276 +314,339 @@ export default function ThreatClient() {
 
   useEffect(() => { load(); const t = setInterval(load, 30_000); return () => clearInterval(t); }, [load]);
 
-  function copy(text: string, key: string) {
-    navigator.clipboard.writeText(text).then(() => {
-      setCopied(key);
-      if (timerRef.current) clearTimeout(timerRef.current);
-      timerRef.current = setTimeout(() => setCopied(null), 2000);
-    });
-  }
-
   const totalCount = useCountUp(stats?.total ?? 0);
-  const isLive = stats?.last_updated ? Date.now() - new Date(stats.last_updated).getTime() < 7_200_000 : false;
+  const isLive = stats?.last_updated ? Date.now() - new Date(stats.last_updated).getTime() < 14_400_000 : false;
   const { display: countdown, pct: countdownPct } = useCountdown(stats?.last_updated ?? null);
+  const { dailyNew, syncsToday } = useDailyNew(stats?.total ?? null);
+  const maxCount = Math.max(...FEEDS.map(f => stats?.stats?.[f.key]?.count ?? 0));
+
+  const MAIN_TABS = [
+    { key: "feeds",   label: "📡 Feed URL'leri" },
+    { key: "install", label: "⚙️ FortiGate Kurulum" },
+    { key: "sources", label: "📚 Veri Kaynakları" },
+  ] as const;
 
   return (
     <main style={{ minHeight: "100vh", background: C.bg, color: C.text, fontFamily: "'Segoe UI', system-ui, Arial, sans-serif", position: "relative", overflow: "hidden" }}>
-      {/* Animated background glows */}
+      {/* Background glows */}
       <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
-        <div style={{ position: "absolute", top: "-10%", left: "20%", width: 600, height: 600, borderRadius: "50%", background: "radial-gradient(circle, rgba(79,124,255,.07) 0%, transparent 70%)" }} />
-        <div style={{ position: "absolute", top: "30%", right: "-5%", width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(0,212,255,.05) 0%, transparent 70%)" }} />
-        <div style={{ position: "absolute", bottom: "10%", left: "10%", width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(176,106,255,.04) 0%, transparent 70%)" }} />
+        <div style={{ position: "absolute", top: "5%",  left: "15%", width: 700, height: 700, borderRadius: "50%", background: "radial-gradient(circle, rgba(77,140,245,.06) 0%, transparent 65%)" }} />
+        <div style={{ position: "absolute", top: "40%", right: 0,    width: 500, height: 500, borderRadius: "50%", background: "radial-gradient(circle, rgba(18,212,239,.04) 0%, transparent 65%)" }} />
+        <div style={{ position: "absolute", bottom: "5%", left: "5%",  width: 400, height: 400, borderRadius: "50%", background: "radial-gradient(circle, rgba(164,111,255,.04) 0%, transparent 65%)" }} />
       </div>
 
       <style>{`
         @keyframes fadein{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.25}}
-        @keyframes shimmer{0%,100%{opacity:.3}50%{opacity:.7}}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
         @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes countup{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
         .fade{animation:fadein .3s ease}
-        .card-hover:hover{transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,.5)!important}
-        .row-hover:hover{border-color:rgba(79,124,255,.35)!important;background:#0f1a38!important}
-        .copy-btn:hover{background:rgba(79,124,255,.12)!important}
-        .tab-btn{transition:all .18s;cursor:pointer;border:none}
-        code{font-family:'Cascadia Code','Fira Code',monospace}
+        .card-hover{transition:all .2s}
+        .card-hover:hover{transform:translateY(-3px);box-shadow:0 12px 40px rgba(0,0,0,.4)!important}
+        .row-hover{transition:all .18s}
+        .row-hover:hover{background:#162240!important;border-color:rgba(77,140,245,.35)!important}
+        .tab-main{transition:all .2s;cursor:pointer;border:none;white-space:nowrap}
+        .tab-main:hover{background:rgba(77,140,245,.1)!important}
+        .step-card{transition:all .2s}
+        .step-card:hover{border-color:rgba(77,140,245,.4)!important}
       `}</style>
 
-      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "0 20px 80px", position: "relative", zIndex: 1 }}>
+      <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 20px 80px", position: "relative", zIndex: 1 }}>
 
-        {/* Header */}
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "22px 0 18px", flexWrap: "wrap", gap: 12, borderBottom: `1px solid ${C.line}` }}>
+        {/* ── HEADER ── */}
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0 16px", flexWrap: "wrap", gap: 12, borderBottom: `1px solid ${C.border}` }}>
           <a href="https://www.lidernetwork.com.tr" style={{ display: "inline-flex", alignItems: "center", gap: 14, textDecoration: "none" }}>
-            <span style={{ background: "#fff", borderRadius: 12, padding: "7px 14px", display: "inline-flex", boxShadow: "0 4px 20px rgba(0,0,0,.5)" }}>
+            <span style={{ background: "#fff", borderRadius: 10, padding: "6px 12px", display: "inline-flex", boxShadow: "0 4px 16px rgba(0,0,0,.4)" }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 36 }} />
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 32 }} />
             </span>
             <div>
               <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Lider Network</div>
-              <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>Tehdit İstihbaratı Servisi</div>
+              <div style={{ fontSize: 11, color: C.sub }}>Tehdit İstihbaratı Servisi</div>
             </div>
           </a>
           <nav style={{ display: "flex", gap: 6 }}>
             {[["Kara Liste", "https://blacklist.lidernetwork.com.tr"], ["IP Sorgu", "https://ip.lidernetwork.com.tr"], ["DNS", "https://dns.lidernetwork.com.tr"]].map(([label, href]) => (
-              <a key={href} href={href} style={{ color: C.sub, fontSize: 12, textDecoration: "none", padding: "7px 14px", borderRadius: 10, border: `1px solid ${C.line}`, background: C.card, transition: "all .15s" }}>{label} ↗</a>
+              <a key={href} href={href} style={{ color: C.sub, fontSize: 12, textDecoration: "none", padding: "7px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, transition: "all .15s" }}
+                onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = C.blue + "60"; }}
+                onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; }}>
+                {label} ↗
+              </a>
             ))}
           </nav>
         </header>
 
-        {/* Status bar */}
-        <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "10px 0", borderBottom: `1px solid ${C.line}`, flexWrap: "wrap", fontSize: 12 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-            <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? C.green : C.amber, animation: "pulse 2s ease-in-out infinite", display: "inline-block" }} />
-            <span style={{ fontWeight: 800, letterSpacing: ".07em", fontSize: 11, color: isLive ? C.green : C.amber }}>
-              {isLive ? "CANLI" : stats ? "BEKLENIYOR" : "BAĞLANIYOR"}
-            </span>
-          </div>
-          <span style={{ color: C.line }}>|</span>
-          <span style={{ color: C.sub }}>Son güncelleme: <strong style={{ color: C.text }}>{relTime(stats?.last_updated ?? null)}</strong>
-            {stats?.last_updated && <span style={{ color: C.dim }}> ({absTime(stats.last_updated)})</span>}
-          </span>
-          <span style={{ color: C.line }}>|</span>
-          <span style={{ color: C.sub }}>Sonraki: <span style={{ color: C.teal, fontWeight: 700, fontFamily: "monospace" }}>{countdown}</span></span>
-          <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{ width: 72, height: 2, background: C.card, borderRadius: 99, overflow: "hidden" }}>
-              <div style={{ height: "100%", width: `${countdownPct}%`, background: `linear-gradient(90deg,${C.blue},${C.teal})`, transition: "width 1s linear" }} />
-            </div>
-            <span style={{ fontSize: 10, color: C.dim }}>{countdownPct}%</span>
-          </div>
-        </div>
-
-        {/* Hero */}
-        <section style={{ padding: "32px 0 24px" }}>
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 20 }}>
-            <div>
-              <h1 style={{ margin: "0 0 10px", fontSize: 34, fontWeight: 900, letterSpacing: -1, lineHeight: 1.15 }}>
-                SGB / USOM Zararlı<br />Bağlantı Feed&apos;i
+        {/* ── HERO ── */}
+        <section style={{ padding: "36px 0 28px" }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 28 }}>
+            <div style={{ flex: 1, minWidth: 280 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 800, color: isLive ? C.green : C.amber, background: isLive ? "rgba(30,217,138,.1)" : "rgba(245,166,35,.1)", border: `1px solid ${isLive ? C.green : C.amber}35`, padding: "5px 12px", borderRadius: 99, letterSpacing: ".06em" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: isLive ? C.green : C.amber, display: "inline-block", animation: "pulse 2s ease-in-out infinite" }} />
+                  {isLive ? "CANLI" : "BEKLENIYOR"}
+                </span>
+                {dailyNew && dailyNew > 0 && (
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.teal, background: "rgba(18,212,239,.1)", border: `1px solid rgba(18,212,239,.3)`, padding: "5px 12px", borderRadius: 99, animation: "fadein .5s ease" }}>
+                    +{dailyNew.toLocaleString("tr-TR")} yeni kayıt (bugün)
+                  </span>
+                )}
+                <span style={{ fontSize: 11, color: C.sub, background: C.surface, border: `1px solid ${C.border}`, padding: "5px 12px", borderRadius: 99 }}>
+                  Bugün {syncsToday}× güncellendi
+                </span>
+              </div>
+              <h1 style={{ margin: "0 0 12px", fontSize: 38, fontWeight: 900, letterSpacing: -1.5, lineHeight: 1.15, color: C.text }}>
+                SGB / USOM<br />
+                <span style={{ background: `linear-gradient(135deg,${C.blue},${C.teal})`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  Zararlı Bağlantı Feed&apos;i
+                </span>
               </h1>
-              <p style={{ margin: "0 0 18px", color: C.sub, fontSize: 14, maxWidth: 520, lineHeight: 1.75 }}>
-                Siber Güvenlik Başkanlığı tehdit listelerini <span style={{ color: C.teal, fontWeight: 700 }}>FortiGate External Connector</span> uyumlu TXT formatında sunar. Her 2 saatte bir otomatik güncelleme, sıfır kurulum.
+              <p style={{ margin: "0 0 20px", color: C.sub, fontSize: 14, maxWidth: 520, lineHeight: 1.8 }}>
+                Siber Güvenlik Başkanlığı ve 7 küresel kaynaktan toplanan tehdit listelerini <strong style={{ color: C.text }}>FortiGate External Connector</strong> uyumlu TXT formatında sunar. Her 2 saatte bir otomatik güncelleme, sıfır kurulum.
               </p>
               <div style={{ display: "flex", gap: 7, flexWrap: "wrap" }}>
-                {[["USOM / SGB", C.blue], ["URLhaus", C.purple], ["Feodo Tracker", C.teal], ["CINS Score", C.orange], ["Her 2 Saat", C.green], ["FortiOS 6.4+", C.amber]].map(([l, c]) => (
-                  <span key={l} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".05em", color: c, background: `${c}12`, border: `1px solid ${c}30`, padding: "3px 10px", borderRadius: 99 }}>{l}</span>
+                {[["SGB / USOM", C.blue], ["URLhaus", C.purple], ["ThreatFox", C.purple], ["Feodo", C.teal], ["EmergingThreats", C.red], ["OpenPhish", C.amber], ["CINS Score", C.orange], ["Spamhaus", C.green], ["Her 2 Saat", C.green], ["FortiOS 6.4+", C.blue]].map(([l, c]) => (
+                  <span key={l} style={{ fontSize: 10, fontWeight: 700, letterSpacing: ".04em", color: c, background: `${c}10`, border: `1px solid ${c}28`, padding: "4px 10px", borderRadius: 99 }}>{l}</span>
                 ))}
               </div>
             </div>
 
-            {/* Toplam kart */}
-            <div style={{
-              background: `linear-gradient(135deg, #0f1f50 0%, #0c1840 100%)`,
-              border: `1px solid rgba(79,124,255,.3)`, borderRadius: 20,
-              padding: "22px 28px", textAlign: "center", minWidth: 180,
-              boxShadow: "0 0 40px rgba(79,124,255,.12)",
-            }}>
-              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".1em", color: C.sub, marginBottom: 8 }}>TOPLAM TEHDİT</div>
-              <div style={{ fontSize: 42, fontWeight: 900, color: "#fff", lineHeight: 1, letterSpacing: -2, fontVariantNumeric: "tabular-nums" }}>
-                {stats ? totalCount.toLocaleString("tr-TR") : <span style={{ color: C.dim, fontSize: 28 }}>—</span>}
+            {/* Hero counter */}
+            <div style={{ background: `linear-gradient(145deg, ${C.surface} 0%, ${C.surface2} 100%)`, border: `1.5px solid ${C.blue}30`, borderRadius: 24, padding: "30px 36px", textAlign: "center", minWidth: 210, boxShadow: "0 0 60px rgba(77,140,245,.12)" }}>
+              <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".12em", color: C.sub, marginBottom: 8 }}>TOPLAM TEHDİT</div>
+              <div style={{ fontSize: 50, fontWeight: 900, color: C.blue, lineHeight: 1, letterSpacing: -3, fontVariantNumeric: "tabular-nums" }}>
+                {stats ? totalCount.toLocaleString("tr-TR") : <span style={{ color: C.dim, fontSize: 32 }}>—</span>}
               </div>
-              <div style={{ fontSize: 11, color: C.sub, marginTop: 6 }}>kayıt</div>
-              <div style={{ marginTop: 12, fontSize: 10, color: C.blue, fontWeight: 700, letterSpacing: ".05em" }}>SGB · URLhaus · Feodo · CINS</div>
+              <div style={{ fontSize: 12, color: C.sub, marginTop: 8 }}>aktif kayıt</div>
+              <div style={{ marginTop: 16, padding: "10px 0", borderTop: `1px solid ${C.border}` }}>
+                <div style={{ fontSize: 10, color: C.dim, marginBottom: 8 }}>Sonraki güncelleme</div>
+                <div style={{ fontSize: 20, fontWeight: 800, color: C.teal, fontFamily: "monospace", letterSpacing: 2 }}>{countdown}</div>
+                <div style={{ width: "100%", height: 3, background: C.bg, borderRadius: 99, overflow: "hidden", marginTop: 8 }}>
+                  <div style={{ height: "100%", width: `${countdownPct}%`, background: `linear-gradient(90deg,${C.blue},${C.teal})`, transition: "width 1s linear", borderRadius: 99 }} />
+                </div>
+              </div>
+              <div style={{ marginTop: 10, fontSize: 10, color: C.dim }}>
+                {stats?.last_updated ? absTime(stats.last_updated) : "—"}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Tehdit Sorgulama */}
-        <ThreatCheck origin={origin} />
-
-        {/* Stats grid */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12, marginBottom: 28 }}>
-          {FEEDS.map(f => <StatCard key={f.key} feed={f} stat={stats?.stats?.[f.key]} />)}
+        {/* ── STATS GRID ── */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14, marginBottom: 32 }}>
+          {FEEDS.map(f => <StatCard key={f.key} feed={f} stat={stats?.stats?.[f.key]} max={maxCount} />)}
         </div>
 
-        {/* Feed URL'leri */}
-        <div style={{ marginBottom: 20 }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
-            <h2 style={{ margin: 0, fontSize: 15, fontWeight: 800, color: C.text }}>External Connector Feed URL&apos;leri</h2>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <div style={{ display: "flex", background: C.card2, border: `1px solid ${C.line}`, borderRadius: 10, padding: 3 }}>
-                {(["full", "lite"] as const).map(tab => (
-                  <button key={tab} className="tab-btn" onClick={() => setActiveTab(tab)}
-                    style={{ padding: "6px 16px", borderRadius: 7, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", background: activeTab === tab ? C.blue : "transparent", color: activeTab === tab ? "#fff" : C.sub, boxShadow: activeTab === tab ? "0 2px 8px rgba(79,124,255,.35)" : "none" }}>
-                    {tab === "full" ? "TAM" : "LİTE"}
-                  </button>
-                ))}
-              </div>
-              <span style={{ fontSize: 11, color: C.dim }}>FortiOS 6.4+ · text/plain</span>
-            </div>
+        {/* ── THREAT CHECK ── */}
+        <div style={{ marginBottom: 32 }}>
+          <ThreatCheck origin={origin} />
+        </div>
+
+        {/* ── MAIN TABS ── */}
+        <div style={{ marginBottom: 28 }}>
+          {/* Tab bar */}
+          <div style={{ display: "flex", gap: 4, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: 4, marginBottom: 20, width: "fit-content" }}>
+            {MAIN_TABS.map(t => (
+              <button key={t.key} className="tab-main" onClick={() => setActiveTab(t.key as typeof activeTab)}
+                style={{ padding: "10px 20px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: activeTab === t.key ? C.blue : "transparent", color: activeTab === t.key ? "#fff" : C.sub, boxShadow: activeTab === t.key ? "0 2px 12px rgba(77,140,245,.4)" : "none" }}>
+                {t.label}
+              </button>
+            ))}
           </div>
 
-          {activeTab === "full" && (
-            <div className="fade" style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-              {FEEDS.map(f => {
-                const url = `${origin}/feeds/${f.key}.txt`;
-                const count = stats?.stats?.[f.key]?.count ?? 0;
-                const ck = `feed-${f.key}`;
-                return (
-                  <div key={f.key} className="row-hover" style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: "13px 18px", display: "flex", alignItems: "center", gap: 12, transition: "all .18s" }}>
-                    <div style={{ width: 34, height: 34, borderRadius: 9, background: `${f.color}15`, border: `1px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{f.icon}</div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4, flexWrap: "wrap" }}>
-                        <span style={{ fontSize: 13, fontWeight: 800 }}>{f.label}</span>
-                        {count > 0 && <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "2px 8px", borderRadius: 99, fontWeight: 700 }}>{count.toLocaleString("tr-TR")} kayıt</span>}
-                        <span style={{ fontSize: 9, color: C.dim, background: `${C.dim}20`, padding: "1px 6px", borderRadius: 99 }}>{f.src}</span>
-                      </div>
-                      <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
-                    </div>
-                    <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                      <button className="copy-btn" onClick={() => copy(url, ck)}
-                        style={{ padding: "8px 14px", borderRadius: 9, border: `1px solid ${C.line}`, background: copied === ck ? "rgba(16,217,138,.12)" : "transparent", color: copied === ck ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
-                        {copied === ck ? "✓ Kopyalandı" : "📋 Kopyala"}
-                      </button>
-                      <a href={url} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", borderRadius: 9, border: `1px solid ${C.line}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>Aç ↗</a>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {activeTab === "lite" && (
+          {/* ── TAB: FEEDS ── */}
+          {activeTab === "feeds" && (
             <div className="fade">
-              <div style={{ padding: "13px 18px", background: "rgba(79,124,255,.06)", border: `1px solid rgba(79,124,255,.2)`, borderRadius: 12, marginBottom: 12, fontSize: 12, color: C.sub, lineHeight: 1.7 }}>
-                <strong style={{ color: C.text }}>Lite Feed</strong> — Düşük hafızalı cihazlar (FortiGate 60F/80F) için son 90/180/365 gün içinde eklenen kayıtları sunar. Tam listeye göre çok daha küçük boyutlu, etkisi aynı.
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+                <h2 style={{ margin: 0, fontSize: 16, fontWeight: 800, color: C.text }}>External Connector Feed URL&apos;leri</h2>
+                <div style={{ display: "flex", background: C.surface2, border: `1px solid ${C.border}`, borderRadius: 10, padding: 3 }}>
+                  {(["full", "lite"] as const).map(tab => (
+                    <button key={tab} onClick={() => setFeedTab(tab)} style={{ padding: "6px 18px", borderRadius: 7, fontSize: 11, fontWeight: 800, letterSpacing: ".05em", background: feedTab === tab ? C.blue : "transparent", color: feedTab === tab ? "#fff" : C.sub, border: "none", cursor: "pointer", transition: "all .15s" }}>
+                      {tab === "full" ? "TAM" : "LİTE"}
+                    </button>
+                  ))}
+                </div>
               </div>
-              {FEEDS.filter(f => f.key === "domain" || f.key === "ipv4").map(f =>
-                LITE_WINDOWS.map(w => {
-                  const url = `${origin}/feeds/${f.key}-${w.key}.txt`;
-                  const ck = `lite-${f.key}-${w.key}`;
-                  return (
-                    <div key={ck} className="row-hover" style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 14, padding: "12px 18px", display: "flex", alignItems: "center", gap: 12, transition: "all .18s", marginBottom: 7 }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 9, background: `${f.color}15`, border: `1px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, flexShrink: 0 }}>{f.icon}</div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 4 }}>
-                          <span style={{ fontSize: 13, fontWeight: 800 }}>{f.label}</span>
-                          <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "2px 8px", borderRadius: 99, fontWeight: 700 }}>{w.label}</span>
-                          <span style={{ fontSize: 9, color: C.green, background: "rgba(16,217,138,.1)", padding: "1px 6px", borderRadius: 99, fontWeight: 700 }}>KÜÇÜK CİHAZ</span>
+
+              {feedTab === "full" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {FEEDS.map(f => {
+                    const url = `${origin}/feeds/${f.key}.txt`;
+                    const count = stats?.stats?.[f.key]?.count ?? 0;
+                    return (
+                      <div key={f.key} className="row-hover" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${f.color}15`, border: `1px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{f.icon}</div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5, flexWrap: "wrap" }}>
+                            <span style={{ fontSize: 14, fontWeight: 800, color: C.text }}>{f.label}</span>
+                            {count > 0 && <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "2px 9px", borderRadius: 99, fontWeight: 700 }}>{count.toLocaleString("tr-TR")} kayıt</span>}
+                            <span style={{ fontSize: 10, color: C.dim, background: `${C.dim}15`, padding: "1px 7px", borderRadius: 99 }}>{f.src}</span>
+                          </div>
+                          <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
                         </div>
-                        <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
+                        <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                          <CopyBtn text={url} label="📋 Kopyala" />
+                          <a href={url} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 9, border: `1px solid ${C.border}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Aç ↗</a>
+                        </div>
                       </div>
-                      <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
-                        <button className="copy-btn" onClick={() => copy(url, ck)}
-                          style={{ padding: "8px 14px", borderRadius: 9, border: `1px solid ${C.line}`, background: copied === ck ? "rgba(16,217,138,.12)" : "transparent", color: copied === ck ? C.green : C.sub, fontSize: 11, fontWeight: 700, cursor: "pointer", transition: "all .15s", whiteSpace: "nowrap" }}>
-                          {copied === ck ? "✓ Kopyalandı" : "📋 Kopyala"}
-                        </button>
-                        <a href={url} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 12px", borderRadius: 9, border: `1px solid ${C.line}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center", whiteSpace: "nowrap" }}>Aç ↗</a>
-                      </div>
-                    </div>
-                  );
-                })
+                    );
+                  })}
+                </div>
+              )}
+
+              {feedTab === "lite" && (
+                <div>
+                  <div style={{ padding: "14px 18px", background: "rgba(77,140,245,.06)", border: `1px solid rgba(77,140,245,.2)`, borderRadius: 12, marginBottom: 14, fontSize: 13, color: C.sub, lineHeight: 1.7 }}>
+                    <strong style={{ color: C.text }}>Lite Feed</strong> — FortiGate 60F/80F gibi düşük hafızalı cihazlar için son 90/180/365 gün içindeki kayıtları içerir. Tam listeye göre çok daha küçük, koruma düzeyi aynı.
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {FEEDS.filter(f => f.key === "domain" || f.key === "ipv4").map(f =>
+                      LITE_WINDOWS.map(w => {
+                        const url = `${origin}/feeds/${f.key}-${w.key}.txt`;
+                        return (
+                          <div key={`${f.key}-${w.key}`} className="row-hover" style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "13px 18px", display: "flex", alignItems: "center", gap: 14 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 10, background: `${f.color}15`, border: `1px solid ${f.color}30`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>{f.icon}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 5, flexWrap: "wrap" }}>
+                                <span style={{ fontSize: 13, fontWeight: 800, color: C.text }}>{f.label}</span>
+                                <span style={{ fontSize: 10, color: f.color, background: `${f.color}12`, border: `1px solid ${f.color}28`, padding: "2px 8px", borderRadius: 99, fontWeight: 700 }}>{w.label}</span>
+                                <span style={{ fontSize: 9, color: C.green, background: "rgba(30,217,138,.1)", border: "1px solid rgba(30,217,138,.25)", padding: "1px 7px", borderRadius: 99, fontWeight: 700 }}>KÜÇÜK CİHAZ</span>
+                              </div>
+                              <code style={{ fontSize: 11, color: C.sub, wordBreak: "break-all" }}>{url}</code>
+                            </div>
+                            <div style={{ display: "flex", gap: 6, flexShrink: 0 }}>
+                              <CopyBtn text={url} label="📋 Kopyala" />
+                              <a href={url} target="_blank" rel="noopener noreferrer" style={{ padding: "7px 14px", borderRadius: 9, border: `1px solid ${C.border}`, color: C.sub, fontSize: 11, fontWeight: 700, textDecoration: "none", display: "inline-flex", alignItems: "center" }}>Aç ↗</a>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
               )}
             </div>
           )}
-        </div>
 
-        {/* Kaynak bilgisi */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 10, marginBottom: 20 }}>
-          {[
-            { icon: "🏛", name: "USOM / SGB", desc: "Siber Güvenlik Başkanlığı — resmi Türkiye tehdit listesi", color: C.blue,   href: "https://www.usom.gov.tr" },
-            { icon: "🦠", name: "URLhaus",    desc: "abuse.ch — aktif malware dağıtım URL'leri",             color: C.purple, href: "https://urlhaus.abuse.ch" },
-            { icon: "🤖", name: "Feodo Tracker", desc: "abuse.ch — botnet C2 sunucu IP adresleri",           color: C.teal,   href: "https://feodotracker.abuse.ch" },
-            { icon: "📊", name: "CINS Score", desc: "Collective Intelligence — kötü aktör IP listesi",       color: C.orange, href: "https://cinsscore.com" },
-          ].map(s => (
-            <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer"
-              style={{ textDecoration: "none", background: C.card, border: `1px solid ${s.color}20`, borderRadius: 14, padding: "14px 16px", transition: "all .15s", display: "block" }}
-              onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = s.color + "50"; }}
-              onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = s.color + "20"; }}>
-              <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 18 }}>{s.icon}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, color: s.color }}>{s.name}</span>
-                <span style={{ marginLeft: "auto", fontSize: 10, color: C.dim }}>↗</span>
+          {/* ── TAB: INSTALL ── */}
+          {activeTab === "install" && (
+            <div className="fade">
+              {/* Banner */}
+              <div style={{ background: `linear-gradient(135deg, #0d2340 0%, #0a1a30 100%)`, border: `1.5px solid ${C.blue}30`, borderRadius: 18, padding: "24px 28px", marginBottom: 24, display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap" }}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: "rgba(77,140,245,.2)", border: `1.5px solid rgba(77,140,245,.4)`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 26, flexShrink: 0 }}>🔧</div>
+                <div style={{ flex: 1 }}>
+                  <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900, color: C.text }}>FortiGate External Connector Kurulumu</h2>
+                  <p style={{ margin: "6px 0 0", fontSize: 13, color: C.sub, lineHeight: 1.6 }}>FortiOS 6.4 ve üstü · 5 adımda tamamlanır · Sıfır kesinti, sıfır maliyet</p>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: "rgba(30,217,138,.1)", border: `1px solid rgba(30,217,138,.3)`, padding: "6px 14px", borderRadius: 99 }}>FortiOS 6.4+</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, background: "rgba(77,140,245,.1)", border: `1px solid rgba(77,140,245,.3)`, padding: "6px 14px", borderRadius: 99 }}>~5 Dakika</span>
+                </div>
               </div>
-              <div style={{ fontSize: 11, color: C.sub, lineHeight: 1.5 }}>{s.desc}</div>
-            </a>
-          ))}
-        </div>
 
-        {/* FortiGate rehberi */}
-        <div style={{ background: C.card, border: `1px solid ${C.line}`, borderRadius: 18, overflow: "hidden", marginBottom: 24 }}>
-          <button onClick={() => setGuide(g => !g)}
-            style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "18px 22px", background: "transparent", border: "none", color: C.text, cursor: "pointer", textAlign: "left" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(79,124,255,.12)", border: "1px solid rgba(79,124,255,.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>🔧</div>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 800 }}>FortiGate Kurulum Rehberi</div>
-                <div style={{ fontSize: 11, color: C.sub, marginTop: 1 }}>External Connector · FortiOS 6.4+ · Adım adım</div>
+              {/* Steps */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                {STEPS.map((s, idx) => (
+                  <div key={s.n} className="step-card" style={{ background: C.surface, border: `1.5px solid ${C.border}`, borderRadius: 16, padding: "20px 22px", display: "flex", gap: 18, position: "relative", overflow: "hidden" }}>
+                    {/* Step number accent line */}
+                    <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: `linear-gradient(to bottom,${C.blue},${C.teal})`, borderRadius: "16px 0 0 16px", opacity: 0.6 }} />
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(77,140,245,.15)", border: "1.5px solid rgba(77,140,245,.4)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18 }}>{s.icon}</div>
+                      {idx < STEPS.length - 1 && <div style={{ width: 2, flex: 1, minHeight: 12, background: C.border, borderRadius: 99 }} />}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 11, fontWeight: 900, color: C.blue, background: "rgba(77,140,245,.12)", border: "1px solid rgba(77,140,245,.3)", width: 24, height: 24, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>{s.n}</span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: C.text }}>{s.title}</span>
+                      </div>
+                      <p style={{ margin: "0 0 8px", fontSize: 13, color: C.sub, lineHeight: 1.7 }}>{s.body}</p>
+                      {s.list && (
+                        <ul style={{ margin: "0 0 8px", paddingLeft: 18, display: "flex", flexDirection: "column", gap: 4 }}>
+                          {s.list.map(item => (
+                            <li key={item} style={{ fontSize: 13, color: C.sub, lineHeight: 1.6 }}>{item}</li>
+                          ))}
+                        </ul>
+                      )}
+                      {s.urls && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6, margin: "10px 0" }}>
+                          {s.urls.map(url => (
+                            <div key={url} style={{ display: "flex", alignItems: "center", gap: 8, background: C.bg2, border: `1px solid ${C.border}`, borderRadius: 10, padding: "9px 14px" }}>
+                              <code style={{ flex: 1, fontSize: 12, color: C.teal, wordBreak: "break-all" }}>{url}</code>
+                              <CopyBtn text={url} />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {s.tip && (
+                        <div style={{ background: "rgba(245,166,35,.07)", border: "1px solid rgba(245,166,35,.25)", borderRadius: 9, padding: "9px 14px", fontSize: 12, color: C.amber, lineHeight: 1.6 }}>
+                          💡 {s.tip}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Note */}
+              <div style={{ marginTop: 18, padding: "16px 20px", background: "rgba(245,166,35,.05)", border: "1px solid rgba(245,166,35,.2)", borderRadius: 12, fontSize: 12, color: C.amber, lineHeight: 1.7 }}>
+                <strong>Not:</strong> FortiGate, Refresh Rate süresinde feed'i yeniden çeker. DNS propagasyonu nedeniyle ilk aktivasyonda 5–10 dakika gecikme yaşanabilir. Ayrıntılı bilgi için{" "}
+                <a href="https://docs.fortinet.com" target="_blank" rel="noopener noreferrer" style={{ color: C.amber, textDecoration: "underline" }}>Fortinet dokümantasyonunu</a> inceleyebilirsiniz.
               </div>
             </div>
-            <span style={{ color: C.dim, fontSize: 18, transform: guide ? "rotate(180deg)" : "none", transition: "transform .2s" }}>▾</span>
-          </button>
+          )}
 
-          {guide && (
-            <div className="fade" style={{ borderTop: `1px solid ${C.line}`, padding: "0 22px 22px" }}>
-              {[
-                { n: "1", t: "Security Fabric → External Connectors", d: "Sol menüden Security Fabric → External Connectors yolunu izleyin. 'Create New' butonuna tıklayın." },
-                { n: "2", t: "Feed tipini seçin", d: "'Threat Feed' → tipe göre seçim:\n• Domain listesi → \"Domain Name\"\n• IPv4 listesi → \"IP Address\"\n• URL listesi → \"URL\"\nHer liste için ayrı connector oluşturun." },
-                { n: "3", t: "URI adresini girin", d: `Feed URL'sini yapıştırın:\nhttps://threat.lidernetwork.com.tr/feeds/domain.txt\nhttps://threat.lidernetwork.com.tr/feeds/ipv4.txt\nhttps://threat.lidernetwork.com.tr/feeds/url.txt\n\nKüçük cihazlar için LİTE feed kullanın:\nhttps://threat.lidernetwork.com.tr/feeds/domain-90d.txt` },
-                { n: "4", t: "Yenileme aralığını ayarlayın", d: "\"Refresh Rate\" → 60 dakika. Listeler her 2 saatte bir güncellenir." },
-                { n: "5", t: "Firewall Policy'e ekleyin", d: "Policy & Objects → Firewall Policy → connector'ları Source/Destination olarak ekleyin. Action: DENY ile zararlı bağlantılar otomatik engellenir." },
-              ].map(s => (
-                <div key={s.n} style={{ display: "flex", gap: 16, padding: "16px 0", borderBottom: `1px solid ${C.line}` }}>
-                  <div style={{ width: 28, height: 28, borderRadius: "50%", background: "rgba(79,124,255,.15)", border: "1px solid rgba(79,124,255,.35)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, fontWeight: 900, color: C.blue, flexShrink: 0, marginTop: 2 }}>{s.n}</div>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>{s.t}</div>
-                    <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.75, whiteSpace: "pre-line" }}>{s.d}</div>
+          {/* ── TAB: SOURCES ── */}
+          {activeTab === "sources" && (
+            <div className="fade">
+              <div style={{ marginBottom: 18 }}>
+                <h2 style={{ margin: "0 0 6px", fontSize: 17, fontWeight: 800, color: C.text }}>Veri Kaynakları</h2>
+                <p style={{ margin: 0, fontSize: 13, color: C.sub }}>8 farklı güvenilir tehdit istihbaratı kaynağından toplanan veriler birleştirilerek sunulmaktadır.</p>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
+                {SOURCES.map(s => (
+                  <a key={s.name} href={s.href} target="_blank" rel="noopener noreferrer" className="card-hover"
+                    style={{ textDecoration: "none", background: C.surface, border: `1.5px solid ${s.color}20`, borderRadius: 16, padding: "18px 20px", display: "block", boxShadow: `0 4px 24px ${s.color}08` }}
+                    onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = s.color + "55"; }}
+                    onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = s.color + "20"; }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <span style={{ fontSize: 22, width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", background: `${s.color}15`, border: `1px solid ${s.color}30`, borderRadius: 10 }}>{s.icon}</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 800, color: s.color }}>{s.name}</div>
+                        <div style={{ fontSize: 10, color: C.dim }}>↗ Kaynağa git</div>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: C.sub, lineHeight: 1.6 }}>{s.desc}</div>
+                  </a>
+                ))}
+              </div>
+              {/* Summary bar */}
+              <div style={{ marginTop: 20, padding: "16px 20px", background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, display: "flex", gap: 24, flexWrap: "wrap" }}>
+                {[["8", "Aktif Kaynak"], [String(syncsToday), "Bugünkü Senkronizasyon"], ["Her 2 Saat", "Güncelleme Periyodu"], [stats?.total ? stats.total.toLocaleString("tr-TR") : "—", "Toplam Kayıt"]].map(([v, l]) => (
+                  <div key={l} style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 22, fontWeight: 900, color: C.blue }}>{v}</div>
+                    <div style={{ fontSize: 11, color: C.dim }}>{l}</div>
                   </div>
-                </div>
-              ))}
-              <div style={{ marginTop: 16, padding: "13px 16px", background: "rgba(251,191,36,.05)", border: "1px solid rgba(251,191,36,.2)", borderRadius: 10, fontSize: 12, color: C.amber, lineHeight: 1.65 }}>
-                <strong>Not:</strong> FortiGate her yenileme aralığında feed'i çeker. DNS propagasyonu nedeniyle ilk aktivasyonda 5-10 dakika gecikme olabilir. Daha fazla bilgi için{" "}
-                <a href="https://docs.fortinet.com" target="_blank" rel="noopener noreferrer" style={{ color: C.amber }}>Fortinet dokümantasyonunu</a> inceleyin.
+                ))}
               </div>
             </div>
           )}
         </div>
 
-        {/* Footer */}
-        <p style={{ textAlign: "center", fontSize: 11, color: C.dim, lineHeight: 2 }}>
-          {["usom.gov.tr|https://www.usom.gov.tr", "URLhaus|https://urlhaus.abuse.ch", "Feodo Tracker|https://feodotracker.abuse.ch", "CINS Score|https://cinsscore.com", "IP Kara Liste|https://blacklist.lidernetwork.com.tr", "IP Sorgu|https://ip.lidernetwork.com.tr", "DNS Checker|https://dns.lidernetwork.com.tr", "Lider Network|https://www.lidernetwork.com.tr"].map((s, i, arr) => {
-            const [label, href] = s.split("|");
-            return <span key={s}><a href={href} target="_blank" rel="noopener noreferrer" style={{ color: C.blue, textDecoration: "none" }}>{label}</a>{i < arr.length - 1 ? "  ·  " : ""}</span>;
-          })}
-          <br /><span style={{ fontSize: 10 }}>Her 2 saatte bir otomatik güncelleme · USOM/URLhaus/Feodo/CINS kaynaklı · Veri doğruluğu kaynağa aittir</span>
-        </p>
+        {/* ── FOOTER ── */}
+        <footer style={{ textAlign: "center", paddingTop: 24, borderTop: `1px solid ${C.border}` }}>
+          <div style={{ display: "flex", justifyContent: "center", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            {[["SGB/USOM", "https://siberguvenlik.gov.tr"], ["URLhaus", "https://urlhaus.abuse.ch"], ["ThreatFox", "https://threatfox.abuse.ch"], ["Feodo Tracker", "https://feodotracker.abuse.ch"], ["CINS Score", "https://cinsscore.com"], ["EmergingThreats", "https://rules.emergingthreats.net"], ["OpenPhish", "https://openphish.com"], ["Spamhaus", "https://www.spamhaus.org/drop/"], ["Lider Network", "https://www.lidernetwork.com.tr"]].map(([label, href]) => (
+              <a key={label} href={href} target="_blank" rel="noopener noreferrer"
+                style={{ fontSize: 11, color: C.dim, textDecoration: "none", padding: "4px 10px", borderRadius: 99, border: `1px solid ${C.border}`, background: C.surface, transition: "all .15s" }}
+                onMouseOver={e => { (e.currentTarget as HTMLElement).style.color = C.sub; }}
+                onMouseOut={e => { (e.currentTarget as HTMLElement).style.color = C.dim; }}>
+                {label}
+              </a>
+            ))}
+          </div>
+          <p style={{ margin: 0, fontSize: 11, color: C.dim, lineHeight: 2 }}>
+            Her 2 saatte bir otomatik senkronizasyon · 8 tehdit istihbaratı kaynağı · Veri doğruluğu kaynağa aittir
+          </p>
+        </footer>
       </div>
     </main>
   );

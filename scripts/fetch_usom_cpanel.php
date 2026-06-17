@@ -1,37 +1,35 @@
 <?php
 /**
- * Lider Network — USOM Threat Feed Fetcher
- * cPanel cron job olarak çalışır (Türkiye IP → USOM'a erişim sağlar)
+ * Lider Network — SGB/USOM Threat Feed Fetcher (cPanel)
+ * SGB (siberguvenlik.gov.tr) + URLhaus + Feodo + CINS + ThreatFox + EmergingThreats + OpenPhish + Spamhaus
  *
  * Cron: 0 */2 * * *  /usr/local/bin/php /home/KULLANICI/fetch_usom.php
  */
 
-// ── Ayarlar ──────────────────────────────────────────────────────────────────
 define('SUPABASE_URL', 'BURAYA_SUPABASE_URL');          // https://xxx.supabase.co
 define('SUPABASE_KEY', 'BURAYA_SERVICE_ROLE_KEY');       // service_role key
 define('MAX_EXEC_SECONDS', 600);                         // 10 dakika max
 
 set_time_limit(MAX_EXEC_SECONDS);
-ini_set('memory_limit', '256M');
+ini_set('memory_limit', '512M');
 error_reporting(E_ALL);
 
 $started = microtime(true);
 
-// ── Yardımcı fonksiyonlar ─────────────────────────────────────────────────────
 function log_msg(string $msg): void {
     echo '[' . date('H:i:s') . '] ' . $msg . PHP_EOL;
 }
 
-function fetch_url(string $url, int $timeout = 20): ?string {
+function fetch_url(string $url, int $timeout = 20, array $extra_headers = []): ?string {
     $ch = curl_init($url);
+    $headers = array_merge([
+        'Accept: application/json, text/plain',
+        'User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+    ], $extra_headers);
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_TIMEOUT        => $timeout,
-        CURLOPT_USERAGENT      => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        CURLOPT_HTTPHEADER     => [
-            'Accept: application/json, text/plain',
-            'Referer: https://www.usom.gov.tr/',
-        ],
+        CURLOPT_HTTPHEADER     => $headers,
         CURLOPT_SSL_VERIFYPEER => true,
         CURLOPT_FOLLOWLOCATION => true,
     ]);
@@ -41,9 +39,29 @@ function fetch_url(string $url, int $timeout = 20): ?string {
     return ($body !== false && $code === 200) ? $body : null;
 }
 
+function fetch_post(string $url, string $json_body, int $timeout = 30): ?string {
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_POST           => true,
+        CURLOPT_POSTFIELDS     => $json_body,
+        CURLOPT_TIMEOUT        => $timeout,
+        CURLOPT_HTTPHEADER     => [
+            'Content-Type: application/json',
+            'User-Agent: Mozilla/5.0',
+        ],
+        CURLOPT_SSL_VERIFYPEER => true,
+    ]);
+    $body = curl_exec($ch);
+    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    return ($body !== false && $code === 200) ? $body : null;
+}
+
 function supabase_upsert(string $feed_type, array $records): bool {
-    $content      = implode("\n", array_unique($records));
-    $record_count = count(array_unique($records));
+    $unique       = array_values(array_unique($records));
+    $content      = implode("\n", $unique);
+    $record_count = count($unique);
     $payload      = json_encode([[
         'feed_type'    => $feed_type,
         'content'      => $content,
@@ -58,7 +76,7 @@ function supabase_upsert(string $feed_type, array $records): bool {
         CURLOPT_POSTFIELDS     => $payload,
         CURLOPT_TIMEOUT        => 60,
         CURLOPT_HTTPHEADER     => [
-            'apikey: '        . SUPABASE_KEY,
+            'apikey: '              . SUPABASE_KEY,
             'Authorization: Bearer ' . SUPABASE_KEY,
             'Content-Type: application/json',
             'Prefer: resolution=merge-duplicates,return=minimal',
@@ -80,58 +98,70 @@ function classify(string $type, string $value): ?string {
     if ($type === 'domain') return 'domain';
     if ($type === 'url')    return 'url';
     if ($type === 'ip')     return strpos($value, ':') !== false ? 'ipv6' : 'ipv4';
-    if (str_starts_with($value, 'http')) return 'url';
-    if (strpos($value, ':') !== false)   return 'ipv6';
+    if (str_starts_with($value, 'http'))         return 'url';
+    if (strpos($value, ':') !== false)           return 'ipv6';
     if (preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $value)) return 'ipv4';
-    if (strpos($value, '.') !== false)   return 'domain';
+    if (strpos($value, '.') !== false)           return 'domain';
     return null;
 }
 
 // ── Veri kapları ──────────────────────────────────────────────────────────────
+$seen    = [];
 $buckets = ['domain' => [], 'ipv4' => [], 'ipv6' => [], 'url' => []];
 
-// ── 1. USOM API ───────────────────────────────────────────────────────────────
-log_msg('=== USOM API çekiliyor ===');
-$usom_ok = false;
+function add(string $value, string $cat): void {
+    global $seen, $buckets;
+    $value = trim($value);
+    if (!$value || isset($seen[$value])) return;
+    $seen[$value] = true;
+    $buckets[$cat][] = $value;
+}
 
-$first_raw = fetch_url('https://www.usom.gov.tr/api/address/index.json?page=1&per-page=2000', 20);
+// ── 1. SGB API ────────────────────────────────────────────────────────────────
+log_msg('=== SGB API çekiliyor ===');
+$usom_ok  = false;
+$per_page = 2000;
+
+$first_raw = fetch_url("https://siberguvenlik.gov.tr/api/address/index?page=1&per-page={$per_page}", 20);
 if ($first_raw) {
-    $first = json_decode($first_raw, true);
-    $pagination  = $first['meta']['pagination'] ?? [];
-    $total_pages = (int) ($pagination['page-count'] ?? $pagination['total-pages'] ?? $pagination['pageCount'] ?? 1);
-    log_msg("Toplam sayfa: {$total_pages}");
+    $first_data  = json_decode($first_raw, true);
+    $total_count = (int) ($first_data['totalCount'] ?? 0);
+    $total_pages = (int) ceil($total_count / $per_page);
 
-    $process = function(array $data) use (&$buckets): void {
-        foreach ($data as $item) {
-            $cat = classify($item['type'] ?? '', $item['url'] ?? '');
-            if ($cat) $buckets[$cat][] = trim($item['url']);
+    log_msg("Toplam: {$total_count} kayıt, {$total_pages} sayfa");
+
+    $process = function(array $items): void {
+        foreach ($items as $item) {
+            $v   = trim($item['url'] ?? '');
+            $cat = classify($item['type'] ?? '', $v);
+            if ($cat) add($v, $cat);
         }
     };
 
-    $process($first['data'] ?? []);
+    $process($first_data['models'] ?? []);
 
     for ($page = 2; $page <= $total_pages; $page++) {
-        $raw = fetch_url("https://www.usom.gov.tr/api/address/index.json?page={$page}&per-page=2000", 15);
+        $raw = fetch_url("https://siberguvenlik.gov.tr/api/address/index?page={$page}&per-page={$per_page}", 15);
         if ($raw) {
             $d = json_decode($raw, true);
-            $process($d['data'] ?? []);
+            $process($d['models'] ?? []);
         }
         if ($page % 20 === 0) {
-            log_msg("  Sayfa {$page}/{$total_pages} — domain:" . count($buckets['domain']));
+            log_msg("  Sayfa {$page}/{$total_pages} — domain:" . count($buckets['domain']) . " ip:" . count($buckets['ipv4']));
         }
-        usleep(200000); // 0.2s gecikme
+        usleep(100000); // 0.1s
     }
 
     $usom_ok = true;
-    log_msg('USOM OK — domain:' . count($buckets['domain']) .
+    log_msg('SGB OK — domain:' . count($buckets['domain']) .
             ' ipv4:' . count($buckets['ipv4']) .
             ' ipv6:' . count($buckets['ipv6']) .
             ' url:' . count($buckets['url']));
 } else {
-    log_msg('USOM API erişilemiyor — fallback kaynaklar kullanılıyor');
+    log_msg('SGB API erişilemiyor — fallback kaynaklar kullanılıyor');
 }
 
-// ── 2. Fallback (USOM yoksa) ──────────────────────────────────────────────────
+// ── 2. Fallback ───────────────────────────────────────────────────────────────
 if (!$usom_ok) {
     log_msg('StevenBlack/hosts çekiliyor...');
     $raw = fetch_url('https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts', 45);
@@ -140,7 +170,7 @@ if (!$usom_ok) {
             if (str_starts_with($line, '0.0.0.0 ')) {
                 $parts = preg_split('/\s+/', $line);
                 if (!empty($parts[1]) && !in_array($parts[1], ['0.0.0.0', 'localhost'])) {
-                    $buckets['domain'][] = $parts[1];
+                    add($parts[1], 'domain');
                 }
             }
         }
@@ -154,25 +184,22 @@ if (!$usom_ok) {
             $line = trim($line);
             if ($line && $line[0] !== '#') {
                 $ip  = explode(' ', $line)[0];
-                $cat = strpos($ip, ':') !== false ? 'ipv6' : 'ipv4';
-                $buckets[$cat][] = $ip;
+                add($ip, strpos($ip, ':') !== false ? 'ipv6' : 'ipv4');
             }
         }
         log_msg('  ipsum: ' . count($buckets['ipv4']) . ' IPv4');
     }
 }
 
-// ── 3. Feodo Tracker botnet C2 ────────────────────────────────────────────────
-log_msg('Feodo Tracker C2 IP çekiliyor...');
+// ── 3. Feodo Tracker ──────────────────────────────────────────────────────────
+log_msg('Feodo Tracker çekiliyor...');
 $raw = fetch_url('https://feodotracker.abuse.ch/downloads/ipblocklist.txt', 20);
 if ($raw) {
     $before = count($buckets['ipv4']);
-    $seen   = array_flip($buckets['ipv4']);
     foreach (explode("\n", $raw) as $line) {
         $line = trim($line);
         if ($line && $line[0] !== '#' && preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $line)) {
-            $ip = explode(' ', $line)[0];
-            if (!isset($seen[$ip])) { $seen[$ip] = 1; $buckets['ipv4'][] = $ip; }
+            add(explode(' ', $line)[0], 'ipv4');
         }
     }
     log_msg('  Feodo: +' . (count($buckets['ipv4']) - $before) . ' IP');
@@ -183,46 +210,115 @@ log_msg('CINS Score çekiliyor...');
 $raw = fetch_url('https://cinsscore.com/list/ci-badguys.txt', 20);
 if ($raw) {
     $before = count($buckets['ipv4']);
-    $seen   = array_flip($buckets['ipv4']);
     foreach (explode("\n", $raw) as $line) {
         $line = trim($line);
         if ($line && $line[0] !== '#' && preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $line)) {
-            if (!isset($seen[$line])) { $seen[$line] = 1; $buckets['ipv4'][] = $line; }
+            add($line, 'ipv4');
         }
     }
     log_msg('  CINS: +' . (count($buckets['ipv4']) - $before) . ' IP');
 }
 
 // ── 5. URLhaus ────────────────────────────────────────────────────────────────
-log_msg('URLhaus URL çekiliyor...');
+log_msg('URLhaus çekiliyor...');
 $raw = fetch_url('https://urlhaus.abuse.ch/downloads/text/', 30);
 if ($raw) {
-    $before  = count($buckets['url']);
-    $url_set = array_flip($buckets['url']);
+    $before = count($buckets['url']);
     foreach (explode("\n", $raw) as $line) {
         $line = trim($line);
-        if ($line && $line[0] !== '#' && str_starts_with($line, 'http') && !isset($url_set[$line])) {
-            $url_set[$line] = 1;
-            $buckets['url'][] = $line;
+        if ($line && $line[0] !== '#' && str_starts_with($line, 'http')) {
+            add($line, 'url');
         }
     }
     log_msg('  URLhaus: +' . (count($buckets['url']) - $before) . ' URL');
 }
 
-// ── 6. Supabase'e yaz ─────────────────────────────────────────────────────────
+// ── 6. ThreatFox ──────────────────────────────────────────────────────────────
+log_msg('ThreatFox çekiliyor...');
+$tf_raw = fetch_post(
+    'https://threatfox-api.abuse.ch/api/v1/',
+    json_encode(['query' => 'get_iocs', 'days' => 90]),
+    30
+);
+if ($tf_raw) {
+    $tf = json_decode($tf_raw, true);
+    if (($tf['query_status'] ?? '') === 'ok') {
+        $before = ['d' => count($buckets['domain']), 'i' => count($buckets['ipv4']), 'u' => count($buckets['url'])];
+        foreach ($tf['data'] ?? [] as $ioc) {
+            $val      = trim($ioc['ioc'] ?? '');
+            $ioc_type = $ioc['ioc_type'] ?? '';
+            if (!$val) continue;
+            if ($ioc_type === 'domain') add($val, 'domain');
+            elseif ($ioc_type === 'url') add($val, 'url');
+            elseif ($ioc_type === 'ip:port') {
+                $ip = explode(':', $val)[0];
+                if (preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $ip)) add($ip, 'ipv4');
+                elseif (strpos($ip, ':') !== false) add($ip, 'ipv6');
+            }
+        }
+        log_msg('  ThreatFox: +' . (count($buckets['domain'])-$before['d']) . ' domain, ' .
+                '+' . (count($buckets['ipv4'])-$before['i']) . ' IP, ' .
+                '+' . (count($buckets['url'])-$before['u']) . ' URL');
+    }
+} else {
+    log_msg('  ThreatFox: erişilemiyor');
+}
+
+// ── 7. EmergingThreats ────────────────────────────────────────────────────────
+log_msg('EmergingThreats çekiliyor...');
+$raw = fetch_url('https://rules.emergingthreats.net/blockrules/compromised-ips.txt', 20);
+if ($raw) {
+    $before = count($buckets['ipv4']);
+    foreach (explode("\n", $raw) as $line) {
+        $line = trim($line);
+        if ($line && $line[0] !== '#' && preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $line)) {
+            add($line, 'ipv4');
+        }
+    }
+    log_msg('  EmergingThreats: +' . (count($buckets['ipv4']) - $before) . ' IP');
+}
+
+// ── 8. OpenPhish ──────────────────────────────────────────────────────────────
+log_msg('OpenPhish çekiliyor...');
+$raw = fetch_url('https://openphish.com/feed.txt', 20);
+if ($raw) {
+    $before = count($buckets['url']);
+    foreach (explode("\n", $raw) as $line) {
+        $line = trim($line);
+        if ($line && str_starts_with($line, 'http')) add($line, 'url');
+    }
+    log_msg('  OpenPhish: +' . (count($buckets['url']) - $before) . ' URL');
+}
+
+// ── 9. Spamhaus DROP + EDROP ─────────────────────────────────────────────────
+log_msg('Spamhaus DROP çekiliyor...');
+foreach (['https://www.spamhaus.org/drop/drop.txt', 'https://www.spamhaus.org/drop/edrop.txt'] as $drop_url) {
+    $raw = fetch_url($drop_url, 20);
+    if ($raw) {
+        $before = count($buckets['ipv4']);
+        foreach (explode("\n", $raw) as $line) {
+            $line = trim(explode(';', $line)[0]);
+            if (!$line || $line[0] === ';' || $line[0] === '#') continue;
+            $ip = explode('/', $line)[0];
+            if (preg_match('/^\d{1,3}(\.\d{1,3}){3}/', $ip)) add($ip, 'ipv4');
+        }
+        log_msg('  Spamhaus (' . basename($drop_url) . '): +' . (count($buckets['ipv4']) - $before) . ' IP');
+    }
+}
+
+// ── Supabase'e yaz ────────────────────────────────────────────────────────────
 log_msg('=== Supabase\'e yazılıyor ===');
 $errors = 0;
 foreach ($buckets as $type => $records) {
-    $unique = array_values(array_unique($records));
-    sort($unique);
-    if (!supabase_upsert($type, $unique)) $errors++;
+    sort($records);
+    if (!supabase_upsert($type, $records)) $errors++;
 }
 
-// Lite feed'ler (domain + ipv4, son N kayıt — tarihsiz fallback)
+// Lite feed'ler
 log_msg('Lite feed\'ler yazılıyor...');
 $lite_windows = ['90d' => 0.25, '180d' => 0.50, '365d' => 1.0];
 foreach (['domain', 'ipv4'] as $type) {
-    $all = array_values(array_unique($buckets[$type]));
+    $all = $buckets[$type];
     sort($all);
     foreach ($lite_windows as $window => $ratio) {
         $slice = array_slice($all, 0, (int) ceil(count($all) * $ratio));
@@ -235,4 +331,4 @@ $elapsed = round(microtime(true) - $started, 1);
 $total   = array_sum(array_map('count', $buckets));
 log_msg('=== Tamamlandı ===');
 log_msg("Toplam: {$total} kayıt | Hata: {$errors} | Süre: {$elapsed}s");
-log_msg('Kaynak: ' . ($usom_ok ? 'USOM/SGB' : 'Fallback') . ' + Feodo + CINS + URLhaus');
+log_msg('Kaynak: ' . ($usom_ok ? 'SGB' : 'Fallback') . ' + Feodo + CINS + URLhaus + ThreatFox + EmergingThreats + OpenPhish + Spamhaus');
