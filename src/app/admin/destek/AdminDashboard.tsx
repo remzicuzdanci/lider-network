@@ -869,27 +869,7 @@ export default function AdminDashboard() {
           {/* ── DURUM + IT ARAÇLARI ──────────────────────────── */}
           <SideSection label="Durum & IT Araçları" />
           <div style={{ margin: "4px 6px 8px", borderRadius: 12, background: "#f8fafc", border: "1px solid #e5e7ef", overflow: "hidden" }}>
-            {/* Durum satırları */}
-            {stats && (
-              <div style={{ padding: "10px 14px 8px" }}>
-                {[
-                  { label: "Açık",    value: stats.open,           color: "#3b82f6" },
-                  { label: "İşlemde", value: stats.in_progress,    color: "#8b5cf6" },
-                  { label: "Bugün ✓", value: stats.resolved_today, color: "#22c55e" },
-                  { label: "ACİL",    value: stats.urgent,         color: "#dc2626" },
-                ].map((s, i, arr) => (
-                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < arr.length - 1 ? "1px solid #f0f2f8" : "none" }}>
-                    <span style={{ fontSize: "12px", color: "#6b7280" }}>{s.label}</span>
-                    <span style={{ fontSize: "14px", fontWeight: 800, color: s.color, fontFamily: "var(--font-family-headline)" }}>{s.value}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Ayırıcı */}
-            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e5e7ef 20%, #e5e7ef 80%, transparent)", margin: "0 10px" }} />
-
-            {/* IT Araçları grid */}
+            {/* IT Araçları grid — ÜSTTE */}
             <div style={{ padding: "10px 10px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
               {([
                 { label: "Threat Portal", sub: "USOM Feed",   href: "https://threat.lidernetwork.com.tr",    color: "#4f7cff", bg: "linear-gradient(135deg,#4f7cff,#6366f1)", shadow: "rgba(79,124,255,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
@@ -934,6 +914,26 @@ export default function AdminDashboard() {
                 </a>
               ))}
             </div>
+
+            {/* Ayırıcı */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e5e7ef 20%, #e5e7ef 80%, transparent)", margin: "0 10px" }} />
+
+            {/* Durum satırları — ALTTA */}
+            {stats && (
+              <div style={{ padding: "8px 14px 10px" }}>
+                {[
+                  { label: "Açık",    value: stats.open,           color: "#3b82f6" },
+                  { label: "İşlemde", value: stats.in_progress,    color: "#8b5cf6" },
+                  { label: "Bugün ✓", value: stats.resolved_today, color: "#22c55e" },
+                  { label: "ACİL",    value: stats.urgent,         color: "#dc2626" },
+                ].map((s, i, arr) => (
+                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < arr.length - 1 ? "1px solid #f0f2f8" : "none" }}>
+                    <span style={{ fontSize: "12px", color: "#6b7280" }}>{s.label}</span>
+                    <span style={{ fontSize: "14px", fontWeight: 800, color: s.color, fontFamily: "var(--font-family-headline)" }}>{s.value}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </nav>
 
