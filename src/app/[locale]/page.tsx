@@ -11,6 +11,7 @@ import Expertise from "@/components/home/Expertise";
 import LatestPosts from "@/components/home/LatestPosts";
 import DnsCheckerCTA from "@/components/home/DnsCheckerCTA";
 import SupportPortal from "@/components/home/SupportPortal";
+import ITTools from "@/components/home/ITTools";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -64,6 +65,7 @@ export default async function HomePage() {
       <Industries />
       <Expertise />
       <LatestPosts />
+      <ITTools />
       <DnsCheckerCTA />
     </>
   );
