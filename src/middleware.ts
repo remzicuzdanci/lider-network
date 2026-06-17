@@ -33,6 +33,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── password.lidernetwork.com.tr subdomain → Şifre oluşturucu ──
+  if (hostname.startsWith("password.")) {
+    return NextResponse.rewrite(new URL("/password", request.url));
+  }
+  if (pathname === "/password" || pathname.startsWith("/password/")) {
+    return NextResponse.next();
+  }
+
+  // ── uptime.lidernetwork.com.tr subdomain → Uptime izleme ──
+  if (hostname.startsWith("uptime.")) {
+    return NextResponse.rewrite(new URL("/uptime", request.url));
+  }
+  if (pathname === "/uptime" || pathname.startsWith("/uptime/")) {
+    return NextResponse.next();
+  }
+
   // ── threat.lidernetwork.com.tr subdomain → Tehdit feed servisi ──
   if (hostname.startsWith("threat.")) {
     // /feeds/* yolları doğrudan /threat/feeds/* rotasına ilet (FortiGate TXT dosyaları)
