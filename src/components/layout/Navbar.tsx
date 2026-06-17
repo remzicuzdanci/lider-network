@@ -30,7 +30,20 @@ import {
   Award,
   Headphones,
   Search,
+  Wrench,
+  KeyRound,
+  BanIcon,
+  Activity,
 } from "lucide-react";
+
+const IT_TOOLS = [
+  { label: "Threat Portal",    labelEn: "Threat Portal",    sub: "USOM tehdit istihbaratı",    subEn: "USOM threat intelligence", href: "https://threat.lidernetwork.com.tr",    color: "#4f7cff", Icon: Shield },
+  { label: "Kara Liste",       labelEn: "Blacklist Check",  sub: "IP / domain kara liste",     subEn: "IP / domain blacklist",    href: "https://blacklist.lidernetwork.com.tr", color: "#ef4444", Icon: BanIcon },
+  { label: "IP Analiz",        labelEn: "IP Analysis",      sub: "Konum & itibar analizi",     subEn: "Location & reputation",    href: "https://ip.lidernetwork.com.tr",        color: "#10b981", Icon: Globe },
+  { label: "DNS Checker",      labelEn: "DNS Checker",      sub: "DNS, SPF/DKIM, SSL, WHOIS",  subEn: "DNS, SPF/DKIM, SSL, WHOIS",href: "https://dns.lidernetwork.com.tr",       color: "#f59e0b", Icon: Search },
+  { label: "Şifre Oluşturucu", labelEn: "Password Gen",     sub: "Güvenli şifre üretici",      subEn: "Secure password creator",  href: "https://password.lidernetwork.com.tr",  color: "#8b5cf6", Icon: KeyRound },
+  { label: "Site Kontrol",     labelEn: "Site Monitor",     sub: "Erişilebilirlik kontrolü",   subEn: "Availability check",       href: "https://uptime.lidernetwork.com.tr",    color: "#06b6d4", Icon: Activity },
+] as const;
 
 /* ─── Static data (locale-independent) ─────────────────────────────────── */
 const fortinetCategoriesBase = [
@@ -77,17 +90,21 @@ export default function Navbar() {
   const [servicesOpen, setServicesOpen] = useState(false);
   const [fortinetOpen, setFortinetOpen] = useState(false);
   const [kurulsalOpen, setKurulsalOpen] = useState(false);
+  const [toolsOpen, setToolsOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
   const [mobileFortinetOpen, setMobileFortinetOpen] = useState(false);
   const [mobileKurulsalOpen, setMobileKurulsalOpen] = useState(false);
+  const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const servicesRef = useRef<HTMLLIElement>(null);
   const fortinetRef = useRef<HTMLLIElement>(null);
   const kurulsalRef = useRef<HTMLLIElement>(null);
+  const toolsRef = useRef<HTMLLIElement>(null);
 
   const closeAll = () => {
     setServicesOpen(false);
     setFortinetOpen(false);
     setKurulsalOpen(false);
+    setToolsOpen(false);
   };
 
   useEffect(() => {
@@ -108,6 +125,9 @@ export default function Navbar() {
       }
       if (kurulsalRef.current && !kurulsalRef.current.contains(e.target as Node)) {
         setKurulsalOpen(false);
+      }
+      if (toolsRef.current && !toolsRef.current.contains(e.target as Node)) {
+        setToolsOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -537,6 +557,95 @@ export default function Navbar() {
               )}
             </li>
 
+            {/* IT Araçları — dropdown */}
+            <li ref={toolsRef} className="relative">
+              <button
+                className="flex items-center gap-1 px-4 py-2 text-sm rounded transition-colors duration-200"
+                style={{
+                  fontFamily: "var(--font-family-label)",
+                  fontWeight: 500,
+                  color: toolsOpen ? "#06b6d4" : "var(--color-on-surface-variant)",
+                  backgroundColor: toolsOpen ? "rgba(6,182,212,0.07)" : "transparent",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={() => { setToolsOpen(true); setServicesOpen(false); setFortinetOpen(false); setKurulsalOpen(false); }}
+                onClick={() => setToolsOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={toolsOpen}
+              >
+                <Wrench className="w-3.5 h-3.5" aria-hidden="true" />
+                {isTr ? "IT Araçları" : "IT Tools"}
+                <ChevronDown
+                  className="w-3.5 h-3.5 transition-transform duration-200"
+                  style={{ transform: toolsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
+                  aria-hidden="true"
+                />
+              </button>
+
+              {toolsOpen && (
+                <div
+                  className="absolute top-full left-1/2 mt-2 w-[500px] rounded-2xl p-4 shadow-2xl"
+                  style={{
+                    transform: "translateX(-50%)",
+                    backgroundColor: "rgba(16, 20, 21, 0.98)",
+                    border: "1px solid rgba(6,182,212,0.25)",
+                    backdropFilter: "blur(20px)",
+                  }}
+                  onMouseLeave={() => setToolsOpen(false)}
+                >
+                  <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "1px solid rgba(6,182,212,0.15)" }}>
+                    <div className="flex items-center gap-2">
+                      <Wrench className="w-3.5 h-3.5" style={{ color: "#06b6d4" }} />
+                      <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#06b6d4", fontFamily: "var(--font-family-label)" }}>
+                        {isTr ? "Ücretsiz IT Güvenlik Araçları" : "Free IT Security Tools"}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {IT_TOOLS.map((tool) => {
+                      const Icon = tool.Icon;
+                      return (
+                        <a
+                          key={tool.href}
+                          href={tool.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-xl transition-all duration-150"
+                          style={{ textDecoration: "none", color: "var(--color-on-surface-variant)", border: `1px solid ${tool.color}18` }}
+                          onClick={() => setToolsOpen(false)}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = `${tool.color}10`;
+                            (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}40`;
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                            (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}18`;
+                          }}
+                        >
+                          <div
+                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
+                            style={{ backgroundColor: `${tool.color}18`, border: `1px solid ${tool.color}30` }}
+                          >
+                            <Icon className="w-4 h-4" style={{ color: tool.color }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold" style={{ color: "var(--color-on-surface)", fontFamily: "var(--font-family-label)" }}>
+                              {isTr ? tool.label : tool.labelEn}
+                            </div>
+                            <div className="text-xs mt-0.5" style={{ color: "var(--color-outline)" }}>
+                              {isTr ? tool.sub : tool.subEn}
+                            </div>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </li>
+
             {/* Blog */}
             <li>
               <Link
@@ -852,16 +961,49 @@ export default function Navbar() {
                 )}
               </li>
 
+              {/* IT Araçları accordion */}
+              <li>
+                <button
+                  className="w-full flex items-center justify-between px-4 py-3 text-sm rounded"
+                  style={{ fontFamily: "var(--font-family-label)", fontWeight: 500, color: "var(--color-on-surface-variant)", background: "none", border: "none", cursor: "pointer", textAlign: "left" }}
+                  onClick={() => setMobileToolsOpen((v) => !v)}
+                >
+                  <span className="flex items-center gap-2">
+                    <Wrench className="w-4 h-4" style={{ color: "#06b6d4" }} />
+                    {isTr ? "IT Araçları" : "IT Tools"}
+                  </span>
+                  <ChevronDown className="w-4 h-4 transition-transform duration-200" style={{ transform: mobileToolsOpen ? "rotate(180deg)" : "rotate(0deg)" }} />
+                </button>
+                {mobileToolsOpen && (
+                  <ul className="ml-4 mb-2 flex flex-col gap-1" role="list">
+                    {IT_TOOLS.map((tool) => {
+                      const Icon = tool.Icon;
+                      return (
+                        <li key={tool.href}>
+                          <a
+                            href={tool.href}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 px-4 py-2 text-sm rounded"
+                            style={{ color: tool.color, textDecoration: "none" }}
+                            onClick={() => { setIsMenuOpen(false); setMobileToolsOpen(false); }}
+                          >
+                            <Icon className="w-4 h-4 shrink-0" aria-hidden="true" />
+                            {isTr ? tool.label : tool.labelEn}
+                          </a>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </li>
+
               {/* Blog */}
               <li>
                 <Link
                   href={`/${locale}/blog`}
                   className="block px-4 py-3 text-sm rounded"
-                  style={{
-                    fontFamily: "var(--font-family-label)",
-                    fontWeight: 500,
-                    color: "var(--color-on-surface-variant)",
-                  }}
+                  style={{ fontFamily: "var(--font-family-label)", fontWeight: 500, color: "var(--color-on-surface-variant)" }}
                   onClick={() => setIsMenuOpen(false)}
                 >
                   Blog
