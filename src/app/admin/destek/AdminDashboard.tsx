@@ -152,6 +152,8 @@ export default function AdminDashboard() {
   const [stats, setStats]             = useState<Stats | null>(null);
   const [loading, setLoading]         = useState(true);
   const [total, setTotal]             = useState(0);
+  const [page, setPage]               = useState(1);
+  const PAGE_SIZE = 25;
   const [statusF, setStatusF]         = useState("all");
   const [priorityF, setPriorityF]     = useState("all");
   const [categoryF, setCategoryF]     = useState("all");
@@ -245,24 +247,19 @@ export default function AdminDashboard() {
   // ── Fetch ─────────────────────────────────────────────────────────────────
   const fetchTickets = useCallback(async () => {
     setLoading(true);
-    const p = new URLSearchParams({ limit: "50" });
+    const p = new URLSearchParams({ limit: String(PAGE_SIZE), page: String(page) });
     if (statusF !== "all")   p.set("status", statusF);
     if (priorityF !== "all") p.set("priority", priorityF);
+    if (categoryF !== "all") p.set("category", categoryF);
+    if (dateF !== "all")     p.set("date", dateF);
     if (search)              p.set("q", search);
     const res = await fetch(`/api/tickets?${p}`);
     if (res.status === 401) { router.push("/admin/login"); return; }
     const data = await res.json();
-    let list: Ticket[] = data.tickets || [];
-    if (categoryF !== "all") list = list.filter((t) => t.category === categoryF);
-    if (dateF !== "all") {
-      const cutoff = new Date();
-      if (dateF === "today") cutoff.setHours(0, 0, 0, 0);
-      if (dateF === "week")  cutoff.setDate(cutoff.getDate() - 7);
-      if (dateF === "month") cutoff.setDate(cutoff.getDate() - 30);
-      list = list.filter((t) => new Date(t.created_at) >= cutoff);
-    }
-    setTickets(list); setTotal(list.length); setLoading(false);
-  }, [statusF, priorityF, categoryF, dateF, search, router]);
+    setTickets(data.tickets || []);
+    setTotal(data.total ?? 0);
+    setLoading(false);
+  }, [statusF, priorityF, categoryF, dateF, search, page, router]);
 
   const fetchStats       = useCallback(async () => { const r = await fetch("/api/admin/stats"); if (r.ok) setStats(await r.json()); }, []);
   const fetchAllTickets  = useCallback(async () => { const r = await fetch("/api/tickets?limit=500"); if (r.ok) setAllTickets((await r.json()).tickets || []); }, []);
@@ -271,6 +268,9 @@ export default function AdminDashboard() {
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
   useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
+
+  // Filtre veya arama değişince sayfa 1'e dön
+  useEffect(() => { setPage(1); }, [statusF, priorityF, categoryF, dateF, search]);
 
   // Otomatik tazeleme: 60 sn'de bir, sayfa görünürken ve modal açık değilken
   // talep listesi + istatistikler + rozetler arka planda güncellenir (sayfa yenilenmez)
@@ -1192,6 +1192,53 @@ export default function AdminDashboard() {
                 </div>
               )}
             </div>
+
+            {/* ── Pagination ───────────────────────────────────────── */}
+            {total > PAGE_SIZE && (() => {
+              const totalPages = Math.ceil(total / PAGE_SIZE);
+              const start = (page - 1) * PAGE_SIZE + 1;
+              const end   = Math.min(page * PAGE_SIZE, total);
+
+              // Gösterilecek sayfa numaraları: mevcut ± 2, min 1, max totalPages
+              const pageNums: number[] = [];
+              for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) pageNums.push(i);
+
+              return (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", marginTop: "10px", flexWrap: "wrap", gap: "10px" }}>
+                  <span style={{ fontSize: "13px", color: "#6b7280" }}>
+                    <strong style={{ color: "#1a1d2e" }}>{start}–{end}</strong> / {total} talep &nbsp;·&nbsp; Sayfa {page}/{totalPages}
+                  </span>
+                  <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                    <button
+                      onClick={() => setPage(1)} disabled={page === 1}
+                      style={{ padding: "6px 10px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: page === 1 ? "#f8f9fb" : "#fff", color: page === 1 ? "#d1d5db" : "#1a1d2e", fontSize: "12px", fontWeight: 700, cursor: page === 1 ? "default" : "pointer" }}>
+                      «
+                    </button>
+                    <button
+                      onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+                      style={{ padding: "6px 14px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: page === 1 ? "#f8f9fb" : "#fff", color: page === 1 ? "#d1d5db" : "#1a1d2e", fontSize: "13px", fontWeight: 600, cursor: page === 1 ? "default" : "pointer" }}>
+                      ← Önceki
+                    </button>
+                    {pageNums.map(n => (
+                      <button key={n} onClick={() => setPage(n)}
+                        style={{ width: "34px", height: "34px", borderRadius: "8px", border: `1.5px solid ${page === n ? "#0052ff" : "#e5e7ef"}`, background: page === n ? "#0052ff" : "#fff", color: page === n ? "#fff" : "#1a1d2e", fontSize: "13px", fontWeight: 700, cursor: "pointer", transition: "all .1s" }}>
+                        {n}
+                      </button>
+                    ))}
+                    <button
+                      onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+                      style={{ padding: "6px 14px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: page === totalPages ? "#f8f9fb" : "#fff", color: page === totalPages ? "#d1d5db" : "#1a1d2e", fontSize: "13px", fontWeight: 600, cursor: page === totalPages ? "default" : "pointer" }}>
+                      Sonraki →
+                    </button>
+                    <button
+                      onClick={() => setPage(totalPages)} disabled={page === totalPages}
+                      style={{ padding: "6px 10px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: page === totalPages ? "#f8f9fb" : "#fff", color: page === totalPages ? "#d1d5db" : "#1a1d2e", fontSize: "12px", fontWeight: 700, cursor: page === totalPages ? "default" : "pointer" }}>
+                      »
+                    </button>
+                  </div>
+                </div>
+              );
+            })()}
           </>
         )}
 

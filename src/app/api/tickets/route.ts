@@ -100,11 +100,13 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Yetkisiz erişim" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status");
+  const status   = searchParams.get("status");
   const priority = searchParams.get("priority");
-  const search = searchParams.get("q");
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-  const limit = Math.min(50, parseInt(searchParams.get("limit") || "25"));
+  const category = searchParams.get("category");
+  const date     = searchParams.get("date");
+  const search   = searchParams.get("q");
+  const page  = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limit = Math.min(100, parseInt(searchParams.get("limit") || "25"));
 
   let query = supabase
     .from("tickets")
@@ -112,8 +114,16 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false })
     .range((page - 1) * limit, page * limit - 1);
 
-  if (status && status !== "all") query = query.eq("status", status);
+  if (status   && status   !== "all") query = query.eq("status", status);
   if (priority && priority !== "all") query = query.eq("priority", priority);
+  if (category && category !== "all") query = query.eq("category", category);
+  if (date && date !== "all") {
+    const cutoff = new Date();
+    if (date === "today") cutoff.setHours(0, 0, 0, 0);
+    else if (date === "week")  cutoff.setDate(cutoff.getDate() - 7);
+    else if (date === "month") cutoff.setDate(cutoff.getDate() - 30);
+    query = query.gte("created_at", cutoff.toISOString());
+  }
   if (search) {
     query = query.or(
       `subject.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,company.ilike.%${search}%`
