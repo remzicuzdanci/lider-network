@@ -32,39 +32,31 @@ const nextConfig: NextConfig = {
     ],
   },
   async headers() {
+    // Araç subdomain'leri — bu hostlardan gelen istekler iframe olarak açılabilir
+    const toolHosts = [
+      "threat.lidernetwork.com.tr",
+      "blacklist.lidernetwork.com.tr",
+      "ip.lidernetwork.com.tr",
+      "dns.lidernetwork.com.tr",
+      "password.lidernetwork.com.tr",
+      "uptime.lidernetwork.com.tr",
+    ];
+
     return [
       // Tüm sayfalara varsayılan güvenlik başlıkları
       {
         source: "/(.*)",
         headers: securityHeaders,
       },
-      // IT araç sayfaları: iframe iznini override et
-      {
-        source: "/blacklist/:path*",
+      // Her araç subdomain'i için hostname bazlı iframe izni (path ne olursa olsun)
+      ...toolHosts.map((host) => ({
+        source: "/(.*)",
+        has: [{ type: "host" as const, value: host }],
         headers: toolHeaders,
-      },
+      })),
+      // Admin sistem-durumu sayfası da iframe olarak açılabilir
       {
-        source: "/threat/:path*",
-        headers: toolHeaders,
-      },
-      {
-        source: "/ip/:path*",
-        headers: toolHeaders,
-      },
-      {
-        source: "/dns/:path*",
-        headers: toolHeaders,
-      },
-      {
-        source: "/password/:path*",
-        headers: toolHeaders,
-      },
-      {
-        source: "/uptime/:path*",
-        headers: toolHeaders,
-      },
-      {
-        source: "/admin/sistem-durumu/:path*",
+        source: "/admin/sistem-durumu",
         headers: toolHeaders,
       },
     ];
