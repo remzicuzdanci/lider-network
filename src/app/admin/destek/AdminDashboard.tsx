@@ -884,6 +884,43 @@ export default function AdminDashboard() {
               </div>
             </>
           )}
+
+          {/* ── IT ARAÇLARI ─────────────────────────────────── */}
+          <SideSection label="IT Araçları" />
+          <div style={{ margin: "4px 6px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+            {([
+              { label: "Threat Portal", icon: "🛡", color: "#4f7cff", href: "https://threat.lidernetwork.com.tr",    sub: "USOM Feed"   },
+              { label: "Kara Liste",    icon: "🚫", color: "#ef4444", href: "https://blacklist.lidernetwork.com.tr", sub: "IP Sorgu"    },
+              { label: "IP Analiz",     icon: "🌐", color: "#10b981", href: "https://ip.lidernetwork.com.tr",        sub: "Konum & Rep" },
+              { label: "DNS Checker",   icon: "🔍", color: "#f59e0b", href: "https://dns.lidernetwork.com.tr",       sub: "DNS Kayıt"   },
+            ] as const).map(t => (
+              <a key={t.href} href={t.href} target="_blank" rel="noopener noreferrer"
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                  gap: 4, padding: "11px 6px 9px", borderRadius: 10,
+                  background: `${t.color}0e`, border: `1.5px solid ${t.color}28`,
+                  textDecoration: "none", transition: "all .15s",
+                }}
+                onMouseOver={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = `${t.color}18`;
+                  el.style.borderColor = `${t.color}55`;
+                  el.style.transform = "translateY(-1px)";
+                  el.style.boxShadow = `0 4px 12px ${t.color}20`;
+                }}
+                onMouseOut={e => {
+                  const el = e.currentTarget as HTMLElement;
+                  el.style.background = `${t.color}0e`;
+                  el.style.borderColor = `${t.color}28`;
+                  el.style.transform = "";
+                  el.style.boxShadow = "";
+                }}>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>{t.icon}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, color: t.color, textAlign: "center", lineHeight: 1.2, marginTop: 2 }}>{t.label}</span>
+                <span style={{ fontSize: 9, color: "#9ca3af", textAlign: "center" }}>{t.sub}</span>
+              </a>
+            ))}
+          </div>
         </nav>
 
         <div style={{ padding: "8px 14px", borderTop: "1px solid #f0f2f8" }}>
