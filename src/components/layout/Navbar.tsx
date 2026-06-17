@@ -557,19 +557,29 @@ export default function Navbar() {
               )}
             </li>
 
-            {/* IT Araçları — dropdown */}
+            {/* IT Araçları — dropdown (pill buton) */}
             <li ref={toolsRef} className="relative">
               <button
-                className="flex items-center gap-1 px-4 py-2 text-sm rounded transition-colors duration-200"
+                className="flex items-center gap-1.5 px-3 py-2 text-xs rounded transition-all duration-200"
                 style={{
                   fontFamily: "var(--font-family-label)",
                   fontWeight: 500,
-                  color: toolsOpen ? "#06b6d4" : "var(--color-on-surface-variant)",
-                  backgroundColor: toolsOpen ? "rgba(6,182,212,0.07)" : "transparent",
-                  border: "none",
+                  color: toolsOpen ? "#06b6d4" : "#06b6d4",
+                  border: `1px solid ${toolsOpen ? "rgba(6,182,212,0.6)" : "rgba(6,182,212,0.3)"}`,
+                  backgroundColor: toolsOpen ? "rgba(6,182,212,0.14)" : "rgba(6,182,212,0.06)",
                   cursor: "pointer",
                 }}
-                onMouseEnter={() => { setToolsOpen(true); setServicesOpen(false); setFortinetOpen(false); setKurulsalOpen(false); }}
+                onMouseEnter={(e) => {
+                  setToolsOpen(true); setServicesOpen(false); setFortinetOpen(false); setKurulsalOpen(false);
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.14)";
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.6)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!toolsOpen) {
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.06)";
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.3)";
+                  }
+                }}
                 onClick={() => setToolsOpen((v) => !v)}
                 aria-haspopup="true"
                 aria-expanded={toolsOpen}
@@ -577,7 +587,7 @@ export default function Navbar() {
                 <Wrench className="w-3.5 h-3.5" aria-hidden="true" />
                 {isTr ? "IT Araçları" : "IT Tools"}
                 <ChevronDown
-                  className="w-3.5 h-3.5 transition-transform duration-200"
+                  className="w-3 h-3 transition-transform duration-200"
                   style={{ transform: toolsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
                   aria-hidden="true"
                 />

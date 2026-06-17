@@ -11,6 +11,7 @@ import WhatsAppButton from "@/components/ui/WhatsAppButton";
 
 import BackToTop from "@/components/ui/BackToTop";
 import CookieBanner from "@/components/ui/CookieBanner";
+import ITToolsWidget from "@/components/ui/ITToolsWidget";
 import "../globals.css";
 
 const hankenGrotesk = Hanken_Grotesk({
@@ -244,7 +245,7 @@ export default async function LocaleLayout({
               <Navbar />
               <main id="main-content">{children}</main>
               <Footer />
-
+              <ITToolsWidget />
               <WhatsAppButton />
               <BackToTop />
               <CookieBanner />
