@@ -171,6 +171,7 @@ export default function AdminDashboard() {
   const [compLoading, setCompLoading]     = useState(false);
   const [compModal, setCompModal]         = useState<Partial<Company> | null>(null); // null = closed, {} = new
   const [compSaving, setCompSaving]       = useState(false);
+  const [logoUploading, setLogoUploading] = useState(false);
 
   // Staff - loaded from staff_users table via /api/admin/staff
   const [staff, setStaff]             = useState<StaffMember[]>([]);
@@ -1961,6 +1962,27 @@ export default function AdminDashboard() {
                       {lg?.logo ? <img src={lg.logo} alt="" style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} /> : <span style={{ fontSize: "9px", color: "#cbd5e1" }}>Logo</span>}
                     </span>); })()}
                   <div style={{ flex: 1 }}>
+                    {/* Bilgisayardan yükle */}
+                    <div style={{ display: "flex", gap: "6px", marginBottom: "6px" }}>
+                      <label style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", padding: "8px 12px", border: "1.5px dashed #0052ff", borderRadius: "8px", background: "#f0f5ff", color: "#0052ff", fontSize: "13px", fontWeight: 700, cursor: logoUploading ? "default" : "pointer", opacity: logoUploading ? .6 : 1 }}>
+                        <input type="file" accept="image/png,image/jpeg,image/jpg,image/svg+xml,image/webp" style={{ display: "none" }} disabled={logoUploading}
+                          onChange={async e => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setLogoUploading(true);
+                            try {
+                              const fd = new FormData();
+                              fd.append("file", file);
+                              const res = await fetch("/api/admin/logos/upload", { method: "POST", body: fd });
+                              const json = await res.json();
+                              if (json.url) setCompModal(p => ({ ...p!, logo_url: json.url }));
+                              else alert(json.error || "Yükleme başarısız");
+                            } catch { alert("Yükleme sırasında hata oluştu"); }
+                            finally { setLogoUploading(false); e.target.value = ""; }
+                          }} />
+                        {logoUploading ? "Yükleniyor..." : "📁 Bilgisayardan Yükle"}
+                      </label>
+                    </div>
                     <select value="" onChange={e => { const cl = CLIENT_LOGOS.find(x => x.name === e.target.value); if (cl?.logo) setCompModal(p => ({ ...p!, logo_url: cl.logo })); }} style={inpS}>
                       <option value="">— Hazır logolardan seç —</option>
                       {[...CLIENT_LOGOS].filter(c => c.logo).sort((a, b) => a.name.localeCompare(b.name, "tr")).map(c => <option key={c.name} value={c.name}>{c.name}</option>)}
@@ -1969,7 +1991,7 @@ export default function AdminDashboard() {
                       <input value={compModal.logo_url || ""} onChange={e => setCompModal(p => ({ ...p!, logo_url: e.target.value }))} placeholder="veya logo URL yapıştır" style={{ ...inpS, fontSize: "12px" }} />
                       <button type="button" onClick={() => setCompModal(p => ({ ...p!, logo_url: null }))} title="Firma adından otomatik eşleştir" style={{ padding: "8px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", background: "#fff", color: "#6b7280", fontSize: "12px", fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>Otomatik</button>
                     </div>
-                    <p style={{ margin: "5px 0 0", fontSize: "11px", color: "#9ca3af" }}>Boş bırakırsan firma adından otomatik eşleşir.</p>
+                    <p style={{ margin: "5px 0 0", fontSize: "11px", color: "#9ca3af" }}>PNG, JPG, SVG veya WebP · Maks 2 MB</p>
                   </div>
                 </div>
               </div>
