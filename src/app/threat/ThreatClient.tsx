@@ -354,26 +354,69 @@ export default function ThreatClient() {
       <div style={{ maxWidth: 1040, margin: "0 auto", padding: "0 20px 80px", position: "relative", zIndex: 1 }}>
 
         {/* ── HEADER ── */}
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "20px 0 16px", flexWrap: "wrap", gap: 12, borderBottom: `1px solid ${C.border}` }}>
-          <a href="https://www.lidernetwork.com.tr" style={{ display: "inline-flex", alignItems: "center", gap: 14, textDecoration: "none" }}>
-            <span style={{ background: "#fff", borderRadius: 10, padding: "6px 12px", display: "inline-flex", boxShadow: "0 4px 16px rgba(0,0,0,.4)" }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 32 }} />
-            </span>
-            <div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: C.text }}>Lider Network</div>
-              <div style={{ fontSize: 11, color: C.sub }}>Tehdit İstihbaratı Servisi</div>
+        <header style={{ borderBottom: `1px solid ${C.border}`, marginBottom: 0 }}>
+          {/* Top bar */}
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 0 14px", flexWrap: "wrap", gap: 10 }}>
+            <a href="https://www.lidernetwork.com.tr" style={{ display: "inline-flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
+              <span style={{ background: "#fff", borderRadius: 9, padding: "5px 10px", display: "inline-flex", boxShadow: "0 2px 10px rgba(0,0,0,.35)" }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 24 }} />
+              </span>
+              <span style={{ fontSize: 13, color: C.dim }}>lidernetwork.com.tr</span>
+            </a>
+            <nav style={{ display: "flex", gap: 6 }}>
+              {[["Kara Liste", "https://blacklist.lidernetwork.com.tr"], ["IP Sorgu", "https://ip.lidernetwork.com.tr"], ["DNS", "https://dns.lidernetwork.com.tr"]].map(([label, href]) => (
+                <a key={href} href={href} style={{ color: C.sub, fontSize: 12, textDecoration: "none", padding: "6px 12px", borderRadius: 9, border: `1px solid ${C.border}`, background: C.surface, transition: "all .15s" }}
+                  onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = C.blue + "60"; }}
+                  onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; }}>
+                  {label} ↗
+                </a>
+              ))}
+            </nav>
+          </div>
+
+          {/* Brand hero band */}
+          <div style={{
+            background: `linear-gradient(135deg, #0a1730 0%, #0d1e3d 50%, #091527 100%)`,
+            border: `1px solid ${C.border}`,
+            borderRadius: 20,
+            padding: "28px 32px",
+            marginBottom: 28,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 24,
+            flexWrap: "wrap",
+            boxShadow: "0 4px 40px rgba(77,140,245,.1)",
+            position: "relative",
+            overflow: "hidden",
+          }}>
+            {/* bg glow */}
+            <div style={{ position: "absolute", right: -60, top: -60, width: 300, height: 300, borderRadius: "50%", background: "radial-gradient(circle, rgba(77,140,245,.1) 0%, transparent 70%)", pointerEvents: "none" }} />
+            <div style={{ display: "flex", alignItems: "center", gap: 22 }}>
+              <span style={{ background: "#fff", borderRadius: 16, padding: "12px 20px", display: "inline-flex", boxShadow: "0 8px 32px rgba(0,0,0,.5)", flexShrink: 0 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style={{ height: 46 }} />
+              </span>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: ".12em", color: C.blue, marginBottom: 4 }}>LİDER NETWORK</div>
+                <div style={{ fontSize: 26, fontWeight: 900, color: C.text, lineHeight: 1.15, letterSpacing: -.5 }}>
+                  Tehdit İstihbaratı Servisi
+                </div>
+                <div style={{ fontSize: 13, color: C.sub, marginTop: 6, lineHeight: 1.5 }}>
+                  FortiGate External Connector uyumlu · Her 2 saatte bir otomatik güncelleme · 8 küresel kaynak
+                </div>
+              </div>
             </div>
-          </a>
-          <nav style={{ display: "flex", gap: 6 }}>
-            {[["Kara Liste", "https://blacklist.lidernetwork.com.tr"], ["IP Sorgu", "https://ip.lidernetwork.com.tr"], ["DNS", "https://dns.lidernetwork.com.tr"]].map(([label, href]) => (
-              <a key={href} href={href} style={{ color: C.sub, fontSize: 12, textDecoration: "none", padding: "7px 14px", borderRadius: 10, border: `1px solid ${C.border}`, background: C.surface, transition: "all .15s" }}
-                onMouseOver={e => { (e.currentTarget as HTMLElement).style.borderColor = C.blue + "60"; }}
-                onMouseOut={e => { (e.currentTarget as HTMLElement).style.borderColor = C.border; }}>
-                {label} ↗
-              </a>
-            ))}
-          </nav>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.green, background: "rgba(30,217,138,.1)", border: `1px solid rgba(30,217,138,.3)`, padding: "6px 16px", borderRadius: 99, letterSpacing: ".05em" }}>
+                ✓ Fortinet Yetkili Partner
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: C.blue, background: "rgba(77,140,245,.1)", border: `1px solid rgba(77,140,245,.3)`, padding: "6px 16px", borderRadius: 99 }}>
+                FortiOS 6.4+
+              </span>
+            </div>
+          </div>
         </header>
 
         {/* ── HERO ── */}
