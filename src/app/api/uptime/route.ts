@@ -1,53 +1,52 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 export const runtime = "nodejs";
-export const maxDuration = 25;
+export const maxDuration = 20;
 
-const SERVICES = [
-  { id: "web",       name: "Lider Network Web",     url: "https://www.lidernetwork.com.tr",         category: "Web" },
-  { id: "destek",    name: "Destek Portalı",         url: "https://destek.lidernetwork.com.tr",      category: "Portal" },
-  { id: "threat",    name: "Tehdit Feed Servisi",    url: "https://threat.lidernetwork.com.tr",      category: "Güvenlik" },
-  { id: "blacklist", name: "Kara Liste Sorgu",       url: "https://blacklist.lidernetwork.com.tr",   category: "Güvenlik" },
-  { id: "ip",        name: "IP Analiz",              url: "https://ip.lidernetwork.com.tr",          category: "Araçlar" },
-  { id: "dns",       name: "DNS Checker",            url: "https://dns.lidernetwork.com.tr",         category: "Araçlar" },
-  { id: "password",  name: "Şifre Oluşturucu",       url: "https://password.lidernetwork.com.tr",    category: "Araçlar" },
-];
+const CORS = { "Access-Control-Allow-Origin": "*" };
 
-async function checkService(url: string): Promise<{ status: "up" | "down" | "degraded"; ms: number }> {
+function normalizeUrl(raw: string): string {
+  raw = raw.trim();
+  if (!raw) return "";
+  if (!/^https?:\/\//i.test(raw)) raw = "https://" + raw;
+  try { new URL(raw); return raw; } catch { return ""; }
+}
+
+export async function GET(req: NextRequest) {
+  const raw = req.nextUrl.searchParams.get("url") || "";
+  const url = normalizeUrl(raw);
+
+  if (!url) {
+    return NextResponse.json({ error: "Geçersiz URL" }, { status: 400, headers: CORS });
+  }
+
   const start = Date.now();
   try {
     const ctrl = new AbortController();
-    const t = setTimeout(() => ctrl.abort(), 8000);
-    const r = await fetch(url, { method: "HEAD", signal: ctrl.signal, redirect: "follow" });
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    const r = await fetch(url, {
+      method: "HEAD",
+      signal: ctrl.signal,
+      redirect: "follow",
+      headers: { "User-Agent": "Mozilla/5.0 (compatible; LiderNetwork-UptimeChecker/1.0)" },
+    });
     clearTimeout(t);
     const ms = Date.now() - start;
-    if (r.status >= 200 && r.status < 400) {
-      return { status: ms > 3000 ? "degraded" : "up", ms };
-    }
-    return { status: "down", ms };
-  } catch {
-    return { status: "down", ms: Date.now() - start };
+    const status = r.status;
+    const up = status >= 200 && status < 400;
+    return NextResponse.json({
+      url, status, ms,
+      up,
+      label: up ? (ms > 2000 ? "Yavaş" : "Çalışıyor") : "Erişilemiyor",
+    }, { headers: { ...CORS, "Cache-Control": "no-store" } });
+  } catch (e: unknown) {
+    const ms = Date.now() - start;
+    const msg = e instanceof Error ? e.message : "";
+    const timedOut = msg.includes("abort") || msg.includes("timeout") || ms >= 9000;
+    return NextResponse.json({
+      url, status: null, ms,
+      up: false,
+      label: timedOut ? "Zaman Aşımı" : "Erişilemiyor",
+    }, { headers: { ...CORS, "Cache-Control": "no-store" } });
   }
-}
-
-export async function GET() {
-  const results = await Promise.all(
-    SERVICES.map(async (svc) => {
-      const check = await checkService(svc.url);
-      return { ...svc, ...check, checkedAt: new Date().toISOString() };
-    })
-  );
-
-  const up       = results.filter(r => r.status === "up").length;
-  const degraded = results.filter(r => r.status === "degraded").length;
-  const down     = results.filter(r => r.status === "down").length;
-
-  const overall =
-    down > 0 ? "major_outage" :
-    degraded > 0 ? "partial_outage" :
-    "operational";
-
-  return NextResponse.json({ overall, up, degraded, down, total: results.length, services: results }, {
-    headers: { "Cache-Control": "no-store" },
-  });
 }
