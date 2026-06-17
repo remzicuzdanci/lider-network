@@ -49,6 +49,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── ssl.lidernetwork.com.tr subdomain → SSL Checker ──
+  if (hostname.startsWith("ssl.")) {
+    return NextResponse.rewrite(new URL("/ssl", request.url));
+  }
+  if (pathname === "/ssl" || pathname.startsWith("/ssl/")) {
+    return NextResponse.next();
+  }
+
+  // ── subnet.lidernetwork.com.tr subdomain → Subnet Hesaplayıcı ──
+  if (hostname.startsWith("subnet.")) {
+    return NextResponse.rewrite(new URL("/subnet", request.url));
+  }
+  if (pathname === "/subnet" || pathname.startsWith("/subnet/")) {
+    return NextResponse.next();
+  }
+
   // ── threat.lidernetwork.com.tr subdomain → Tehdit feed servisi ──
   if (hostname.startsWith("threat.")) {
     // /feeds/* yolları doğrudan /threat/feeds/* rotasına ilet (FortiGate TXT dosyaları)

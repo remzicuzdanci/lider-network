@@ -43,6 +43,8 @@ const IT_TOOLS = [
   { label: "DNS Checker",      labelEn: "DNS Checker",      sub: "DNS, SPF/DKIM, SSL, WHOIS",  subEn: "DNS, SPF/DKIM, SSL, WHOIS",href: "https://dns.lidernetwork.com.tr",       color: "#f59e0b", Icon: Search },
   { label: "Şifre Oluşturucu", labelEn: "Password Gen",     sub: "Güvenli şifre üretici",      subEn: "Secure password creator",  href: "https://password.lidernetwork.com.tr",  color: "#8b5cf6", Icon: KeyRound },
   { label: "Site Kontrol",     labelEn: "Site Monitor",     sub: "Erişilebilirlik kontrolü",   subEn: "Availability check",       href: "https://uptime.lidernetwork.com.tr",    color: "#06b6d4", Icon: Activity },
+  { label: "SSL Kontrolü",    labelEn: "SSL Checker",      sub: "Sertifika geçerlilik",       subEn: "Certificate validity",     href: "https://ssl.lidernetwork.com.tr",       color: "#a78bfa", Icon: Lock },
+  { label: "Subnet Hesap",    labelEn: "Subnet Calc",      sub: "IP/CIDR hesaplayıcı",        subEn: "IP/CIDR calculator",       href: "https://subnet.lidernetwork.com.tr",    color: "#34d399", Icon: Network },
 ] as const;
 
 /* ─── Static data (locale-independent) ─────────────────────────────────── */

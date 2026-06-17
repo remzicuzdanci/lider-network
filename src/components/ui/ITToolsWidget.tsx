@@ -8,6 +8,8 @@ const TOOLS = [
   { label: "DNS Checker",      sub: "DNS kayıt sorgulama",            href: "https://dns.lidernetwork.com.tr",       icon: "🔍", color: "#fbbf24", glow: "rgba(251,191,36,.3)"  },
   { label: "Şifre Oluşturucu", sub: "Güvenli şifre üretici",          href: "https://password.lidernetwork.com.tr",  icon: "🔐", color: "#a78bfa", glow: "rgba(167,139,250,.3)" },
   { label: "Site Kontrol",     sub: "Site erişilebilirlik kontrolü",  href: "https://uptime.lidernetwork.com.tr",    icon: "📡", color: "#22d3ee", glow: "rgba(34,211,238,.3)"  },
+  { label: "SSL Kontrolü",     sub: "Sertifika geçerlilik kontrolü",  href: "https://ssl.lidernetwork.com.tr",       icon: "🔒", color: "#c4b5fd", glow: "rgba(196,181,253,.3)" },
+  { label: "Subnet Hesap",     sub: "IP/CIDR network hesaplayıcı",   href: "https://subnet.lidernetwork.com.tr",    icon: "🌐", color: "#34d399", glow: "rgba(52,211,153,.3)"  },
 ];
 
 export default function ITToolsWidget() {

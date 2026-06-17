@@ -113,6 +113,44 @@ const TOOLS = [
       </svg>
     ),
   },
+  {
+    label: "SSL Kontrolü",
+    labelEn: "SSL Checker",
+    sub: "Sertifika Geçerlilik Kontrolü",
+    subEn: "Certificate Validity Check",
+    desc: "SSL sertifika geçerliliği, bitiş tarihi, yayıncı (CA) ve kapsanan alan adlarını anında görün.",
+    descEn: "Instantly view SSL certificate validity, expiry date, issuer (CA) and covered domains.",
+    href: "https://ssl.lidernetwork.com.tr",
+    color: "#a78bfa",
+    shadow: "rgba(167,139,250,.28)",
+    bg: "linear-gradient(135deg,#7c3aed 0%,#a78bfa 100%)",
+    badge: "TLS Analiz",
+    svg: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:28,height:28}}>
+        <rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+      </svg>
+    ),
+  },
+  {
+    label: "Subnet Hesaplayıcı",
+    labelEn: "Subnet Calculator",
+    sub: "IP / CIDR Hesaplayıcı",
+    subEn: "IP / CIDR Calculator",
+    desc: "CIDR notasyonundan network, broadcast, host aralığı, netmask, wildcard ve binary gösterim.",
+    descEn: "From CIDR notation: network, broadcast, host range, netmask, wildcard and binary view.",
+    href: "https://subnet.lidernetwork.com.tr",
+    color: "#34d399",
+    shadow: "rgba(52,211,153,.28)",
+    bg: "linear-gradient(135deg,#059669 0%,#34d399 100%)",
+    badge: "Network",
+    svg: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:28,height:28}}>
+        <rect x="2" y="2" width="6" height="6" rx="1"/><rect x="16" y="2" width="6" height="6" rx="1"/>
+        <rect x="9" y="16" width="6" height="6" rx="1"/>
+        <path d="M5 8v4a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8"/><line x1="12" y1="12" x2="12" y2="16"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function ITTools() {
@@ -148,7 +186,7 @@ export default function ITTools() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, 1fr)",
+            gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))",
             gap: 20,
             marginBottom: 48,
           }}
