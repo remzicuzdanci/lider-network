@@ -141,6 +141,7 @@ export default function AdminDashboard() {
   const [quoteCounts, setQuoteCounts] = useState<Record<string, number>>({});
   const [quotesFilterCompany, setQuotesFilterCompany] = useState("");
   const [renewalCount, setRenewalCount] = useState(0);
+  const [activeTool, setActiveTool] = useState<{ label: string; url: string } | null>(null);
 
   // Session
   const [sessionName, setSessionName] = useState("Admin");
@@ -870,60 +871,42 @@ export default function AdminDashboard() {
           <SideSection label="Durum & IT Araçları" />
           <div style={{ margin: "4px 6px 8px", borderRadius: 12, background: "#f8fafc", border: "1px solid #e5e7ef", overflow: "hidden" }}>
             {/* IT Araçları grid — ÜSTTE */}
-            <div style={{ padding: "10px 10px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+            <div style={{ padding: "10px 10px 6px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
               {([
-                { label: "Threat Portal", sub: "USOM Feed",   href: "https://threat.lidernetwork.com.tr",    color: "#4f7cff", bg: "linear-gradient(135deg,#4f7cff,#6366f1)", shadow: "rgba(79,124,255,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
-                { label: "Kara Liste",    sub: "IP Sorgu",    href: "https://blacklist.lidernetwork.com.tr", color: "#ef4444", bg: "linear-gradient(135deg,#ef4444,#dc2626)", shadow: "rgba(239,68,68,.35)",   svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
-                { label: "IP Analiz",     sub: "Konum & Rep", href: "https://ip.lidernetwork.com.tr",        color: "#10b981", bg: "linear-gradient(135deg,#10b981,#059669)", shadow: "rgba(16,185,129,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
-                { label: "DNS Checker",   sub: "DNS Kayıt",   href: "https://dns.lidernetwork.com.tr",       color: "#f59e0b", bg: "linear-gradient(135deg,#f59e0b,#d97706)", shadow: "rgba(245,158,11,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
-              ] as const).map(t => (
-                <a key={t.href} href={t.href} target="_blank" rel="noopener noreferrer"
+                { label: "Threat Portal",    sub: "USOM Feed",    url: "https://threat.lidernetwork.com.tr",    color: "#4f7cff", bg: "linear-gradient(135deg,#4f7cff,#6366f1)", shadow: "rgba(79,124,255,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+                { label: "Kara Liste",       sub: "IP Sorgu",     url: "https://blacklist.lidernetwork.com.tr", color: "#ef4444", bg: "linear-gradient(135deg,#ef4444,#dc2626)", shadow: "rgba(239,68,68,.35)",   svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+                { label: "IP Analiz",        sub: "Konum & Rep",  url: "https://ip.lidernetwork.com.tr",        color: "#10b981", bg: "linear-gradient(135deg,#10b981,#059669)", shadow: "rgba(16,185,129,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
+                { label: "DNS Checker",      sub: "DNS Kayıt",    url: "https://dns.lidernetwork.com.tr",       color: "#f59e0b", bg: "linear-gradient(135deg,#f59e0b,#d97706)", shadow: "rgba(245,158,11,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
+                { label: "Şifre Oluşturucu", sub: "Güvenli Şifre", url: "https://password.lidernetwork.com.tr", color: "#8b5cf6", bg: "linear-gradient(135deg,#8b5cf6,#7c3aed)", shadow: "rgba(139,92,246,.35)", svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> },
+              ]).map(t => (
+                <button key={t.url} onClick={() => setActiveTool({ label: t.label, url: t.url })}
                   style={{
                     display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                    padding: "12px 6px 10px", borderRadius: 10, textDecoration: "none",
-                    background: "#fff", border: `1.5px solid ${t.color}22`,
-                    boxShadow: `0 2px 8px ${t.shadow}22`,
-                    transition: "all .18s ease",
+                    padding: "12px 6px 10px", borderRadius: 10, border: `1.5px solid ${t.color}22`,
+                    background: "#fff", boxShadow: `0 2px 8px ${t.shadow}22`,
+                    cursor: "pointer", transition: "all .18s ease",
                   }}
-                  onMouseOver={e => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.transform = "translateY(-2px)";
-                    el.style.boxShadow = `0 6px 18px ${t.shadow}`;
-                    el.style.borderColor = `${t.color}55`;
-                  }}
-                  onMouseOut={e => {
-                    const el = e.currentTarget as HTMLElement;
-                    el.style.transform = "";
-                    el.style.boxShadow = `0 2px 8px ${t.shadow}22`;
-                    el.style.borderColor = `${t.color}22`;
-                  }}>
-                  {/* Icon circle with gradient */}
-                  <div style={{
-                    width: 38, height: 38, borderRadius: 11,
-                    background: t.bg, color: "#fff",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    boxShadow: `0 4px 12px ${t.shadow}`,
-                    flexShrink: 0,
-                  }}>
+                  onMouseOver={e => { const el = e.currentTarget as HTMLElement; el.style.transform = "translateY(-2px)"; el.style.boxShadow = `0 6px 18px ${t.shadow}`; el.style.borderColor = `${t.color}55`; }}
+                  onMouseOut={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ""; el.style.boxShadow = `0 2px 8px ${t.shadow}22`; el.style.borderColor = `${t.color}22`; }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: t.bg, color: "#fff", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: `0 4px 12px ${t.shadow}`, flexShrink: 0 }}>
                     {t.svg}
                   </div>
                   <div style={{ textAlign: "center" }}>
                     <div style={{ fontSize: 10, fontWeight: 800, color: "#1a1d2e", lineHeight: 1.25, letterSpacing: "-.1px" }}>{t.label}</div>
                     <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 1 }}>{t.sub}</div>
                   </div>
-                </a>
+                </button>
               ))}
-            </div>
 
               {/* Sistem Durumu — tam genişlik */}
-              <a href="/admin/sistem-durumu" target="_blank" rel="noopener noreferrer"
-                style={{ gridColumn: "span 2", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 12px", borderRadius: 10, textDecoration: "none", background: "#fff", border: "1.5px solid #22c55e22", boxShadow: "0 2px 8px rgba(34,197,94,.12)", transition: "all .18s ease" }}
+              <button onClick={() => setActiveTool({ label: "Sistem Durumu", url: "/admin/sistem-durumu" })}
+                style={{ gridColumn: "span 2", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 12px", borderRadius: 10, border: "1.5px solid #22c55e22", background: "#fff", boxShadow: "0 2px 8px rgba(34,197,94,.12)", cursor: "pointer", transition: "all .18s ease" }}
                 onMouseOver={e => { const el = e.currentTarget as HTMLElement; el.style.transform = "translateY(-1px)"; el.style.boxShadow = "0 5px 16px rgba(34,197,94,.3)"; el.style.borderColor = "#22c55e55"; }}
                 onMouseOut={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ""; el.style.boxShadow = "0 2px 8px rgba(34,197,94,.12)"; el.style.borderColor = "#22c55e22"; }}>
                 <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
                 <span style={{ fontSize: 10, fontWeight: 800, color: "#15803d", letterSpacing: "-.1px" }}>Sistem Durumu</span>
-                <span style={{ fontSize: 9, color: "#9ca3af" }}>↗</span>
-              </a>
+              </button>
+            </div>
 
             {/* Ayırıcı */}
             <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e5e7ef 20%, #e5e7ef 80%, transparent)", margin: "0 10px" }} />
@@ -985,6 +968,33 @@ export default function AdminDashboard() {
         overflowX: "hidden",
         position: "relative"
       }}>
+
+        {/* ── IT Araç iframe paneli ── */}
+        {activeTool && (
+          <div style={{ position: "absolute", inset: 0, zIndex: 50, background: "#f4f6fb", display: "flex", flexDirection: "column", borderRadius: 0 }}>
+            {/* Başlık çubuğu */}
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 20px", background: "#fff", borderBottom: "1.5px solid #e5e7ef", flexShrink: 0 }}>
+              <button onClick={() => setActiveTool(null)}
+                style={{ padding: "6px 16px", borderRadius: 8, border: "1.5px solid #e5e7ef", background: "#f4f6fb", color: "#374151", fontSize: 13, fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 6 }}>
+                ← Geri
+              </button>
+              <span style={{ fontSize: 15, fontWeight: 800, color: "#1a1d2e" }}>{activeTool.label}</span>
+              <span style={{ fontSize: 12, color: "#9ca3af", fontFamily: "monospace" }}>{activeTool.url}</span>
+              <div style={{ flex: 1 }} />
+              <a href={activeTool.url} target="_blank" rel="noopener noreferrer"
+                style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #e5e7ef", background: "#f4f6fb", color: "#374151", fontSize: 13, fontWeight: 600, textDecoration: "none" }}>
+                ↗ Yeni Sekme
+              </a>
+            </div>
+            {/* iframe */}
+            <iframe
+              src={activeTool.url}
+              style={{ flex: 1, width: "100%", border: "none" }}
+              title={activeTool.label}
+              allow="clipboard-write"
+            />
+          </div>
+        )}
 
         {/* Page header */}
         <div style={{
