@@ -98,7 +98,7 @@ export default function Navbar() {
   const servicesRef = useRef<HTMLLIElement>(null);
   const fortinetRef = useRef<HTMLLIElement>(null);
   const kurulsalRef = useRef<HTMLLIElement>(null);
-  const toolsRef = useRef<HTMLLIElement>(null);
+  const toolsRef = useRef<HTMLDivElement>(null);
 
   const closeAll = () => {
     setServicesOpen(false);
@@ -557,105 +557,6 @@ export default function Navbar() {
               )}
             </li>
 
-            {/* IT Araçları — dropdown (pill buton) */}
-            <li ref={toolsRef} className="relative">
-              <button
-                className="flex items-center gap-1.5 px-3 py-2 text-xs rounded transition-all duration-200"
-                style={{
-                  fontFamily: "var(--font-family-label)",
-                  fontWeight: 500,
-                  color: toolsOpen ? "#06b6d4" : "#06b6d4",
-                  border: `1px solid ${toolsOpen ? "rgba(6,182,212,0.6)" : "rgba(6,182,212,0.3)"}`,
-                  backgroundColor: toolsOpen ? "rgba(6,182,212,0.14)" : "rgba(6,182,212,0.06)",
-                  cursor: "pointer",
-                }}
-                onMouseEnter={(e) => {
-                  setToolsOpen(true); setServicesOpen(false); setFortinetOpen(false); setKurulsalOpen(false);
-                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.14)";
-                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.6)";
-                }}
-                onMouseLeave={(e) => {
-                  if (!toolsOpen) {
-                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.06)";
-                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.3)";
-                  }
-                }}
-                onClick={() => setToolsOpen((v) => !v)}
-                aria-haspopup="true"
-                aria-expanded={toolsOpen}
-              >
-                <Wrench className="w-3.5 h-3.5" aria-hidden="true" />
-                {isTr ? "IT Araçları" : "IT Tools"}
-                <ChevronDown
-                  className="w-3 h-3 transition-transform duration-200"
-                  style={{ transform: toolsOpen ? "rotate(180deg)" : "rotate(0deg)" }}
-                  aria-hidden="true"
-                />
-              </button>
-
-              {toolsOpen && (
-                <div
-                  className="absolute top-full left-1/2 mt-2 w-[500px] rounded-2xl p-4 shadow-2xl"
-                  style={{
-                    transform: "translateX(-50%)",
-                    backgroundColor: "rgba(16, 20, 21, 0.98)",
-                    border: "1px solid rgba(6,182,212,0.25)",
-                    backdropFilter: "blur(20px)",
-                  }}
-                  onMouseLeave={() => setToolsOpen(false)}
-                >
-                  <div className="flex items-center justify-between mb-3 pb-3" style={{ borderBottom: "1px solid rgba(6,182,212,0.15)" }}>
-                    <div className="flex items-center gap-2">
-                      <Wrench className="w-3.5 h-3.5" style={{ color: "#06b6d4" }} />
-                      <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#06b6d4", fontFamily: "var(--font-family-label)" }}>
-                        {isTr ? "Ücretsiz IT Güvenlik Araçları" : "Free IT Security Tools"}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    {IT_TOOLS.map((tool) => {
-                      const Icon = tool.Icon;
-                      return (
-                        <a
-                          key={tool.href}
-                          href={tool.href}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-3 p-3 rounded-xl transition-all duration-150"
-                          style={{ textDecoration: "none", color: "var(--color-on-surface-variant)", border: `1px solid ${tool.color}18` }}
-                          onClick={() => setToolsOpen(false)}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLElement).style.backgroundColor = `${tool.color}10`;
-                            (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}40`;
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
-                            (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}18`;
-                          }}
-                        >
-                          <div
-                            className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ backgroundColor: `${tool.color}18`, border: `1px solid ${tool.color}30` }}
-                          >
-                            <Icon className="w-4 h-4" style={{ color: tool.color }} aria-hidden="true" />
-                          </div>
-                          <div>
-                            <div className="text-sm font-semibold" style={{ color: "var(--color-on-surface)", fontFamily: "var(--font-family-label)" }}>
-                              {isTr ? tool.label : tool.labelEn}
-                            </div>
-                            <div className="text-xs mt-0.5" style={{ color: "var(--color-outline)" }}>
-                              {isTr ? tool.sub : tool.subEn}
-                            </div>
-                          </div>
-                        </a>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </li>
-
             {/* Blog */}
             <li>
               <Link
@@ -719,6 +620,84 @@ export default function Navbar() {
 
           {/* Desktop Actions */}
           <div className="hidden lg:flex items-center gap-3">
+
+            {/* IT Araçları pill — dropdown */}
+            <div ref={toolsRef} className="relative">
+              <button
+                className="flex items-center gap-1.5 px-3 py-2 text-xs rounded transition-all duration-200"
+                style={{
+                  fontFamily: "var(--font-family-label)",
+                  fontWeight: 500,
+                  color: "#06b6d4",
+                  border: `1px solid ${toolsOpen ? "rgba(6,182,212,0.6)" : "rgba(6,182,212,0.3)"}`,
+                  backgroundColor: toolsOpen ? "rgba(6,182,212,0.14)" : "rgba(6,182,212,0.06)",
+                  cursor: "pointer",
+                }}
+                onMouseEnter={(e) => {
+                  setToolsOpen(true); setServicesOpen(false); setFortinetOpen(false); setKurulsalOpen(false);
+                  (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.6)";
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.14)";
+                }}
+                onMouseLeave={(e) => {
+                  if (!toolsOpen) {
+                    (e.currentTarget as HTMLElement).style.borderColor = "rgba(6,182,212,0.3)";
+                    (e.currentTarget as HTMLElement).style.backgroundColor = "rgba(6,182,212,0.06)";
+                  }
+                }}
+                onClick={() => setToolsOpen((v) => !v)}
+                aria-haspopup="true"
+                aria-expanded={toolsOpen}
+              >
+                <Wrench className="w-3.5 h-3.5" aria-hidden="true" />
+                {isTr ? "IT Araçları" : "IT Tools"}
+                <ChevronDown className="w-3 h-3 transition-transform duration-200" style={{ transform: toolsOpen ? "rotate(180deg)" : "rotate(0deg)" }} aria-hidden="true" />
+              </button>
+
+              {toolsOpen && (
+                <div
+                  className="absolute top-full right-0 mt-2 w-[480px] rounded-2xl p-4 shadow-2xl"
+                  style={{
+                    backgroundColor: "rgba(16,20,21,0.98)",
+                    border: "1px solid rgba(6,182,212,0.25)",
+                    backdropFilter: "blur(20px)",
+                  }}
+                  onMouseLeave={() => setToolsOpen(false)}
+                >
+                  <div className="flex items-center gap-2 mb-3 pb-3" style={{ borderBottom: "1px solid rgba(6,182,212,0.15)" }}>
+                    <Wrench className="w-3.5 h-3.5" style={{ color: "#06b6d4" }} />
+                    <span className="text-xs font-bold tracking-widest uppercase" style={{ color: "#06b6d4", fontFamily: "var(--font-family-label)" }}>
+                      {isTr ? "Ücretsiz IT Güvenlik Araçları" : "Free IT Security Tools"}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {IT_TOOLS.map((tool) => {
+                      const Icon = tool.Icon;
+                      return (
+                        <a
+                          key={tool.href}
+                          href={tool.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-3 p-3 rounded-xl transition-all duration-150"
+                          style={{ textDecoration: "none", color: "var(--color-on-surface-variant)", border: `1px solid ${tool.color}18` }}
+                          onClick={() => setToolsOpen(false)}
+                          onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = `${tool.color}12`; (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}40`; }}
+                          onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.backgroundColor = "transparent"; (e.currentTarget as HTMLElement).style.borderColor = `${tool.color}18`; }}
+                        >
+                          <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ backgroundColor: `${tool.color}18`, border: `1px solid ${tool.color}30` }}>
+                            <Icon className="w-4 h-4" style={{ color: tool.color }} aria-hidden="true" />
+                          </div>
+                          <div>
+                            <div className="text-sm font-semibold" style={{ color: "var(--color-on-surface)", fontFamily: "var(--font-family-label)" }}>{isTr ? tool.label : tool.labelEn}</div>
+                            <div className="text-xs mt-0.5" style={{ color: "var(--color-outline)" }}>{isTr ? tool.sub : tool.subEn}</div>
+                          </div>
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Fortinet Partner Badge */}
             <Link

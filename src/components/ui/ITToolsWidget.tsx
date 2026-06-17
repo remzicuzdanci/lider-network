@@ -2,38 +2,12 @@
 import { useState, useEffect, useRef } from "react";
 
 const TOOLS = [
-  {
-    label: "Threat Portal",
-    sub:   "USOM zararlı bağlantı feed'i",
-    href:  "https://threat.lidernetwork.com.tr",
-    icon:  "🛡",
-    color: "#4f7cff",
-    glow:  "rgba(79,124,255,.35)",
-  },
-  {
-    label: "Blacklist Sorgu",
-    sub:   "IP kara liste sorgulama",
-    href:  "https://blacklist.lidernetwork.com.tr",
-    icon:  "🚫",
-    color: "#ff4f6d",
-    glow:  "rgba(255,79,109,.3)",
-  },
-  {
-    label: "IP Sorgu",
-    sub:   "IP adresi analiz & konum",
-    href:  "https://ip.lidernetwork.com.tr",
-    icon:  "🌐",
-    color: "#10d98a",
-    glow:  "rgba(16,217,138,.3)",
-  },
-  {
-    label: "DNS Checker",
-    sub:   "DNS kayıt sorgulama",
-    href:  "https://dns.lidernetwork.com.tr",
-    icon:  "🔍",
-    color: "#fbbf24",
-    glow:  "rgba(251,191,36,.3)",
-  },
+  { label: "Threat Portal",    sub: "USOM zararlı bağlantı feed'i",  href: "https://threat.lidernetwork.com.tr",    icon: "🛡", color: "#4f7cff", glow: "rgba(79,124,255,.35)" },
+  { label: "Blacklist Sorgu",  sub: "IP kara liste sorgulama",        href: "https://blacklist.lidernetwork.com.tr", icon: "🚫", color: "#ff4f6d", glow: "rgba(255,79,109,.3)"  },
+  { label: "IP Sorgu",         sub: "IP adresi analiz & konum",       href: "https://ip.lidernetwork.com.tr",        icon: "🌐", color: "#10d98a", glow: "rgba(16,217,138,.3)"  },
+  { label: "DNS Checker",      sub: "DNS kayıt sorgulama",            href: "https://dns.lidernetwork.com.tr",       icon: "🔍", color: "#fbbf24", glow: "rgba(251,191,36,.3)"  },
+  { label: "Şifre Oluşturucu", sub: "Güvenli şifre üretici",          href: "https://password.lidernetwork.com.tr",  icon: "🔐", color: "#a78bfa", glow: "rgba(167,139,250,.3)" },
+  { label: "Site Kontrol",     sub: "Site erişilebilirlik kontrolü",  href: "https://uptime.lidernetwork.com.tr",    icon: "📡", color: "#22d3ee", glow: "rgba(34,211,238,.3)"  },
 ];
 
 export default function ITToolsWidget() {
