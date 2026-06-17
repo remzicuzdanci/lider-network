@@ -915,6 +915,16 @@ export default function AdminDashboard() {
               ))}
             </div>
 
+              {/* Sistem Durumu — tam genişlik */}
+              <a href="/admin/sistem-durumu" target="_blank" rel="noopener noreferrer"
+                style={{ gridColumn: "span 2", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, padding: "9px 12px", borderRadius: 10, textDecoration: "none", background: "#fff", border: "1.5px solid #22c55e22", boxShadow: "0 2px 8px rgba(34,197,94,.12)", transition: "all .18s ease" }}
+                onMouseOver={e => { const el = e.currentTarget as HTMLElement; el.style.transform = "translateY(-1px)"; el.style.boxShadow = "0 5px 16px rgba(34,197,94,.3)"; el.style.borderColor = "#22c55e55"; }}
+                onMouseOut={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ""; el.style.boxShadow = "0 2px 8px rgba(34,197,94,.12)"; el.style.borderColor = "#22c55e22"; }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e", flexShrink: 0 }} />
+                <span style={{ fontSize: 10, fontWeight: 800, color: "#15803d", letterSpacing: "-.1px" }}>Sistem Durumu</span>
+                <span style={{ fontSize: 9, color: "#9ca3af" }}>↗</span>
+              </a>
+
             {/* Ayırıcı */}
             <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e5e7ef 20%, #e5e7ef 80%, transparent)", margin: "0 10px" }} />
 
