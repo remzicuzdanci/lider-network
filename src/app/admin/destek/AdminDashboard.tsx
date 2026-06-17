@@ -866,60 +866,74 @@ export default function AdminDashboard() {
           )}
           <NavItem icon={<BarChart2 size={15} />} label="Raporlar" active={tab==="reports"} onClick={() => setTab("reports")} />
 
-          {stats && (
-            <>
-              <SideSection label="Durum" />
-              <div style={{ margin: "4px 6px", borderRadius: "10px", background: "#f8fafc", border: "1px solid #e5e7ef", padding: "12px 14px" }}>
+          {/* ── DURUM + IT ARAÇLARI ──────────────────────────── */}
+          <SideSection label="Durum & IT Araçları" />
+          <div style={{ margin: "4px 6px 8px", borderRadius: 12, background: "#f8fafc", border: "1px solid #e5e7ef", overflow: "hidden" }}>
+            {/* Durum satırları */}
+            {stats && (
+              <div style={{ padding: "10px 14px 8px" }}>
                 {[
-                  { label: "Açık",    value: stats.open,            color: "#3b82f6" },
-                  { label: "İşlemde", value: stats.in_progress,     color: "#8b5cf6" },
-                  { label: "Bugün ✓", value: stats.resolved_today,  color: "#22c55e" },
-                  { label: "ACİL",    value: stats.urgent,          color: "#dc2626" },
-                ].map(s => (
-                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: "1px solid #f0f2f8" }}>
+                  { label: "Açık",    value: stats.open,           color: "#3b82f6" },
+                  { label: "İşlemde", value: stats.in_progress,    color: "#8b5cf6" },
+                  { label: "Bugün ✓", value: stats.resolved_today, color: "#22c55e" },
+                  { label: "ACİL",    value: stats.urgent,         color: "#dc2626" },
+                ].map((s, i, arr) => (
+                  <div key={s.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "4px 0", borderBottom: i < arr.length - 1 ? "1px solid #f0f2f8" : "none" }}>
                     <span style={{ fontSize: "12px", color: "#6b7280" }}>{s.label}</span>
                     <span style={{ fontSize: "14px", fontWeight: 800, color: s.color, fontFamily: "var(--font-family-headline)" }}>{s.value}</span>
                   </div>
                 ))}
               </div>
-            </>
-          )}
+            )}
 
-          {/* ── IT ARAÇLARI ─────────────────────────────────── */}
-          <SideSection label="IT Araçları" />
-          <div style={{ margin: "4px 6px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
-            {([
-              { label: "Threat Portal", icon: "🛡", color: "#4f7cff", href: "https://threat.lidernetwork.com.tr",    sub: "USOM Feed"   },
-              { label: "Kara Liste",    icon: "🚫", color: "#ef4444", href: "https://blacklist.lidernetwork.com.tr", sub: "IP Sorgu"    },
-              { label: "IP Analiz",     icon: "🌐", color: "#10b981", href: "https://ip.lidernetwork.com.tr",        sub: "Konum & Rep" },
-              { label: "DNS Checker",   icon: "🔍", color: "#f59e0b", href: "https://dns.lidernetwork.com.tr",       sub: "DNS Kayıt"   },
-            ] as const).map(t => (
-              <a key={t.href} href={t.href} target="_blank" rel="noopener noreferrer"
-                style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                  gap: 4, padding: "11px 6px 9px", borderRadius: 10,
-                  background: `${t.color}0e`, border: `1.5px solid ${t.color}28`,
-                  textDecoration: "none", transition: "all .15s",
-                }}
-                onMouseOver={e => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = `${t.color}18`;
-                  el.style.borderColor = `${t.color}55`;
-                  el.style.transform = "translateY(-1px)";
-                  el.style.boxShadow = `0 4px 12px ${t.color}20`;
-                }}
-                onMouseOut={e => {
-                  const el = e.currentTarget as HTMLElement;
-                  el.style.background = `${t.color}0e`;
-                  el.style.borderColor = `${t.color}28`;
-                  el.style.transform = "";
-                  el.style.boxShadow = "";
-                }}>
-                <span style={{ fontSize: 22, lineHeight: 1 }}>{t.icon}</span>
-                <span style={{ fontSize: 11, fontWeight: 700, color: t.color, textAlign: "center", lineHeight: 1.2, marginTop: 2 }}>{t.label}</span>
-                <span style={{ fontSize: 9, color: "#9ca3af", textAlign: "center" }}>{t.sub}</span>
-              </a>
-            ))}
+            {/* Ayırıcı */}
+            <div style={{ height: 1, background: "linear-gradient(90deg, transparent, #e5e7ef 20%, #e5e7ef 80%, transparent)", margin: "0 10px" }} />
+
+            {/* IT Araçları grid */}
+            <div style={{ padding: "10px 10px 10px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 7 }}>
+              {([
+                { label: "Threat Portal", sub: "USOM Feed",   href: "https://threat.lidernetwork.com.tr",    color: "#4f7cff", bg: "linear-gradient(135deg,#4f7cff,#6366f1)", shadow: "rgba(79,124,255,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> },
+                { label: "Kara Liste",    sub: "IP Sorgu",    href: "https://blacklist.lidernetwork.com.tr", color: "#ef4444", bg: "linear-gradient(135deg,#ef4444,#dc2626)", shadow: "rgba(239,68,68,.35)",   svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg> },
+                { label: "IP Analiz",     sub: "Konum & Rep", href: "https://ip.lidernetwork.com.tr",        color: "#10b981", bg: "linear-gradient(135deg,#10b981,#059669)", shadow: "rgba(16,185,129,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
+                { label: "DNS Checker",   sub: "DNS Kayıt",   href: "https://dns.lidernetwork.com.tr",       color: "#f59e0b", bg: "linear-gradient(135deg,#f59e0b,#d97706)", shadow: "rgba(245,158,11,.35)",  svg: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:18,height:18}}><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> },
+              ] as const).map(t => (
+                <a key={t.href} href={t.href} target="_blank" rel="noopener noreferrer"
+                  style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                    padding: "12px 6px 10px", borderRadius: 10, textDecoration: "none",
+                    background: "#fff", border: `1.5px solid ${t.color}22`,
+                    boxShadow: `0 2px 8px ${t.shadow}22`,
+                    transition: "all .18s ease",
+                  }}
+                  onMouseOver={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = "translateY(-2px)";
+                    el.style.boxShadow = `0 6px 18px ${t.shadow}`;
+                    el.style.borderColor = `${t.color}55`;
+                  }}
+                  onMouseOut={e => {
+                    const el = e.currentTarget as HTMLElement;
+                    el.style.transform = "";
+                    el.style.boxShadow = `0 2px 8px ${t.shadow}22`;
+                    el.style.borderColor = `${t.color}22`;
+                  }}>
+                  {/* Icon circle with gradient */}
+                  <div style={{
+                    width: 38, height: 38, borderRadius: 11,
+                    background: t.bg, color: "#fff",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: `0 4px 12px ${t.shadow}`,
+                    flexShrink: 0,
+                  }}>
+                    {t.svg}
+                  </div>
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 10, fontWeight: 800, color: "#1a1d2e", lineHeight: 1.25, letterSpacing: "-.1px" }}>{t.label}</div>
+                    <div style={{ fontSize: 9, color: "#9ca3af", marginTop: 1 }}>{t.sub}</div>
+                  </div>
+                </a>
+              ))}
+            </div>
           </div>
         </nav>
 
