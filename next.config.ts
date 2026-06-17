@@ -3,22 +3,23 @@ import createNextIntlPlugin from "next-intl/plugin";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
+// Ana site ve admin için tam clickjacking koruması
 const securityHeaders = [
-  // Clickjacking koruması — sayfanın iframe içinde açılmasını engeller
   { key: "X-Frame-Options", value: "DENY" },
-  // MIME type sniffing'i engelle
   { key: "X-Content-Type-Options", value: "nosniff" },
-  // Referrer bilgisini kısıtla
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  // DNS prefetch'i kapat (bilgi sızıntısını önler)
   { key: "X-DNS-Prefetch-Control", value: "off" },
-  // HTTPS zorla (HSTS) — 1 yıl
   { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-  // İzin verilmeyen browser özelliklerini kapat
-  {
-    key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=(), payment=()",
-  },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
+];
+
+// IT araç sayfaları — destek panelinden iframe olarak açılabilir
+const toolHeaders = [
+  { key: "Content-Security-Policy", value: "frame-ancestors 'self' https://destek.lidernetwork.com.tr" },
+  { key: "X-Content-Type-Options", value: "nosniff" },
+  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
 ];
 
 const nextConfig: NextConfig = {
@@ -32,10 +33,39 @@ const nextConfig: NextConfig = {
   },
   async headers() {
     return [
+      // Tüm sayfalara varsayılan güvenlik başlıkları
       {
-        // Tüm sayfalara uygula
         source: "/(.*)",
         headers: securityHeaders,
+      },
+      // IT araç sayfaları: iframe iznini override et
+      {
+        source: "/blacklist/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/threat/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/ip/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/dns/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/password/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/uptime/:path*",
+        headers: toolHeaders,
+      },
+      {
+        source: "/admin/sistem-durumu/:path*",
+        headers: toolHeaders,
       },
     ];
   },
