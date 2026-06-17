@@ -669,24 +669,6 @@ export default function Navbar() {
               <Globe className="w-3.5 h-3.5" aria-hidden="true" />
               {otherLocaleLabel}
             </Link>
-            <a
-              href="https://dns.lidernetwork.com.tr"
-              target="_blank"
-              rel="noopener"
-              className="inline-flex items-center gap-2 text-sm font-bold rounded-xl px-5 py-2.5 transition-all duration-200"
-              style={{
-                fontFamily: "var(--font-family-label)",
-                color: "#fff",
-                background: "linear-gradient(135deg, #3a63ff 0%, #0052ff 100%)",
-                boxShadow: "0 4px 16px rgba(0,82,255,0.4)",
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.boxShadow = "0 6px 22px rgba(0,82,255,0.55)"; e.currentTarget.style.transform = "translateY(-1px)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,82,255,0.4)"; e.currentTarget.style.transform = "none"; }}
-              aria-label="DNS Checker aracını aç"
-            >
-              <Search className="w-4 h-4" aria-hidden="true" />
-              DNS Checker
-            </a>
           </div>
 
           {/* Mobile Menu Button */}
@@ -938,17 +920,6 @@ export default function Navbar() {
                 <Globe className="w-3.5 h-3.5" />
                 {otherLocaleLabel}
               </Link>
-              <a
-                href="https://dns.lidernetwork.com.tr"
-                target="_blank"
-                rel="noopener"
-                className="inline-flex items-center gap-2 text-sm font-bold rounded-xl px-4 py-2.5 flex-1 justify-center"
-                style={{ fontFamily: "var(--font-family-label)", color: "#fff", background: "linear-gradient(135deg, #3a63ff 0%, #0052ff 100%)", boxShadow: "0 4px 14px rgba(0,82,255,0.4)" }}
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Search className="w-4 h-4" aria-hidden="true" />
-                DNS Checker
-              </a>
             </div>
           </div>
         )}
