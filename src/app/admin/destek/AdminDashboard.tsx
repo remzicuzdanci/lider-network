@@ -229,6 +229,10 @@ export default function AdminDashboard() {
   const [rptTo, setRptTo]             = useState("");
   const [allTickets, setAllTickets]   = useState<Ticket[]>([]);
 
+  // Teklif → Teslim Tutanağı geçişi
+  type DeliveryInit = { customer_name: string; company_id: string | null; items: { name: string; qty: number; unit: string }[] };
+  const [pendingDelivery, setPendingDelivery] = useState<DeliveryInit | null>(null);
+
   // Reports — quote & asset stats
   type QuoteRow = { id: string; status: string; grand_total: number; currency: string; created_at: string };
   type AssetRow = { id: string; type: string; company_name: string | null; warranty_end: string | null; licensed: boolean; status: string };
@@ -1852,7 +1856,7 @@ export default function AdminDashboard() {
 
         {/* ══════════════════════════ İŞ PLANI TAB */}
         {tab === "isplan" && (
-          <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} currentUserRole={sessionRole} />
+          <IsPlani companies={companies} staff={staff.map(s => s.name)} currentUserName={sessionName} currentUserRole={sessionRole} openDelivery={pendingDelivery} onDeliveryOpened={() => setPendingDelivery(null)} />
         )}
 
         {tab === "notes" && (
@@ -1863,7 +1867,7 @@ export default function AdminDashboard() {
 
         {tab === "quotes" && (
           <div style={{ padding: "24px 28px" }}>
-            <Teklifler companies={companies} currentUserName={sessionName} staff={staff.map(s => s.name)} initialCompanyId={quotesFilterCompany} />
+            <Teklifler companies={companies} currentUserName={sessionName} staff={staff.map(s => s.name)} initialCompanyId={quotesFilterCompany} onCreateDelivery={data => { setPendingDelivery(data); setTab("isplan"); }} />
           </div>
         )}
 

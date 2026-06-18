@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown, PackageCheck } from "lucide-react";
 import { showToast } from "@/lib/admin-toast";
 import { companyLogo } from "@/data/customer-logos";
 import QRCode from "qrcode";
@@ -41,7 +41,7 @@ const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n ||
 const today = () => new Date().toISOString().slice(0, 10);
 function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
 
-export default function Teklifler({ companies = [], initialCompanyId = "", staff = [], currentUserName = "" }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string; staff?: string[] }) {
+export default function Teklifler({ companies = [], initialCompanyId = "", staff = [], currentUserName = "", onCreateDelivery }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string; staff?: string[]; onCreateDelivery?: (data: { customer_name: string; company_id: string | null; items: { name: string; qty: number; unit: string }[] }) => void }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -595,6 +595,18 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
         <button onClick={() => { setView("list"); resetForm(); }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 14px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}><ArrowLeft size={15} /> Geri</button>
         {editId && <span style={{ fontSize: "12px", fontWeight: 700, padding: "5px 11px", borderRadius: "7px", background: (STATUS[status] || STATUS.draft).bg, color: (STATUS[status] || STATUS.draft).color }}>{(STATUS[status] || STATUS.draft).label}</span>}
         {editId && <button onClick={() => setCopySource(currentAsQuote())} title="Bu teklifi yeni bir teklif olarak kopyala (orijinal korunur)" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fde68a", background: "#fffbeb", color: "#b45309", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Copy size={14} /> Kopyala</button>}
+        {editId && (status === "accepted" || status === "ordered") && onCreateDelivery && (
+          <button onClick={() => {
+            const company = companies.find(c => c.id === companyId);
+            onCreateDelivery({
+              customer_name: company?.name || customerName(companyId) || "",
+              company_id: companyId || null,
+              items: items.filter(it => it.description.trim()).map(it => ({ name: it.description, qty: it.quantity, unit: it.unit || "Adet" })),
+            });
+          }} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #a7f3d0", background: "#ecfdf5", color: "#065f46", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+            <PackageCheck size={14} /> Teslim Tutanağı Oluştur
+          </button>
+        )}
         <div style={{ flex: 1 }} />
         <button onClick={() => quickStatus("accepted")} title="Teklifi kabul edildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✓ Kabul</button>
         <button onClick={() => quickStatus("rejected")} title="Teklifi reddedildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✕ Red</button>

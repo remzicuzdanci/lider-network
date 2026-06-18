@@ -9,6 +9,7 @@ import {
   BarChart3, FileSpreadsheet, FileText, Download, PackageCheck,
 } from "lucide-react";
 import TeslimTutanagi from "./TeslimTutanagi";
+import { showToast } from "@/lib/admin-toast";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -160,7 +161,7 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>{form.id?"Görevi Düzenle":"Yeni Görev"}</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
         </div>
-        <form onSubmit={async e => { e.preventDefault(); if(!form.title?.trim()) return; setSaving(true); try { await onSave(form); onClose(); } catch(err){ alert("Kaydedilemedi: "+(err instanceof Error?err.message:"Bilinmeyen hata")); } finally { setSaving(false); } }}
+        <form onSubmit={async e => { e.preventDefault(); if(!form.title?.trim()) return; setSaving(true); try { await onSave(form); onClose(); } catch(err){ showToast("Kaydedilemedi: "+(err instanceof Error?err.message:"Bilinmeyen hata"), "error"); } finally { setSaving(false); } }}
           style={{ display:"flex",flexDirection:"column",gap:isMobile?"15px":"13px" }}>
           <div><label style={lbl}>Başlık *</label>
             <input type="text" value={form.title??""} required placeholder="Görevi kısaca açıklayın..." style={inp} onChange={e=>set("title",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -351,7 +352,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onSend, onCl
           <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>📋 Servis Formu</h3>
           <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
         </div>
-        <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); try { await onSave(f); onClose(); } catch(err){ alert("Kaydedilemedi: "+(err instanceof Error?err.message:"Hata")); } finally { setSaving(false); } }}
+        <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); try { await onSave(f); onClose(); } catch(err){ showToast("Kaydedilemedi: "+(err instanceof Error?err.message:"Hata"), "error"); } finally { setSaving(false); } }}
           style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
           <div><label style={lblS}>Müşteri Adı *</label>
             <input type="text" value={f.customer_name??""} required placeholder="Müşteri adı..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -393,7 +394,7 @@ function ServiceFormModal({ form, task, project, companies, onSave, onSend, onCl
               {saving?"Kaydediliyor...":"Taslak Kaydet"}
             </button>
             <button type="button" disabled={saving||sending}
-              onClick={async()=>{ if(!f.customer_name?.trim()){alert("Müşteri adı gerekli");return;} if(!f.service_description?.trim()){alert("Hizmet açıklaması gerekli");return;} if(!f.customer_email?.trim()){alert("E-posta göndermek için müşteri e-postası gerekli");return;} setSending(true); try { await onSend(f); onClose(); } catch(err){ alert("Gönderilemedi: "+(err instanceof Error?err.message:"Hata")); } finally { setSending(false); } }}
+              onClick={async()=>{ if(!f.customer_name?.trim()){showToast("Müşteri adı gerekli","warning");return;} if(!f.service_description?.trim()){showToast("Hizmet açıklaması gerekli","warning");return;} if(!f.customer_email?.trim()){showToast("E-posta göndermek için müşteri e-postası gerekli","warning");return;} setSending(true); try { await onSend(f); onClose(); } catch(err){ showToast("Gönderilemedi: "+(err instanceof Error?err.message:"Hata"), "error"); } finally { setSending(false); } }}
               style={{ flex:isMobile?1:0,padding:"10px 20px",border:"none",borderRadius:"9px",background:(saving||sending)?"#d1d5db":"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(16,185,129,.28)" }}>
               {sending?"Gönderiliyor...":"✓ Kaydet & E-posta Gönder"}
             </button>
@@ -796,7 +797,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                           <div style={{ position:"absolute",right:0,top:"100%",zIndex:50,background:"#fff",border:"1.5px solid #e5e7ef",borderRadius:"10px",boxShadow:"0 8px 24px rgba(0,0,0,.12)",minWidth:150,padding:"5px" }}
                             onMouseLeave={()=>setMenuId(null)}>
                             {KAN_COLS.filter(c=>c.id!==task.status).map(c=>(
-                              <button key={c.id} onClick={async()=>{setMenuId(null);try{await onTaskSave({id:task.id,status:c.id});}catch(err){alert("Durum değiştirilemedi: "+(err instanceof Error?err.message:"Hata"));}}}
+                              <button key={c.id} onClick={async()=>{setMenuId(null);try{await onTaskSave({id:task.id,status:c.id});}catch(err){showToast("Durum değiştirilemedi: "+(err instanceof Error?err.message:"Hata"),"error");}}}
                                 style={{ display:"block",width:"100%",textAlign:"left",padding:"6px 10px",borderRadius:"7px",background:"none",border:"none",fontSize:"12px",color:c.color,cursor:"pointer",fontWeight:600 }}>
                                 → {c.label}
                               </button>
@@ -1378,7 +1379,9 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
 
 type InnerTab = "projeler" | "gunluk" | "kanban" | "faturalandı" | "teslimat" | "raporlar";
 
-export default function IsPlani({ companies, staff = [], currentUserName = "", currentUserRole = "staff" }: { companies: Company[]; staff?: string[]; currentUserName?: string; currentUserRole?: string }) {
+type DeliveryInit = { customer_name: string; company_id: string | null; items: { name: string; qty: number; unit: string }[] };
+
+export default function IsPlani({ companies, staff = [], currentUserName = "", currentUserRole = "staff", openDelivery, onDeliveryOpened }: { companies: Company[]; staff?: string[]; currentUserName?: string; currentUserRole?: string; openDelivery?: DeliveryInit | null; onDeliveryOpened?: () => void }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
   const isTablet = width < 1024;
@@ -1386,6 +1389,15 @@ export default function IsPlani({ companies, staff = [], currentUserName = "", c
   const [innerTab, setInnerTab] = useState<InnerTab>("gunluk");
   const [tasks, setTasks]       = useState<WorkTask[]>([]);
   const [tasksLoaded, setTL]    = useState(false);
+  // Tekliflerden otomatik doldurma
+  const [pendingDelivery, setPendingDelivery] = useState<DeliveryInit | null>(null);
+  useEffect(() => {
+    if (openDelivery) {
+      setPendingDelivery(openDelivery);
+      setInnerTab("teslimat");
+      onDeliveryOpened?.();
+    }
+  }, [openDelivery, onDeliveryOpened]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectsLoaded, setPL] = useState(false);
   const [serviceForms, setServiceForms] = useState<ServiceForm[]>([]);
@@ -1579,7 +1591,7 @@ export default function IsPlani({ companies, staff = [], currentUserName = "", c
       {innerTab==="gunluk" && tasksLoaded && <GunlukTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="kanban" && tasksLoaded && <KanbanTab tasks={tasks} companies={companies} staff={staff} currentUserName={currentUserName} onTaskSave={saveTask} onTaskDelete={deleteTask} onOpenServiceForm={(taskId)=>setServiceFormModal({task_id:taskId,status:"draft"})} />}
       {innerTab==="faturalandı" && tasksLoaded && projectsLoaded && <FaturandiTab tasks={tasks} projects={projects} companies={companies} staff={staff} onTaskSave={saveTask} onProjectSave={saveProject} />}
-      {innerTab==="teslimat" && <TeslimTutanagi companies={companies} currentUserName={currentUserName} staff={staff} isMobile={isMobile} />}
+      {innerTab==="teslimat" && <TeslimTutanagi companies={companies} currentUserName={currentUserName} staff={staff} isMobile={isMobile} initialNote={pendingDelivery ?? undefined} onInitialNoteConsumed={() => setPendingDelivery(null)} />}
       {innerTab==="raporlar" && isSuperAdmin && tasksLoaded && <RaporlarTab tasks={tasks} companies={companies} staff={staff} />}
 
       {serviceFormModal!==false && <ServiceFormModal form={serviceFormModal} companies={companies} onSave={saveServiceForm} onSend={sendServiceForm} onClose={()=>setServiceFormModal(false)} />}

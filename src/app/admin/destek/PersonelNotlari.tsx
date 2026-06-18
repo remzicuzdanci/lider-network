@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { Plus, Trash2, Pin, X, StickyNote } from "lucide-react";
+import { showToast } from "@/lib/admin-toast";
 
 interface Note {
   id: string;
@@ -50,7 +51,7 @@ export default function PersonelNotlari({ userName = "" }: { userName?: string }
       }
       setEditing(null);
     } catch (e) {
-      alert(e instanceof Error ? e.message : "Hata");
+      showToast(e instanceof Error ? e.message : "Hata", "error");
     } finally { setSaving(false); }
   }
 

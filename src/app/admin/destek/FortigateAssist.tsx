@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Shield, Sparkles, Copy, Check, AlertTriangle, Terminal, MousePointerClick, BookOpen, Image as ImageIcon, Upload, Trash2, X, Search } from "lucide-react";
+import { showToast } from "@/lib/admin-toast";
 
 interface Step { baslik: string; aciklama: string; gui?: string | null; cli?: string[]; gorsel?: { url: string; title: string } }
 interface Result {
@@ -279,7 +280,7 @@ function SolutionHistory({ onOpen }: { onOpen: (problem: string, result: Result)
     const r = await fetch(`/api/admin/fg-solutions?id=${id}`);
     setOpening(null);
     if (r.ok) { const d = await r.json(); onOpen(d.problem, d.result as Result); }
-    else alert("Kayıt açılamadı");
+    else showToast("Kayıt açılamadı", "error");
   }
   async function del(id: string, e: React.MouseEvent) {
     e.stopPropagation();
@@ -350,8 +351,8 @@ function ScreenshotLibrary({ onPreview }: { onPreview: (url: string) => void }) 
   useEffect(() => { load(); }, [load]);
 
   async function upload() {
-    if (!file) { alert("Görsel seçin"); return; }
-    if (!title.trim()) { alert("Başlık girin"); return; }
+    if (!file) { showToast("Görsel seçin", "warning"); return; }
+    if (!title.trim()) { showToast("Başlık girin", "warning"); return; }
     setUploading(true);
     const fd = new FormData();
     fd.append("file", file); fd.append("title", title); fd.append("tags", tags); fd.append("menu_path", menuPath);
@@ -361,7 +362,7 @@ function ScreenshotLibrary({ onPreview }: { onPreview: (url: string) => void }) 
       setTitle(""); setTags(""); setMenuPath(""); setFile(null);
       if (fileRef.current) fileRef.current.value = "";
       load();
-    } else alert("Yüklenemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
+    } else { showToast("Yüklenemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error"); }
   }
 
   async function del(id: string) {

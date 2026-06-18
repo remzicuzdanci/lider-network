@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { showToast } from "@/lib/admin-toast";
-import { Plus, Pencil, Trash2, Printer, Mail, FileText, Package, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, Printer, Mail, FileText, Package, Check, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Company { id: string; name: string; }
 interface DItem { name: string; qty: number; serial?: string; unit?: string }
@@ -131,29 +131,52 @@ function docHtml(n: Partial<DeliveryNote>): string {
 </body></html>`;
 }
 
-export default function TeslimTutanagi({ companies, currentUserName, staff = [], isMobile }: {
+const PAGE_SIZE = 20;
+
+export default function TeslimTutanagi({ companies, currentUserName, staff = [], isMobile, initialNote, onInitialNoteConsumed }: {
   companies: Company[]; currentUserName: string; staff?: string[]; isMobile: boolean;
+  initialNote?: Partial<DeliveryNote>;
+  onInitialNoteConsumed?: () => void;
 }) {
-  const [list, setList] = useState<DeliveryNote[]>([]);
+  const [list, setList]   = useState<DeliveryNote[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage]   = useState(1);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [modal, setModal] = useState<Partial<DeliveryNote> | null>(null);
+  const [search, setSearch]   = useState("");
+  const [modal, setModal]   = useState<Partial<DeliveryNote> | null>(null);
   const [saving, setSaving] = useState(false);
-  // Cari kart detayları (firma seçilince adres/e-posta/telefon otomatik çekmek için)
+  // Mail gönderme
+  const [mailModal, setMailModal]   = useState(false);
+  const [mailTo, setMailTo]         = useState("");
+  const [mailSending, setMailSending] = useState(false);
+  // Cari kart detayları
   const [cariMap, setCariMap] = useState<Record<string, { name: string; address: string | null; email: string | null; phone: string | null }>>({});
   // Ürün kataloğu autocomplete
   const [prodSuggest, setProdSuggest] = useState<{ row: number; results: Product[] } | null>(null);
-  const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);;
+  const prodTimer  = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function load() {
+  const load = useCallback(async (pg = page, q = search) => {
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/delivery-notes");
+      const p = new URLSearchParams({ page: String(pg), limit: String(PAGE_SIZE) });
+      if (q.trim()) p.set("q", q.trim());
+      const r = await fetch(`/api/admin/delivery-notes?${p}`);
       const d = await r.json();
       setList(d.notes || []);
+      setTotal(d.total ?? 0);
     } finally { setLoading(false); }
-  }
-  useEffect(() => { load(); }, []);
+  }, [page, search]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // initialNote prop'u gelince modal'ı aç (Tekliflerden otomatik doldurma)
+  useEffect(() => {
+    if (initialNote) {
+      setModal({ ...initialNote, delivered_by: currentUserName, delivery_date: new Date().toISOString().slice(0, 10), status: "draft" });
+      onInitialNoteConsumed?.();
+    }
+  }, [initialNote, currentUserName, onInitialNoteConsumed]);
 
   // Tam firma verisini (adres dahil) çek
   useEffect(() => {
@@ -166,7 +189,12 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
     }).catch(() => {});
   }, []);
 
-  const filtered = list.filter(n => !search.trim() || `${n.note_no} ${n.customer_name || ""}`.toLowerCase().includes(search.toLowerCase()));
+  function handleSearch(val: string) {
+    setSearch(val);
+    setPage(1);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => load(1, val), 300);
+  }
 
   function openNew() {
     setModal({
@@ -210,28 +238,36 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
     if (!cur?.id) { const s = await save(); if (!s) return; cur = s; }
     printDoc(cur!);
   }
-  async function sendMail() {
+  async function openMailModal() {
     let cur = modal;
     if (!cur?.id) { const s = await save(); if (!s) return; cur = s; }
-    const to = prompt("Tutanağın gönderileceği e-posta:", cur?.customer_email || "");
-    if (!to) return;
-    const r = await fetch("/api/admin/delivery-notes/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cur!.id, email: to }) });
-    const d = await r.json();
-    if (!r.ok) { showToast("Hata: " + (d.error || "gönderilemedi"), "error"); return; }
-    showToast("Teslim tutanağı gönderildi → " + to);
-    await load();
-    setModal(m => m ? { ...m, status: "sent", sent_to_email: to } : m);
+    setMailTo(cur?.customer_email || "");
+    setMailModal(true);
+  }
+  async function doSendMail() {
+    if (!modal?.id) return;
+    if (!mailTo.trim()) { showToast("E-posta adresi girin", "warning"); return; }
+    setMailSending(true);
+    try {
+      const r = await fetch("/api/admin/delivery-notes/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: modal.id, email: mailTo.trim() }) });
+      const d = await r.json();
+      if (!r.ok) { showToast("Hata: " + (d.error || "gönderilemedi"), "error"); return; }
+      showToast("Teslim tutanağı gönderildi → " + mailTo.trim());
+      setMailModal(false);
+      load(page, search);
+      setModal(m => m ? { ...m, status: "sent", sent_to_email: mailTo.trim() } : m);
+    } finally { setMailSending(false); }
   }
   async function remove(n: DeliveryNote) {
     if (!confirm(`${n.note_no} numaralı tutanak silinsin mi?`)) return;
     await fetch("/api/admin/delivery-notes", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: n.id }) });
-    await load();
+    load(page, search);
   }
 
   return (
     <div>
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "16px" }}>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Tutanak no veya müşteri ara..." style={{ ...inpS, flex: 1, minWidth: "180px", maxWidth: "340px" }} />
+        <input value={search} onChange={e => handleSearch(e.target.value)} placeholder="Tutanak no veya müşteri ara..." style={{ ...inpS, flex: 1, minWidth: "180px", maxWidth: "340px" }} />
         <button onClick={openNew} style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", marginLeft: "auto" }}>
           <Plus size={15} /> Teslim Tutanağı
         </button>
@@ -239,7 +275,7 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
 
       {loading ? (
         <p style={{ color: "#9ca3af", fontSize: "14px" }}>Yükleniyor…</p>
-      ) : filtered.length === 0 ? (
+      ) : list.length === 0 ? (
         <div style={{ textAlign: "center", padding: "50px 20px", background: "#fff", borderRadius: "14px", border: "1px dashed #e5e7ef" }}>
           <Package size={32} color="#cbd5e1" style={{ marginBottom: 10 }} />
           <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 14px" }}>Henüz teslim tutanağı yok.</p>
@@ -247,7 +283,7 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
         </div>
       ) : (
         <div style={{ display: "grid", gap: "10px" }}>
-          {filtered.map(n => (
+          {list.map(n => (
             <div key={n.id} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "14px 16px", display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
               <div style={{ display: "inline-flex", padding: "9px", background: "#eff6ff", color: "#0052ff", borderRadius: "10px" }}><FileText size={17} /></div>
               <div style={{ flex: 1, minWidth: "160px" }}>
@@ -266,6 +302,22 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Sayfalama */}
+      {total > PAGE_SIZE && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", marginTop: "16px", flexWrap: "wrap" }}>
+          <button onClick={() => { setPage(1); load(1, search); }} disabled={page === 1} style={{ padding: "6px 10px", borderRadius: "8px", border: "1.5px solid #e5e7ef", background: "#fff", color: page===1?"#cbd5e1":"#475569", cursor: page===1?"default":"pointer", fontSize: "13px" }}>«</button>
+          <button onClick={() => { const p=page-1; setPage(p); load(p, search); }} disabled={page === 1} style={{ display:"inline-flex",alignItems:"center",gap:"4px",padding:"6px 12px",borderRadius:"8px",border:"1.5px solid #e5e7ef",background:"#fff",color:page===1?"#cbd5e1":"#475569",cursor:page===1?"default":"pointer",fontSize:"13px",fontWeight:600 }}><ChevronLeft size={14}/>Önceki</button>
+          {Array.from({ length: Math.ceil(total / PAGE_SIZE) }).map((_, i) => {
+            const p = i + 1;
+            if (Math.abs(p - page) > 2) return null;
+            return <button key={p} onClick={() => { setPage(p); load(p, search); }} style={{ width:36,height:36,borderRadius:"8px",border:`1.5px solid ${p===page?"#0052ff":"#e5e7ef"}`,background:p===page?"#0052ff":"#fff",color:p===page?"#fff":"#475569",fontSize:"13px",fontWeight:p===page?700:500,cursor:"pointer" }}>{p}</button>;
+          })}
+          <button onClick={() => { const p=page+1; setPage(p); load(p, search); }} disabled={page >= Math.ceil(total/PAGE_SIZE)} style={{ display:"inline-flex",alignItems:"center",gap:"4px",padding:"6px 12px",borderRadius:"8px",border:"1.5px solid #e5e7ef",background:"#fff",color:page>=Math.ceil(total/PAGE_SIZE)?"#cbd5e1":"#475569",cursor:page>=Math.ceil(total/PAGE_SIZE)?"default":"pointer",fontSize:"13px",fontWeight:600 }}>Sonraki<ChevronRight size={14}/></button>
+          <button onClick={() => { const p=Math.ceil(total/PAGE_SIZE); setPage(p); load(p, search); }} disabled={page>=Math.ceil(total/PAGE_SIZE)} style={{ padding:"6px 10px",borderRadius:"8px",border:"1.5px solid #e5e7ef",background:"#fff",color:page>=Math.ceil(total/PAGE_SIZE)?"#cbd5e1":"#475569",cursor:page>=Math.ceil(total/PAGE_SIZE)?"default":"pointer",fontSize:"13px" }}>»</button>
+          <span style={{ fontSize:"12px",color:"#9ca3af",marginLeft:"4px" }}>{total} tutanak</span>
         </div>
       )}
 
@@ -392,8 +444,24 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
             <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", marginTop: "22px", justifyContent: "flex-end" }}>
               <button onClick={() => setModal(null)} disabled={saving} style={{ padding: "10px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "9px", color: "#6b7280", fontSize: "13px", fontWeight: 700, cursor: "pointer", marginRight: "auto" }}>Kapat</button>
               <button onClick={printCurrent} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "9px", color: "#475569", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Printer size={15} /> Yazdır / PDF</button>
-              <button onClick={sendMail} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px", background: "#fff", border: "1.5px solid #bbf7d0", borderRadius: "9px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Mail size={15} /> Mail Gönder</button>
+              <button onClick={openMailModal} style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "10px 16px", background: "#fff", border: "1.5px solid #bbf7d0", borderRadius: "9px", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Mail size={15} /> Mail Gönder</button>
               <button onClick={save} disabled={saving} style={{ padding: "10px 22px", background: "#0052ff", border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: saving ? "default" : "pointer", opacity: saving ? .6 : 1 }}>{saving ? "Kaydediliyor…" : "Kaydet"}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Mail gönder mini-modal */}
+      {mailModal && (
+        <div onClick={() => !mailSending && setMailModal(false)} style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1100, padding: "20px" }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: "#fff", borderRadius: "14px", padding: "24px", width: "100%", maxWidth: "400px", boxShadow: "0 20px 60px rgba(0,0,0,.25)" }}>
+            <h3 style={{ margin: "0 0 6px", fontSize: "15px", fontWeight: 800, color: "#1a1d2e" }}>Teslim Tutanağını Gönder</h3>
+            <p style={{ margin: "0 0 14px", fontSize: "12.5px", color: "#9ca3af" }}>Tutanak PDF olarak e-posta ile iletilir.</p>
+            <label style={lblS}>E-posta adresi</label>
+            <input autoFocus value={mailTo} onChange={e => setMailTo(e.target.value)} onKeyDown={e => e.key === "Enter" && doSendMail()} placeholder="ornek@sirket.com" style={inpS} />
+            <div style={{ display: "flex", gap: "10px", marginTop: "16px", justifyContent: "flex-end" }}>
+              <button onClick={() => setMailModal(false)} disabled={mailSending} style={{ padding: "9px 16px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "9px", color: "#6b7280", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>İptal</button>
+              <button onClick={doSendMail} disabled={mailSending} style={{ padding: "9px 20px", background: "#15803d", border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: mailSending ? "default" : "pointer", opacity: mailSending ? .6 : 1 }}>{mailSending ? "Gönderiliyor…" : "Gönder"}</button>
             </div>
           </div>
         </div>

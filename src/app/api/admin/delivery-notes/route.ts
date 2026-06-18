@@ -13,19 +13,29 @@ async function nextNoteNo(): Promise<string> {
   return `TES-${year}-${String((count || 0) + 1).padStart(4, "0")}`;
 }
 
-// GET — liste
-export async function GET() {
+// GET — liste (sayfalı, aranabilir)
+export async function GET(req: NextRequest) {
   const isAdmin = await getAdminSession();
   const user = await getSessionUser();
   if (!isAdmin && !user) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const sp = new URL(req.url).searchParams;
+  const page  = Math.max(1, parseInt(sp.get("page")  || "1"));
+  const limit = Math.min(50, parseInt(sp.get("limit") || "20"));
+  const q     = sp.get("q")?.trim();
+  const all   = sp.get("all") === "1";
+
+  let query = supabase
     .from("delivery_notes")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false });
 
+  if (q) query = query.or(`note_no.ilike.%${q}%,customer_name.ilike.%${q}%`);
+  if (!all) query = query.range((page - 1) * limit, page * limit - 1);
+
+  const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ notes: data || [] });
+  return NextResponse.json({ notes: data || [], total: count ?? 0, page, limit });
 }
 
 // POST — yeni tutanak
