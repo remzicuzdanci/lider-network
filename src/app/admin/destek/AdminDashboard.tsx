@@ -163,6 +163,11 @@ export default function AdminDashboard() {
   const [searchInput, setSearchInput] = useState("");
   const [search, setSearch]           = useState("");
 
+  // Toplu işlem
+  const [selectedIds, setSelectedIds]   = useState<Set<string>>(new Set());
+  const [bulkAssignTo, setBulkAssignTo] = useState("");
+  const [bulkWorking, setBulkWorking]   = useState(false);
+
   // Customers
   const [customers, setCustomers]     = useState<Customer[]>([]);
   const [custFilter, setCustFilter]   = useState("all");
@@ -288,8 +293,9 @@ export default function AdminDashboard() {
 
   useEffect(() => { if (tab === "reports") { fetchRptQuotes(); fetchRptAssets(); } }, [tab, fetchRptQuotes, fetchRptAssets]);
 
-  // Filtre veya arama değişince sayfa 1'e dön
-  useEffect(() => { setPage(1); }, [statusF, priorityF, categoryF, dateF, search]);
+  // Filtre veya arama değişince sayfa 1'e dön + seçimi temizle
+  useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [statusF, priorityF, categoryF, dateF, search]);
+  useEffect(() => { setSelectedIds(new Set()); }, [page]);
 
   // Otomatik tazeleme: 60 sn'de bir, sayfa görünürken ve modal açık değilken
   // talep listesi + istatistikler + rozetler arka planda güncellenir (sayfa yenilenmez)
@@ -590,6 +596,24 @@ export default function AdminDashboard() {
     const r = await fetch(`/api/tickets/${id}`, { method: "DELETE" });
     if (r.ok) { showToast("Talep silindi"); fetchTickets(); fetchStats(); }
     else { const j = await r.json().catch(() => ({})); showToast("Silinemedi: " + (j.error || "hata"), "error"); }
+  }
+
+  // ── Toplu ticket işlemi ───────────────────────────────────────────────────
+  async function bulkAction(action: "close" | "resolve" | "assign") {
+    if (selectedIds.size === 0) return;
+    setBulkWorking(true);
+    try {
+      const body: Record<string, unknown> = { ids: Array.from(selectedIds), action };
+      if (action === "assign") body.assigned_to = bulkAssignTo;
+      const r = await fetch("/api/admin/tickets/bulk", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const d = await r.json();
+      if (!r.ok) { showToast(d.error || "İşlem başarısız", "error"); return; }
+      const label = action === "close" ? "kapatıldı" : action === "resolve" ? "çözüldü olarak işaretlendi" : `${bulkAssignTo.split("@")[0]}'e atandı`;
+      showToast(`${d.updated} talep ${label}`);
+      setSelectedIds(new Set());
+      setBulkAssignTo("");
+      fetchTickets(); fetchStats();
+    } finally { setBulkWorking(false); }
   }
 
   // ── Staff setup ────────────────────────────────────────────────────────────
@@ -1161,6 +1185,24 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* Toplu işlem çubuğu */}
+            {selectedIds.size > 0 && (
+              <div style={{ display: "flex", alignItems: "center", flexWrap: "wrap", gap: "10px", padding: "12px 16px", background: "#1a1d2e", borderRadius: "12px", marginBottom: "10px" }}>
+                <span style={{ fontSize: "13px", fontWeight: 700, color: "#fff" }}>{selectedIds.size} talep seçildi</span>
+                <div style={{ flex: 1 }} />
+                <button onClick={() => bulkAction("resolve")} disabled={bulkWorking} style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "#22c55e", color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer", opacity: bulkWorking ? .5 : 1 }}>✓ Çözüldü</button>
+                <button onClick={() => bulkAction("close")} disabled={bulkWorking} style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "#475569", color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer", opacity: bulkWorking ? .5 : 1 }}>✕ Kapat</button>
+                <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                  <select value={bulkAssignTo} onChange={e => setBulkAssignTo(e.target.value)} style={{ padding: "7px 10px", borderRadius: "8px", border: "1px solid #374151", background: "#2d3748", color: "#e2e8f0", fontSize: "12px" }}>
+                    <option value="">— Personele Ata —</option>
+                    {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+                  </select>
+                  <button onClick={() => bulkAssignTo && bulkAction("assign")} disabled={bulkWorking || !bulkAssignTo} style={{ padding: "7px 14px", borderRadius: "8px", border: "none", background: "#0052ff", color: "#fff", fontSize: "12px", fontWeight: 700, cursor: bulkAssignTo ? "pointer" : "default", opacity: (!bulkAssignTo || bulkWorking) ? .5 : 1 }}>Ata</button>
+                </div>
+                <button onClick={() => setSelectedIds(new Set())} style={{ padding: "7px 12px", borderRadius: "8px", border: "1px solid #374151", background: "transparent", color: "#9ca3af", fontSize: "12px", cursor: "pointer" }}>İptal</button>
+              </div>
+            )}
+
             <div style={{ background: "#fff", borderRadius: "14px", border: "1px solid #e5e7ef", overflow: "hidden" }}>
               {loading ? (
                 <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
@@ -1194,7 +1236,14 @@ export default function AdminDashboard() {
                   <table style={{ width: "100%", borderCollapse: "collapse" }}>
                     <thead>
                       <tr style={{ background: "#f8f9fb", borderBottom: "1px solid #e5e7ef" }}>
-                        {["","#No","Müşteri / Şirket","Konu","Kat.","Öncelik","Durum","SLA","Tarih",""].map((h,i) => (
+                        <th style={{ padding: "11px 14px", width: 36 }}>
+                          <input type="checkbox"
+                            checked={tickets.length > 0 && tickets.every(t => selectedIds.has(t.id))}
+                            onChange={e => setSelectedIds(e.target.checked ? new Set(tickets.map(t => t.id)) : new Set())}
+                            style={{ cursor: "pointer", width: 15, height: 15 }}
+                          />
+                        </th>
+                        {["#No","Müşteri / Şirket","Konu","Kat.","Öncelik","Durum","SLA","Tarih",""].map((h,i) => (
                           <th key={i} style={{ padding: "11px 14px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", whiteSpace: "nowrap" }}>{h}</th>
                         ))}
                       </tr>
@@ -1203,10 +1252,14 @@ export default function AdminDashboard() {
                       {tickets.map((t) => {
                         const sla=slaDue(t); const sc=STATUS_STYLE[t.status]||STATUS_STYLE.open; const pc=PRI_COLOR[t.priority]||PRI_COLOR.medium;
                         return (
-                          <tr key={t.id} onClick={() => router.push(`/admin/destek/${t.id}`)} style={{ borderBottom: "1px solid #f0f2f8", cursor: "pointer" }}
-                            onMouseEnter={e => (e.currentTarget.style.background="#f8f9fb")}
-                            onMouseLeave={e => (e.currentTarget.style.background="transparent")}>
-                            <td style={{ padding: "14px 8px 14px 14px" }}>
+                          <tr key={t.id} onClick={() => router.push(`/admin/destek/${t.id}`)}
+                            style={{ borderBottom: "1px solid #f0f2f8", cursor: "pointer", background: selectedIds.has(t.id) ? "#eff6ff" : "transparent" }}
+                            onMouseEnter={e => { if (!selectedIds.has(t.id)) e.currentTarget.style.background="#f8f9fb"; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = selectedIds.has(t.id) ? "#eff6ff" : "transparent"; }}>
+                            <td style={{ padding: "14px 8px 14px 14px", width: 36 }} onClick={e => { e.stopPropagation(); setSelectedIds(prev => { const n = new Set(prev); n.has(t.id) ? n.delete(t.id) : n.add(t.id); return n; }); }}>
+                              <input type="checkbox" readOnly checked={selectedIds.has(t.id)} style={{ cursor: "pointer", width: 15, height: 15 }} />
+                            </td>
+                            <td style={{ padding: "14px 8px 14px 4px" }}>
                               {t.ticket_source === "internal" ? (
                                 <span title="İç Talep" style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: 20, height: 20, borderRadius: "50%", background: "#eff6ff", border: "1px solid #bfdbfe" }}>
                                   <Building2 size={11} color="#0052ff" />

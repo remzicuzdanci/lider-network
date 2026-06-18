@@ -56,15 +56,17 @@ export default function PanelClient({
   const [statusFilter, setFilter] = useState("all");
   const [search, setSearch]       = useState("");
   const [activePage, setActivePage] = useState<ActivePage>("panel");
+  const [companyView, setCompanyView] = useState(false);
 
-  const fetchTickets = useCallback(async () => {
+  const fetchTickets = useCallback(async (cv = companyView) => {
     setLoading(true);
-    const res = await fetch("/api/destek/tickets");
+    const url = cv && company ? "/api/destek/tickets?view=company" : "/api/destek/tickets";
+    const res = await fetch(url);
     if (res.ok) setTickets((await res.json()).tickets || []);
     setLoading(false);
-  }, []);
+  }, [companyView, company]);
 
-  useEffect(() => { fetchTickets(); }, [fetchTickets]);
+  useEffect(() => { fetchTickets(companyView); }, [fetchTickets, companyView]);
 
   async function logout() {
     const sb = createSupabaseBrowser();
@@ -290,6 +292,19 @@ export default function PanelClient({
                 </p>
                 <button onClick={() => setFilter("open")} style={{ marginLeft: "auto", background: "none", border: "1px solid #fcd34d", borderRadius: "6px", padding: "4px 12px", fontSize: "12px", fontWeight: 600, color: "#d97706", cursor: "pointer" }}>
                   Görüntüle
+                </button>
+              </div>
+            )}
+
+            {/* Şirket görünümü toggle */}
+            {company && (
+              <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "10px 14px", marginBottom: "10px", alignItems: "center", flexWrap: "wrap" }}>
+                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>Görünüm:</span>
+                <button onClick={() => setCompanyView(false)} style={{ padding: "5px 14px", borderRadius: "8px", border: "1.5px solid", borderColor: !companyView ? "#0052ff" : "#e5e7ef", background: !companyView ? "#eff6ff" : "transparent", color: !companyView ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: !companyView ? 700 : 400, cursor: "pointer" }}>
+                  Benim Taleplerim
+                </button>
+                <button onClick={() => setCompanyView(true)} style={{ padding: "5px 14px", borderRadius: "8px", border: "1.5px solid", borderColor: companyView ? "#0052ff" : "#e5e7ef", background: companyView ? "#eff6ff" : "transparent", color: companyView ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: companyView ? 700 : 400, cursor: "pointer" }}>
+                  {company} Talepleri
                 </button>
               </div>
             )}
