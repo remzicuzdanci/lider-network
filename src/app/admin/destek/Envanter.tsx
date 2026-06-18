@@ -1,6 +1,7 @@
 ﻿"use client";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { Plus, Pencil, Trash2, Server, ShieldAlert, Cpu, Search, ChevronDown, ChevronRight, Upload, ImageIcon, BadgeCheck, BadgeX, Mail } from "lucide-react";
+import { showToast } from "@/lib/admin-toast";
 
 interface Company { id: string; name: string; address?: string | null; }
 interface Asset {
@@ -68,8 +69,12 @@ const inpS: React.CSSProperties = {
 };
 const lblS: React.CSSProperties = { fontSize: "12px", fontWeight: 700, color: "#475569", margin: "0 0 5px", display: "block" };
 
+const PAGE_SIZE = 50;
+
 export default function Envanter({ companies, isMobile }: { companies: Company[]; isMobile: boolean }) {
   const [list, setList] = useState<Asset[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
@@ -78,60 +83,67 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   const [uploading, setUploading] = useState(false);
   const [mailing, setMailing] = useState(false);
   const [openCo, setOpenCo] = useState<Record<string, boolean>>({});
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  async function load() {
+  const load = useCallback(async (srch = search, tp = typeF, pg = page) => {
     setLoading(true);
     try {
-      const r = await fetch("/api/admin/assets");
+      const p = new URLSearchParams({ page: String(pg), limit: String(PAGE_SIZE) });
+      if (tp !== "all") p.set("type", tp);
+      if (srch.trim()) p.set("q", srch.trim());
+      const r = await fetch(`/api/admin/assets?${p}`);
       const d = await r.json();
       setList(d.assets || []);
+      setTotal(d.total ?? 0);
     } finally { setLoading(false); }
+  }, [search, typeF, page]);
+
+  useEffect(() => { load(); }, [load]);
+
+  // Arama debounce
+  function handleSearch(val: string) {
+    setSearch(val);
+    setPage(1);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => load(val, typeF, 1), 300);
   }
-  useEffect(() => { load(); }, []);
+  function handleType(val: string) { setTypeF(val); setPage(1); }
 
-  const filtered = useMemo(() => {
-    let arr = list;
-    if (typeF !== "all") arr = arr.filter(a => a.type === typeF);
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      arr = arr.filter(a => `${a.company_name || ""} ${a.model || ""} ${a.serial_no || ""} ${a.brand || ""} ${a.ip_address || ""} ${a.firmware || ""}`.toLowerCase().includes(q));
-    }
-    return arr;
-  }, [list, typeF, search]);
-
-  // Firmaya göre grupla
+  // Firmaya göre grupla (sayfa verisi üzerinde)
   const grouped = useMemo(() => {
     const m: Record<string, Asset[]> = {};
-    for (const a of filtered) {
+    for (const a of list) {
       const key = a.company_name || "Atanmamış";
       (m[key] = m[key] || []).push(a);
     }
     return Object.entries(m).sort((a, b) => a[0].localeCompare(b[0], "tr"));
-  }, [filtered]);
+  }, [list]);
 
   const warrantyAlerts = useMemo(() =>
     list.filter(a => a.status === "active" && a.licensed !== false && (() => { const d = daysLeft(a.warranty_end); return d !== null && d <= 60; })()).length
   , [list]);
 
   async function uploadImage(file: File) {
-    if (file.size > 5 * 1024 * 1024) { alert("Dosya 5MB'tan büyük olamaz."); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast("Dosya 5MB'tan büyük olamaz", "warning"); return; }
     setUploading(true);
     try {
       const fd = new FormData(); fd.append("file", file);
       const r = await fetch("/api/admin/assets/upload", { method: "POST", body: fd });
       const d = await r.json();
-      if (!r.ok) { alert("Yükleme hatası: " + (d.error || "")); return; }
+      if (!r.ok) { showToast("Yükleme hatası: " + (d.error || ""), "error"); return; }
       setModal(m => m ? { ...m, image_url: d.url } : m);
+      showToast("Görsel yüklendi");
     } finally { setUploading(false); }
   }
 
   async function save() {
-    if (!modal?.model && !modal?.type) { alert("Cihaz tipi ve model gerekli."); return; }
+    if (!modal?.model && !modal?.type) { showToast("Cihaz tipi ve model gerekli", "warning"); return; }
     setSaving(true);
     try {
       const method = modal.id ? "PATCH" : "POST";
       const r = await fetch("/api/admin/assets", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(modal) });
-      if (!r.ok) { const e = await r.json(); alert("Hata: " + (e.error || "kaydedilemedi")); return; }
+      if (!r.ok) { const e = await r.json(); showToast("Hata: " + (e.error || "kaydedilemedi"), "error"); return; }
+      showToast(modal.id ? "Cihaz güncellendi" : "Cihaz eklendi");
       setModal(null);
       await load();
     } finally { setSaving(false); }
@@ -139,6 +151,7 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   async function remove(a: Asset) {
     if (!confirm(`"${a.model || a.type}" cihazı silinsin mi?`)) return;
     await fetch("/api/admin/assets", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: a.id }) });
+    showToast("Cihaz silindi");
     await load();
   }
   async function sendReminder() {
@@ -146,10 +159,10 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
     try {
       const r = await fetch("/api/admin/assets/check-renewals");
       const d = await r.json();
-      if (!r.ok) { alert("Hata: " + (d.error || "gönderilemedi")); return; }
-      if (d.sent) alert(`✅ ${d.count} cihaz için lisans hatırlatma maili gönderildi → ${d.to}`);
-      else alert("Şu an 30 gün içinde bitecek/bitmiş lisanslı cihaz yok, mail gönderilmedi.");
-    } catch { alert("Mail gönderilemedi."); }
+      if (!r.ok) { showToast("Hata: " + (d.error || "gönderilemedi"), "error"); return; }
+      if (d.sent) showToast(`${d.count} cihaz için lisans hatırlatma maili gönderildi`);
+      else showToast("30 gün içinde bitecek lisanslı cihaz yok, mail gönderilmedi", "info");
+    } catch { showToast("Mail gönderilemedi", "error"); }
     finally { setMailing(false); }
   }
 
@@ -157,8 +170,8 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
     <div>
       {/* Özet */}
       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2,1fr)" : "repeat(auto-fit,minmax(180px,1fr))", gap: "14px", marginBottom: "18px" }}>
-        <SumCard icon={<Server size={18} />} value={list.length} label="Toplam Cihaz" color="#0052ff" bg="#eff6ff" />
-        <SumCard icon={<Cpu size={18} />} value={grouped.length} label="Müşteri" color="#7c3aed" bg="#f5f3ff" />
+        <SumCard icon={<Server size={18} />} value={total || list.length} label="Toplam Cihaz" color="#0052ff" bg="#eff6ff" />
+        <SumCard icon={<Cpu size={18} />} value={grouped.length} label="Firmalar (bu sayfa)" color="#7c3aed" bg="#f5f3ff" />
         <SumCard icon={<ShieldAlert size={18} />} value={warrantyAlerts} label="Lisans Uyarısı (60g)" color="#ea580c" bg="#fff7ed" />
       </div>
 
@@ -166,9 +179,9 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
       <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "center", marginBottom: "16px" }}>
         <div style={{ position: "relative", flex: 1, minWidth: "180px", maxWidth: "340px" }}>
           <Search size={15} style={{ position: "absolute", left: 11, top: "50%", transform: "translateY(-50%)", color: "#9ca3af" }} />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Model, seri no, IP, firma ara..." style={{ ...inpS, paddingLeft: "34px" }} />
+          <input value={search} onChange={e => handleSearch(e.target.value)} placeholder="Model, seri no, IP, firma ara..." style={{ ...inpS, paddingLeft: "34px" }} />
         </div>
-        <select value={typeF} onChange={e => setTypeF(e.target.value)} style={{ ...inpS, width: "auto", minWidth: "150px" }}>
+        <select value={typeF} onChange={e => handleType(e.target.value)} style={{ ...inpS, width: "auto", minWidth: "150px" }}>
           <option value="all">Tüm Tipler</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{TYPE_ICON[k]} {v}</option>)}
         </select>
@@ -236,6 +249,33 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
           })}
         </div>
       )}
+
+      {/* Pagination */}
+      {total > PAGE_SIZE && (() => {
+        const totalPages = Math.ceil(total / PAGE_SIZE);
+        const start = (page - 1) * PAGE_SIZE + 1;
+        const end   = Math.min(page * PAGE_SIZE, total);
+        const nums: number[] = [];
+        for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) nums.push(i);
+        const btnS = (active: boolean, disabled: boolean): React.CSSProperties => ({
+          padding: "6px 12px", borderRadius: "8px", border: `1.5px solid ${active ? "#0052ff" : "#e5e7ef"}`,
+          background: active ? "#0052ff" : disabled ? "#f8f9fb" : "#fff",
+          color: active ? "#fff" : disabled ? "#d1d5db" : "#1a1d2e",
+          fontSize: "13px", fontWeight: 700, cursor: disabled ? "default" : "pointer",
+        });
+        return (
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", marginTop: "12px", flexWrap: "wrap", gap: "10px" }}>
+            <span style={{ fontSize: "13px", color: "#6b7280" }}><strong style={{ color: "#1a1d2e" }}>{start}–{end}</strong> / {total} cihaz &nbsp;·&nbsp; Sayfa {page}/{totalPages}</span>
+            <div style={{ display: "flex", gap: "6px" }}>
+              <button onClick={() => { setPage(1); load(search, typeF, 1); }} disabled={page === 1} style={btnS(false, page === 1)}>«</button>
+              <button onClick={() => { setPage(p => p - 1); load(search, typeF, page - 1); }} disabled={page === 1} style={btnS(false, page === 1)}>← Önceki</button>
+              {nums.map(n => <button key={n} onClick={() => { setPage(n); load(search, typeF, n); }} style={btnS(n === page, false)}>{n}</button>)}
+              <button onClick={() => { setPage(p => p + 1); load(search, typeF, page + 1); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>Sonraki →</button>
+              <button onClick={() => { setPage(totalPages); load(search, typeF, totalPages); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>»</button>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Modal */}
       {modal && (

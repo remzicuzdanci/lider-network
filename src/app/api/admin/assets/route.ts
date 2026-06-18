@@ -4,20 +4,33 @@ import { supabase } from "@/lib/supabase";
 
 /* ── Cihaz / Asset Envanteri ────────────────────────────────────── */
 
-// GET — tüm cihazlar (firma + tür sıralı)
-export async function GET() {
+// GET — cihazlar (sayfalı, filtrelenebilir)
+export async function GET(req: NextRequest) {
   const isAdmin = await getAdminSession();
   const user = await getSessionUser();
   if (!isAdmin && !user) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const { data, error } = await supabase
+  const sp = new URL(req.url).searchParams;
+  const page  = Math.max(1, parseInt(sp.get("page")  || "1"));
+  const limit = Math.min(100, parseInt(sp.get("limit") || "50"));
+  const q     = sp.get("q")?.trim();
+  const type  = sp.get("type");
+  const all   = sp.get("all") === "1";
+
+  let query = supabase
     .from("assets")
-    .select("*")
+    .select("*", { count: "exact" })
     .order("company_name", { ascending: true })
     .order("created_at", { ascending: false });
 
+  if (type && type !== "all") query = query.eq("type", type);
+  if (q) query = query.or(`company_name.ilike.%${q}%,model.ilike.%${q}%,serial_no.ilike.%${q}%,brand.ilike.%${q}%,ip_address.ilike.%${q}%`);
+
+  if (!all) query = query.range((page - 1) * limit, page * limit - 1);
+
+  const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ assets: data || [] });
+  return NextResponse.json({ assets: data || [], total: count ?? 0, page, limit });
 }
 
 // POST — yeni cihaz

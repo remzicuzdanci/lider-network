@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { showToast } from "@/lib/admin-toast";
 import { Plus, Pencil, Trash2, Printer, Mail, FileText, Package, Check } from "lucide-react";
 
 interface Company { id: string; name: string; }
@@ -183,24 +184,25 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
   async function save(): Promise<DeliveryNote | null> {
     if (!modal) return null;
     const items = (modal.items || []).filter(it => it.name.trim());
-    if (!modal.customer_name) { alert("Teslim edilen (müşteri) adı gerekli."); return null; }
-    if (items.length === 0) { alert("En az bir ürün ekleyin."); return null; }
+    if (!modal.customer_name) { showToast("Teslim edilen (müşteri) adı gerekli", "warning"); return null; }
+    if (items.length === 0) { showToast("En az bir ürün ekleyin", "warning"); return null; }
     setSaving(true);
     try {
       const method = modal.id ? "PATCH" : "POST";
       const r = await fetch("/api/admin/delivery-notes", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...modal, items }) });
       const d = await r.json();
-      if (!r.ok) { alert("Hata: " + (d.error || "kaydedilemedi")); return null; }
+      if (!r.ok) { showToast("Hata: " + (d.error || "kaydedilemedi"), "error"); return null; }
+      showToast(modal.id ? "Tutanak güncellendi" : "Tutanak kaydedildi");
       await load();
       const saved = d.note as DeliveryNote;
-      setModal(saved); // id ile güncelle (yazdır/mail aktif olsun)
+      setModal(saved);
       return saved;
     } finally { setSaving(false); }
   }
 
   function printDoc(n: Partial<DeliveryNote>) {
     const w = window.open("", "_blank");
-    if (!w) { alert("Açılır pencere engellendi. Pop-up iznini verin."); return; }
+    if (!w) { showToast("Pop-up engellendi — tarayıcı izinlerini kontrol edin", "warning"); return; }
     w.document.write(docHtml(n)); w.document.close();
   }
   async function printCurrent() {
@@ -215,8 +217,8 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
     if (!to) return;
     const r = await fetch("/api/admin/delivery-notes/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: cur!.id, email: to }) });
     const d = await r.json();
-    if (!r.ok) { alert("Hata: " + (d.error || "gönderilemedi")); return; }
-    alert("✅ Teslim tutanağı gönderildi → " + to);
+    if (!r.ok) { showToast("Hata: " + (d.error || "gönderilemedi"), "error"); return; }
+    showToast("Teslim tutanağı gönderildi → " + to);
     await load();
     setModal(m => m ? { ...m, status: "sent", sent_to_email: to } : m);
   }

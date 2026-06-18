@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Plus, X, Trash2, FileText, Mail, Printer, ArrowLeft, Search, Save, History, Pencil, Copy, ChevronUp, ChevronDown } from "lucide-react";
+import { showToast } from "@/lib/admin-toast";
 import { companyLogo } from "@/data/customer-logos";
 import QRCode from "qrcode";
 
@@ -42,6 +43,9 @@ function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 
 
 export default function Teklifler({ companies = [], initialCompanyId = "", staff = [], currentUserName = "" }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string; staff?: string[] }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 25;
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState<"list" | "edit">("list");
   const [editId, setEditId] = useState<string | null>(null);
@@ -49,7 +53,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [mainTab, setMainTab] = useState<"quotes" | "products">("quotes");
   const [companyFilter, setCompanyFilter] = useState<string>(initialCompanyId);
-  useEffect(() => { setCompanyFilter(initialCompanyId); }, [initialCompanyId]);
+  useEffect(() => { setCompanyFilter(initialCompanyId); setPage(1); }, [initialCompanyId]);
 
   // form
   const [companyId, setCompanyId] = useState("");
@@ -76,11 +80,19 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 
   const loadQuotes = useCallback(async () => {
     setLoading(true);
-    const r = await fetch("/api/admin/quotes");
-    if (r.ok) setQuotes((await r.json()).quotes || []);
+    const p = new URLSearchParams({ page: String(page), limit: String(PAGE_SIZE) });
+    if (statusFilter !== "all") p.set("status", statusFilter);
+    if (companyFilter)          p.set("company_id", companyFilter);
+    if (listSearch.trim())      p.set("q", listSearch.trim());
+    const r = await fetch(`/api/admin/quotes?${p}`);
+    if (r.ok) { const d = await r.json(); setQuotes(d.quotes || []); setTotal(d.total ?? 0); }
     setLoading(false);
-  }, []);
+  }, [page, statusFilter, companyFilter, listSearch]);
+
   useEffect(() => { loadQuotes(); }, [loadQuotes]);
+
+  // Filtre değişince sayfa 1'e dön
+  useEffect(() => { setPage(1); }, [statusFilter, companyFilter, listSearch]);
 
   // ürün arama (debounce basit)
   useEffect(() => {
@@ -152,8 +164,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   }
 
   async function save(): Promise<Quote | null> {
-    if (!companyId) { alert("Müşteri seçin"); return null; }
-    if (items.length === 0) { alert("En az bir kalem ekleyin"); return null; }
+    if (!companyId) { showToast("Müşteri seçin", "warning"); return null; }
+    if (items.length === 0) { showToast("En az bir kalem ekleyin", "warning"); return null; }
     setSaving(true);
     const body = {
       id: editId || undefined,
@@ -169,9 +181,10 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       if (!r.ok) throw new Error((await r.json()).error || "Kaydedilemedi");
       const saved: Quote = await r.json();
       setEditId(saved.id); setQuoteNo(saved.quote_no);
+      showToast(editId ? "Teklif güncellendi" : "Teklif kaydedildi");
       await loadQuotes();
       return saved;
-    } catch (e) { alert(e instanceof Error ? e.message : "Hata"); return null; }
+    } catch (e) { showToast(e instanceof Error ? e.message : "Kaydedilemedi", "error"); return null; }
     finally { setSaving(false); }
   }
 
@@ -187,8 +200,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     let id = editId;
     if (!id) { const s = await save(); if (!s) return; id = s.id; }
     const r = await fetch("/api/admin/quotes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: st }) });
-    if (r.ok) await loadQuotes();
-    else alert("Durum güncellenemedi");
+    if (r.ok) { showToast("Durum güncellendi"); await loadQuotes(); }
+    else showToast("Durum güncellenemedi", "error");
   }
 
   // Profesyonel teklif belgesi (HTML) — Türkçe sorunsuz, yazdır/PDF için
@@ -355,7 +368,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       } catch { /* QR opsiyonel */ }
     }
     const w = window.open("", "_blank");
-    if (!w) { alert("Açılır pencere engellendi. Tarayıcı pop-up iznini verin."); return; }
+    if (!w) { showToast("Pop-up engellendi — tarayıcı izinlerini kontrol edin", "warning"); return; }
     w.document.write(quoteDocHtml(no, qr));
     w.document.close();
   }
@@ -375,8 +388,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     const to = prompt("Teklifin gönderileceği e-posta adresi:", c?.contact_email || "");
     if (!to) return;
     const r = await fetch("/api/admin/quotes/send", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: ("id" in saved ? saved.id : editId), email: to }) });
-    if (r.ok) { alert("Teklif e-postası gönderildi ✓"); await loadQuotes(); }
-    else alert("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
+    if (r.ok) { showToast("Teklif e-postası gönderildi → " + to); await loadQuotes(); }
+    else showToast("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error");
   }
 
   const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
@@ -543,6 +556,32 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             </div>
           </div>
         )}
+        {/* Pagination */}
+        {total > PAGE_SIZE && (() => {
+          const totalPages = Math.ceil(total / PAGE_SIZE);
+          const start = (page - 1) * PAGE_SIZE + 1;
+          const end   = Math.min(page * PAGE_SIZE, total);
+          const nums: number[] = [];
+          for (let i = Math.max(1, page - 2); i <= Math.min(totalPages, page + 2); i++) nums.push(i);
+          const btnS = (active: boolean, disabled: boolean): React.CSSProperties => ({
+            padding: "6px 12px", borderRadius: "8px", border: `1.5px solid ${active ? "#0052ff" : "#e5e7ef"}`,
+            background: active ? "#0052ff" : disabled ? "#f8f9fb" : "#fff",
+            color: active ? "#fff" : disabled ? "#d1d5db" : "#1a1d2e",
+            fontSize: "13px", fontWeight: 700, cursor: disabled ? "default" : "pointer",
+          });
+          return (
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", marginTop: "10px", flexWrap: "wrap", gap: "10px" }}>
+              <span style={{ fontSize: "13px", color: "#6b7280" }}><strong style={{ color: "#1a1d2e" }}>{start}–{end}</strong> / {total} teklif &nbsp;·&nbsp; Sayfa {page}/{totalPages}</span>
+              <div style={{ display: "flex", gap: "6px" }}>
+                <button onClick={() => setPage(1)} disabled={page === 1} style={btnS(false, page === 1)}>«</button>
+                <button onClick={() => setPage(p => p - 1)} disabled={page === 1} style={btnS(false, page === 1)}>← Önceki</button>
+                {nums.map(n => <button key={n} onClick={() => setPage(n)} style={btnS(n === page, false)}>{n}</button>)}
+                <button onClick={() => setPage(p => p + 1)} disabled={page === totalPages} style={btnS(false, page === totalPages)}>Sonraki →</button>
+                <button onClick={() => setPage(totalPages)} disabled={page === totalPages} style={btnS(false, page === totalPages)}>»</button>
+              </div>
+            </div>
+          );
+        })()}
         {copyModal}
       </div>
     );
@@ -850,7 +889,7 @@ function NewProductModal({ currency, product, onClose, onSaved }: { currency: st
   const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", display: "block", marginBottom: "6px", textTransform: "uppercase" as const, letterSpacing: ".3px" };
 
   async function save() {
-    if (!name.trim()) { alert("Ürün adı gerekli"); return; }
+    if (!name.trim()) { showToast("Ürün adı gerekli", "warning"); return; }
     setSaving(true);
     const payload = { name, code, unit_price: price ? Number(price) : 0, currency: cur, kdv_rate: kdv ? Number(kdv) : 20, unit, type };
     const r = await fetch("/api/admin/products", {
@@ -858,8 +897,8 @@ function NewProductModal({ currency, product, onClose, onSaved }: { currency: st
       body: JSON.stringify(isEdit ? { id: product!.id, ...payload } : payload),
     });
     setSaving(false);
-    if (r.ok) onSaved(await r.json());
-    else alert("Kaydedilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"));
+    if (r.ok) { showToast(isEdit ? "Ürün güncellendi" : "Ürün kataloğa eklendi"); onSaved(await r.json()); }
+    else showToast("Kaydedilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error");
   }
 
   return (

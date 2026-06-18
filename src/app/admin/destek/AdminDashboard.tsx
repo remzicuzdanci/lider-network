@@ -16,6 +16,8 @@ import Teklifler from "./Teklifler";
 import FortigateAssist from "./FortigateAssist";
 import Envanter from "./Envanter";
 import { companyLogo, clients as CLIENT_LOGOS } from "@/data/customer-logos";
+import AdminToast from "@/components/ui/AdminToast";
+import { showToast } from "@/lib/admin-toast";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -227,6 +229,14 @@ export default function AdminDashboard() {
   const [rptTo, setRptTo]             = useState("");
   const [allTickets, setAllTickets]   = useState<Ticket[]>([]);
 
+  // Reports — quote & asset stats
+  type QuoteRow = { id: string; status: string; grand_total: number; currency: string; created_at: string };
+  type AssetRow = { id: string; type: string; company_name: string | null; warranty_end: string | null; licensed: boolean; status: string };
+  const [rptAllQuotes, setRptAllQuotes] = useState<QuoteRow[]>([]);
+  const [rptAllAssets, setRptAllAssets] = useState<AssetRow[]>([]);
+  const [rptQuotesLoaded, setRptQuotesLoaded] = useState(false);
+  const [rptAssetsLoaded, setRptAssetsLoaded] = useState(false);
+
   // ── Session ──────────────────────────────────────────────────────────────────
   useEffect(() => {
     fetch("/api/admin/auth").then(r => r.json()).then(d => {
@@ -264,11 +274,15 @@ export default function AdminDashboard() {
 
   const fetchStats       = useCallback(async () => { const r = await fetch("/api/admin/stats"); if (r.ok) setStats(await r.json()); }, []);
   const fetchAllTickets  = useCallback(async () => { const r = await fetch("/api/tickets?limit=500"); if (r.ok) setAllTickets((await r.json()).tickets || []); }, []);
+  const fetchRptQuotes   = useCallback(async () => { if (rptQuotesLoaded) return; const r = await fetch("/api/admin/quotes?all=1"); if (r.ok) { setRptAllQuotes((await r.json()).quotes || []); setRptQuotesLoaded(true); } }, [rptQuotesLoaded]);
+  const fetchRptAssets   = useCallback(async () => { if (rptAssetsLoaded) return; const r = await fetch("/api/admin/assets?all=1"); if (r.ok) { setRptAllAssets((await r.json()).assets || []); setRptAssetsLoaded(true); } }, [rptAssetsLoaded]);
   const fetchCustomers   = useCallback(async () => { setCustLoading(true); const r = await fetch(`/api/admin/customers?filter=${custFilter}`); if (r.ok) setCustomers((await r.json()).customers || []); setCustLoading(false); }, [custFilter]);
   const fetchCompanies   = useCallback(async () => { setCompLoading(true); const r = await fetch("/api/admin/companies"); if (r.ok) setCompanies((await r.json()).companies || []); setCompLoading(false); }, []);
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
   useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
+
+  useEffect(() => { if (tab === "reports") { fetchRptQuotes(); fetchRptAssets(); } }, [tab, fetchRptQuotes, fetchRptAssets]);
 
   // Filtre veya arama değişince sayfa 1'e dön
   useEffect(() => { setPage(1); }, [statusF, priorityF, categoryF, dateF, search]);
@@ -323,14 +337,15 @@ export default function AdminDashboard() {
     setCompSaving(true);
     const method = compModal.id ? "PATCH" : "POST";
     const url = "/api/admin/companies";
-    await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(compModal) });
+    const r = await fetch(url, { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(compModal) });
     setCompSaving(false);
-    setCompModal(null);
-    fetchCompanies();
+    if (r.ok) { showToast(compModal.id ? "Şirket güncellendi" : "Şirket eklendi"); setCompModal(null); fetchCompanies(); }
+    else { const j = await r.json().catch(() => ({})); showToast("Kaydedilemedi: " + (j.error || "hata"), "error"); }
   }
   async function deactivateCompany(id: string, name: string) {
     if (!confirm(`"${name}" şirketini devre dışı bırak?`)) return;
     await fetch("/api/admin/companies", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
+    showToast(`"${name}" devre dışı bırakıldı`);
     fetchCompanies();
   }
 
@@ -569,8 +584,8 @@ export default function AdminDashboard() {
     e.stopPropagation();
     if (!confirm("Bu talebi kalıcı olarak silmek istediğinize emin misiniz?\nBu işlem geri alınamaz.")) return;
     const r = await fetch(`/api/tickets/${id}`, { method: "DELETE" });
-    if (r.ok) { fetchTickets(); fetchStats(); }
-    else { const j = await r.json().catch(() => ({})); alert("Silinemedi: " + (j.error || "hata")); }
+    if (r.ok) { showToast("Talep silindi"); fetchTickets(); fetchStats(); }
+    else { const j = await r.json().catch(() => ({})); showToast("Silinemedi: " + (j.error || "hata"), "error"); }
   }
 
   // ── Staff setup ────────────────────────────────────────────────────────────
@@ -579,8 +594,8 @@ export default function AdminDashboard() {
     if (!key) return;
     const r = await fetch(`/api/admin/setup?key=${encodeURIComponent(key)}`, { method: "POST" });
     const d = await r.json();
-    if (r.ok) { alert(`✅ ${d.users.length} personel oluşturuldu!\n\nİlk şifreler:\n${d.users.map((u: { name: string; initialPassword: string }) => `${u.name}: ${u.initialPassword}`).join("\n")}`); setStaffSetupDone(true); fetchStaff(); }
-    else alert("Hata: " + d.error);
+    if (r.ok) { showToast(`${d.users.length} personel oluşturuldu`); setStaffSetupDone(true); fetchStaff(); }
+    else showToast("Hata: " + d.error, "error");
   }
 
   // ── Reports ────────────────────────────────────────────────────────────────
@@ -637,6 +652,54 @@ export default function AdminDashboard() {
   }, [rptTickets, companies]);
   const rptResolved = rptTickets.filter(t=>t.status==="resolved"||t.status==="closed").length;
   const rptTotal = rptTickets.length;
+
+  // Quote stats (all-time, no date filter)
+  const QUOTE_STATUS_LABELS: Record<string, string> = { draft: "Taslak", sent: "Gönderildi", accepted: "Onaylandı", rejected: "Reddedildi", expired: "Süresi Doldu" };
+  const QUOTE_STATUS_COLORS: Record<string, { text: string; bg: string; dot: string }> = {
+    draft:    { text: "#6b7280", bg: "#f9fafb",  dot: "#9ca3af" },
+    sent:     { text: "#0052ff", bg: "#eff6ff",  dot: "#3b82f6" },
+    accepted: { text: "#15803d", bg: "#f0fdf4",  dot: "#22c55e" },
+    rejected: { text: "#dc2626", bg: "#fef2f2",  dot: "#ef4444" },
+    expired:  { text: "#d97706", bg: "#fffbeb",  dot: "#f59e0b" },
+  };
+  const rptQuoteByStatus = useMemo(() => ["draft","sent","accepted","rejected","expired"].map(s => ({
+    s, label: QUOTE_STATUS_LABELS[s], style: QUOTE_STATUS_COLORS[s],
+    count: rptAllQuotes.filter(q => q.status === s).length,
+  })), [rptAllQuotes]);
+  const rptQuoteAcceptedTotal = useMemo(() => rptAllQuotes.filter(q => q.status === "accepted").reduce((sum, q) => sum + (q.grand_total || 0), 0), [rptAllQuotes]);
+  const rptQuoteMonthly = useMemo(() => {
+    const map = new Map<string, { label: string; count: number; accepted: number }>();
+    rptAllQuotes.forEach(q => {
+      const d = new Date(q.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}`;
+      const label = `${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      const prev = map.get(key) || { label, count: 0, accepted: 0 };
+      map.set(key, { label, count: prev.count + 1, accepted: prev.accepted + (q.status === "accepted" ? 1 : 0) });
+    });
+    return Array.from(map.entries()).sort((a,b)=>a[0].localeCompare(b[0])).slice(-6).map(([,v])=>v);
+  }, [rptAllQuotes]);
+  const rptQuoteMonthlyMax = Math.max(...rptQuoteMonthly.map(m=>m.count), 1);
+
+  // Asset stats (all-time)
+  const ASSET_TYPE_LABELS: Record<string, string> = { firewall: "Firewall", switch: "Switch", ap: "AP (Access Point)", server: "Sunucu", ups: "UPS", other: "Diğer" };
+  const rptAssetByType = useMemo(() => {
+    const map = new Map<string, number>();
+    rptAllAssets.forEach(a => { map.set(a.type, (map.get(a.type) || 0) + 1); });
+    return Array.from(map.entries()).sort((a,b)=>b[1]-a[1]).map(([type, count]) => ({ type, label: ASSET_TYPE_LABELS[type] || type, count }));
+  }, [rptAllAssets]);
+  const rptAssetTotal = rptAllAssets.filter(a => a.status === "active").length;
+  const rptAssetExpiring = useMemo(() => {
+    const today = Date.now();
+    return [30, 60, 90].map(days => ({
+      days,
+      count: rptAllAssets.filter(a => {
+        if (!a.warranty_end || a.status !== "active" || a.licensed === false) return false;
+        const diff = Math.ceil((new Date(a.warranty_end + "T00:00:00").getTime() - today) / 86400000);
+        return diff >= 0 && diff <= days;
+      }).length,
+    }));
+  }, [rptAllAssets]);
+
   const pending = customers.filter(c=>!c.approved).length;
 
   const activeCompanies = companies.filter(c=>c.active);
@@ -790,7 +853,7 @@ export default function AdminDashboard() {
 </html>`;
 
     const win = window.open("", "_blank", "width=1100,height=800");
-    if (!win) { alert("Pop-up engelleyicisini kapatın ve tekrar deneyin."); return; }
+    if (!win) { showToast("Pop-up engelleyicisini kapatın ve tekrar deneyin", "warning"); return; }
     win.document.write(html);
     win.document.close();
   }
@@ -1669,6 +1732,103 @@ export default function AdminDashboard() {
               </div>
             )}
 
+            {/* ── Teklif İstatistikleri ─────────────────────────────── */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 24px", marginBottom: "14px" }}>
+              <h4 style={{ margin: "0 0 16px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "6px" }}>
+                <FileText size={14} color="#0052ff" /> Teklif İstatistikleri
+              </h4>
+              {!rptQuotesLoaded ? (
+                <p style={{ color: "#9ca3af", fontSize: "13px", margin: 0 }}>Yükleniyor…</p>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  {/* Duruma göre */}
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", margin: "0 0 10px" }}>Duruma Göre</p>
+                    {rptQuoteByStatus.map(q => (
+                      <div key={q.s} style={{ display:"flex",alignItems:"center",justifyContent:"space-between",padding:"8px 12px",marginBottom:"6px",background:q.style.bg,borderRadius:"8px" }}>
+                        <div style={{ display:"flex",alignItems:"center",gap:"7px" }}>
+                          <span style={{ width:7,height:7,borderRadius:"50%",background:q.style.dot,flexShrink:0 }} />
+                          <span style={{ fontSize:"12px",fontWeight:600,color:q.style.text }}>{q.label}</span>
+                        </div>
+                        <span style={{ fontSize:"18px",fontWeight:900,color:q.style.text,fontFamily:"var(--font-family-headline)" }}>{q.count}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Aylık trend + onaylanan ciro */}
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", margin: "0 0 10px" }}>Son 6 Ay</p>
+                    <div style={{ display:"flex",gap:"4px",alignItems:"flex-end",height:"80px",marginBottom:"8px" }}>
+                      {rptQuoteMonthly.map((m,i) => (
+                        <div key={i} style={{ flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",height:"100%" }}>
+                          {m.count>0 && <span style={{ fontSize:"9px",fontWeight:700,color:"#0052ff" }}>{m.count}</span>}
+                          <div style={{ flex:1,width:"100%",display:"flex",alignItems:"flex-end" }}>
+                            <div style={{ width:"100%",height:`${Math.max((m.count/rptQuoteMonthlyMax)*100,4)}%`,background:"linear-gradient(180deg,#0052ff,#6366f1)",borderRadius:"3px 3px 0 0" }} />
+                          </div>
+                          <span style={{ fontSize:"8px",color:"#9ca3af",whiteSpace:"nowrap" }}>{m.label.split(" ")[0].slice(0,3)}</span>
+                        </div>
+                      ))}
+                      {rptQuoteMonthly.length === 0 && <span style={{ fontSize:"12px",color:"#9ca3af" }}>Henüz teklif yok</span>}
+                    </div>
+                    <div style={{ background:"#f0fdf4",border:"1px solid #bbf7d0",borderRadius:"10px",padding:"10px 14px",marginTop:"8px" }}>
+                      <div style={{ fontSize:"10px",color:"#15803d",fontWeight:700,textTransform:"uppercase",letterSpacing:".5px" }}>Toplam Onaylanan Ciro</div>
+                      <div style={{ fontSize:"22px",fontWeight:900,color:"#15803d",fontFamily:"var(--font-family-headline)",marginTop:"3px" }}>
+                        {rptQuoteAcceptedTotal.toLocaleString("tr-TR",{minimumFractionDigits:2,maximumFractionDigits:2})} ₺
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ── Envanter İstatistikleri ───────────────────────────── */}
+            <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "20px 24px", marginBottom: "14px" }}>
+              <h4 style={{ margin: "0 0 16px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "6px" }}>
+                <Server size={14} color="#0052ff" /> Cihaz Envanteri İstatistikleri
+              </h4>
+              {!rptAssetsLoaded ? (
+                <p style={{ color: "#9ca3af", fontSize: "13px", margin: 0 }}>Yükleniyor…</p>
+              ) : (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+                  {/* Cihaz tipi */}
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", margin: "0 0 10px" }}>Cihaz Tipine Göre (Aktif: {rptAssetTotal})</p>
+                    {rptAssetByType.length === 0 && <span style={{ fontSize:"12px",color:"#9ca3af" }}>Henüz cihaz yok</span>}
+                    {rptAssetByType.map(a => {
+                      const pct = rptAssetTotal ? Math.round((a.count / rptAllAssets.length) * 100) : 0;
+                      return (
+                        <div key={a.type} style={{ marginBottom: "12px" }}>
+                          <div style={{ display:"flex",justifyContent:"space-between",marginBottom:"5px" }}>
+                            <span style={{ fontSize:"12px",color:"#6b7280",fontWeight:500 }}>{a.label}</span>
+                            <span style={{ fontSize:"12px",fontWeight:800,color:"#0052ff" }}>{a.count}</span>
+                          </div>
+                          <div style={{ height:"6px",background:"#f0f2f8",borderRadius:"3px",overflow:"hidden" }}>
+                            <div style={{ height:"100%",width:`${pct}%`,background:"linear-gradient(90deg,#0052ff,#6366f1)",borderRadius:"3px",transition:"width .5s" }} />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  {/* Süresi dolacak lisanslar */}
+                  <div>
+                    <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", margin: "0 0 10px" }}>Yaklaşan Lisans Yenileme</p>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "8px" }}>
+                      {rptAssetExpiring.map(e => (
+                        <div key={e.days} style={{ background: e.count > 0 ? "#fffbeb" : "#f9fafb", border: `1px solid ${e.count > 0 ? "#fde68a" : "#e5e7ef"}`, borderRadius: "10px", padding: "12px 10px", textAlign: "center" }}>
+                          <div style={{ fontSize: "10px", color: e.count > 0 ? "#d97706" : "#9ca3af", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px" }}>{e.days} Gün</div>
+                          <div style={{ fontSize: "26px", fontWeight: 900, color: e.count > 0 ? "#d97706" : "#9ca3af", fontFamily: "var(--font-family-headline)", marginTop: "4px", lineHeight: 1 }}>{e.count}</div>
+                          <div style={{ fontSize: "10px", color: "#9ca3af", marginTop: "2px" }}>cihaz</div>
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ background:"#f0f9ff",border:"1px solid #bae6fd",borderRadius:"10px",padding:"10px 14px",marginTop:"12px" }}>
+                      <div style={{ fontSize:"10px",color:"#0369a1",fontWeight:700,textTransform:"uppercase",letterSpacing:".5px" }}>Toplam Kayıtlı Cihaz</div>
+                      <div style={{ fontSize:"22px",fontWeight:900,color:"#0369a1",fontFamily:"var(--font-family-headline)",marginTop:"3px" }}>{rptAllAssets.length}</div>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* PDF / Excel Export */}
             <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "16px 24px", marginBottom: "14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
@@ -1976,8 +2136,8 @@ export default function AdminDashboard() {
                               const res = await fetch("/api/admin/logos/upload", { method: "POST", body: fd });
                               const json = await res.json();
                               if (json.url) setCompModal(p => ({ ...p!, logo_url: json.url }));
-                              else alert(json.error || "Yükleme başarısız");
-                            } catch { alert("Yükleme sırasında hata oluştu"); }
+                              else showToast(json.error || "Yükleme başarısız", "error");
+                            } catch { showToast("Yükleme sırasında hata oluştu", "error"); }
                             finally { setLogoUploading(false); e.target.value = ""; }
                           }} />
                         {logoUploading ? "Yükleniyor..." : "📁 Bilgisayardan Yükle"}
@@ -2010,6 +2170,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      <AdminToast />
     </div>
   );
 }
