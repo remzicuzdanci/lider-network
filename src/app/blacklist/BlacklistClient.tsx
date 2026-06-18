@@ -1,6 +1,84 @@
 "use client";
 import { useState } from "react";
 
+/* ── FortiBleed Uyarı Bileşeni ──────────────────────────────────────── */
+function FortiBleedAlert({ onCheck }: { onCheck: (ip: string) => void }) {
+  const [open, setOpen] = useState(true);
+  const [ip, setIp] = useState("");
+
+  if (!open) {
+    return (
+      <button onClick={() => setOpen(true)} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16, padding: "8px 16px", borderRadius: 10, border: "1.5px solid rgba(251,113,133,.3)", background: "rgba(251,113,133,.06)", color: "#fb7185", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+        ⚠️ FortiBleed Kampanyası — Cihazınızı kontrol edin
+      </button>
+    );
+  }
+
+  return (
+    <div style={{ marginBottom: 20, borderRadius: 14, border: "1.5px solid rgba(251,113,133,.35)", background: "rgba(251,113,133,.06)", overflow: "hidden" }}>
+      {/* Başlık */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 18px", borderBottom: "1px solid rgba(251,113,133,.2)" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 20 }}>🚨</span>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#fb7185" }}>FortiBleed Kampanyası — 73.932 Fortinet Cihazı Ele Geçirildi</div>
+            <div style={{ fontSize: 11, color: "#9aa6d6", marginTop: 2 }}>194 ülkede credential stuffing saldırısı · 1,16 milyar kimlik doğrulama denemesi</div>
+          </div>
+        </div>
+        <button onClick={() => setOpen(false)} style={{ background: "none", border: "none", color: "#5a6896", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: "2px 6px" }}>×</button>
+      </div>
+
+      <div style={{ padding: "14px 18px", display: "flex", gap: 20, flexWrap: "wrap" }}>
+        {/* Sol: Acil önlemler */}
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#fb7185", letterSpacing: ".06em", marginBottom: 8 }}>ACİL YAPILMASI GEREKENLER</div>
+          {[
+            "Yönetim arayüzünü internetten kapat (Trusted Hosts)",
+            "Tüm admin ve VPN şifrelerini değiştir",
+            "MFA / FortiToken zorunlu hale getir",
+            "Giriş loglarını kontrol et (başarısız denemeler)",
+          ].map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 6, fontSize: 12, color: "#9aa6d6" }}>
+              <span style={{ color: "#fb7185", fontWeight: 800, flexShrink: 0, marginTop: 1 }}>{i + 1}.</span>
+              {item}
+            </div>
+          ))}
+        </div>
+
+        {/* Sağ: IP kontrol kutusu */}
+        <div style={{ minWidth: 240, borderLeft: "1px solid rgba(251,113,133,.2)", paddingLeft: 20 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#fb7185", letterSpacing: ".06em", marginBottom: 8 }}>MÜŞTERİ FORTİGATE IP KONTROL</div>
+          <div style={{ fontSize: 11, color: "#5a6896", marginBottom: 10, lineHeight: 1.6 }}>
+            FortiGate cihazının WAN IP'sini girerek kara listelerde sorgu yap.
+          </div>
+          <div style={{ display: "flex", gap: 6 }}>
+            <input
+              value={ip}
+              onChange={e => setIp(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && ip.trim() && onCheck(ip.trim())}
+              placeholder="FortiGate WAN IP"
+              style={{ flex: 1, padding: "9px 12px", borderRadius: 8, border: "1px solid rgba(251,113,133,.3)", background: "rgba(0,0,0,.25)", color: "#e8ecff", fontSize: 12, fontFamily: "monospace", outline: "none" }}
+            />
+            <button
+              onClick={() => ip.trim() && onCheck(ip.trim())}
+              disabled={!ip.trim()}
+              style={{ padding: "9px 14px", borderRadius: 8, border: "none", background: ip.trim() ? "#fb7185" : "rgba(251,113,133,.2)", color: ip.trim() ? "#fff" : "#5a6896", fontSize: 12, fontWeight: 700, cursor: ip.trim() ? "pointer" : "not-allowed" }}
+            >
+              Sorgula
+            </button>
+          </div>
+          <div style={{ marginTop: 10 }}>
+            <a href="https://cavalier.hudsonrock.com" target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: 11, color: "#9aa6d6", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4 }}>
+              ↗ Hudson Rock'ta cihaz ihlali sorgula
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const C = {
   bg: "#0a0e27", card: "#141a3a", card2: "#1b2350", line: "#283166",
   text: "#e8ecff", sub: "#9aa6d6", dim: "#5a6896",
@@ -155,6 +233,9 @@ export default function BlacklistClient() {
             {`${ALL_LISTS.length} DNSBL / RBL listesinde gerçek zamanlı itibar kontrolü — Spamhaus, SpamCop, Barracuda ve daha fazlası.`}
           </p>
         </section>
+
+        {/* FortiBleed Uyarı Bölümü */}
+        <FortiBleedAlert onCheck={ip => { setInput(ip); check(null, ip); }} />
 
         {/* Search */}
         <form onSubmit={check} style={{ display: "flex", gap: 10, marginBottom: 16, flexWrap: "wrap" }}>
