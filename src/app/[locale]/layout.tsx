@@ -40,8 +40,8 @@ const baseUrl = "https://www.lidernetwork.com.tr";
 export const metadata: Metadata = {
   metadataBase: new URL(baseUrl),
   title: {
-    default: "Lider Network - Fortinet Yetkili Partner | Siber Güvenlik ve BT Altyapı Çözümleri",
-    template: "%s | Lider Network - Fortinet Yetkili Partner",
+    default: "Lider Network | Fortinet Yetkili Partner – Siber Güvenlik & BT",
+    template: "%s | Lider Network",
   },
   description:
     "Lider Network, 2006'dan beri Fortinet Yetkili Partner olarak enterprise siber güvenlik, ağ altyapısı ve veri depolama çözümleri sunar. 500+ başarılı proje, 7/24 destek.",

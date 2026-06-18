@@ -26,8 +26,8 @@ export async function generateMetadata({
 
   return {
     title: isTr
-      ? "Lider Network - Fortinet Yetkili Partner | Siber Güvenlik ve BT Altyapı Çözümleri"
-      : "Lider Network - Fortinet Authorized Partner | Cybersecurity & IT Infrastructure",
+      ? "Lider Network | Fortinet Yetkili Partner – Siber Güvenlik & BT"
+      : "Lider Network | Fortinet Authorized Partner – Cybersecurity & IT",
     description: isTr
       ? "Fortinet Yetkili Partner Lider Network ile altyapınızı güçlendirin. NGFW, SD-WAN, siber güvenlik ve 7/24 destek. 2006'dan beri 500+ başarılı proje, İstanbul."
       : "Strengthen your infrastructure with Lider Network, Fortinet Authorized Partner. NGFW, SD-WAN, cybersecurity and 24/7 support. 500+ projects since 2006.",
