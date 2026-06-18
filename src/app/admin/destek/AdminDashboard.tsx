@@ -14,6 +14,7 @@ import IsPlani from "./IsPlani";
 import PersonelNotlari from "./PersonelNotlari";
 import Teklifler from "./Teklifler";
 import FortigateAssist from "./FortigateAssist";
+import FortigateChecker from "./FortigateChecker";
 import Envanter from "./Envanter";
 import { companyLogo, clients as CLIENT_LOGOS } from "@/data/customer-logos";
 import AdminToast from "@/components/ui/AdminToast";
@@ -1929,7 +1930,8 @@ export default function AdminDashboard() {
         )}
 
         {tab === "fortigate" && (
-          <div style={{ padding: "24px 28px" }}>
+          <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+            <FortigateChecker />
             <FortigateAssist />
           </div>
         )}
