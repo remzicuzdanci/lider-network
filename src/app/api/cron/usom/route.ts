@@ -15,6 +15,11 @@ const FALLBACK_FEEDS: Record<string, string> = {
   ipv4:   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
 };
 
+const URL_FEEDS = [
+  "https://urlhaus.abuse.ch/downloads/text_online/",
+  "https://openphish.com/feed.txt",
+];
+
 async function fetchText(url: string): Promise<string | null> {
   try {
     const r = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(25_000) });
@@ -33,6 +38,21 @@ function parseIpFile(raw: string): string[] {
   return raw.split(/\r?\n/)
     .map(l => l.trim().split(/\s+/)[0])
     .filter(v => v && !v.startsWith("#") && /^(\d{1,3}\.){3}\d{1,3}/.test(v));
+}
+
+function parseUrlFile(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(v => v && !v.startsWith("#") && (v.startsWith("http://") || v.startsWith("https://")));
+}
+
+async function fetchUrlFeeds(): Promise<string[]> {
+  const results = await Promise.all(URL_FEEDS.map(u => fetchText(u)));
+  const all: string[] = [];
+  for (const txt of results) {
+    if (txt) all.push(...parseUrlFile(txt));
+  }
+  return [...new Set(all)].sort();
 }
 
 // Supabase'e direkt REST ile yaz — JS client bypass
@@ -81,9 +101,10 @@ export async function GET(req: Request) {
   const started = Date.now();
 
   // Veri çek
-  const [hostsTxt, ipTxt] = await Promise.all([
+  const [hostsTxt, ipTxt, urls] = await Promise.all([
     fetchText(FALLBACK_FEEDS.domain),
     fetchText(FALLBACK_FEEDS.ipv4),
+    fetchUrlFeeds(),
   ]);
 
   const domains = hostsTxt ? [...new Set(parseHostsFile(hostsTxt))].sort() : [];
@@ -93,10 +114,14 @@ export async function GET(req: Request) {
   const writeResults: Record<string, { ok: boolean; status: number; body: string }> = {};
 
   const feeds = [
-    { type: "domain", records: domains },
-    { type: "ipv4",   records: ipv4s },
-    { type: "ipv6",   records: [] as string[] },
-    { type: "url",    records: [] as string[] },
+    { type: "domain",   records: domains },
+    { type: "ipv4",     records: ipv4s },
+    { type: "ipv6",     records: [] as string[] },
+    { type: "url",      records: urls },
+    // URL lite feeds — URLhaus/OpenPhish zaten aktif kayıtlar, aynı içerik
+    { type: "url_90d",  records: urls },
+    { type: "url_180d", records: urls },
+    { type: "url_365d", records: urls },
   ];
 
   for (const f of feeds) {
@@ -112,7 +137,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     success: allOk,
     elapsed_ms: Date.now() - started,
-    fetched: { domain: domains.length, ipv4: ipv4s.length },
+    fetched: { domain: domains.length, ipv4: ipv4s.length, url: urls.length },
     supabase_url: (process.env.NEXT_PUBLIC_SUPABASE_URL || "").slice(0, 50),
     using_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
     write_results: writeResults,

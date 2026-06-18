@@ -542,7 +542,7 @@ export default function ThreatClient() {
                     <strong style={{ color: C.text }}>Lite Feed</strong> — FortiGate 60F/80F gibi düşük hafızalı cihazlar için son 90/180/365 gün içindeki kayıtları içerir. Tam listeye göre çok daha küçük, koruma düzeyi aynı.
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {FEEDS.filter(f => f.key === "domain" || f.key === "ipv4").map(f =>
+                    {FEEDS.filter(f => f.key === "domain" || f.key === "ipv4" || f.key === "url").map(f =>
                       LITE_WINDOWS.map(w => {
                         const url = `${origin}/feeds/${f.key}-${w.key}.txt`;
                         return (
