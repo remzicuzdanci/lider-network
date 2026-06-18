@@ -1,9 +1,10 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Pencil, Trash2, Printer, Mail, FileText, Package, Check } from "lucide-react";
 
 interface Company { id: string; name: string; }
 interface DItem { name: string; qty: number; serial?: string; unit?: string }
+interface Product { id: string; name: string; code: string | null; brand: string | null; unit: string; unit_price: number; currency: string; }
 interface DeliveryNote {
   id: string;
   note_no: string;
@@ -139,6 +140,9 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
   const [saving, setSaving] = useState(false);
   // Cari kart detayları (firma seçilince adres/e-posta/telefon otomatik çekmek için)
   const [cariMap, setCariMap] = useState<Record<string, { name: string; address: string | null; email: string | null; phone: string | null }>>({});
+  // Ürün kataloğu autocomplete
+  const [prodSuggest, setProdSuggest] = useState<{ row: number; results: Product[] } | null>(null);
+  const prodTimer = useRef<ReturnType<typeof setTimeout> | null>(null);;
 
   async function load() {
     setLoading(true);
@@ -309,11 +313,55 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
                 <label style={lblS}>Teslim Edilen Ürünler *</label>
                 <div style={{ display: "grid", gap: "8px" }}>
                   {(modal.items || []).map((it, i) => (
-                    <div key={i} style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 90px 110px 36px", gap: "8px", alignItems: "center", background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: "9px", padding: "8px" }}>
-                      <input style={inpS} value={it.name} onChange={e => setItem(i, { name: e.target.value })} placeholder={`${i + 1}. Ürün / açıklama`} />
-                      <input type="number" min={0} style={inpS} value={it.qty} onChange={e => setItem(i, { qty: Number(e.target.value) })} placeholder="Adet" />
-                      <input style={inpS} value={it.serial || ""} onChange={e => setItem(i, { serial: e.target.value })} placeholder="Seri no" />
-                      <button onClick={() => delItem(i)} title="Satırı sil" style={{ width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}><Trash2 size={14} /></button>
+                    <div key={i} style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: "9px", padding: "8px" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 90px 130px 36px", gap: "8px", alignItems: "center" }}>
+                        {/* Ürün adı — katalog autocomplete */}
+                        <div style={{ position: "relative" }}>
+                          <input
+                            style={inpS}
+                            value={it.name}
+                            placeholder={`${i + 1}. Ürün adı yaz veya katalogdan seç`}
+                            onChange={e => {
+                              setItem(i, { name: e.target.value });
+                              const q = e.target.value.trim();
+                              if (prodTimer.current) clearTimeout(prodTimer.current);
+                              if (q.length < 1) { setProdSuggest(null); return; }
+                              prodTimer.current = setTimeout(async () => {
+                                const r = await fetch(`/api/admin/products?q=${encodeURIComponent(q)}`);
+                                const d = await r.json();
+                                if ((d.products || []).length > 0) setProdSuggest({ row: i, results: d.products });
+                                else setProdSuggest(null);
+                              }, 250);
+                            }}
+                            onBlur={() => setTimeout(() => setProdSuggest(null), 180)}
+                          />
+                          {/* Öneri listesi */}
+                          {prodSuggest?.row === i && (
+                            <div style={{ position: "absolute", top: "100%", left: 0, right: 0, zIndex: 50, background: "#fff", border: "1.5px solid #0052ff", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,82,255,.13)", marginTop: "3px", maxHeight: "220px", overflowY: "auto" }}>
+                              {prodSuggest.results.map(p => (
+                                <div key={p.id}
+                                  onMouseDown={() => {
+                                    setItem(i, { name: p.name, unit: p.unit || "adet" });
+                                    setProdSuggest(null);
+                                  }}
+                                  style={{ padding: "9px 13px", cursor: "pointer", borderBottom: "1px solid #f1f5f9", display: "flex", flexDirection: "column", gap: "1px" }}
+                                  onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
+                                  onMouseLeave={e => (e.currentTarget.style.background = "#fff")}
+                                >
+                                  <span style={{ fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{p.name}</span>
+                                  <span style={{ fontSize: "11px", color: "#94a3b8" }}>
+                                    {[p.code, p.brand, p.unit].filter(Boolean).join(" · ")}
+                                    {p.unit_price > 0 ? ` · ${p.unit_price.toLocaleString("tr-TR")} ${p.currency}` : ""}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                        <input type="number" min={0} style={inpS} value={it.qty} onChange={e => setItem(i, { qty: Number(e.target.value) })} placeholder="Adet" />
+                        <input style={inpS} value={it.serial || ""} onChange={e => setItem(i, { serial: e.target.value })} placeholder="Seri no" />
+                        <button onClick={() => delItem(i)} title="Satırı sil" style={{ width: 36, height: 36, display: "inline-flex", alignItems: "center", justifyContent: "center", borderRadius: "8px", border: "1px solid #fecaca", background: "#fef2f2", color: "#dc2626", cursor: "pointer" }}><Trash2 size={14} /></button>
+                      </div>
                     </div>
                   ))}
                 </div>
