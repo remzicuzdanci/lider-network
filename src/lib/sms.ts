@@ -30,6 +30,7 @@ export async function sendSms(phone: string, message: string): Promise<{ ok: boo
     },
   };
 
+  console.log("[SMS] Gönderiliyor →", gsm, "| key ilk 6:", key.slice(0, 6));
   try {
     const r = await fetch("https://api.iletimerkezi.com/v1/send-sms/json", {
       method: "POST",
@@ -37,7 +38,9 @@ export async function sendSms(phone: string, message: string): Promise<{ ok: boo
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(8_000),
     });
-    const data = await r.json();
+    const raw = await r.text();
+    console.log("[SMS] Ham yanıt:", raw);
+    const data = JSON.parse(raw);
     const code = data?.response?.status?.code;
     if (code === 200) return { ok: true };
     return { ok: false, error: `İleti Merkezi hata kodu: ${code} — ${data?.response?.status?.message ?? ""}` };
