@@ -1,38 +1,47 @@
 /**
- * SMS gönderimi — Netgsm HTTP API
- * Env vars: NETGSM_USERCODE, NETGSM_PASSWORD, NETGSM_MSGHEADER
+ * SMS gönderimi — İleti Merkezi JSON API
+ * Env vars: ILETIMERKEZI_KEY, ILETIMERKEZI_HASH, ILETIMERKEZI_SENDER
  */
 
 export async function sendSms(phone: string, message: string): Promise<{ ok: boolean; error?: string }> {
-  const usercode  = process.env.NETGSM_USERCODE;
-  const password  = process.env.NETGSM_PASSWORD;
-  const msgheader = process.env.NETGSM_MSGHEADER || "LIDERNETWORK";
+  const key    = process.env.ILETIMERKEZI_KEY;
+  const hash   = process.env.ILETIMERKEZI_HASH;
+  const sender = process.env.ILETIMERKEZI_SENDER || "LIDERNETWORK";
 
-  if (!usercode || !password) {
-    console.warn("[SMS] NETGSM_USERCODE veya NETGSM_PASSWORD tanımlı değil — SMS gönderilmedi");
+  if (!key || !hash) {
+    console.warn("[SMS] ILETIMERKEZI_KEY veya ILETIMERKEZI_HASH tanımlı değil — SMS gönderilmedi");
     return { ok: false, error: "SMS yapılandırılmamış" };
   }
 
-  // Netgsm, Türkiye numaralarını 905XXXXXXXXX formatında ister
+  // İleti Merkezi, Türkiye numaralarını 905XXXXXXXXX formatında ister
   const gsm = phone.replace(/\D/g, "").replace(/^0/, "90").replace(/^(\d{10})$/, "90$1");
 
-  const params = new URLSearchParams({
-    usercode,
-    password,
-    gsmno:     gsm,
-    message,
-    msgheader,
-    encoding:  "TR",
-  });
+  const body = {
+    request: {
+      authentication: { key, hash },
+      order: {
+        sender,
+        iys: "1",
+        iysList: "BIREYSEL",
+        message: {
+          text: message,
+          receipients: { number: [gsm] },
+        },
+      },
+    },
+  };
 
   try {
-    const r = await fetch(`https://api.netgsm.com.tr/sms/send/get/?${params.toString()}`, {
+    const r = await fetch("https://api.iletimerkezi.com/v1/send-sms/json", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
       signal: AbortSignal.timeout(8_000),
     });
-    const body = await r.text();
-    // Netgsm, başarıda "00 <msgid>" döner; hata kodları: 20, 30, 40, 70...
-    if (body.startsWith("00")) return { ok: true };
-    return { ok: false, error: `Netgsm hata kodu: ${body.slice(0, 30)}` };
+    const data = await r.json();
+    const code = data?.response?.status?.code;
+    if (code === 200) return { ok: true };
+    return { ok: false, error: `İleti Merkezi hata kodu: ${code} — ${data?.response?.status?.message ?? ""}` };
   } catch (e) {
     return { ok: false, error: String(e) };
   }

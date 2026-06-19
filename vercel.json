@@ -11,10 +11,6 @@
     {
       "path": "/api/cron/usom",
       "schedule": "0 3 * * *"
-    },
-    {
-      "path": "/api/cron/quote-followup",
-      "schedule": "0 7 * * *"
     }
   ]
 }
