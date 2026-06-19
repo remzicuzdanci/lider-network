@@ -1,15 +1,15 @@
 /**
  * SMS gönderimi — İleti Merkezi JSON API
- * Env vars: ILETIMERKEZI_KEY, ILETIMERKEZI_HASH, ILETIMERKEZI_SENDER
+ * Env vars: ILETIMERKEZI_USERNAME (kayıtlı tel no), ILETIMERKEZI_PASSWORD, ILETIMERKEZI_SENDER
  */
 
 export async function sendSms(phone: string, message: string): Promise<{ ok: boolean; error?: string }> {
-  const key    = process.env.ILETIMERKEZI_KEY;
-  const hash   = process.env.ILETIMERKEZI_HASH;
-  const sender = process.env.ILETIMERKEZI_SENDER || "LIDERNETWORK";
+  const key    = process.env.ILETIMERKEZI_USERNAME;
+  const hash   = process.env.ILETIMERKEZI_PASSWORD;
+  const sender = process.env.ILETIMERKEZI_SENDER || "APITEST";
 
   if (!key || !hash) {
-    console.warn("[SMS] ILETIMERKEZI_KEY veya ILETIMERKEZI_HASH tanımlı değil — SMS gönderilmedi");
+    console.warn("[SMS] ILETIMERKEZI_USERNAME veya ILETIMERKEZI_PASSWORD tanımlı değil — SMS gönderilmedi");
     return { ok: false, error: "SMS yapılandırılmamış" };
   }
 
