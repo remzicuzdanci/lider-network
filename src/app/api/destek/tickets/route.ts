@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
     }
 
     // Show all tickets from the same company (matched by company name) OR their own tickets
-    query = query.or(`company.eq.${profile.company},user_id.eq.${user.id},customer_email.eq.${user.email}`);
+    const safeCompany = profile.company.replace(/[",]/g, "");
+    query = query.or(`company.eq.${safeCompany},user_id.eq.${user.id},customer_email.eq.${user.email}`);
   } else {
     query = query.or(`user_id.eq.${user.id},customer_email.eq.${user.email}`);
   }

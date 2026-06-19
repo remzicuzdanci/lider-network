@@ -1,3 +1,4 @@
+import crypto from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import {
   generateSessionToken,
@@ -6,10 +7,13 @@ import {
   validateNamedToken,
   findStaffByEmail,
   verifyPassword,
+  generateOtp,
+  signOtpChallenge,
   COOKIE_NAME,
 } from "@/lib/admin-auth";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 import { verifyTurnstile } from "@/lib/turnstile";
+import { sendSms } from "@/lib/sms";
 
 const COOKIE_OPTS = {
   httpOnly: true,
@@ -60,6 +64,21 @@ export async function POST(request: NextRequest) {
       if (!ok) {
         return NextResponse.json({ error: "E-posta veya şifre hatalı" }, { status: 401 });
       }
+
+      // ── SMS OTP: personelin telefonu varsa doğrulama gönder ──────────────────
+      if (staff.phone) {
+        const otp = generateOtp();
+        const challenge = signOtpChallenge(staff.email, otp);
+        const smsText = `Lider Network giriş kodunuz: ${otp} (5 dakika geçerli)`;
+        const smsSent = await sendSms(staff.phone, smsText);
+        if (!smsSent.ok) {
+          console.error("[OTP] SMS gönderilemedi:", smsSent.error);
+          // SMS başarısız olsa bile login'i engelleme — sessizce devam et
+        }
+        return NextResponse.json({ otpRequired: true, challenge, name: staff.name });
+      }
+
+      // Telefon tanımlı değil — direkt oturum aç
       const token = generateNamedToken(staff.email, staff.role, staff.name);
       const res = NextResponse.json({ success: true, name: staff.name, role: staff.role });
       res.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);
@@ -70,7 +89,12 @@ export async function POST(request: NextRequest) {
     if (!process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: "Lütfen e-posta ile giriş yapın" }, { status: 400 });
     }
-    if (password !== process.env.ADMIN_PASSWORD) {
+    const adminPw = process.env.ADMIN_PASSWORD;
+    const pwMatch = crypto.timingSafeEqual(
+      Buffer.from(password.padEnd(128)),
+      Buffer.from(adminPw.padEnd(128))
+    ) && password === adminPw;
+    if (!pwMatch) {
       return NextResponse.json({ error: "Hatalı şifre" }, { status: 401 });
     }
     const token = generateSessionToken();

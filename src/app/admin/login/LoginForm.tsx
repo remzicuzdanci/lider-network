@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import Turnstile, { TURNSTILE_ENABLED } from "@/components/Turnstile";
@@ -12,8 +12,17 @@ export default function LoginForm() {
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState("");
   const [captcha, setCaptcha]   = useState("");
-  const [focusedField, setFocusedField] = useState<"email"|"password"|null>(null);
+  const [focusedField, setFocusedField] = useState<"email"|"password"|"otp"|null>(null);
   const onToken = useCallback((t: string) => setCaptcha(t), []);
+
+  // OTP adımı
+  const [otpStep, setOtpStep]       = useState(false);
+  const [otp, setOtp]               = useState("");
+  const [challenge, setChallenge]   = useState("");
+  const [otpName, setOtpName]       = useState("");
+  const otpRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { if (otpStep) otpRef.current?.focus(); }, [otpStep]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -28,8 +37,15 @@ export default function LoginForm() {
       });
       const data = await res.json();
       if (res.ok) {
-        router.push("/admin/destek");
-        router.refresh();
+        if (data.otpRequired) {
+          setChallenge(data.challenge);
+          setOtpName(data.name || "");
+          setOtpStep(true);
+          setOtp("");
+        } else {
+          router.push("/admin/destek");
+          router.refresh();
+        }
       } else {
         setError(data.error || "Giriş başarısız");
       }
@@ -40,13 +56,37 @@ export default function LoginForm() {
     }
   }
 
-  const inputStyle = (field: "email" | "password"): React.CSSProperties => ({
+  async function handleOtp(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/admin/auth/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim(), otp: otp.trim(), challenge }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        router.push("/admin/destek");
+        router.refresh();
+      } else {
+        setError(data.error || "Kod hatalı");
+      }
+    } catch {
+      setError("Bağlantı hatası");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const inputStyle = (field: "email" | "password" | "otp"): React.CSSProperties => ({
     width: "100%",
     padding: "12px 16px",
     boxSizing: "border-box",
     background: focusedField === field ? "#f0f5ff" : "#f8f9fc",
     border: `1.5px solid ${
-      field === "password" && error
+      (field === "password" || field === "otp") && error
         ? "#ef4444"
         : focusedField === field
         ? "#0052ff"
@@ -194,102 +234,206 @@ export default function LoginForm() {
             </p>
           </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit}>
+          {/* Form — Adım 1: E-posta + Şifre */}
+          {!otpStep && (
+            <form onSubmit={handleSubmit}>
 
-            {/* E-posta */}
-            <div style={{ marginBottom: "16px" }}>
-              <label style={{
-                display: "block", fontSize: "12px", fontWeight: 700,
-                color: "#374151", marginBottom: "8px",
-                letterSpacing: ".3px", textTransform: "uppercase",
-              }}>
-                E-posta
-              </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="ad.soyad@lidernetwork.com.tr"
-                autoFocus
-                style={inputStyle("email")}
-                onFocus={() => setFocusedField("email")}
-                onBlur={() => setFocusedField(null)}
-              />
-            </div>
-
-            {/* Şifre */}
-            <div style={{ marginBottom: "24px" }}>
-              <label style={{
-                display: "block", fontSize: "12px", fontWeight: 700,
-                color: "#374151", marginBottom: "8px",
-                letterSpacing: ".3px", textTransform: "uppercase",
-              }}>
-                Şifre
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                required
-                style={inputStyle("password")}
-                onFocus={() => setFocusedField("password")}
-                onBlur={() => setFocusedField(null)}
-              />
-              {error && (
-                <div style={{
-                  display: "flex", alignItems: "center", gap: "8px",
-                  background: "#fef2f2", border: "1px solid #fecaca",
-                  borderRadius: "8px", padding: "10px 12px", marginTop: "10px",
+              {/* E-posta */}
+              <div style={{ marginBottom: "16px" }}>
+                <label style={{
+                  display: "block", fontSize: "12px", fontWeight: 700,
+                  color: "#374151", marginBottom: "8px",
+                  letterSpacing: ".3px", textTransform: "uppercase",
                 }}>
-                  <span style={{ fontSize: "16px" }}>⚠️</span>
-                  <span style={{ color: "#dc2626", fontSize: "13px", fontWeight: 500 }}>{error}</span>
+                  E-posta
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="ad.soyad@lidernetwork.com.tr"
+                  autoFocus
+                  style={inputStyle("email")}
+                  onFocus={() => setFocusedField("email")}
+                  onBlur={() => setFocusedField(null)}
+                />
+              </div>
+
+              {/* Şifre */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{
+                  display: "block", fontSize: "12px", fontWeight: 700,
+                  color: "#374151", marginBottom: "8px",
+                  letterSpacing: ".3px", textTransform: "uppercase",
+                }}>
+                  Şifre
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  style={inputStyle("password")}
+                  onFocus={() => setFocusedField("password")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                {error && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    background: "#fef2f2", border: "1px solid #fecaca",
+                    borderRadius: "8px", padding: "10px 12px", marginTop: "10px",
+                  }}>
+                    <span style={{ fontSize: "16px" }}>⚠️</span>
+                    <span style={{ color: "#dc2626", fontSize: "13px", fontWeight: 500 }}>{error}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Robot doğrulama (Cloudflare Turnstile) */}
+              <Turnstile onToken={onToken} />
+
+              {/* Buton */}
+              <button
+                type="submit"
+                disabled={loading || !password || !email || (TURNSTILE_ENABLED && !captcha)}
+                style={{
+                  width: "100%",
+                  padding: "14px",
+                  background: loading || !password || !email
+                    ? "#e2e8f0"
+                    : "linear-gradient(135deg, #0038c7 0%, #0052ff 100%)",
+                  color: loading || !password || !email ? "#94a3b8" : "#fff",
+                  border: "none",
+                  borderRadius: "12px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  cursor: loading || !password || !email ? "not-allowed" : "pointer",
+                  transition: "all .2s ease",
+                  letterSpacing: ".2px",
+                  boxShadow: loading || !password || !email
+                    ? "none"
+                    : "0 4px 16px rgba(0,82,255,.35)",
+                }}
+              >
+                {loading ? (
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                    <span style={{
+                      width: 16, height: 16, border: "2px solid rgba(255,255,255,.4)",
+                      borderTopColor: "#fff", borderRadius: "50%",
+                      display: "inline-block", animation: "spin .7s linear infinite",
+                    }} />
+                    Kontrol ediliyor...
+                  </span>
+                ) : (
+                  "Devam Et →"
+                )}
+              </button>
+
+            </form>
+          )}
+
+          {/* Form — Adım 2: SMS OTP */}
+          {otpStep && (
+            <form onSubmit={handleOtp}>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                background: "#eff6ff", border: "1px solid #bfdbfe",
+                borderRadius: 10, padding: "12px 14px", marginBottom: 24,
+              }}>
+                <span style={{ fontSize: 22 }}>📱</span>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#1d4ed8" }}>
+                    SMS doğrulama kodu gönderildi
+                  </div>
+                  <div style={{ fontSize: 12, color: "#64748b", marginTop: 2 }}>
+                    {otpName && <><strong>{otpName}</strong> — </>}Telefonunuza 6 haneli kod iletildi. 5 dakika geçerlidir.
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
 
-            {/* Robot doğrulama (Cloudflare Turnstile) */}
-            <Turnstile onToken={onToken} />
+              <div style={{ marginBottom: 24 }}>
+                <label style={{
+                  display: "block", fontSize: "12px", fontWeight: 700,
+                  color: "#374151", marginBottom: "8px",
+                  letterSpacing: ".3px", textTransform: "uppercase",
+                }}>
+                  Doğrulama Kodu
+                </label>
+                <input
+                  ref={otpRef}
+                  type="text"
+                  inputMode="numeric"
+                  pattern="\d{6}"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                  placeholder="000000"
+                  style={{
+                    ...inputStyle("otp"),
+                    fontSize: "28px",
+                    fontWeight: 800,
+                    letterSpacing: "10px",
+                    textAlign: "center",
+                    fontFamily: "monospace",
+                  }}
+                  onFocus={() => setFocusedField("otp")}
+                  onBlur={() => setFocusedField(null)}
+                />
+                {error && (
+                  <div style={{
+                    display: "flex", alignItems: "center", gap: "8px",
+                    background: "#fef2f2", border: "1px solid #fecaca",
+                    borderRadius: "8px", padding: "10px 12px", marginTop: "10px",
+                  }}>
+                    <span style={{ fontSize: "16px" }}>⚠️</span>
+                    <span style={{ color: "#dc2626", fontSize: "13px", fontWeight: 500 }}>{error}</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Buton */}
-            <button
-              type="submit"
-              disabled={loading || !password || !email || (TURNSTILE_ENABLED && !captcha)}
-              style={{
-                width: "100%",
-                padding: "14px",
-                background: loading || !password || !email
-                  ? "#e2e8f0"
-                  : "linear-gradient(135deg, #0038c7 0%, #0052ff 100%)",
-                color: loading || !password || !email ? "#94a3b8" : "#fff",
-                border: "none",
-                borderRadius: "12px",
-                fontSize: "15px",
-                fontWeight: 700,
-                cursor: loading || !password || !email ? "not-allowed" : "pointer",
-                transition: "all .2s ease",
-                letterSpacing: ".2px",
-                boxShadow: loading || !password || !email
-                  ? "none"
-                  : "0 4px 16px rgba(0,82,255,.35)",
-              }}
-            >
-              {loading ? (
-                <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
-                  <span style={{
-                    width: 16, height: 16, border: "2px solid rgba(255,255,255,.4)",
-                    borderTopColor: "#fff", borderRadius: "50%",
-                    display: "inline-block", animation: "spin .7s linear infinite",
-                  }} />
-                  Giriş yapılıyor...
-                </span>
-              ) : (
-                "Giriş Yap →"
-              )}
-            </button>
+              <button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                style={{
+                  width: "100%", padding: "14px",
+                  background: loading || otp.length !== 6
+                    ? "#e2e8f0"
+                    : "linear-gradient(135deg, #0038c7 0%, #0052ff 100%)",
+                  color: loading || otp.length !== 6 ? "#94a3b8" : "#fff",
+                  border: "none", borderRadius: "12px",
+                  fontSize: "15px", fontWeight: 700,
+                  cursor: loading || otp.length !== 6 ? "not-allowed" : "pointer",
+                  boxShadow: otp.length === 6 ? "0 4px 16px rgba(0,82,255,.35)" : "none",
+                }}
+              >
+                {loading ? (
+                  <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "10px" }}>
+                    <span style={{
+                      width: 16, height: 16, border: "2px solid rgba(255,255,255,.4)",
+                      borderTopColor: "#fff", borderRadius: "50%",
+                      display: "inline-block", animation: "spin .7s linear infinite",
+                    }} />
+                    Doğrulanıyor...
+                  </span>
+                ) : (
+                  "Giriş Yap →"
+                )}
+              </button>
 
-          </form>
+              <button
+                type="button"
+                onClick={() => { setOtpStep(false); setError(""); setOtp(""); }}
+                style={{
+                  width: "100%", marginTop: 10, padding: "10px",
+                  background: "none", border: "1px solid #e5e7ef",
+                  borderRadius: 10, fontSize: 13, color: "#64748b", cursor: "pointer",
+                }}
+              >
+                ← Geri dön
+              </button>
+            </form>
+          )}
 
           <p style={{
             textAlign: "center", marginTop: "32px",

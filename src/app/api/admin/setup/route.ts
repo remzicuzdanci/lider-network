@@ -7,16 +7,23 @@
  * After running, store the passwords and share with each person.
  */
 import { NextRequest, NextResponse } from "next/server";
+import crypto from "crypto";
 import { supabase } from "@/lib/supabase";
 import { hashPassword } from "@/lib/admin-auth";
 
+function randomPass(): string {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$";
+  return Array.from(crypto.getRandomValues(new Uint8Array(16)))
+    .map(b => chars[b % chars.length]).join("");
+}
+
 const INITIAL_STAFF = [
-  { email: "remzi.cuzdanci@lidernetwork.com.tr",  name: "Remzi Cuzdancı",  role: "super_admin", pass: "LiderNetwork2024!" },
-  { email: "yunus.oztekin@lidernetwork.com.tr",   name: "Yunus Öztekin",   role: "super_admin", pass: "LiderNetwork2024!" },
-  { email: "enes.yildiz@lidernetwork.com.tr",     name: "Enes Yıldız",     role: "staff",       pass: "Lider2024!" },
-  { email: "murat.aykac@lidernetwork.com.tr",     name: "Murat Aykaç",     role: "staff",       pass: "Lider2024!" },
-  { email: "halil.oztekin@lidernetwork.com.tr",   name: "Halil Öztekin",   role: "staff",       pass: "Lider2024!" },
-  { email: "omer.oztekin@lidernetwork.com.tr",    name: "Ömer Öztekin",    role: "staff",       pass: "Lider2024!" },
+  { email: "remzi.cuzdanci@lidernetwork.com.tr",  name: "Remzi Cuzdancı",  role: "super_admin" },
+  { email: "yunus.oztekin@lidernetwork.com.tr",   name: "Yunus Öztekin",   role: "super_admin" },
+  { email: "enes.yildiz@lidernetwork.com.tr",     name: "Enes Yıldız",     role: "staff" },
+  { email: "murat.aykac@lidernetwork.com.tr",     name: "Murat Aykaç",     role: "staff" },
+  { email: "halil.oztekin@lidernetwork.com.tr",   name: "Halil Öztekin",   role: "staff" },
+  { email: "omer.oztekin@lidernetwork.com.tr",    name: "Ömer Öztekin",    role: "staff" },
 ];
 
 async function runSetup(key: string | null) {
@@ -34,7 +41,8 @@ async function runSetup(key: string | null) {
   const results: { email: string; name: string; role: string; initialPassword: string }[] = [];
 
   for (const staff of INITIAL_STAFF) {
-    const password_hash = hashPassword(staff.pass);
+    const pass = randomPass();
+    const password_hash = hashPassword(pass);
     const { error } = await supabase.from("staff_users").insert({
       email: staff.email,
       name:  staff.name,
@@ -45,7 +53,7 @@ async function runSetup(key: string | null) {
     if (error) {
       console.error(`Failed to create ${staff.email}:`, error);
     } else {
-      results.push({ email: staff.email, name: staff.name, role: staff.role, initialPassword: staff.pass });
+      results.push({ email: staff.email, name: staff.name, role: staff.role, initialPassword: pass });
     }
   }
 

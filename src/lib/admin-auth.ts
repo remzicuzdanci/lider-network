@@ -96,6 +96,37 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return null;
 }
 
+// ── OTP (SMS doğrulama) ────────────────────────────────────────────────────────
+// Stateless: OTP, HMAC ile imzalanmış bir challenge token'a bağlı.
+// DB değişikliği gerektirmez; 5 dakikalık zaman penceresiyle geçerli.
+
+function otpBucket(offsetBuckets = 0): number {
+  return Math.floor(Date.now() / (5 * 60 * 1000)) + offsetBuckets;
+}
+
+export function generateOtp(): string {
+  const arr = new Uint32Array(1);
+  crypto.getRandomValues(arr);
+  return String(arr[0] % 1_000_000).padStart(6, "0");
+}
+
+export function signOtpChallenge(email: string, otp: string): string {
+  const bucket = otpBucket();
+  return crypto.createHmac("sha256", SECRET).update(`${email}:${otp}:${bucket}`).digest("hex");
+}
+
+export function verifyOtpChallenge(email: string, otp: string, challenge: string): boolean {
+  if (!otp || !challenge || challenge.length !== 64) return false;
+  try {
+    for (const offset of [0, -1]) {
+      const bucket = otpBucket(offset);
+      const expected = crypto.createHmac("sha256", SECRET).update(`${email}:${otp}:${bucket}`).digest("hex");
+      if (crypto.timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(challenge, "hex"))) return true;
+    }
+  } catch { return false; }
+  return false;
+}
+
 // ── Staff user DB lookup ───────────────────────────────────────────────────────
 export interface StaffUser {
   id: string;
@@ -104,6 +135,7 @@ export interface StaffUser {
   role: "super_admin" | "staff";
   active: boolean;
   password_hash: string;
+  phone?: string | null;
 }
 
 export async function findStaffByEmail(email: string): Promise<StaffUser | null> {

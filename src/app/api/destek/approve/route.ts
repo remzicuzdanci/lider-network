@@ -4,8 +4,19 @@ import {
   validateApproveToken,
   sendAccountApprovedEmail,
 } from "@/lib/ticket-mail";
+import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export async function GET(request: NextRequest) {
+  // Rate limit: max 10 istek / 15 dakika / IP (kaba kuvvet + mass deletion koruması)
+  const ip = getClientIp(request);
+  const rl = rateLimit(`approve:${ip}`, 10, 15 * 60 * 1000);
+  if (!rl.allowed) {
+    return new NextResponse("Çok fazla istek. Lütfen bekleyin.", {
+      status: 429,
+      headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) },
+    });
+  }
+
   const { searchParams } = new URL(request.url);
   const uid    = searchParams.get("uid");
   const token  = searchParams.get("token");
