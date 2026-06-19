@@ -73,7 +73,11 @@ export async function POST(request: NextRequest) {
         const smsSent = await sendSms(staff.phone, smsText);
         if (!smsSent.ok) {
           console.error("[OTP] SMS gönderilemedi:", smsSent.error);
-          // SMS başarısız olsa bile login'i engelleme — sessizce devam et
+          // SMS başarısız — OTP adımını atla, direkt giriş yap
+          const token = generateNamedToken(staff.email, staff.role, staff.name);
+          const res = NextResponse.json({ success: true, name: staff.name, role: staff.role });
+          res.cookies.set(COOKIE_NAME, token, COOKIE_OPTS);
+          return res;
         }
         return NextResponse.json({ otpRequired: true, challenge, name: staff.name });
       }
