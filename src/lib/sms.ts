@@ -21,8 +21,7 @@ export async function sendSms(phone: string, message: string): Promise<{ ok: boo
       authentication: { key, hash },
       order: {
         sender,
-        iys: "1",
-        iysList: "BIREYSEL",
+        iys: "0",
         message: {
           text: message,
           receipients: { number: [gsm] },
