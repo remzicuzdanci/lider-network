@@ -392,6 +392,16 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     else showToast("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error");
   }
 
+  async function sendFollowup() {
+    if (!editId) { showToast("Önce teklifi kaydedin", "warning"); return; }
+    const c = companies.find(x => x.id === companyId);
+    const to = prompt("Takip e-postası gönderilecek adres:", c?.contact_email || "");
+    if (!to) return;
+    const r = await fetch("/api/admin/quotes/followup", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: editId, email: to }) });
+    if (r.ok) showToast("Takip e-postası gönderildi → " + to);
+    else showToast("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error");
+  }
+
   const inp = { padding: "9px 12px", border: "1.5px solid #cbd5e1", borderRadius: "8px", fontSize: "13px", color: "#1a1d2e", outline: "none", width: "100%", boxSizing: "border-box" as const, background: "#fff" };
   const lbl = { fontSize: "11px", fontWeight: 800 as const, color: "#334155", textTransform: "uppercase" as const, letterSpacing: ".4px", display: "block", marginBottom: "6px" };
 
@@ -615,6 +625,9 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
         <button onClick={exportPDF} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: "#b91c1c", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><FileText size={15} /> PDF</button>
         <button onClick={printQuote} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Printer size={15} /> Yazdır</button>
         <button onClick={sendEmail} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Mail size={15} /> Gönder</button>
+        {(status === "sent" || status === "accepted" || status === "ordered") && editId && (
+          <button onClick={sendFollowup} title="Müşteriye teklifle ilgili takip e-postası gönder" style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "1.5px solid #c7d2fe", background: "#eef2ff", color: "#4338ca", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Mail size={15} /> Takip</button>
+        )}
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(min(100%, 330px), 1fr))", gap: "18px", alignItems: "start" }}>
