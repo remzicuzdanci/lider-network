@@ -56,6 +56,127 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "fortibleed-fortinet-firewall-guvenligi-kontrol-listesi",
+    title: "FortiBleed: 73.000+ Fortinet Cihazı Ele Geçirildi — Hemen Yapılması Gerekenler",
+    excerpt:
+      "Hudson Rock'ın yayımladığı FortiBleed istihbaratı, dünya genelinde 73.932+ Fortinet firewall ve VPN cihazının ele geçirildiğini ortaya koydu. Saldırı vektörü, etkilenen sistemlerin kontrolü ve acil yapılması gerekenler.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiBleed", "FortiGate", "Fortinet", "VPN Güvenliği", "Kimlik Bilgisi Sızıntısı", "FortiOS", "Güvenlik Açığı"],
+    publishedAt: "2026-06-22",
+    readTime: 9,
+    featured: true,
+    content: `
+<h2>FortiBleed Nedir?</h2>
+<p>Hudson Rock'ın Haziran 2026'da yayımladığı <strong>FortiBleed</strong> istihbarat raporu, dünya genelinde <strong>73.932 Fortinet firewall ve VPN cihazının</strong> 194 ülkede ele geçirildiğini ortaya koyuyor. Tehdit seviyesi <strong>Kritik</strong> olarak değerlendirilmiş; 21.387 kurum etkilenmiş durumda.</p>
+
+<p>FortiBleed, tek bir CVE'ye dayalı klasik bir güvenlik açığı değildir. Asıl tehdit vektörü <strong>infostealer (bilgi hırsızı) yazılımlardır</strong>. Saldırı zinciri şu şekilde işler:</p>
+
+<ol>
+  <li>Çalışanın kişisel veya kurumsal bilgisayarına infostealer bulaşır (RedLine, Lumma, Raccoon vb.)</li>
+  <li>Tarayıcıda kayıtlı şifreler, oturum çerezleri ve otomatik doldurma verileri çalınır</li>
+  <li>Eğer bu bilgisayardan daha önce FortiGate yönetim paneline veya SSL-VPN portalına girilmişse, o kimlik bilgileri de sızar</li>
+  <li>Saldırganlar bu verileri darkweb pazarlarından satın alarak doğrudan firewall yönetimine giriş yapar</li>
+</ol>
+
+<p>Sonuç: Fortinet ürünlerinin kendisinde kritik bir 0-day olmak zorunda değil. <strong>Yönetim arayüzüne giriş yapan her çalışanın bilgisayarı potansiyel bir sızıntı noktasıdır.</strong></p>
+
+<h2>Saldırı Ne Kadar Ciddi?</h2>
+<p>Firewall yönetimine yetkisiz erişim sağlayan bir saldırgan şunları yapabilir:</p>
+<ul>
+  <li>Tüm güvenlik politikalarını değiştirme veya devre dışı bırakma</li>
+  <li>VPN kullanıcısı ekleyerek kalıcı arka kapı oluşturma</li>
+  <li>Ağ trafiğini kendi sunucularına yönlendirme (traffic mirroring)</li>
+  <li>IPS/Antivirus imzalarını devre dışı bırakarak iç ağa sızmayı kolaylaştırma</li>
+  <li>Tüm logları silme</li>
+  <li>SSL-VPN üzerinden iç ağa tam erişim kazanma</li>
+</ul>
+<p>Kısacası: firewall ele geçirildiğinde <strong>ağ güvenliği sıfırlanır.</strong></p>
+
+<h2>Hemen Yapılması Gerekenler</h2>
+
+<h3>1. Yönetici Hesaplarını Denetle</h3>
+<p>FortiGate CLI veya GUI üzerinden mevcut admin hesaplarını listeleyin. Tanımadığınız, açıklaması olmayan veya son giriş tarihi belirsiz olan tüm hesaplar şüpheli kabul edilmelidir.</p>
+<pre><code># CLI
+get system admin
+# Son girişler
+diagnose sys session list | grep 443</code></pre>
+
+<h3>2. Tüm Parolaları Değiştirin</h3>
+<p>Sadece admin şifresi değil; SNMP community string, API token, SSL-VPN kullanıcı şifrelerinin tamamı değiştirilmeli. Parola değişimi yapılmadan önce aktif oturumları sonlandırın:</p>
+<pre><code>diagnose sys session clear</code></pre>
+
+<h3>3. VPN Kullanıcılarını Gözden Geçirin</h3>
+<p>SSL-VPN veya IPsec kullanıcı listesini inceleyin. Kurumda çalışmayan, ayrılmış veya bilinmeyen kullanıcı hesapları varsa derhal silin. Aktif VPN tünellerini kontrol edin:</p>
+<pre><code>get vpn ssl monitor
+get vpn ipsec tunnel summary</code></pre>
+
+<h3>4. Yönetim Erişimini İnternete Kapatın</h3>
+<p>Firewall yönetim arayüzü (HTTPS/SSH) hiçbir zaman doğrudan internete açık olmamalıdır. Trusted Host kısıtlaması ekleyin — admin hesaplarına yalnızca belirli IP'lerden erişim izni verin:</p>
+<pre><code>config system admin
+  edit admin
+    set trusthost1 x.x.x.x 255.255.255.255
+  next
+end</code></pre>
+
+<h3>5. Log Analizini Yapın</h3>
+<p>Son 30 günlük yönetim girişlerini inceleyin. Farklı konumlardan, mesai dışı saatlerde veya bilinmeyen IP'lerden yapılan girişler ciddi uyarı işaretidir:</p>
+<pre><code>execute log filter category 1
+execute log display</code></pre>
+<p>FortiAnalyzer kullanıyorsanız <strong>Compromised Hosts</strong> ve <strong>Admin Login</strong> raporlarını inceleyin.</p>
+
+<h3>6. Firmware Güncellemesi</h3>
+<p>Fortinet'in PSIRT sayfasından (fortinet.com/psirt) mevcut FortiOS versiyonunuzun bilinen aktif açıklarını kontrol edin. Güncel FortiOS sürümüne geçiş planlanmalıdır. Güncelleme öncesi config yedeği alın:</p>
+<pre><code>execute backup config ftp [ip] [path] [user] [pass]</code></pre>
+
+<h2>Kalıcı Güvenlik Önlemleri</h2>
+
+<h3>İki Faktörlü Doğrulama (2FA)</h3>
+<p>FortiGate yönetim girişi için FortiToken veya TOTP entegrasyonu zorunlu hale getirilmelidir. Şifre çalınsa dahi ikinci faktör olmadan giriş yapılamaz. Bu önlem infostealer saldırılarını büyük ölçüde etkisiz kılar:</p>
+<pre><code>config system admin
+  edit admin
+    set two-factor fortitoken
+    set fortitoken [TOKEN_SERIAL]
+  next
+end</code></pre>
+
+<h3>Management VLAN Ayrımı</h3>
+<p>Yönetim trafiği ayrı bir VLAN üzerinden yönetilmeli; bu VLAN'a yalnızca yönetici iş istasyonlarından erişim sağlanmalıdır. Out-of-band management (OOB) ideali olmakla birlikte VLAN izolasyonu minimum standart olarak uygulanmalıdır.</p>
+
+<h3>FortiManager ile Merkezi Yönetim</h3>
+<p>Birden fazla cihaz yönetiyorsanız yönetim trafiği FortiManager üzerinden yürütülmeli, cihazların doğrudan GUI/SSH erişimi kapatılmalıdır. Bu şekilde saldırı yüzeyi tek noktaya indirilir ve tüm değişiklikler denetim altında tutulur.</p>
+
+<h3>Çalışan Uç Nokta Güvenliği</h3>
+<p>FortiBleed saldırılarının temel vektörü çalışan bilgisayarlarıdır. Yönetim işlemleri yalnızca:</p>
+<ul>
+  <li>EDR/XDR çözümü yüklü kurumsal cihazlardan</li>
+  <li>FortiClient EMS tarafından yönetilen endpoint'lerden</li>
+  <li>Tercihen ayrılmış bir jump server/bastion host üzerinden</li>
+</ul>
+<p>yapılmalıdır. Kişisel bilgisayardan yönetim paneline girmek kesinlikle önlenmelidir.</p>
+
+<h3>Düzenli Erişim Denetimi</h3>
+<p>Admin hesapları, VPN kullanıcıları ve API token'ları aylık bazda gözden geçirilmeli; kullanılmayan hesaplar silinmeli ve şifreler 90 günde bir rotasyona tabi tutulmalıdır.</p>
+
+<h2>Özet: Kontrol Listesi</h2>
+<table>
+  <thead><tr><th>Adım</th><th>Öncelik</th><th>Süre</th></tr></thead>
+  <tbody>
+    <tr><td>Yönetici hesaplarını listele ve bilinmeyenleri sil</td><td>🔴 Acil</td><td>15 dk</td></tr>
+    <tr><td>Tüm admin/VPN parolalarını değiştir</td><td>🔴 Acil</td><td>30 dk</td></tr>
+    <tr><td>Aktif VPN oturumlarını kontrol et</td><td>🔴 Acil</td><td>15 dk</td></tr>
+    <tr><td>Son 30 gün login loglarını incele</td><td>🟠 Yüksek</td><td>1 saat</td></tr>
+    <tr><td>Yönetim arayüzünü internetten kapat / Trusted Host ekle</td><td>🟠 Yüksek</td><td>30 dk</td></tr>
+    <tr><td>2FA zorunlu kıl</td><td>🟠 Yüksek</td><td>1 saat</td></tr>
+    <tr><td>Firmware güncel mi kontrol et</td><td>🟡 Orta</td><td>30 dk</td></tr>
+    <tr><td>Endpoint güvenlik politikasını gözden geçir</td><td>🟡 Orta</td><td>Planlı</td></tr>
+  </tbody>
+</table>
+
+<p>FortiBleed, yalnızca bir güvenlik açığının değil; <strong>operasyonel güvenlik (OpSec) zafiyetlerinin</strong> nasıl büyük çaplı bir tehlikeye dönüşebileceğinin somut bir kanıtıdır. Kimlik bilgisi hijyeni, endpoint koruması ve yönetim erişim kontrolü bir arada uygulanmadan sadece firewall güncellemesi yeterli olmayacaktır.</p>
+`,
+  },
+  {
     slug: "fortigate-nedir-kurumsal-aglarda-yeni-nesil-guvenlik",
     title: "FortiGate Nedir? Kurumsal Ağlarda Yeni Nesil Güvenlik",
     excerpt:
