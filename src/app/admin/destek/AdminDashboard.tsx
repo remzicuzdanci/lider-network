@@ -143,6 +143,7 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [quoteCounts, setQuoteCounts] = useState<Record<string, number>>({});
   const [quotesFilterCompany, setQuotesFilterCompany] = useState("");
+  const [assetsFilterCompany, setAssetsFilterCompany] = useState("");
   const [renewalCount, setRenewalCount] = useState(0);
 
 
@@ -353,6 +354,13 @@ export default function AdminDashboard() {
     if (r.ok) { showToast(compModal.id ? "Şirket güncellendi" : "Şirket eklendi"); setCompModal(null); fetchCompanies(); }
     else { const j = await r.json().catch(() => ({})); showToast("Kaydedilemedi: " + (j.error || "hata"), "error"); }
   }
+  async function toggleSupported(c: Company) {
+    const next = !c.is_supported;
+    const r = await fetch("/api/admin/companies", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: c.id, is_supported: next }) });
+    if (r.ok) { showToast(next ? `${c.name} destek verilenler listesine eklendi` : `${c.name} destek listesinden çıkarıldı`); fetchCompanies(); }
+    else showToast("Güncellenemedi", "error");
+  }
+
   async function deactivateCompany(id: string, name: string) {
     if (!confirm(`"${name}" şirketini devre dışı bırak?`)) return;
     await fetch("/api/admin/companies", { method: "DELETE", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id }) });
@@ -1479,7 +1487,22 @@ export default function AdminDashboard() {
                         {c.notes && <p style={{ margin: "6px 0 0", fontSize: "12px", color: "#9ca3af", fontStyle: "italic" }}>{c.notes}</p>}
                       </div>
                     </div>
-                    <div style={{ marginTop: "12px", borderTop: "1px solid #f0f2f8", paddingTop: "10px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                    {/* Destek Verilen toggle */}
+                    <div style={{ marginTop: "10px", display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button onClick={() => toggleSupported(c)} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "5px 12px", borderRadius: "7px", border: `1.5px solid ${c.is_supported ? "#a78bfa" : "#e5e7ef"}`, background: c.is_supported ? "#f5f3ff" : "#fafafa", color: c.is_supported ? "#6d28d9" : "#9ca3af", fontSize: "12px", fontWeight: 700, cursor: "pointer", transition: "all .15s" }}>
+                        <span style={{ width: 14, height: 14, borderRadius: "3px", border: `2px solid ${c.is_supported ? "#7c3aed" : "#d1d5db"}`, background: c.is_supported ? "#7c3aed" : "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {c.is_supported && <span style={{ color: "#fff", fontSize: "9px", fontWeight: 900, lineHeight: 1 }}>✓</span>}
+                        </span>
+                        Destek Verilen
+                      </button>
+                      {c.is_supported && (
+                        <button onClick={() => { setAssetsFilterCompany(c.id); setTab("assets"); }} style={{ display: "flex", alignItems: "center", gap: "5px", padding: "5px 12px", borderRadius: "7px", border: "1.5px solid #c4b5fd", background: "#ede9fe", color: "#6d28d9", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                          🖥️ Cihazlar
+                        </button>
+                      )}
+                    </div>
+
+                    <div style={{ marginTop: "10px", borderTop: "1px solid #f0f2f8", paddingTop: "10px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                       <button onClick={() => { setNtCompanyId(c.id); setNewTicketModal(true); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "6px 14px", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
                         <Plus size={13} /> Talep Aç
                       </button>
@@ -1926,7 +1949,12 @@ export default function AdminDashboard() {
         )}
 
         {tab === "assets" && (
-          <Envanter companies={contractedCompanies} isMobile={isMobile} />
+          <Envanter
+            companies={[...contractedCompanies, ...externalCompanies.filter(c => c.is_supported)]}
+            isMobile={isMobile}
+            initialCompanyId={assetsFilterCompany}
+            onCompanyFilterChange={setAssetsFilterCompany}
+          />
         )}
 
         {tab === "fortigate" && (

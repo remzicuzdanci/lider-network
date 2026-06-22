@@ -13,9 +13,10 @@ export async function GET(req: NextRequest) {
   const sp = new URL(req.url).searchParams;
   const page  = Math.max(1, parseInt(sp.get("page")  || "1"));
   const limit = Math.min(100, parseInt(sp.get("limit") || "50"));
-  const q     = sp.get("q")?.trim();
-  const type  = sp.get("type");
-  const all   = sp.get("all") === "1";
+  const q          = sp.get("q")?.trim();
+  const type       = sp.get("type");
+  const company_id = sp.get("company_id");
+  const all        = sp.get("all") === "1";
 
   let query = supabase
     .from("assets")
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (type && type !== "all") query = query.eq("type", type);
+  if (company_id) query = query.eq("company_id", company_id);
   if (q) query = query.or(`company_name.ilike.%${q}%,model.ilike.%${q}%,serial_no.ilike.%${q}%,brand.ilike.%${q}%,ip_address.ilike.%${q}%`);
 
   if (!all) query = query.range((page - 1) * limit, page * limit - 1);

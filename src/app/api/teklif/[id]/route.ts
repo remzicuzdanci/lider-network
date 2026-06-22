@@ -49,15 +49,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     .eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Ekibe bildirim maili gönder (hata olursa sessizce geç)
-  sendQuoteDecisionNotification({
-    quote_no: q.quote_no,
-    customer_name: q.customer_name,
-    grand_total: q.grand_total,
-    currency: q.currency || "TL",
-    action: newStatus,
-    decided_at: decidedAt,
-  }).catch(err => console.error("Karar bildirimi gönderilemedi:", err));
+  // Ekibe bildirim maili gönder
+  try {
+    await sendQuoteDecisionNotification({
+      quote_no: q.quote_no,
+      customer_name: q.customer_name,
+      grand_total: q.grand_total,
+      currency: q.currency || "TL",
+      action: newStatus,
+      decided_at: decidedAt,
+    });
+  } catch (err) {
+    console.error("Karar bildirimi gönderilemedi:", err);
+  }
 
   return NextResponse.json({ success: true, status: newStatus });
 }

@@ -71,5 +71,26 @@ export default function sitemap(): MetadataRoute.Sitemap {
     }
   }
 
+  // Tool subdomains — ayrı canonical URL'leriyle
+  const toolPages = [
+    { url: "https://ip.lidernetwork.com.tr",        priority: 0.85 },
+    { url: "https://dns.lidernetwork.com.tr",       priority: 0.85 },
+    { url: "https://blacklist.lidernetwork.com.tr", priority: 0.80 },
+    { url: "https://ssl.lidernetwork.com.tr",       priority: 0.80 },
+    { url: "https://subnet.lidernetwork.com.tr",    priority: 0.80 },
+    { url: "https://password.lidernetwork.com.tr",  priority: 0.75 },
+    { url: "https://threat.lidernetwork.com.tr",    priority: 0.80 },
+    { url: "https://uptime.lidernetwork.com.tr",    priority: 0.65 },
+  ];
+
+  for (const tool of toolPages) {
+    entries.push({
+      url: tool.url,
+      lastModified: new Date(),
+      changeFrequency: "monthly" as const,
+      priority: tool.priority,
+    });
+  }
+
   return entries;
 }

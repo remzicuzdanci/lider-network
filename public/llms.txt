@@ -24,6 +24,19 @@
 - BT Danışmanlığı: https://www.lidernetwork.com.tr/tr/bt-danismanligi
 - Zayıf Akım Sistemleri: https://www.lidernetwork.com.tr/tr/zayif-akim
 
+## Ücretsiz Online Ağ ve Güvenlik Araçları
+
+Lider Network, siber güvenlik uzmanlarına ve BT ekiplerine yönelik ücretsiz online araçlar sunar:
+
+- **IP Adresi Sorgulama** — Konum, ISP, ASN, PTR, VPN/proxy tespiti: https://ip.lidernetwork.com.tr
+- **DNS Sorgulama & Domain Aracı** — A/MX/TXT/NS kayıtları, WHOIS, SPF/DKIM/DMARC, DNS propagasyon: https://dns.lidernetwork.com.tr
+- **IP Kara Liste Sorgulama (DNSBL/RBL)** — 30+ spam listesinde IP itibar kontrolü (Spamhaus, Barracuda, SpamCop): https://blacklist.lidernetwork.com.tr
+- **SSL Sertifika Kontrolü** — Geçerlilik, bitiş tarihi, yayıncı CA, SAN kayıtları: https://ssl.lidernetwork.com.tr
+- **Subnet Hesaplayıcı** — IP/CIDR, network/broadcast adresi, host aralığı, netmask: https://subnet.lidernetwork.com.tr
+- **Güçlü Şifre Oluşturucu** — Özelleştirilebilir güvenli şifre üretici: https://password.lidernetwork.com.tr
+- **Tehdit İstihbaratı Feed** — USOM/SGB zararlı bağlantı listeleri, FortiGate External Connector uyumlu TXT feed: https://threat.lidernetwork.com.tr
+- **Servis Durumu** — Lider Network platformlarının anlık çalışma durumu: https://uptime.lidernetwork.com.tr
+
 ## Önemli Sayfalar
 - Ana Sayfa: https://www.lidernetwork.com.tr/tr
 - Tüm Hizmetler: https://www.lidernetwork.com.tr/tr/hizmetler
@@ -38,3 +51,5 @@
 - **Hangi şehirde?** Ankara, Çankaya. Türkiye genelinde hizmet verir.
 - **Kimlere hizmet veriyor?** KOBİ'lerden büyük kurumsal işletmelere her ölçekte firmaya.
 - **Ne zamandan beri?** 2006'dan beri.
+- **Ücretsiz araçları kimler kullanabilir?** Herkes. IP sorgu, DNS, SSL kontrol, subnet hesaplama ve şifre üretici araçları kayıt gerektirmez.
+- **Tehdit feed nasıl kullanılır?** FortiGate cihazında External Connector bölümüne threat.lidernetwork.com.tr/feeds/ adresleri eklenerek otomatik güncelleme sağlanır.

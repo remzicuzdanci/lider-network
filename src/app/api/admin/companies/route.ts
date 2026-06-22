@@ -15,6 +15,7 @@ const schema = z.object({
   tax_no:        z.string().max(40).optional().nullable(),
   customer_type: z.string().max(20).optional().nullable(),
   logo_url:      z.string().max(500).optional().nullable(),
+  is_supported:  z.boolean().optional().nullable(),
 });
 
 // GET — list all companies

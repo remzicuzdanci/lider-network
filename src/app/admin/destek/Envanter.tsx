@@ -71,13 +71,14 @@ const lblS: React.CSSProperties = { fontSize: "12px", fontWeight: 700, color: "#
 
 const PAGE_SIZE = 50;
 
-export default function Envanter({ companies, isMobile }: { companies: Company[]; isMobile: boolean }) {
+export default function Envanter({ companies, isMobile, initialCompanyId = "", onCompanyFilterChange }: { companies: Company[]; isMobile: boolean; initialCompanyId?: string; onCompanyFilterChange?: (id: string) => void }) {
   const [list, setList] = useState<Asset[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [typeF, setTypeF] = useState("all");
+  const [companyF, setCompanyF] = useState(initialCompanyId);
   const [modal, setModal] = useState<Partial<Asset> | null>(null);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -85,18 +86,22 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
   const [openCo, setOpenCo] = useState<Record<string, boolean>>({});
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const load = useCallback(async (srch = search, tp = typeF, pg = page) => {
+  // initialCompanyId dışarıdan değişince güncelle
+  useEffect(() => { setCompanyF(initialCompanyId); setPage(1); }, [initialCompanyId]);
+
+  const load = useCallback(async (srch = search, tp = typeF, co = companyF, pg = page) => {
     setLoading(true);
     try {
       const p = new URLSearchParams({ page: String(pg), limit: String(PAGE_SIZE) });
       if (tp !== "all") p.set("type", tp);
       if (srch.trim()) p.set("q", srch.trim());
+      if (co) p.set("company_id", co);
       const r = await fetch(`/api/admin/assets?${p}`);
       const d = await r.json();
       setList(d.assets || []);
       setTotal(d.total ?? 0);
     } finally { setLoading(false); }
-  }, [search, typeF, page]);
+  }, [search, typeF, companyF, page]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -105,9 +110,10 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
     setSearch(val);
     setPage(1);
     if (searchTimer.current) clearTimeout(searchTimer.current);
-    searchTimer.current = setTimeout(() => load(val, typeF, 1), 300);
+    searchTimer.current = setTimeout(() => load(val, typeF, companyF, 1), 300);
   }
   function handleType(val: string) { setTypeF(val); setPage(1); }
+  function handleCompany(val: string) { setCompanyF(val); setPage(1); onCompanyFilterChange?.(val); }
 
   // Firmaya göre grupla (sayfa verisi üzerinde)
   const grouped = useMemo(() => {
@@ -185,6 +191,12 @@ export default function Envanter({ companies, isMobile }: { companies: Company[]
           <option value="all">Tüm Tipler</option>
           {Object.entries(TYPE_LABEL).map(([k, v]) => <option key={k} value={k}>{TYPE_ICON[k]} {v}</option>)}
         </select>
+        {companies.length > 0 && (
+          <select value={companyF} onChange={e => handleCompany(e.target.value)} style={{ ...inpS, width: "auto", minWidth: "180px" }}>
+            <option value="">Tüm Firmalar</option>
+            {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+          </select>
+        )}
         <button onClick={sendReminder} disabled={mailing} title="Lisansı yaklaşan cihazlar için fortigate@lidernetwork.com.tr adresine hatırlatma maili gönder"
           style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 15px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#475569", fontSize: "12.5px", fontWeight: 700, cursor: mailing ? "default" : "pointer", marginLeft: "auto", opacity: mailing ? .6 : 1 }}>
           <Mail size={15} /> {mailing ? "Gönderiliyor…" : "Hatırlatma Maili"}

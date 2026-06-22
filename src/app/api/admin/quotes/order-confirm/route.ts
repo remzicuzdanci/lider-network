@@ -7,7 +7,7 @@ export const maxDuration = 20;
 
 const SITE_BASE = process.env.PDF_ASSET_BASE || "https://www.lidernetwork.com.tr";
 const FROM      = process.env.SMTP_TEKLIF_FROM || process.env.SMTP_TEKLIF_USER || "teklif@lidernetwork.com.tr";
-const FROM_NAME = process.env.SMTP_TEKLIF_FROM_NAME || "Lider Network";
+const FROM_NAME = process.env.SMTP_TEKLIF_FROM_NAME || "Lider Network - Teklif Servisi";
 const QUOTE_CC  = (process.env.QUOTE_CC || "remzi.cuzdanci@lidernetwork.com.tr,yunus.oztekin@lidernetwork.com.tr")
   .split(",").map(s => s.trim()).filter(Boolean);
 

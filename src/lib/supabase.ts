@@ -55,6 +55,7 @@ export interface Company {
   tax_office?: string | null;
   tax_no?: string | null;
   logo_url?: string | null;
+  is_supported?: boolean | null;
   created_at: string;
 }
 

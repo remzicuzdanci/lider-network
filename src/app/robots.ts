@@ -13,18 +13,38 @@ export default function robots(): MetadataRoute.Robots {
       },
       {
         // AI yanıt motorlarına (ChatGPT, Claude, Perplexity, Google AI
-        // Overviews, Gemini) içeriği açıkça taramaları için izin veriyoruz —
-        // böylece AI yanıtlarında kaynak olarak gösterilebiliriz.
+        // Overviews, Gemini, Meta AI, Amazon Alexa vb.) içeriği açıkça
+        // taramaları için izin veriyoruz — AI yanıtlarında kaynak olalım.
         userAgent: [
+          // OpenAI / ChatGPT
           "GPTBot",
           "OAI-SearchBot",
           "ChatGPT-User",
+          // Anthropic / Claude
           "ClaudeBot",
           "Claude-Web",
+          "anthropic-ai",
+          // Perplexity
           "PerplexityBot",
+          // Google AI Overviews / Gemini
           "Google-Extended",
+          // Apple Intelligence
           "Applebot-Extended",
+          // Common Crawl (AI eğitim veri seti)
           "CCBot",
+          // Meta AI
+          "Meta-ExternalAgent",
+          "Meta-ExternalFetcher",
+          // Amazon Alexa
+          "Amazonbot",
+          // DuckDuckGo AI
+          "DuckAssistBot",
+          // You.com
+          "YouBot",
+          // Cohere
+          "cohere-ai",
+          // Bytedance / TikTok AI
+          "Bytespider",
         ],
         allow: "/",
         disallow: ["/admin", "/api", "/destek"],
