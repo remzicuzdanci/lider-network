@@ -279,11 +279,11 @@ export default function Envanter({ companies, isMobile, initialCompanyId = "", o
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 20px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", marginTop: "12px", flexWrap: "wrap", gap: "10px" }}>
             <span style={{ fontSize: "13px", color: "#6b7280" }}><strong style={{ color: "#1a1d2e" }}>{start}–{end}</strong> / {total} cihaz &nbsp;·&nbsp; Sayfa {page}/{totalPages}</span>
             <div style={{ display: "flex", gap: "6px" }}>
-              <button onClick={() => { setPage(1); load(search, typeF, 1); }} disabled={page === 1} style={btnS(false, page === 1)}>«</button>
-              <button onClick={() => { setPage(p => p - 1); load(search, typeF, page - 1); }} disabled={page === 1} style={btnS(false, page === 1)}>← Önceki</button>
-              {nums.map(n => <button key={n} onClick={() => { setPage(n); load(search, typeF, n); }} style={btnS(n === page, false)}>{n}</button>)}
-              <button onClick={() => { setPage(p => p + 1); load(search, typeF, page + 1); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>Sonraki →</button>
-              <button onClick={() => { setPage(totalPages); load(search, typeF, totalPages); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>»</button>
+              <button onClick={() => { setPage(1); load(search, typeF, companyF, 1); }} disabled={page === 1} style={btnS(false, page === 1)}>«</button>
+              <button onClick={() => { setPage(p => p - 1); load(search, typeF, companyF, page - 1); }} disabled={page === 1} style={btnS(false, page === 1)}>← Önceki</button>
+              {nums.map(n => <button key={n} onClick={() => { setPage(n); load(search, typeF, companyF, n); }} style={btnS(n === page, false)}>{n}</button>)}
+              <button onClick={() => { setPage(p => p + 1); load(search, typeF, companyF, page + 1); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>Sonraki →</button>
+              <button onClick={() => { setPage(totalPages); load(search, typeF, companyF, totalPages); }} disabled={page === totalPages} style={btnS(false, page === totalPages)}>»</button>
             </div>
           </div>
         );
