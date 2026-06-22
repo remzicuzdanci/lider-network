@@ -875,6 +875,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       {newProd && <NewProductModal currency={currency} onClose={() => setNewProd(false)} onSaved={(p) => { addProduct(p); setNewProd(false); }} />}
       {histFor && <HistoryModal target={histFor} onClose={() => setHistFor(null)} />}
       {copyModal}
+      {orderModalEl}
     </div>
   );
 }
