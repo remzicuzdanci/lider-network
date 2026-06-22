@@ -41,92 +41,148 @@ function esc(s: string) { return (s ?? "").replace(/&/g, "&amp;").replace(/</g, 
 function docHtml(n: Partial<DeliveryNote>): string {
   const items = (n.items || []) as DItem[];
   const dt = (s?: string | null) => s ? new Date(s + (s.length === 10 ? "T00:00:00" : "")).toLocaleDateString("tr-TR") : "—";
-  const rows = items.map((it, i) => `<tr style="background:${i % 2 ? "#f5f8ff" : "#fff"}">
-    <td style="padding:11px 14px;font-size:12.5px;color:#1f2937"><span style="color:#0052ff;font-weight:700">${i + 1}.</span> ${esc(it.name)}</td>
-    <td style="padding:11px 12px;font-size:12.5px;text-align:center;color:#475569;white-space:nowrap">${it.qty} ${esc(it.unit || "adet")}</td>
-    <td style="padding:11px 14px;font-size:12px;color:#475569">${esc(it.serial || "—")}</td>
-  </tr>`).join("");
+  const totalQty = items.reduce((s, it) => s + (it.qty || 0), 0);
+  const rows = items.map((it, i) => `
+    <tr>
+      <td style="padding:10px 14px;font-size:12px;color:#1f2937;border-bottom:1px solid #f1f5f9">
+        <span style="display:inline-block;width:20px;height:20px;background:#0052ff;color:#fff;border-radius:50%;font-size:10px;font-weight:800;text-align:center;line-height:20px;margin-right:6px">${i + 1}</span>
+        <strong>${esc(it.name)}</strong>
+      </td>
+      <td style="padding:10px 12px;font-size:12px;text-align:center;color:#0f172a;font-weight:700;border-bottom:1px solid #f1f5f9;white-space:nowrap">${it.qty} ${esc(it.unit || "adet")}</td>
+      <td style="padding:10px 14px;font-size:11.5px;color:#64748b;border-bottom:1px solid #f1f5f9;font-family:monospace">${esc(it.serial || "—")}</td>
+    </tr>`).join("");
 
   return `<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8"><title>Teslim Tutanağı ${esc(n.note_no || "")}</title>
 <style>
   @page{ size:A4; margin:0 } *{ box-sizing:border-box } html,body{ margin:0;padding:0 }
-  body{ font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#1f2937;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact }
-  .band{ background:linear-gradient(120deg,#0038c7,#0052ff 55%,#3b74ff);padding:26px 40px }
-  .accent{ height:5px;background:#ff5e07 }
-  .content{ padding:28px 40px 0 }
-  .doctitle{ color:#fff;font-size:25px;font-weight:800;letter-spacing:1px;margin:0 }
-  .card{ background:#f8fafc;border:1px solid #e8edf3;border-radius:11px;padding:14px 16px }
-  table.items{ width:100%;border-collapse:collapse;margin-top:10px;border-radius:9px;overflow:hidden;box-shadow:0 1px 4px rgba(15,23,42,.06) }
-  table.items thead th{ background:#0f172a;color:#fff;font-size:10.5px;font-weight:700;padding:12px;letter-spacing:.4px }
-  .footer{ background:#0f172a;color:#cbd5e1;padding:18px 40px;margin-top:40px;font-size:11px;text-align:center }
+  body{ font-family:'Segoe UI',Roboto,Arial,sans-serif;color:#1f2937;font-size:12px;-webkit-print-color-adjust:exact;print-color-adjust:exact;background:#fff }
+  .band{ background:linear-gradient(135deg,#0038c7 0%,#0052ff 60%,#3b74ff 100%);padding:28px 44px 24px }
+  .accent{ height:4px;background:linear-gradient(90deg,#ff5e07,#ff8c42) }
+  .content{ padding:28px 44px 0 }
+  .section-title{ font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:#94a3b8;font-weight:800;margin-bottom:8px }
+  .info-card{ background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;padding:14px 18px }
+  .info-row{ display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-size:12px;border-bottom:1px solid #f1f5f9 }
+  .info-row:last-child{ border-bottom:none }
+  table.items{ width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(15,23,42,.07) }
+  table.items thead th{ background:#0f172a;color:#fff;font-size:10px;font-weight:800;padding:11px 14px;letter-spacing:.5px;text-transform:uppercase }
+  table.items tbody tr:nth-child(even){ background:#f8faff }
+  .sig-box{ border-top:2px solid #334155;padding-top:10px }
+  .footer{ background:#0f172a;color:#94a3b8;padding:16px 44px;font-size:11px }
 </style></head><body>
+
+  <!-- HEADER -->
   <div class="band">
     <table style="width:100%;border:0;border-collapse:collapse"><tr>
-      <td style="border:0;vertical-align:middle">
-        <span style="display:inline-block;background:#fff;border-radius:14px;padding:14px 24px;box-shadow:0 6px 18px rgba(0,0,0,.22)">
-          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:78px;width:auto;display:block" />
+      <td style="border:0;vertical-align:middle;width:55%">
+        <span style="display:inline-block;background:#fff;border-radius:12px;padding:12px 22px;box-shadow:0 4px 16px rgba(0,0,0,.20)">
+          <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:56px;width:auto;display:block" />
         </span>
-        <div style="color:#eaf0ff;font-size:12.5px;margin-top:13px;font-weight:700">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+        <div style="color:#bfcfff;font-size:11px;margin-top:10px">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+        <div style="color:#8fa8ff;font-size:10.5px;margin-top:2px">Vergi No: 1234567890 &nbsp;·&nbsp; Ankara</div>
       </td>
       <td style="border:0;vertical-align:middle;text-align:right">
-        <div class="doctitle">TESLİM TUTANAĞI</div>
-        <div style="display:inline-block;background:rgba(255,255,255,.18);color:#fff;border-radius:20px;padding:6px 16px;font-size:12px;font-weight:700;margin-top:12px">${esc(n.note_no || "TASLAK")}</div>
+        <div style="color:#fff;font-size:28px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase">TESLİM TUTANAĞI</div>
+        <div style="margin-top:10px">
+          <span style="display:inline-block;background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:8px;padding:6px 18px;font-size:13px;font-weight:800;letter-spacing:.5px">${esc(n.note_no || "TASLAK")}</span>
+        </div>
+        <div style="color:#bfcfff;font-size:11px;margin-top:8px">Teslim Tarihi: <strong style="color:#fff">${dt(n.delivery_date)}</strong></div>
       </td>
     </tr></table>
   </div>
   <div class="accent"></div>
+
   <div class="content">
-    <table style="width:100%;border:0;border-collapse:separate;border-spacing:0"><tr>
-      <td style="border:0;vertical-align:top;width:60%;padding-right:14px">
-        <div class="card" style="border-left:4px solid #0052ff">
-          <div style="font-size:10px;text-transform:uppercase;letter-spacing:.7px;color:#94a3b8;font-weight:800;margin-bottom:6px">Teslim Edilen</div>
-          <div style="font-weight:800;font-size:14px;color:#0f172a">${esc(n.customer_name || "—")}</div>
-          ${n.customer_address ? `<div style="font-size:11px;color:#4b5563;margin-top:3px">${esc(n.customer_address)}</div>` : ""}
-          ${n.customer_phone ? `<div style="font-size:11px;color:#4b5563;margin-top:2px">Tel: ${esc(n.customer_phone)}</div>` : ""}
+
+    <!-- BİLGİ KARTLARI -->
+    <table style="width:100%;border:0;border-collapse:separate;border-spacing:14px 0;margin:0 -14px;margin-bottom:4px"><tr>
+
+      <!-- Teslim Edilen -->
+      <td style="border:0;vertical-align:top;width:50%">
+        <div class="section-title">Teslim Edilen Firma / Kişi</div>
+        <div class="info-card" style="border-left:3px solid #0052ff">
+          <div style="font-size:15px;font-weight:800;color:#0f172a;margin-bottom:6px">${esc(n.customer_name || "—")}</div>
+          ${n.customer_address ? `<div style="font-size:11px;color:#64748b;line-height:1.6;margin-bottom:4px">${esc(n.customer_address)}</div>` : ""}
+          ${n.customer_phone ? `<div style="font-size:11.5px;color:#475569">📞 ${esc(n.customer_phone)}</div>` : ""}
+          ${n.customer_email ? `<div style="font-size:11.5px;color:#475569">✉ ${esc(n.customer_email)}</div>` : ""}
         </div>
       </td>
-      <td style="border:0;vertical-align:top;width:40%">
-        <div class="card">
-          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px"><span style="color:#64748b">Teslim Tarihi</span><b style="color:#0f172a">${dt(n.delivery_date)}</b></div>
-          ${n.delivered_by ? `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:12px"><span style="color:#64748b">Teslim Eden</span><b style="color:#0f172a">${esc(n.delivered_by)}</b></div>` : ""}
+
+      <!-- Teslimat Detayları -->
+      <td style="border:0;vertical-align:top;width:50%">
+        <div class="section-title">Teslimat Detayları</div>
+        <div class="info-card">
+          <div class="info-row"><span style="color:#64748b">Tutanak No</span><strong style="color:#0052ff">${esc(n.note_no || "—")}</strong></div>
+          <div class="info-row"><span style="color:#64748b">Teslim Tarihi</span><strong>${dt(n.delivery_date)}</strong></div>
+          <div class="info-row"><span style="color:#64748b">Teslim Eden</span><strong>${esc(n.delivered_by || "Lider Network")}</strong></div>
+          ${n.received_by ? `<div class="info-row"><span style="color:#64748b">Teslim Alan</span><strong>${esc(n.received_by)}</strong></div>` : ""}
+          <div class="info-row"><span style="color:#64748b">Toplam Kalem</span><strong style="color:#0052ff">${items.length} kalem / ${totalQty} adet</strong></div>
         </div>
       </td>
+
     </tr></table>
 
-    <p style="color:#0052ff;font-size:12.5px;margin:20px 0 4px;font-weight:500">Aşağıda belirtilen ürünler eksiksiz ve sağlam olarak teslim edilmiştir.</p>
+    <!-- ÜRÜN TABLOSU -->
+    <div class="section-title" style="margin-top:22px">Teslim Edilen Ürünler</div>
+    <p style="font-size:11.5px;color:#64748b;margin:0 0 10px;font-style:italic">Aşağıda belirtilen ürünler eksiksiz ve sağlam olarak teslim edilmiştir.</p>
     <table class="items">
       <thead><tr>
-        <th style="text-align:left">ÜRÜN / AÇIKLAMA</th>
-        <th style="text-align:center">MİKTAR</th>
-        <th style="text-align:left">SERİ NO</th>
+        <th style="text-align:left;width:50%">Ürün / Açıklama</th>
+        <th style="text-align:center;width:18%">Miktar</th>
+        <th style="text-align:left;width:32%">Seri No</th>
       </tr></thead>
-      <tbody>${rows || `<tr><td colspan="3" style="padding:18px;text-align:center;color:#94a3b8">Ürün eklenmedi</td></tr>`}</tbody>
+      <tbody>
+        ${rows || `<tr><td colspan="3" style="padding:20px;text-align:center;color:#94a3b8">Ürün eklenmedi</td></tr>`}
+        <tr style="background:#f0f4ff">
+          <td style="padding:10px 14px;font-size:12px;font-weight:800;color:#0f172a" colspan="1">TOPLAM</td>
+          <td style="padding:10px 12px;text-align:center;font-size:13px;font-weight:900;color:#0052ff">${totalQty} adet</td>
+          <td style="padding:10px 14px;font-size:11.5px;color:#94a3b8">${items.length} farklı kalem</td>
+        </tr>
+      </tbody>
     </table>
 
-    ${n.notes ? `<div style="margin-top:18px;padding:14px 16px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.6;white-space:pre-wrap">${esc(n.notes)}</div>` : ""}
+    ${n.notes ? `
+    <div style="margin-top:16px;padding:13px 16px;background:#fffbeb;border:1px solid #fde68a;border-left:3px solid #f59e0b;border-radius:9px">
+      <div style="font-size:10px;font-weight:800;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px">Notlar</div>
+      <div style="font-size:12px;color:#78350f;line-height:1.7;white-space:pre-wrap">${esc(n.notes)}</div>
+    </div>` : ""}
 
-    <table style="width:100%;border:0;border-collapse:collapse;margin-top:50px"><tr>
-      <td style="border:0;width:50%;padding-right:28px;vertical-align:top">
-        <div style="height:56px"></div>
-        <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151">
-          <div style="font-weight:800;color:#0f172a">Teslim Eden</div>
-          <div style="margin-top:2px">${esc(n.delivered_by || "Lider Network")}</div>
-          <div style="color:#94a3b8;font-size:11px;margin-top:3px">Kaşe / İmza</div>
+    <!-- İMZA ALANLARI -->
+    <table style="width:100%;border:0;border-collapse:collapse;margin-top:44px"><tr>
+      <td style="border:0;width:50%;padding-right:32px;vertical-align:top">
+        <div style="height:64px;border-bottom:none"></div>
+        <div style="border:1.5px dashed #cbd5e1;border-radius:8px;height:64px;margin-bottom:12px;background:#f8fafc"></div>
+        <div class="sig-box">
+          <div style="font-weight:800;font-size:12px;color:#0f172a">Teslim Eden</div>
+          <div style="font-size:12px;color:#475569;margin-top:2px">${esc(n.delivered_by || "Lider Network")}</div>
+          <div style="color:#94a3b8;font-size:10.5px;margin-top:3px">Ad Soyad / Kaşe / İmza</div>
         </div>
       </td>
-      <td style="border:0;width:50%;padding-left:28px;vertical-align:top">
-        <div style="height:56px"></div>
-        <div style="border-top:1.5px solid #475569;padding-top:8px;font-size:12px;color:#374151">
-          <div style="font-weight:800;color:#0f172a">Teslim Alan</div>
-          <div style="margin-top:2px">${esc(n.received_by || n.customer_name || "—")}</div>
-          <div style="color:#94a3b8;font-size:11px;margin-top:3px">Kaşe / İmza / Tarih</div>
+      <td style="border:0;width:50%;padding-left:32px;vertical-align:top">
+        <div style="height:64px;border-bottom:none"></div>
+        <div style="border:1.5px dashed #cbd5e1;border-radius:8px;height:64px;margin-bottom:12px;background:#f8fafc"></div>
+        <div class="sig-box">
+          <div style="font-weight:800;font-size:12px;color:#0f172a">Teslim Alan</div>
+          <div style="font-size:12px;color:#475569;margin-top:2px">${esc(n.received_by || n.customer_name || "—")}</div>
+          <div style="color:#94a3b8;font-size:10.5px;margin-top:3px">Ad Soyad / Kaşe / İmza / Tarih</div>
         </div>
       </td>
     </tr></table>
+
   </div>
-  <div class="footer">
-    <strong style="color:#fff;letter-spacing:1px">LİDER NETWORK</strong> &nbsp;·&nbsp; +90 312 232 02 88 &nbsp;·&nbsp; info@lidernetwork.com.tr &nbsp;·&nbsp; www.lidernetwork.com.tr
+
+  <!-- FOOTER -->
+  <div class="footer" style="margin-top:36px">
+    <table style="width:100%;border:0;border-collapse:collapse"><tr>
+      <td style="border:0;vertical-align:middle">
+        <strong style="color:#fff;font-size:12px;letter-spacing:.5px">LİDER NETWORK</strong>
+        <div style="margin-top:3px;font-size:10.5px">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
+      </td>
+      <td style="border:0;vertical-align:middle;text-align:right;font-size:10.5px">
+        +90 312 232 02 88 &nbsp;·&nbsp; info@lidernetwork.com.tr &nbsp;·&nbsp; www.lidernetwork.com.tr
+      </td>
+    </tr></table>
   </div>
+
   <script>window.onload=function(){setTimeout(function(){window.print()},350)}<\/script>
 </body></html>`;
 }
@@ -328,43 +384,57 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
             <h2 style={{ margin: "0 0 4px", fontSize: "17px", fontWeight: 800, color: "#1a1d2e" }}>{modal.id ? `Teslim Tutanağı — ${modal.note_no}` : "Yeni Teslim Tutanağı"}</h2>
             <p style={{ margin: "0 0 18px", fontSize: "12.5px", color: "#94a3b8" }}>Teslim edilen ürünleri girin; PDF (imza alanlı) yazdırın veya müşteriye mail atın.</p>
 
-            <div style={{ display: "grid", gap: "14px" }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lblS}>Firma / Müşteri *</label>
-                  <select style={inpS} value={modal.company_id || ""} onChange={e => {
-                    const id = e.target.value;
-                    const cari = id ? cariMap[id] : null;
-                    const co = companies.find(x => x.id === id);
-                    setModal({
-                      ...modal,
-                      company_id: id || null,
-                      customer_name: cari?.name || co?.name || modal.customer_name,
-                      // Cari kartta tanımlıysa otomatik çek (yoksa mevcut değeri koru)
-                      customer_address: cari?.address ?? modal.customer_address,
-                      customer_email: cari?.email ?? modal.customer_email,
-                      customer_phone: cari?.phone ?? modal.customer_phone,
-                    });
-                  }}>
-                    <option value="">— Firma seç (veya elle yaz) —</option>
-                    {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
-                  </select>
-                  <input style={{ ...inpS, marginTop: "8px" }} value={modal.customer_name || ""} onChange={e => setModal({ ...modal, customer_name: e.target.value })} placeholder="Teslim edilen ad/ünvan" />
-                </div>
-                <div>
-                  <label style={lblS}>Teslim Tarihi</label>
-                  <input type="date" style={inpS} value={modal.delivery_date || ""} onChange={e => setModal({ ...modal, delivery_date: e.target.value })} />
-                  <input style={{ ...inpS, marginTop: "8px" }} value={modal.customer_email || ""} onChange={e => setModal({ ...modal, customer_email: e.target.value })} placeholder="Müşteri e-posta (mail için)" />
-                </div>
-              </div>
+            <div style={{ display: "grid", gap: "18px" }}>
+
+              {/* Müşteri Bilgileri */}
               <div>
-                <label style={lblS}>Adres</label>
-                <input style={inpS} value={modal.customer_address || ""} onChange={e => setModal({ ...modal, customer_address: e.target.value })} placeholder="Teslim adresi" />
+                <div style={{ fontSize: "11px", fontWeight: 800, color: "#0052ff", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "10px", paddingBottom: "6px", borderBottom: "2px solid #eff3ff" }}>Müşteri Bilgileri</div>
+                <div style={{ display: "grid", gap: "10px" }}>
+                  <div>
+                    <label style={lblS}>Firma *</label>
+                    <select style={inpS} value={modal.company_id || ""} onChange={e => {
+                      const id = e.target.value;
+                      const cari = id ? cariMap[id] : null;
+                      const co = companies.find(x => x.id === id);
+                      setModal({
+                        ...modal,
+                        company_id: id || null,
+                        customer_name: cari?.name || co?.name || modal.customer_name,
+                        customer_address: cari?.address ?? modal.customer_address,
+                        customer_email: cari?.email ?? modal.customer_email,
+                        customer_phone: cari?.phone ?? modal.customer_phone,
+                      });
+                    }}>
+                      <option value="">— Firma seç (veya elle yaz) —</option>
+                      {companies.map(co => <option key={co.id} value={co.id}>{co.name}</option>)}
+                    </select>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "10px" }}>
+                    <div>
+                      <label style={lblS}>Yetkili / Ad Soyad *</label>
+                      <input style={inpS} value={modal.customer_name || ""} onChange={e => setModal({ ...modal, customer_name: e.target.value })} placeholder="Teslim edilen kişi veya ünvan" />
+                    </div>
+                    <div>
+                      <label style={lblS}>Telefon</label>
+                      <input style={inpS} value={modal.customer_phone || ""} onChange={e => setModal({ ...modal, customer_phone: e.target.value })} placeholder="0(5XX) XXX XX XX" />
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "2fr 1fr", gap: "10px" }}>
+                    <div>
+                      <label style={lblS}>Adres</label>
+                      <input style={inpS} value={modal.customer_address || ""} onChange={e => setModal({ ...modal, customer_address: e.target.value })} placeholder="Teslim adresi" />
+                    </div>
+                    <div>
+                      <label style={lblS}>E-posta</label>
+                      <input style={inpS} value={modal.customer_email || ""} onChange={e => setModal({ ...modal, customer_email: e.target.value })} placeholder="mail@sirket.com" />
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Ürün satırları */}
               <div>
-                <label style={lblS}>Teslim Edilen Ürünler *</label>
+                <div style={{ fontSize: "11px", fontWeight: 800, color: "#0052ff", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "10px", paddingBottom: "6px", borderBottom: "2px solid #eff3ff" }}>Teslim Edilen Ürünler</div>
                 <div style={{ display: "grid", gap: "8px" }}>
                   {(modal.items || []).map((it, i) => (
                     <div key={i} style={{ background: "#f8fafc", border: "1px solid #eef2f7", borderRadius: "9px", padding: "8px" }}>
@@ -422,22 +492,31 @@ export default function TeslimTutanagi({ companies, currentUserName, staff = [],
                 <button onClick={addItem} style={{ marginTop: "8px", display: "inline-flex", alignItems: "center", gap: "5px", padding: "7px 13px", borderRadius: "8px", border: "1.5px dashed #cbd5e1", background: "#fff", color: "#0052ff", fontSize: "12.5px", fontWeight: 700, cursor: "pointer" }}><Plus size={14} /> Ürün Ekle</button>
               </div>
 
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={lblS}>Teslim Eden</label>
-                  <select style={inpS} value={modal.delivered_by || ""} onChange={e => setModal({ ...modal, delivered_by: e.target.value })}>
-                    <option value="">— Seç —</option>
-                    {[currentUserName, ...staff.filter(s => s !== currentUserName)].filter(Boolean).map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
-                </div>
-                <div>
-                  <label style={lblS}>Teslim Alan</label>
-                  <input style={inpS} value={modal.received_by || ""} onChange={e => setModal({ ...modal, received_by: e.target.value })} placeholder="Teslim alan kişi" />
+              {/* Teslimat Bilgileri */}
+              <div>
+                <div style={{ fontSize: "11px", fontWeight: 800, color: "#0052ff", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "10px", paddingBottom: "6px", borderBottom: "2px solid #eff3ff" }}>Teslimat Bilgileri</div>
+                <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: "10px" }}>
+                  <div>
+                    <label style={lblS}>Teslim Tarihi</label>
+                    <input type="date" style={inpS} value={modal.delivery_date || ""} onChange={e => setModal({ ...modal, delivery_date: e.target.value })} />
+                  </div>
+                  <div>
+                    <label style={lblS}>Teslim Eden</label>
+                    <select style={inpS} value={modal.delivered_by || ""} onChange={e => setModal({ ...modal, delivered_by: e.target.value })}>
+                      <option value="">— Seç —</option>
+                      {[currentUserName, ...staff.filter(s => s !== currentUserName)].filter(Boolean).map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                  </div>
+                  <div>
+                    <label style={lblS}>Teslim Alan</label>
+                    <input style={inpS} value={modal.received_by || ""} onChange={e => setModal({ ...modal, received_by: e.target.value })} placeholder="Teslim alan kişi adı" />
+                  </div>
                 </div>
               </div>
+
               <div>
-                <label style={lblS}>Not</label>
-                <textarea style={{ ...inpS, minHeight: "56px", resize: "vertical" }} value={modal.notes || ""} onChange={e => setModal({ ...modal, notes: e.target.value })} />
+                <label style={lblS}>Not / Açıklama</label>
+                <textarea style={{ ...inpS, minHeight: "60px", resize: "vertical" }} value={modal.notes || ""} onChange={e => setModal({ ...modal, notes: e.target.value })} placeholder="Varsa ek bilgi veya şartlar..." />
               </div>
             </div>
 
