@@ -720,6 +720,8 @@ function GunlukTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
 /* ══════════════════════════════════════════════════════════════
    TAB: KANBAN
 ══════════════════════════════════════════════════════════════ */
+const DONE_PAGE_SIZE = 10;
+
 function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentUserName = "", onOpenServiceForm }: {
   tasks: WorkTask[]; companies: Company[]; staff: string[]; currentUserName?: string;
   onTaskSave: (t: Partial<WorkTask>) => Promise<void>;
@@ -733,6 +735,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
   const [modal, setModal] = useState<Partial<WorkTask>|null|false>(false);
   const [filterPri, setFP] = useState("");
   const [menuId, setMenuId] = useState<string|null>(null);
+  const [doneLimit, setDoneLimit] = useState(DONE_PAGE_SIZE);
 
   const filtered = tasks.filter(t=>!filterPri||t.priority===filterPri);
   const byCol = (s: WorkTask["status"]) => filtered.filter(t=>t.status===s);
@@ -760,7 +763,12 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
         overflowX: isMobile ? "hidden" : "visible"
       }}>
         {KAN_COLS.map(col=>{
-          const colTasks = byCol(col.id);
+          const allColTasks = byCol(col.id);
+          const isDone = col.id === "done";
+          // Tamamlandı kolonunu son eklenenlerden itibaren sınırla
+          const colTasks = isDone
+            ? [...allColTasks].sort((a,b)=>new Date(b.updated_at||b.created_at).getTime()-new Date(a.updated_at||a.created_at).getTime()).slice(0, doneLimit)
+            : allColTasks;
           return (
             <div key={col.id} style={{ background:col.bg,border:`1.5px solid ${col.border}`,borderRadius:"14px",padding:"14px" }}>
               <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"12px" }}>
@@ -769,7 +777,7 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                   <span style={{ fontSize:"13px",fontWeight:800,color:col.color }}>{col.label}</span>
                 </div>
                 <div style={{ display:"flex",alignItems:"center",gap:"7px" }}>
-                  <span style={{ fontSize:"11px",fontWeight:700,color:col.color,background:col.border,padding:"2px 8px",borderRadius:"10px" }}>{colTasks.length}</span>
+                  <span style={{ fontSize:"11px",fontWeight:700,color:col.color,background:col.border,padding:"2px 8px",borderRadius:"10px" }}>{allColTasks.length}</span>
                   <button onClick={()=>setModal({status:col.id})} style={{ background:"none",border:`1px dashed ${col.border}`,borderRadius:"6px",cursor:"pointer",color:col.color,padding:"2px 6px",display:"flex",alignItems:"center" }}><Plus size={12}/></button>
                 </div>
               </div>
@@ -822,6 +830,29 @@ function KanbanTab({ tasks, onTaskSave, onTaskDelete, companies, staff, currentU
                   </div>
                 );
               })}
+
+              {/* Tamamlandı kolonunda sayfalama */}
+              {isDone && allColTasks.length > DONE_PAGE_SIZE && (
+                <div style={{ marginTop:"10px",display:"flex",gap:"6px",justifyContent:"center" }}>
+                  {doneLimit < allColTasks.length && (
+                    <button onClick={()=>setDoneLimit(d=>d+DONE_PAGE_SIZE)}
+                      style={{ flex:1,padding:"7px 10px",borderRadius:"8px",border:`1px solid ${col.border}`,background:"#fff",color:col.color,fontSize:"12px",fontWeight:700,cursor:"pointer" }}>
+                      + {Math.min(DONE_PAGE_SIZE, allColTasks.length-doneLimit)} daha göster
+                    </button>
+                  )}
+                  {doneLimit > DONE_PAGE_SIZE && (
+                    <button onClick={()=>setDoneLimit(DONE_PAGE_SIZE)}
+                      style={{ padding:"7px 10px",borderRadius:"8px",border:`1px solid ${col.border}`,background:"#fff",color:"#94a3b8",fontSize:"12px",fontWeight:600,cursor:"pointer" }}>
+                      Gizle
+                    </button>
+                  )}
+                </div>
+              )}
+              {isDone && allColTasks.length > DONE_PAGE_SIZE && (
+                <p style={{ margin:"8px 0 0",textAlign:"center",fontSize:"11px",color:"#9ca3af" }}>
+                  {Math.min(doneLimit,allColTasks.length)}/{allColTasks.length} görev
+                </p>
+              )}
             </div>
           );
         })}
