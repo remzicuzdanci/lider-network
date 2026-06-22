@@ -77,6 +77,11 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [histFor, setHistFor] = useState<{ product_id?: string | null; name: string } | null>(null);
   // kopyalama seçimi (aynı/başka müşteri)
   const [copySource, setCopySource] = useState<Quote | null>(null);
+  // sipariş onay modalı
+  const [orderModal, setOrderModal] = useState(false);
+  const [orderSelItems, setOrderSelItems] = useState<boolean[]>([]);
+  const [orderNote, setOrderNote] = useState("");
+  const [orderSending, setOrderSending] = useState(false);
 
   const loadQuotes = useCallback(async () => {
     setLoading(true);
@@ -392,6 +397,37 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     else showToast("Gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error");
   }
 
+  function openOrderModal() {
+    setOrderSelItems(items.map(() => true));
+    setOrderNote("");
+    setOrderModal(true);
+  }
+
+  async function doOrder(sendMail: boolean) {
+    setOrderSending(true);
+    try {
+      let id = editId;
+      if (!id) { const s = await save(); if (!s) return; id = s.id; }
+      const selected = items.filter((_, i) => orderSelItems[i]);
+      if (sendMail) {
+        const c = companies.find(x => x.id === companyId);
+        const email = c?.contact_email || "";
+        if (!email) { showToast("Firma e-posta adresi tanımlı değil", "warning"); return; }
+        const r = await fetch("/api/admin/quotes/order-confirm", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id, email, selectedItems: selected, note: orderNote, currency }),
+        });
+        if (!r.ok) { showToast("Mail gönderilemedi: " + ((await r.json().catch(() => ({}))).error || "hata"), "error"); return; }
+        showToast("Sipariş onayı maili gönderildi → " + email);
+      }
+      const r2 = await fetch("/api/admin/quotes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, status: "ordered" }) });
+      if (r2.ok) { setStatus("ordered"); await loadQuotes(); showToast("Siparişe döndürüldü"); }
+      else showToast("Durum güncellenemedi", "error");
+      setOrderModal(false);
+    } finally { setOrderSending(false); }
+  }
+
   async function sendFollowup() {
     if (!editId) { showToast("Önce teklifi kaydedin", "warning"); return; }
     const c = companies.find(x => x.id === companyId);
@@ -428,6 +464,82 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             <span style={{ fontSize: "20px" }}>🔄</span>
             <span>Başka Müşteri İçin<br /><span style={{ fontSize: "11.5px", fontWeight: 500, color: "#64748b" }}>Müşteri boş gelir, yenisini seçersin</span></span>
           </button>
+        </div>
+      </div>
+    </div>
+  ) : null;
+
+  // Sipariş onay modalı
+  const orderModalEl = orderModal ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(15,23,42,.55)", zIndex: 1100, display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+      onClick={e => { if (e.target === e.currentTarget && !orderSending) setOrderModal(false); }}>
+      <div style={{ background: "#fff", borderRadius: "18px", width: "100%", maxWidth: "520px", boxShadow: "0 24px 64px rgba(0,0,0,.28)", overflow: "hidden" }}>
+
+        {/* Header */}
+        <div style={{ background: "linear-gradient(135deg,#6d28d9,#7c3aed)", padding: "20px 24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ color: "#fff", fontSize: "16px", fontWeight: 800 }}>🛒 Siparişe Çevir</div>
+            <div style={{ color: "#ddd6fe", fontSize: "12px", marginTop: "3px" }}>{quoteNo} — {companies.find(c => c.id === companyId)?.name || "Müşteri"}</div>
+          </div>
+          <button onClick={() => setOrderModal(false)} disabled={orderSending} style={{ background: "rgba(255,255,255,.2)", border: "none", cursor: "pointer", color: "#fff", borderRadius: "7px", width: 28, height: 28, display: "flex", alignItems: "center", justifyContent: "center" }}><X size={16} /></button>
+        </div>
+
+        <div style={{ padding: "22px 24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+
+          {/* Ürün seçimi */}
+          <div>
+            <div style={{ fontSize: "11px", fontWeight: 800, color: "#6d28d9", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "10px" }}>Siparişe Dahil Edilecek Kalemler</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: "6px", maxHeight: "240px", overflowY: "auto" }}>
+              {items.filter(it => it.description.trim()).map((it, i) => (
+                <label key={i} style={{ display: "flex", alignItems: "center", gap: "10px", padding: "9px 12px", borderRadius: "9px", border: `1.5px solid ${orderSelItems[i] ? "#c4b5fd" : "#e5e7ef"}`, background: orderSelItems[i] ? "#f5f3ff" : "#fafafa", cursor: "pointer" }}>
+                  <input type="checkbox" checked={!!orderSelItems[i]} onChange={e => setOrderSelItems(s => s.map((v, idx) => idx === i ? e.target.checked : v))}
+                    style={{ width: 16, height: 16, accentColor: "#7c3aed", cursor: "pointer" }} />
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: "13px", fontWeight: 600, color: "#1a1d2e", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{it.description}</div>
+                    <div style={{ fontSize: "11px", color: "#94a3b8" }}>{it.quantity} {it.unit} · {money(it.unit_price, currency)}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Not */}
+          <div>
+            <div style={{ fontSize: "11px", fontWeight: 800, color: "#64748b", textTransform: "uppercase", letterSpacing: ".6px", marginBottom: "6px" }}>Ek Not (İsteğe Bağlı)</div>
+            <textarea
+              value={orderNote}
+              onChange={e => setOrderNote(e.target.value)}
+              placeholder="Tahmini teslimat süresi, özel koşullar vb."
+              style={{ width: "100%", boxSizing: "border-box", padding: "9px 12px", border: "1.5px solid #e5e7ef", borderRadius: "9px", fontSize: "13px", color: "#1a1d2e", outline: "none", resize: "vertical", minHeight: "70px", fontFamily: "inherit" }}
+            />
+          </div>
+
+          {/* Mail bilgisi */}
+          {(() => { const c = companies.find(x => x.id === companyId); return c?.contact_email ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "9px" }}>
+              <Mail size={14} color="#0052ff" />
+              <div style={{ fontSize: "12.5px", color: "#1e40af" }}>Onay maili şu adrese gönderilecek: <strong>{c.contact_email}</strong></div>
+            </div>
+          ) : (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", padding: "10px 14px", background: "#fefce8", border: "1px solid #fde68a", borderRadius: "9px" }}>
+              <span style={{ fontSize: "14px" }}>⚠️</span>
+              <div style={{ fontSize: "12.5px", color: "#92400e" }}>Bu firma için e-posta tanımlı değil — sadece durum güncellenebilir.</div>
+            </div>
+          ); })()}
+
+          {/* Butonlar */}
+          <div style={{ display: "flex", gap: "10px", justifyContent: "flex-end", flexWrap: "wrap" }}>
+            <button onClick={() => setOrderModal(false)} disabled={orderSending} style={{ padding: "10px 18px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "9px", color: "#64748b", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+              İptal
+            </button>
+            <button onClick={() => doOrder(false)} disabled={orderSending} style={{ padding: "10px 18px", background: "#f5f3ff", border: "1.5px solid #c4b5fd", borderRadius: "9px", color: "#6d28d9", fontSize: "13px", fontWeight: 700, cursor: orderSending ? "not-allowed" : "pointer", opacity: orderSending ? .6 : 1 }}>
+              {orderSending ? "İşleniyor…" : "Sadece Siparişe Çevir"}
+            </button>
+            <button onClick={() => doOrder(true)} disabled={orderSending || !companies.find(c => c.id === companyId)?.contact_email}
+              style={{ padding: "10px 18px", background: orderSending ? "#9ca3af" : "linear-gradient(135deg,#6d28d9,#7c3aed)", border: "none", borderRadius: "9px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: orderSending || !companies.find(c => c.id === companyId)?.contact_email ? "not-allowed" : "pointer", opacity: !companies.find(c => c.id === companyId)?.contact_email ? .5 : orderSending ? .6 : 1 }}>
+              {orderSending ? "İşleniyor…" : "🛒 Siparişe Çevir + Mail Gönder"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -593,6 +705,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
           );
         })()}
         {copyModal}
+        {orderModalEl}
       </div>
     );
   }
@@ -620,7 +733,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
         <div style={{ flex: 1 }} />
         <button onClick={() => quickStatus("accepted")} title="Teklifi kabul edildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #bbf7d0", background: "#f0fdf4", color: "#15803d", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✓ Kabul</button>
         <button onClick={() => quickStatus("rejected")} title="Teklifi reddedildi olarak işaretle" style={{ padding: "9px 13px", borderRadius: "9px", border: "1.5px solid #fecaca", background: "#fef2f2", color: "#dc2626", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>✕ Red</button>
-        <button onClick={() => quickStatus("ordered")} title="Siparişe çevir" style={{ padding: "9px 13px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#6d28d9,#7c3aed)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>🛒 Siparişe Çevir</button>
+        <button onClick={openOrderModal} title="Siparişe çevir" style={{ padding: "9px 13px", borderRadius: "9px", border: "none", background: "linear-gradient(135deg,#6d28d9,#7c3aed)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>🛒 Siparişe Çevir</button>
         <button onClick={save} disabled={saving} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: saving ? "#9ca3af" : "linear-gradient(135deg,#15803d,#22c55e)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: saving ? "not-allowed" : "pointer" }}><Save size={15} /> {saving ? "Kaydediliyor…" : "Teklifi Kaydet"}</button>
         <button onClick={exportPDF} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "none", background: "#b91c1c", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><FileText size={15} /> PDF</button>
         <button onClick={printQuote} style={{ display: "flex", alignItems: "center", gap: "6px", padding: "9px 16px", borderRadius: "9px", border: "1.5px solid #e5e7ef", background: "#fff", color: "#475569", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}><Printer size={15} /> Yazdır</button>
