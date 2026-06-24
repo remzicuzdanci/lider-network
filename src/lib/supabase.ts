@@ -39,6 +39,8 @@ export interface Ticket {
   created_by_staff: string | null;
   company_id: string | null;
   company_contact_email: string | null;
+  satisfaction_rating: number | null;
+  user_id: string | null;
 }
 
 export interface Company {

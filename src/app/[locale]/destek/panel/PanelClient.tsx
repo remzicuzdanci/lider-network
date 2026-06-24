@@ -13,7 +13,9 @@ import {
   XCircle, Search, LayoutDashboard, Activity,
   Bell, User, Phone, Mail, Globe, ChevronRight,
   AlertCircle, ShieldCheck, Headphones, FileText,
-  ArrowUpRight, Zap,
+  ArrowUpRight, Zap, HelpCircle, Server, Receipt,
+  Wifi, WifiOff, Star, ExternalLink, Package,
+  AlertTriangle, CheckCircle2,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -41,7 +43,20 @@ const CAT: Record<string, string> = {
   technical: "Teknik", billing: "Fatura", general: "Genel", feature_request: "Özellik",
 };
 
-type ActivePage = "panel" | "profil" | "sla" | "bildirimler";
+type ActivePage = "panel" | "profil" | "sla" | "bildirimler" | "sss" | "cihazlar" | "teklifler";
+
+// SLA süresi (saat) — yanıt süresi taahhüdü
+const SLA_HOURS: Record<string, number> = { urgent: 2, high: 4, medium: 8, low: 16 };
+
+function getSlaInfo(priority: string, createdAt: string, firstResponseAt: string | null) {
+  if (firstResponseAt) return { label: "Yanıt verildi", color: "#22c55e", urgent: false };
+  const elapsed = (Date.now() - new Date(createdAt).getTime()) / 3600000;
+  const limit   = SLA_HOURS[priority] ?? 8;
+  const pct     = elapsed / limit;
+  if (pct >= 1)   return { label: "SLA Aşıldı!", color: "#dc2626", urgent: true };
+  if (pct >= 0.7) return { label: "SLA Yaklaşıyor", color: "#f59e0b", urgent: false };
+  return { label: `~${Math.round((limit - elapsed) * 10) / 10}sa kaldı`, color: "#22c55e", urgent: false };
+}
 
 export default function PanelClient({
   userId, userEmail, fullName, company,
@@ -57,6 +72,14 @@ export default function PanelClient({
   const [search, setSearch]       = useState("");
   const [activePage, setActivePage] = useState<ActivePage>("panel");
   const [companyView, setCompanyView] = useState(false);
+  // Cihazlar
+  const [assets, setAssets]           = useState<Record<string, string>[]>([]);
+  const [assetsLoaded, setAssetsLoaded] = useState(false);
+  // Teklifler
+  const [quotes, setQuotes]           = useState<Record<string, unknown>[]>([]);
+  const [quotesLoaded, setQuotesLoaded] = useState(false);
+  // Uptime widget
+  const [uptimeOk, setUptimeOk]       = useState<boolean | null>(null);
 
   const fetchTickets = useCallback(async (cv = companyView) => {
     setLoading(true);
@@ -67,6 +90,34 @@ export default function PanelClient({
   }, [companyView, company]);
 
   useEffect(() => { fetchTickets(companyView); }, [fetchTickets, companyView]);
+
+  // Lazy-load cihazlar when page first opens
+  useEffect(() => {
+    if (activePage === "cihazlar" && !assetsLoaded) {
+      fetch("/api/destek/assets").then(r => r.json()).then(d => {
+        setAssets(d.assets || []);
+        setAssetsLoaded(true);
+      });
+    }
+  }, [activePage, assetsLoaded]);
+
+  // Lazy-load teklifler when page first opens
+  useEffect(() => {
+    if (activePage === "teklifler" && !quotesLoaded) {
+      fetch("/api/destek/quotes").then(r => r.json()).then(d => {
+        setQuotes(d.quotes || []);
+        setQuotesLoaded(true);
+      });
+    }
+  }, [activePage, quotesLoaded]);
+
+  // Check lidernetwork.com.tr uptime once on mount
+  useEffect(() => {
+    fetch("/api/uptime?url=lidernetwork.com.tr")
+      .then(r => r.json())
+      .then(d => setUptimeOk(d.up === true))
+      .catch(() => setUptimeOk(null));
+  }, []);
 
   async function logout() {
     const sb = createSupabaseBrowser();
@@ -185,6 +236,27 @@ export default function PanelClient({
             onClick={() => setActivePage("sla")}
           />
 
+          {/* Hizmetler */}
+          <SideSection label="Hizmetlerim" />
+          <SideLink
+            icon={<Server size={15} />}
+            label="Cihazlarım"
+            active={activePage === "cihazlar"}
+            onClick={() => setActivePage("cihazlar")}
+          />
+          <SideLink
+            icon={<Receipt size={15} />}
+            label="Tekliflerim"
+            active={activePage === "teklifler"}
+            onClick={() => setActivePage("teklifler")}
+          />
+          <SideLink
+            icon={<HelpCircle size={15} />}
+            label="Sık Sorulan Sorular"
+            active={activePage === "sss"}
+            onClick={() => setActivePage("sss")}
+          />
+
           {/* Hızlı İletişim */}
           <SideSection label="Hızlı İletişim" />
           <div style={{ margin: "4px 6px 2px", borderRadius: "10px", background: "#f8fafc", border: "1px solid #e5e7ef", padding: "12px 14px" }}>
@@ -213,6 +285,21 @@ export default function PanelClient({
               Cmt: 09:00 – 13:00
             </div>
           </div>
+
+          {/* Sistem durumu widget */}
+          <a href="https://uptime.lidernetwork.com.tr" target="_blank" rel="noreferrer"
+            style={{ margin: "8px 6px 0", borderRadius: "10px", background: uptimeOk === false ? "#fef2f2" : "#f0fdf4", border: `1px solid ${uptimeOk === false ? "#fecaca" : "#bbf7d0"}`, padding: "10px 14px", display: "flex", alignItems: "center", gap: "8px", textDecoration: "none" }}>
+            {uptimeOk === false
+              ? <WifiOff size={13} color="#dc2626" />
+              : <Wifi size={13} color="#22c55e" />}
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: "11px", fontWeight: 700, color: uptimeOk === false ? "#dc2626" : "#15803d" }}>
+                {uptimeOk === null ? "Sistem Durumu" : uptimeOk ? "Tüm sistemler çalışıyor" : "Bağlantı sorunu"}
+              </div>
+              <div style={{ fontSize: "10px", color: "#6b7280" }}>uptime.lidernetwork.com.tr</div>
+            </div>
+            <ExternalLink size={10} color="#9ca3af" />
+          </a>
         </nav>
 
         {/* User */}
@@ -239,6 +326,12 @@ export default function PanelClient({
           <SlaPage />
         ) : activePage === "bildirimler" ? (
           <BildirimlerPage tickets={tickets} counts={counts} paths={paths} />
+        ) : activePage === "sss" ? (
+          <SssPage />
+        ) : activePage === "cihazlar" ? (
+          <CihazlarPage assets={assets} loaded={assetsLoaded} />
+        ) : activePage === "teklifler" ? (
+          <TekliflerPage quotes={quotes} loaded={quotesLoaded} />
         ) : (
           <>
             {/* Header — dinamik başlık */}
@@ -358,7 +451,19 @@ export default function PanelClient({
                         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", alignItems: "center" }}>
                           <span style={{ fontSize: "12px", color: "#9ca3af" }}>{CAT[t.category]}</span>
                           <span style={{ color: "#e5e7ef" }}>·</span>
-                          <span style={{ fontSize: "12px", color: "#9ca3af" }}>{timeAgo(t.created_at)}</span>
+                          {t.updated_at && t.updated_at !== t.created_at ? (
+                            <span style={{ fontSize: "12px", color: "#6b7280" }}>Güncellendi: {timeAgo(t.updated_at)}</span>
+                          ) : (
+                            <span style={{ fontSize: "12px", color: "#9ca3af" }}>Açıldı: {timeAgo(t.created_at)}</span>
+                          )}
+                          {(t.status === "open" || t.status === "in_progress") && (() => {
+                            const sla = getSlaInfo(t.priority, t.created_at, t.first_response_at);
+                            return (
+                              <span style={{ fontSize: "10px", fontWeight: 700, color: sla.color, background: `${sla.color}18`, borderRadius: "4px", padding: "1px 6px" }}>
+                                {sla.label}
+                              </span>
+                            );
+                          })()}
                         </div>
                       </div>
                       <span style={{ flexShrink: 0, padding: "3px 10px", borderRadius: "6px", fontSize: "11px", fontWeight: 700, background: pri.bg, color: pri.color }}>{pri.label}</span>
@@ -413,6 +518,201 @@ export default function PanelClient({
           </>
         )}
       </main>
+    </div>
+  );
+}
+
+// ── SSS Sayfası ─────────────────────────────────────────────────────────────
+function SssPage() {
+  const items = [
+    { q: "Destek talebi açmak için ne yapmalıyım?", a: "Sol menüden \"Yeni Talep Oluştur\"a tıklayın, kategori ve öncelik seçip sorununuzu açıklayın. Sistem size otomatik talep numarası atar." },
+    { q: "Talebimin yanıtlanması ne kadar sürer?", a: "ACİL talepler 2 saat, Yüksek öncelikli talepler 4 saat, Orta öncelikli talepler 1 iş günü, Düşük öncelikli talepler 2 iş günü içinde yanıtlanır. Detaylar için 'SLA & Öncelikler' sayfasına bakın." },
+    { q: "FortiGate yönetim paneline nasıl erişirim?", a: "Cihazın IP adresine tarayıcıdan https://[IP]:8443 şeklinde erişin. Varsayılan port 443'tür. Sertifika uyarısı gelirse 'İleri' diyerek devam edin. Erişim probleminiz varsa destek talebi açın." },
+    { q: "VPN bağlantım kopuyor, ne yapmalıyım?", a: "Önce internet bağlantınızı test edin. FortiClient sürümünün güncel olduğunu doğrulayın. Sorun devam ederse bağlantı loglarını (Help > Diagnostics) ekleyerek destek talebi açın." },
+    { q: "Lisansım bitti, ne yapmalıyım?", a: "Lisans bitiş tarihinizi cihaz yönetim panelinde System > FortiGuard altında görebilirsiniz. Yenileme için destek talebi açın veya bizi arayın; teklif hazırlayalım." },
+    { q: "Yeni şube için ekipman alabilir miyim?", a: "Evet, Tekliflerim sayfasından geçmiş tekliflerinizi görebilir, yeni ekipman için destek talebi veya doğrudan çağrı ile talep oluşturabilirsiniz." },
+    { q: "Güvenlik duvarı loglarını nasıl indirebilirim?", a: "FortiGate yönetim panelinde Log & Report > Log Browse bölümüne gidin. Filtreleme yapıp CSV/Log formatında indirebilirsiniz. Yardım için destek talebi açın." },
+    { q: "Şifremi unuttum, ne yapmalıyım?", a: "Destek portalı şifresi için giriş sayfasındaki 'Şifremi Unuttum' bağlantısını kullanın. FortiGate cihaz şifresi için fiziksel erişim gerekebilir; destek talebi açın." },
+  ];
+
+  return (
+    <div style={{ maxWidth: "720px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+          Sık Sorulan Sorular
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+          Hızlı yanıt aradığınız konularda aşağıdaki sorulara bakın.
+        </p>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+        {items.map((item, i) => (
+          <SssItem key={i} q={item.q} a={item.a} />
+        ))}
+      </div>
+
+      <div style={{ marginTop: "24px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "12px", padding: "16px 20px" }}>
+        <p style={{ margin: "0 0 4px", fontSize: "13px", fontWeight: 700, color: "#1d4ed8" }}>Yanıt bulamadınız mı?</p>
+        <p style={{ margin: 0, fontSize: "13px", color: "#3b82f6" }}>
+          Destek talebi açın ya da <a href="tel:+903122320288" style={{ color: "#0052ff", fontWeight: 700 }}>+90 312 232 02 88</a> numarasını arayın.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SssItem({ q, a }: { q: string; a: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", overflow: "hidden" }}>
+      <button onClick={() => setOpen(!open)}
+        style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", background: "none", border: "none", cursor: "pointer", textAlign: "left", gap: "12px" }}>
+        <span style={{ fontSize: "14px", fontWeight: 600, color: "#1a1d2e", flex: 1 }}>{q}</span>
+        <ChevronRight size={16} color="#9ca3af" style={{ flexShrink: 0, transform: open ? "rotate(90deg)" : "none", transition: "transform .15s" }} />
+      </button>
+      {open && (
+        <div style={{ padding: "0 20px 16px", fontSize: "13px", color: "#6b7280", lineHeight: 1.7, borderTop: "1px solid #f0f2f8" }}>
+          <div style={{ paddingTop: "12px" }}>{a}</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Cihazlar Sayfası ─────────────────────────────────────────────────────────
+const TYPE_LABEL: Record<string, string> = {
+  firewall: "Firewall", switch: "Switch", ap: "Access Point",
+  server: "Sunucu", ups: "UPS", router: "Router", other: "Diğer",
+};
+
+function CihazlarPage({ assets, loaded }: { assets: Record<string, string>[]; loaded: boolean }) {
+  return (
+    <div style={{ maxWidth: "800px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+          Cihazlarım
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+          Şirketinize ait kayıtlı cihazlar (salt okunur).
+        </p>
+      </div>
+
+      {!loaded ? (
+        <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", background: "#fff", borderRadius: "12px", border: "1px solid #e5e7ef" }}>Yükleniyor...</div>
+      ) : assets.length === 0 ? (
+        <div style={{ padding: "56px", textAlign: "center", background: "#fff", borderRadius: "12px", border: "1px solid #e5e7ef" }}>
+          <Package size={40} color="#e5e7ef" style={{ marginBottom: "12px" }} />
+          <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 8px" }}>Kayıtlı cihaz bulunamadı.</p>
+          <p style={{ color: "#d1d5db", fontSize: "13px", margin: 0 }}>Cihaz kaydı için destek talebi açın.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {assets.map((a) => {
+            const warrantyEnd = a.warranty_end ? new Date(a.warranty_end) : null;
+            const warrantyOk  = warrantyEnd ? warrantyEnd > new Date() : null;
+            return (
+              <div key={a.id} style={{ background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "12px", padding: "16px 20px", display: "flex", gap: "16px", alignItems: "flex-start" }}>
+                <div style={{ flexShrink: 0, width: 40, height: 40, borderRadius: "8px", background: "#eff6ff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Server size={18} color="#0052ff" />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap", marginBottom: "6px" }}>
+                    <p style={{ margin: 0, fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{a.brand} {a.model}</p>
+                    <span style={{ fontSize: "11px", fontWeight: 700, background: "#f4f6fb", color: "#475569", padding: "2px 8px", borderRadius: "4px" }}>
+                      {TYPE_LABEL[a.type] || a.type}
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
+                    {a.serial_no  && <span style={{ fontSize: "12px", color: "#6b7280" }}>S/N: {a.serial_no}</span>}
+                    {a.ip_address && <span style={{ fontSize: "12px", color: "#6b7280" }}>IP: {a.ip_address}</span>}
+                    {a.location   && <span style={{ fontSize: "12px", color: "#6b7280" }}>Konum: {a.location}</span>}
+                    {a.firmware   && <span style={{ fontSize: "12px", color: "#6b7280" }}>FW: {a.firmware}</span>}
+                    {warrantyEnd  && (
+                      <span style={{ fontSize: "12px", fontWeight: 600, color: warrantyOk ? "#15803d" : "#dc2626", background: warrantyOk ? "#f0fdf4" : "#fef2f2", padding: "1px 6px", borderRadius: "4px" }}>
+                        Garanti: {warrantyEnd.toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" })} {warrantyOk ? "✓" : "✗"}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Teklifler Sayfası ────────────────────────────────────────────────────────
+const QUOTE_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  sent:      { label: "Gönderildi",  color: "#1d4ed8", bg: "#eff6ff" },
+  approved:  { label: "Onaylandı",   color: "#15803d", bg: "#f0fdf4" },
+  ordered:   { label: "Siparişte",   color: "#7c3aed", bg: "#f5f3ff" },
+  completed: { label: "Tamamlandı",  color: "#475569", bg: "#f8fafc" },
+};
+
+function TekliflerPage({ quotes, loaded }: { quotes: Record<string, unknown>[]; loaded: boolean }) {
+  return (
+    <div style={{ maxWidth: "800px" }}>
+      <div style={{ marginBottom: "28px" }}>
+        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+          Tekliflerim
+        </h1>
+        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+          Size gönderilen teklifler.
+        </p>
+      </div>
+
+      {!loaded ? (
+        <div style={{ padding: "48px", textAlign: "center", color: "#9ca3af", background: "#fff", borderRadius: "12px", border: "1px solid #e5e7ef" }}>Yükleniyor...</div>
+      ) : quotes.length === 0 ? (
+        <div style={{ padding: "56px", textAlign: "center", background: "#fff", borderRadius: "12px", border: "1px solid #e5e7ef" }}>
+          <Receipt size={40} color="#e5e7ef" style={{ marginBottom: "12px" }} />
+          <p style={{ color: "#9ca3af", fontSize: "15px", margin: "0 0 8px" }}>Henüz teklif bulunmuyor.</p>
+          <p style={{ color: "#d1d5db", fontSize: "13px", margin: 0 }}>Fiyat teklifi için destek talebi açın veya bizi arayın.</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          {quotes.map((q) => {
+            const st = QUOTE_STATUS[q.status as string] || QUOTE_STATUS.sent;
+            const total = q.grand_total as number;
+            const currency = (q.currency as string) || "TRY";
+            return (
+              <div key={q.id as string} style={{ background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "12px", padding: "18px 22px" }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: "10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    <div style={{ width: 40, height: 40, borderRadius: "8px", background: "#f4f6fb", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Receipt size={18} color="#0052ff" />
+                    </div>
+                    <div>
+                      <p style={{ margin: "0 0 3px", fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{q.quote_number as string}</p>
+                      <p style={{ margin: 0, fontSize: "12px", color: "#9ca3af" }}>
+                        {new Date(q.created_at as string).toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" })}
+                      </p>
+                    </div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                    {total > 0 && (
+                      <span style={{ fontSize: "18px", fontWeight: 900, color: "#1a1d2e", fontFamily: "var(--font-family-headline)" }}>
+                        {total.toLocaleString("tr-TR", { minimumFractionDigits: 2 })} {currency}
+                      </span>
+                    )}
+                    <span style={{ fontSize: "12px", fontWeight: 700, color: st.color, background: st.bg, padding: "4px 12px", borderRadius: "8px" }}>
+                      {st.label}
+                    </span>
+                  </div>
+                </div>
+                {q.notes ? (
+                  <p style={{ margin: "12px 0 0", fontSize: "13px", color: "#6b7280", borderTop: "1px solid #f0f2f8", paddingTop: "10px" }}>
+                    {String(q.notes)}
+                  </p>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

@@ -9,7 +9,7 @@ import { useDestekPaths } from "@/lib/destek-path";
 import type { Ticket, TicketMessage } from "@/lib/supabase";
 import {
   ArrowLeft, Send, Clock, CheckCircle, Activity,
-  XCircle, Plus, LayoutDashboard, AlertCircle,
+  XCircle, Plus, LayoutDashboard, AlertCircle, Star,
 } from "lucide-react";
 
 function formatDate(iso: string) {
@@ -52,6 +52,8 @@ export default function TalepDetayClient({
   const [sending, setSending]   = useState(false);
   const [error, setError]       = useState("");
   const [sent, setSent]         = useState(false);
+  const [rating, setRating]     = useState<number>(ticket.satisfaction_rating || 0);
+  const [ratingDone, setRatingDone] = useState(!!ticket.satisfaction_rating);
   const endRef = useRef<HTMLDivElement>(null);
 
   const initials   = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
@@ -195,6 +197,40 @@ export default function TalepDetayClient({
               <p style={{ color: "#6b7280", fontSize: "13px", margin: "0 0 20px" }}>
                 Yeni bir sorun için lütfen yeni talep oluşturun.
               </p>
+
+              {/* Satisfaction rating */}
+              <div style={{ borderTop: "1px solid #f0f2f8", paddingTop: "20px", marginBottom: "20px" }}>
+                <p style={{ fontSize: "13px", fontWeight: 700, color: "#1a1d2e", margin: "0 0 10px" }}>
+                  Bu destek deneyimini değerlendirin
+                </p>
+                {ratingDone ? (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "6px", color: "#15803d", fontSize: "13px", fontWeight: 600 }}>
+                    <CheckCircle size={16} color="#22c55e" />
+                    Puanınız kaydedildi — Teşekkürler!
+                  </div>
+                ) : (
+                  <div style={{ display: "flex", justifyContent: "center", gap: "8px" }}>
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button key={s} onClick={async () => {
+                        setRating(s);
+                        await fetch(`/api/destek/tickets/${ticket.id}/rating`, {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ rating: s }),
+                        });
+                        setRatingDone(true);
+                      }}
+                        style={{ background: "none", border: "none", cursor: "pointer", padding: "4px", transition: "transform .1s" }}
+                        onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.2)")}
+                        onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
+                      >
+                        <Star size={28} fill={s <= rating ? "#f59e0b" : "none"} color={s <= rating ? "#f59e0b" : "#d1d5db"} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <Link href={paths.yeni}
                 style={{ display: "inline-flex", alignItems: "center", gap: "8px", padding: "10px 22px", background: "#0052ff", color: "#fff", borderRadius: "10px", textDecoration: "none", fontSize: "14px", fontWeight: 700, boxShadow: "0 4px 12px rgba(0,82,255,.3)" }}>
                 <Plus size={15} /> Yeni Talep Oluştur
