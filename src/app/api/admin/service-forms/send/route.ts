@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
       signed_by: form.signed_by,
       signed_at: form.signed_at,
       company_name: form.companies?.name,
+      form_type: form.form_type === "delivery" ? "delivery" : "service",
     });
   } catch (e) {
     console.error("Servis formu e-postası gönderilemedi:", e);

@@ -11,6 +11,7 @@ export interface ServiceFormMailData {
   signed_by?: string;
   signed_at?: string;
   company_name?: string;
+  form_type?: "service" | "delivery"; // servis mi, teslimat mı
 }
 
 function createTransporter() {
@@ -48,134 +49,196 @@ function formatDate(d?: string): string {
   return date.toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
 }
 
-function row(label: string, value?: string, accent = "#0052ff"): string {
+// Renders a 2-column info row inside a table
+function infoRow(col1Label: string, col1Value: string | undefined, col2Label: string, col2Value: string | undefined): string {
+  const cell = (label: string, value: string | undefined) =>
+    `<td width="50%" style="padding:0 8px 0 0;vertical-align:top;">
+      <div style="background:#f8fafc;border-radius:8px;padding:11px 14px;">
+        <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">${esc(label)}</div>
+        <div style="font-size:14px;color:#1a1d2e;font-weight:600;line-height:1.4;">${value ? esc(value) : '<span style="color:#cbd5e1;">—</span>'}</div>
+      </div>
+    </td>`;
+  return `<tr><td style="padding:0 0 8px 0;" colspan="2">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"><tr>
+      ${cell(col1Label, col1Value)}
+      <td width="8" style="padding:0;"></td>
+      ${cell(col2Label, col2Value)}
+    </tr></table>
+  </td></tr>`;
+}
+
+function fullRow(label: string, value: string | undefined, accent = "#0052ff"): string {
   if (!value) return "";
-  return `
-    <tr>
-      <td style="padding:0 0 12px 0;">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:separate;">
-          <tr>
-            <td style="padding:14px 18px;background:#f8fafc;border-left:3px solid ${accent};border-radius:8px;">
-              <div style="font-size:11px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.6px;margin-bottom:5px;">${esc(label)}</div>
-              <div style="font-size:15px;color:#1a1d2e;line-height:1.55;white-space:pre-wrap;">${esc(value)}</div>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>`;
+  return `<tr><td style="padding:0 0 8px 0;">
+    <div style="background:#f8fafc;border-left:3px solid ${accent};border-radius:0 8px 8px 0;padding:12px 14px;">
+      <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px;">${esc(label)}</div>
+      <div style="font-size:14px;color:#1a1d2e;line-height:1.6;white-space:pre-wrap;">${esc(value)}</div>
+    </div>
+  </td></tr>`;
 }
 
 export async function sendServiceFormEmail(data: ServiceFormMailData): Promise<void> {
   if (!data.customer_email) throw new Error("Müşteri e-postası yok");
 
   const transporter = createTransporter();
-  const dateStr = formatDate(data.signed_at);
-  const subject = `Lider Network — Servis Formu (${data.customer_name || "Müşteri"})`;
+  const dateStr   = formatDate(data.signed_at);
+  const isDelivery = data.form_type === "delivery";
+  const formTitle  = isDelivery ? "Ürün Teslimat Formu" : "Servis / Hizmet Formu";
+  const subject    = `Lider Network — ${formTitle} (${data.customer_name || "Müşteri"})`;
 
-  const html = `
-<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>${esc(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,Helvetica,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:28px 14px;">
-    <tr><td align="center">
-      <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 6px 30px rgba(15,23,42,.10);">
+<body style="margin:0;padding:0;background:#eef2f7;font-family:'Segoe UI',Roboto,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f7;padding:24px 12px;">
+<tr><td align="center">
+<table role="presentation" width="580" cellpadding="0" cellspacing="0"
+  style="max-width:580px;width:100%;background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(15,23,42,.10);">
 
-        <!-- Header -->
+  <!-- ── HEADER ─────────────────────────────────────── -->
+  <tr>
+    <td bgcolor="#0052ff" style="background:#0052ff;padding:24px 28px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         <tr>
-          <td bgcolor="#0052ff" style="background:#0052ff;padding:0;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr>
-                <td style="padding:34px 32px;" align="left">
-                  <div style="display:inline-block;background:#ffffff;border-radius:10px;padding:10px 16px;">
-                    <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="150" height="79" style="display:block;width:150px;height:auto;border:0;outline:none;text-decoration:none" />
-                  </div>
-                  <div style="color:#cdd9ff;font-size:14px;margin-top:14px;font-weight:500;">📋 Servis / Hizmet Formu</div>
-                </td>
-              </tr>
-            </table>
+          <td>
+            <div style="display:inline-block;background:#fff;border-radius:8px;padding:8px 14px;line-height:0;">
+              <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" width="130" height="auto" style="display:block;width:130px;border:0;"/>
+            </div>
+          </td>
+          <td align="right" style="vertical-align:middle;">
+            <div style="text-align:right;">
+              <div style="color:#cdd9ff;font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:4px;">${isDelivery ? "📦 Teslimat Formu" : "📋 Servis Formu"}</div>
+              <div style="color:#fff;font-size:18px;font-weight:900;line-height:1.2;">${esc(dateStr)}</div>
+            </div>
           </td>
         </tr>
-
-        <!-- Greeting -->
-        <tr>
-          <td style="padding:30px 32px 6px;">
-            <p style="font-size:16px;color:#1a1d2e;line-height:1.6;margin:0 0 6px;font-weight:600;">
-              Sayın ${esc(data.customer_name || "Müşterimiz")},
-            </p>
-            <p style="font-size:14px;color:#64748b;line-height:1.65;margin:0 0 22px;">
-              Tarafınıza sunduğumuz hizmete ilişkin servis formu detayları aşağıdadır. Bizi tercih ettiğiniz için teşekkür ederiz.
-            </p>
-          </td>
-        </tr>
-
-        <!-- Detail cards -->
-        <tr>
-          <td style="padding:0 32px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              ${row("Tarih", dateStr, "#0052ff")}
-              ${row("Müşteri", data.customer_name, "#0052ff")}
-              ${data.company_name ? row("Firma", data.company_name, "#7c3aed") : ""}
-              ${row("Telefon", data.customer_phone, "#0891b2")}
-              ${row("Adres", data.customer_address, "#d97706")}
-              ${row("Yapılan Hizmet", data.service_description, "#15803d")}
-              ${row("Teslim Edilenler", data.items_delivered, "#15803d")}
-              ${row("Notlar", data.notes, "#64748b")}
-              ${row("Yetkili", data.signed_by, "#0052ff")}
-            </table>
-          </td>
-        </tr>
-
-        <!-- Note -->
-        <tr>
-          <td style="padding:8px 32px 26px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-              <tr><td style="padding:16px 18px;background:#eff6ff;border-radius:10px;">
-                <p style="font-size:13px;color:#1e40af;line-height:1.6;margin:0;">
-                  💬 Herhangi bir sorunuz olursa bu e-postayı yanıtlayarak veya destek hattımızdan bize ulaşabilirsiniz.
-                </p>
-              </td></tr>
-            </table>
-          </td>
-        </tr>
-
-        <!-- Footer -->
-        <tr>
-          <td bgcolor="#0f172a" style="background:#0f172a;padding:24px 32px;text-align:center;">
-            <p style="color:#ffffff;font-size:14px;font-weight:700;margin:0 0 4px;letter-spacing:.5px;">LİDER NETWORK</p>
-            <p style="color:#94a3b8;font-size:12px;margin:0 0 4px;">
-              <a href="https://www.lidernetwork.com.tr" style="color:#7dd3fc;text-decoration:none;">www.lidernetwork.com.tr</a>
-            </p>
-            <p style="color:#64748b;font-size:11px;margin:6px 0 0;">© ${new Date().getFullYear()} Lider Network. Tüm hakları saklıdır.</p>
-          </td>
-        </tr>
-
       </table>
-    </td></tr>
-  </table>
+    </td>
+  </tr>
+
+  <!-- ── GREETING ───────────────────────────────────── -->
+  <tr>
+    <td style="padding:22px 28px 14px;">
+      <p style="margin:0 0 4px;font-size:16px;font-weight:700;color:#1a1d2e;">
+        Sayın ${esc(data.customer_name || "Müşterimiz")},
+      </p>
+      <p style="margin:0;font-size:13px;color:#64748b;line-height:1.6;">
+        ${isDelivery
+          ? "Teslimat formunuz aşağıda yer almaktadır. Ürünleri teslim aldığınız için teşekkür ederiz."
+          : "Tarafınıza sunulan hizmete ilişkin servis formu aşağıda yer almaktadır."}
+      </p>
+    </td>
+  </tr>
+
+  <!-- ── DIVIDER ────────────────────────────────────── -->
+  <tr><td style="padding:0 28px;"><div style="height:1px;background:#f0f4f8;"></div></td></tr>
+
+  <!-- ── MÜŞTERİ / FİRMA BİLGİLERİ ────────────────── -->
+  <tr>
+    <td style="padding:16px 28px 4px;">
+      <div style="font-size:10px;font-weight:800;color:#0052ff;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+        Müşteri / Firma Bilgileri
+      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow("Ad Soyad", data.customer_name, "Telefon", data.customer_phone)}
+        ${data.company_name ? infoRow("Firma", data.company_name, "E-posta", data.customer_email) : ""}
+        ${data.customer_address ? `<tr><td style="padding:0 0 8px 0;" colspan="2">
+          <div style="background:#f8fafc;border-radius:8px;padding:11px 14px;">
+            <div style="font-size:10px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;">Adres</div>
+            <div style="font-size:14px;color:#1a1d2e;font-weight:500;line-height:1.5;">${esc(data.customer_address)}</div>
+          </div>
+        </td></tr>` : ""}
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── DIVIDER ────────────────────────────────────── -->
+  <tr><td style="padding:0 28px 4px;"><div style="height:1px;background:#f0f4f8;"></div></td></tr>
+
+  <!-- ── HİZMET / TESLİMAT ─────────────────────────── -->
+  <tr>
+    <td style="padding:16px 28px 4px;">
+      <div style="font-size:10px;font-weight:800;color:#059669;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px;">
+        ${isDelivery ? "Teslim Edilen Ürünler" : "Yapılan Hizmet"}
+      </div>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${fullRow(isDelivery ? "Ürün / Hizmet Açıklaması" : "Hizmet Açıklaması", data.service_description, "#059669")}
+        ${data.items_delivered ? fullRow("Teslim Edilenler", data.items_delivered, "#0284c7") : ""}
+        ${data.notes ? fullRow("Notlar", data.notes, "#94a3b8") : ""}
+      </table>
+    </td>
+  </tr>
+
+  <!-- ── İMZA & YETKİLİ ────────────────────────────── -->
+  ${data.signed_by ? `
+  <tr><td style="padding:0 28px 4px;"><div style="height:1px;background:#f0f4f8;"></div></td></tr>
+  <tr>
+    <td style="padding:14px 28px 18px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow("Sorumlu / Yetkili", data.signed_by, "Tarih", dateStr)}
+      </table>
+    </td>
+  </tr>` : ""}
+
+  <!-- ── NOT KUTUSU ────────────────────────────────── -->
+  <tr>
+    <td style="padding:0 28px 22px;">
+      <div style="background:#eff6ff;border-radius:10px;padding:14px 16px;">
+        <p style="margin:0;font-size:12px;color:#1e40af;line-height:1.65;">
+          💬 Bu form ile ilgili sorularınız için bu e-postayı yanıtlayabilir veya
+          <a href="tel:+903122320288" style="color:#0052ff;font-weight:700;text-decoration:none;">+90 312 232 02 88</a>
+          numaralı destek hattımızı arayabilirsiniz.
+        </p>
+      </div>
+    </td>
+  </tr>
+
+  <!-- ── FOOTER ─────────────────────────────────────── -->
+  <tr>
+    <td bgcolor="#0f172a" style="background:#0f172a;padding:18px 28px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <p style="margin:0;color:#fff;font-size:13px;font-weight:800;letter-spacing:.5px;">LİDER NETWORK</p>
+            <p style="margin:3px 0 0;font-size:11px;color:#64748b;">
+              <a href="https://www.lidernetwork.com.tr" style="color:#7dd3fc;text-decoration:none;">www.lidernetwork.com.tr</a>
+              &nbsp;·&nbsp; +90 312 232 02 88
+            </p>
+          </td>
+          <td align="right" style="vertical-align:middle;">
+            <p style="margin:0;font-size:10px;color:#475569;">© ${new Date().getFullYear()} Lider Network</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
 </body>
-</html>`.trim();
+</html>`;
 
   const text = [
-    "LİDER NETWORK — Servis / Hizmet Formu",
-    "=".repeat(40),
-    `Tarih: ${dateStr}`,
-    `Müşteri: ${data.customer_name || "-"}`,
-    data.company_name ? `Firma: ${data.company_name}` : "",
-    data.customer_phone ? `Telefon: ${data.customer_phone}` : "",
-    data.customer_address ? `Adres: ${data.customer_address}` : "",
+    `LİDER NETWORK — ${formTitle}`,
+    "=".repeat(44),
+    `Tarih   : ${dateStr}`,
+    `Müşteri : ${data.customer_name || "-"}`,
+    data.company_name   ? `Firma   : ${data.company_name}` : "",
+    data.customer_phone ? `Telefon : ${data.customer_phone}` : "",
+    data.customer_address ? `Adres   : ${data.customer_address}` : "",
     "",
-    `Yapılan Hizmet:\n${data.service_description || "-"}`,
+    `${isDelivery ? "Ürün/Hizmet" : "Yapılan Hizmet"}:\n${data.service_description || "-"}`,
     data.items_delivered ? `\nTeslim Edilenler:\n${data.items_delivered}` : "",
-    data.notes ? `\nNotlar:\n${data.notes}` : "",
-    data.signed_by ? `\nYetkili: ${data.signed_by}` : "",
+    data.notes           ? `\nNotlar:\n${data.notes}` : "",
+    data.signed_by       ? `\nSorumlu: ${data.signed_by}` : "",
     "",
-    "=".repeat(40),
-    "Lider Network - www.lidernetwork.com.tr",
+    "=".repeat(44),
+    "Lider Network · www.lidernetwork.com.tr · +90 312 232 02 88",
   ].filter(Boolean).join("\n");
 
   await transporter.sendMail({

@@ -48,6 +48,7 @@ interface ServiceForm {
   customer_address?: string;
   service_description?: string; items_delivered?: string; notes?: string;
   signed_by?: string; signed_at?: string; sent_to_email?: string;
+  form_type?: "service" | "delivery";
   status: "draft" | "sent" | "confirmed";
   created_at: string; updated_at?: string;
 }
@@ -81,6 +82,7 @@ const TASK_CATS = [
   { value:"toplanti", label:"Toplantı",           emoji:"📞" },
   { value:"teklif",   label:"Teklif",             emoji:"📄" },
   { value:"destek",   label:"Teknik Destek",      emoji:"🛠️" },
+  { value:"teslim",   label:"Ürün Teslimatı",    emoji:"📦" },
   { value:"rapor",    label:"Rapor",              emoji:"📊" },
   { value:"ic_gorev", label:"İç Görev",           emoji:"📋" },
   { value:"general",  label:"Diğer",              emoji:"⚡" },
@@ -215,12 +217,34 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
             </select>
             {form.recurrence && form.recurrence!=="none" && <p style={{ margin:"4px 0 0",fontSize:"11px",color:"#9ca3af" }}>Görev tamamlandığında bir sonraki tarih otomatik oluşturulur.</p>}
           </div>
+          {/* Teslimat kategorisinde adres ve ürün alanları */}
+          {form.category === "teslim" && (
+            <div style={{ background:"#fffbeb",border:"1.5px solid #fde68a",borderRadius:"8px",padding:isMobile?"14px":"12px 14px" }}>
+              <div style={{ fontSize:isMobile?"13px":"11px",fontWeight:800,color:"#92400e",marginBottom:"10px" }}>📦 Teslimat Detayları</div>
+              <div style={{ display:"flex",flexDirection:"column",gap:isMobile?"12px":"10px" }}>
+                <div><label style={{...lbl,color:"#92400e"}}>Teslim Adresi</label>
+                  <textarea value={(form as any).delivery_address??""} rows={2} placeholder="Teslimat adresi..." style={{...inp,resize:"vertical" as const}} onChange={e=>setForm(f=>({...f,delivery_address:e.target.value}))} onFocus={e=>(e.target.style.borderColor="#f59e0b")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                </div>
+                <div><label style={{...lbl,color:"#92400e"}}>Teslim Edilecek Ürünler</label>
+                  <textarea value={form.products??""} rows={isMobile?3:3} placeholder="Örn:&#10;FortiGate 100F x1 (SN: FGT...)&#10;FortiSwitch 124F x2&#10;Kablo seti x1" style={{...inp,resize:"vertical" as const}} onChange={e=>set("products",e.target.value)} onFocus={e=>(e.target.style.borderColor="#f59e0b")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                </div>
+                <div style={{ display:"grid",gridTemplateColumns:"1fr 160px",gap:"11px" }}>
+                  <div><label style={{...lbl,color:"#92400e"}}>Teslim Alan Kişi</label>
+                    <input type="text" value={(form as any).signed_by??""} placeholder="Ad Soyad..." style={inp} onChange={e=>setForm(f=>({...f,signed_by:e.target.value}))} onFocus={e=>(e.target.style.borderColor="#f59e0b")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                  </div>
+                  <div><label style={{...lbl,color:"#92400e"}}>Tutar (₺)</label>
+                    <input type="number" min="0" step="0.01" value={form.amount??""} placeholder="0,00" style={inp} onChange={e=>set("amount",e.target.value===""?(undefined as any):Number(e.target.value))} onFocus={e=>(e.target.style.borderColor="#f59e0b")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
           <div style={{ display:"flex",flexDirection:"column",gap:isMobile?"12px":"10px",padding:isMobile?"14px":"12px 14px",background:"#f8fafc",borderRadius:"8px",border:"1.5px solid #e5e7ef" }}>
             <div style={{ display:"flex",alignItems:"center",gap:isMobile?"10px":"8px" }}>
               <input type="checkbox" checked={form.billed??false} onChange={e=>{set("billed",e.target.checked);if(e.target.checked){if(!form.billed_date)set("billed_date",new Date().toISOString());}else set("billed_date",null as any);}} style={{ cursor:"pointer",width:isMobile?20:16,height:isMobile?20:16 }} id="billedCheckbox" />
               <label htmlFor="billedCheckbox" style={{ cursor:"pointer",fontSize:isMobile?"13px":"12px",fontWeight:700,color:"#374151",margin:0 }}>🧾 Bu görev faturalanacak (faturaya eklenecek)</label>
             </div>
-            {form.billed && (
+            {form.billed && form.category !== "teslim" && (
               <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 160px",gap:isMobile?"12px":"11px" }}>
                 <div><label style={lbl}>Ürünler / Hizmetler</label>
                   <textarea value={form.products??""} rows={isMobile?3:2} placeholder="Örn:&#10;ViewSonic 32&quot; 2K Monitör x1&#10;HDMI Kablo x2" style={{...inp,resize:"vertical"as const}} onChange={e=>set("products",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
@@ -231,9 +255,10 @@ function TaskModal({ task, defaultDate, companies, staff, onSave, onOpenServiceF
               </div>
             )}
           </div>
-          {form.status==="done" && form.id && (
-            <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)} style={{ width:"100%",padding:isMobile?"14px":"10px",background:"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:isMobile?"13px":"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",minHeight:isMobile?"44px":"auto" }}>
-              📋 Servis Formu Oluştur
+          {form.id && (form.status==="done" || form.category==="teslim") && (
+            <button type="button" onClick={()=>onOpenServiceForm?.(form.id!)}
+              style={{ width:"100%",padding:isMobile?"14px":"10px",background:form.category==="teslim"?"linear-gradient(135deg,#d97706,#f59e0b)":"linear-gradient(135deg,#059669,#10b981)",border:"none",borderRadius:"8px",color:"#fff",fontSize:isMobile?"13px":"12px",fontWeight:700,cursor:"pointer",display:"flex",alignItems:"center",justifyContent:"center",gap:"6px",minHeight:isMobile?"44px":"auto" }}>
+              {form.category==="teslim" ? "📦 Teslimat Formu Oluştur" : "📋 Servis Formu Oluştur"}
             </button>
           )}
           <div style={{ display:"flex",gap:isMobile?"8px":"10px",justifyContent:"flex-end",marginTop:"4px",flexWrap:isMobile?"wrap":"nowrap" }}>
@@ -339,64 +364,123 @@ function ServiceFormModal({ form, task, project, companies, onSave, onSend, onCl
 }) {
   const { width } = useWindowSize();
   const isMobile = width < 768;
-  const [f, setF] = useState<Partial<ServiceForm>>(form ?? { status:"draft", task_id: task?.id, project_id: project?.id, company_id: task?.company_id||project?.company_id });
+  const isDelivery = task?.category === "teslim";
+  const accentColor = isDelivery ? "#f59e0b" : "#0052ff";
+
+  const [f, setF] = useState<Partial<ServiceForm>>(form ?? {
+    status:      "draft",
+    task_id:     task?.id,
+    project_id:  project?.id,
+    company_id:  task?.company_id || project?.company_id,
+    form_type:   isDelivery ? "delivery" : "service",
+    // pre-fill from task if available
+    items_delivered: task?.products || "",
+    customer_address: (task as any)?.delivery_address || "",
+    signed_by: (task as any)?.signed_by || "",
+    signed_at: new Date().toISOString().slice(0, 10),
+  });
   const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   function set<K extends keyof ServiceForm>(k: K, v: ServiceForm[K]) { setF(x=>({...x,[k]:v})); }
 
+  const focusStyle = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement>) => (e.target.style.borderColor = accentColor);
+  const blurStyle  = (e: React.FocusEvent<HTMLInputElement|HTMLTextAreaElement>) => (e.target.style.borderColor = "#e5e7ef");
+
   return (
     <div style={{ position:"fixed",inset:0,background:"rgba(0,0,0,.45)",zIndex:1000,display:"flex",alignItems:"center",justifyContent:"center",padding:isMobile?"0":"20px" }}
       onClick={e=>{ if(e.target===e.currentTarget) onClose(); }}>
-      <div style={{ background:"#fff",borderRadius:isMobile?"0":"18px",padding:isMobile?"20px":"28px",width:"100%",maxWidth:isMobile?"100%":"550px",maxHeight:isMobile?"100vh":"90vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
-        <div style={{ display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"20px" }}>
-          <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>📋 Servis Formu</h3>
-          <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af" }}><X size={18}/></button>
+      <div style={{ background:"#fff",borderRadius:isMobile?"0":"18px",width:"100%",maxWidth:isMobile?"100%":"560px",maxHeight:isMobile?"100vh":"92vh",overflowY:"auto",boxShadow:"0 20px 60px rgba(0,0,0,.2)" }}>
+
+        {/* Header */}
+        <div style={{ padding:isMobile?"16px 20px":"18px 26px",borderBottom:"1px solid #f0f2f8",display:"flex",justifyContent:"space-between",alignItems:"center",position:"sticky",top:0,background:"#fff",zIndex:10 }}>
+          <div style={{ display:"flex",alignItems:"center",gap:"10px" }}>
+            <div style={{ width:34,height:34,borderRadius:"8px",background:isDelivery?"#fffbeb":"#eff6ff",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px" }}>
+              {isDelivery?"📦":"📋"}
+            </div>
+            <div>
+              <h3 style={{ margin:0,fontSize:"15px",fontWeight:800,color:"#1a1d2e" }}>
+                {isDelivery ? "Ürün Teslimat Formu" : "Servis / Hizmet Formu"}
+              </h3>
+              {task && <p style={{ margin:0,fontSize:"11px",color:"#9ca3af" }}>{task.title}</p>}
+            </div>
+          </div>
+          <button onClick={onClose} style={{ background:"none",border:"none",cursor:"pointer",color:"#9ca3af",padding:"4px" }}><X size={18}/></button>
         </div>
+
         <form onSubmit={async e=>{ e.preventDefault(); setSaving(true); try { await onSave(f); onClose(); } catch(err){ showToast("Kaydedilemedi: "+(err instanceof Error?err.message:"Hata"), "error"); } finally { setSaving(false); } }}
-          style={{ display:"flex",flexDirection:"column",gap:"13px" }}>
+          style={{ padding:isMobile?"16px 20px":"20px 26px",display:"flex",flexDirection:"column",gap:"14px" }}>
+
+          {/* Müşteri Bilgileri */}
+          <div style={{ fontSize:"10px",fontWeight:800,color:accentColor,textTransform:"uppercase",letterSpacing:"1px",marginBottom:"-6px" }}>
+            Müşteri Bilgileri
+          </div>
           <div><label style={lblS}>Müşteri Adı *</label>
-            <input type="text" value={f.customer_name??""} required placeholder="Müşteri adı..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            <input type="text" value={f.customer_name??""} required placeholder="Ad Soyad..." style={inpS} onChange={e=>set("customer_name",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"11px" }}>
             <div><label style={lblS}>Telefon</label>
-              <input type="tel" value={f.customer_phone??""} placeholder="0555 123 45 67" style={inpS} onChange={e=>set("customer_phone",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+              <input type="tel" value={f.customer_phone??""} placeholder="0555 123 45 67" style={inpS} onChange={e=>set("customer_phone",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
             </div>
-            <div><label style={lblS}>E-posta</label>
-              <input type="email" value={f.customer_email??""} placeholder="musteri@email.com" style={inpS} onChange={e=>set("customer_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            <div><label style={lblS}>E-posta *</label>
+              <input type="email" value={f.customer_email??""} required placeholder="musteri@email.com" style={inpS} onChange={e=>set("customer_email",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
             </div>
           </div>
-          <div><label style={lblS}>Müşteri Adresi</label>
-            <textarea value={f.customer_address??""} placeholder="Mahalle, cadde, no, ilçe/il..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("customer_address",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          <div><label style={lblS}>{isDelivery ? "Teslimat Adresi" : "Müşteri Adresi"}</label>
+            <textarea value={f.customer_address??""} placeholder="Mahalle, cadde, no, ilçe/il..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("customer_address",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
           </div>
-          <div><label style={lblS}>Hizmet/Ürün Açıklaması *</label>
-            <textarea value={f.service_description??""} required placeholder="Yapılan çalışma, servis, ürün vb..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("service_description",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+
+          {/* Hizmet / Teslimat */}
+          <div style={{ fontSize:"10px",fontWeight:800,color:accentColor,textTransform:"uppercase",letterSpacing:"1px",marginBottom:"-6px",marginTop:"2px" }}>
+            {isDelivery ? "Teslimat Detayları" : "Hizmet Detayları"}
           </div>
-          <div><label style={lblS}>Teslim Edilen Ürünler/Açıklamalar</label>
-            <textarea value={f.items_delivered??""} placeholder="Teslim edilen ürünler ve detayları..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("items_delivered",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          <div><label style={lblS}>{isDelivery ? "Ürün / Hizmet Açıklaması *" : "Yapılan Hizmet *"}</label>
+            <textarea value={f.service_description??""} required placeholder={isDelivery?"Teslim edilen ürün veya hizmetin açıklaması...":"Yapılan çalışma, servis, bakım vb..."} rows={3} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("service_description",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
           </div>
-          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:isMobile?"12px":"11px" }}>
-            <div><label style={lblS}>İmzalayan Kişi</label>
-              <input type="text" value={f.signed_by??""} placeholder="Sorumlu kişinin adı" style={inpS} onChange={e=>set("signed_by",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          <div><label style={lblS}>{isDelivery ? "Teslim Edilen Kalemler" : "Teslim Edilen Ürünler / Belgeler"}</label>
+            <textarea value={f.items_delivered??""} placeholder={isDelivery?"Her satıra bir kalem:\nFortiGate 100F x1 (SN: FGT...)\nFortiSwitch 124F x2":"Verilen belgeler, teslim edilen ekipmanlar..."} rows={3} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("items_delivered",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
+          </div>
+
+          {/* İmza & Tarih */}
+          <div style={{ display:"grid",gridTemplateColumns:isMobile?"1fr":"1fr 1fr",gap:"11px" }}>
+            <div><label style={lblS}>{isDelivery ? "Teslim Alan Kişi" : "İmzalayan / Yetkili"}</label>
+              <input type="text" value={f.signed_by??""} placeholder="Ad Soyad..." style={inpS} onChange={e=>set("signed_by",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
             </div>
             <div><label style={lblS}>Tarih</label>
-              <input type="date" value={f.signed_at??""} style={inpS} onChange={e=>set("signed_at",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+              <input type="date" value={f.signed_at??""} style={inpS} onChange={e=>set("signed_at",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
             </div>
           </div>
           <div><label style={lblS}>Notlar</label>
-            <textarea value={f.notes??""} placeholder="Ek notlar, özel istekler..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("notes",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+            <textarea value={f.notes??""} placeholder="Ek notlar, özel istekler, uyarılar..." rows={2} style={{...inpS,resize:"vertical"as const}} onChange={e=>set("notes",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
           </div>
-          <div><label style={lblS}>Gönderme E-postası</label>
-            <input type="email" value={f.sent_to_email??""} placeholder="Form kimin e-postasına gönderilecek?" style={inpS} onChange={e=>set("sent_to_email",e.target.value)} onFocus={e=>(e.target.style.borderColor="#0052ff")} onBlur={e=>(e.target.style.borderColor="#e5e7ef")} />
+          {/* Gönderme e-postası — müşteri e-postasından otomatik dolar */}
+          <div style={{ background:"#f8fafc",border:"1.5px solid #e5e7ef",borderRadius:"8px",padding:"12px 14px" }}>
+            <label style={{...lblS,marginBottom:"8px"}}>Gönderilecek E-posta</label>
+            <input type="email" value={f.sent_to_email ?? f.customer_email ?? ""} placeholder="musteri@email.com" style={inpS} onChange={e=>set("sent_to_email",e.target.value)} onFocus={focusStyle} onBlur={blurStyle} />
+            <p style={{ margin:"6px 0 0",fontSize:"11px",color:"#9ca3af" }}>Boş bırakılırsa yukarıdaki müşteri e-postasına gönderilir.</p>
           </div>
-          <div style={{ display:"flex",gap:isMobile?"8px":"10px",justifyContent:"flex-end",marginTop:"4px",flexWrap:isMobile?"wrap":"nowrap" }}>
-            <button type="button" onClick={onClose} style={{ flex:isMobile?"1 1 100%":"0",padding:"10px 18px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
-            <button type="submit" disabled={saving||sending} style={{ flex:isMobile?1:0,padding:"10px 18px",border:"1.5px solid #cbd5e1",borderRadius:"9px",background:"#f8fafc",color:"#334155",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer" }}>
+
+          {/* Butonlar */}
+          <div style={{ display:"flex",gap:"10px",paddingTop:"4px",flexWrap:isMobile?"wrap":"nowrap" }}>
+            <button type="button" onClick={onClose} style={{ padding:"10px 16px",border:"1.5px solid #e5e7ef",borderRadius:"9px",background:"#fff",color:"#374151",fontSize:"13px",fontWeight:600,cursor:"pointer" }}>İptal</button>
+            <button type="submit" disabled={saving||sending} style={{ padding:"10px 16px",border:"1.5px solid #cbd5e1",borderRadius:"9px",background:"#f8fafc",color:"#334155",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer" }}>
               {saving?"Kaydediliyor...":"Taslak Kaydet"}
             </button>
             <button type="button" disabled={saving||sending}
-              onClick={async()=>{ if(!f.customer_name?.trim()){showToast("Müşteri adı gerekli","warning");return;} if(!f.service_description?.trim()){showToast("Hizmet açıklaması gerekli","warning");return;} if(!f.customer_email?.trim()){showToast("E-posta göndermek için müşteri e-postası gerekli","warning");return;} setSending(true); try { await onSend(f); onClose(); } catch(err){ showToast("Gönderilemedi: "+(err instanceof Error?err.message:"Hata"), "error"); } finally { setSending(false); } }}
-              style={{ flex:isMobile?1:0,padding:"10px 20px",border:"none",borderRadius:"9px",background:(saving||sending)?"#d1d5db":"linear-gradient(135deg,#059669,#10b981)",color:"#fff",fontSize:"13px",fontWeight:700,cursor:(saving||sending)?"not-allowed":"pointer",boxShadow:"0 4px 12px rgba(16,185,129,.28)" }}>
-              {sending?"Gönderiliyor...":"✓ Kaydet & E-posta Gönder"}
+              onClick={async()=>{
+                if(!f.customer_name?.trim()){showToast("Müşteri adı gerekli","warning");return;}
+                if(!f.service_description?.trim()){showToast(isDelivery?"Ürün açıklaması gerekli":"Hizmet açıklaması gerekli","warning");return;}
+                const email = f.sent_to_email?.trim() || f.customer_email?.trim();
+                if(!email){showToast("E-posta adresi gerekli","warning");return;}
+                setSending(true);
+                try { await onSend({...f, sent_to_email: email}); onClose(); }
+                catch(err){ showToast("Gönderilemedi: "+(err instanceof Error?err.message:"Hata"), "error"); }
+                finally { setSending(false); }
+              }}
+              style={{ flex:1,padding:"10px 20px",border:"none",borderRadius:"9px",fontWeight:700,fontSize:"13px",cursor:(saving||sending)?"not-allowed":"pointer",
+                background:(saving||sending)?"#d1d5db":isDelivery?"linear-gradient(135deg,#d97706,#f59e0b)":"linear-gradient(135deg,#059669,#10b981)",
+                color:"#fff",
+                boxShadow:(saving||sending)?"none":isDelivery?"0 4px 12px rgba(245,158,11,.3)":"0 4px 12px rgba(16,185,129,.28)" }}>
+              {sending?"Gönderiliyor...":isDelivery?"📦 Formu Gönder":"✓ Kaydet & Gönder"}
             </button>
           </div>
         </form>
