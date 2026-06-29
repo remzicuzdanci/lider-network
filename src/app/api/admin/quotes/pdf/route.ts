@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
-import { buildQuoteHtml } from "@/lib/quote-html";
-import { htmlToPdf } from "@/lib/html-to-pdf";
+import { buildQuotePdf } from "@/lib/quote-pdf";
 
-export const maxDuration = 60;
+export const maxDuration = 30;
 const SITE_BASE = process.env.PDF_ASSET_BASE || "https://www.lidernetwork.com.tr";
 
 // GET /api/admin/quotes/pdf?id=xxx
@@ -29,7 +28,7 @@ export async function GET(req: NextRequest) {
     company = c;
   }
 
-  const html = buildQuoteHtml({
+  const pdf = await buildQuotePdf({
     quote_no: q.quote_no,
     customer_name: q.customer_name || company?.name,
     customer_address: company?.address,
@@ -50,9 +49,8 @@ export async function GET(req: NextRequest) {
       kdv_total: q.kdv_total,
       grand_total: q.grand_total,
     },
-    qr: `${SITE_BASE}/teklif/onay/${id}`,
+    approvalUrl: `${SITE_BASE}/teklif/onay/${id}`,
   });
-  const pdf = await htmlToPdf(html);
 
   return new NextResponse(pdf as unknown as BodyInit, {
     headers: {

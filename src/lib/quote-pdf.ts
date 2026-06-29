@@ -33,6 +33,7 @@ export interface QuotePdfData {
   currency: string;
   prepared_by?: string | null;
   description?: string | null;
+  quote_note?: string | null;
   items: QuotePdfItem[];
   totals: { subtotal: number; discount_total: number; net_total: number; kdv_total: number; grand_total: number };
   approvalUrl?: string | null;
@@ -87,29 +88,35 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
   };
 
   // ── Üst bant ──
-  page.drawRectangle({ x: 0, y: H - 104, width: W, height: 104, color: BLUE });
-  page.drawRectangle({ x: 0, y: H - 109, width: W, height: 5, color: ORANGE });
+  page.drawRectangle({ x: 0, y: H - 112, width: W, height: 112, color: BLUE });
+  page.drawRectangle({ x: 0, y: H - 117, width: W, height: 5, color: ORANGE });
   if (logoImg) {
     const lh = 46, lw = (logoImg.width / logoImg.height) * lh;
     page.drawRectangle({ x: M, y: H - 84, width: lw + 22, height: 62, color: rgb(1, 1, 1), opacity: 1 });
     page.drawImage(logoImg, { x: M + 11, y: H - 76, width: lw, height: lh });
   }
+  text(page, "Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.", M, 92, { size: 8.5, font: fBold, color: rgb(0.918, 0.941, 1) });
   rightText(page, "FİYAT TEKLİFİ", W - M, 30, { size: 22, font: fBold, color: rgb(1, 1, 1) });
   rightText(page, data.quote_no, W - M, 62, { size: 12, font: fBold, color: rgb(0.85, 0.9, 1) });
 
-  let y = 132;
+  let y = 140;
 
   // ── Müşteri + teklif bilgi kutuları ──
   const colW = (W - M * 2 - 14) / 2;
-  const boxH = 86;
+  // Müşteri adı satır sayısına göre kutu yüksekliği dinamik
+  const nameLines = wrap(data.customer_name || "—", fBold, 11, colW - 24);
+  const addrLines = wrap(data.customer_address || "", fReg, 8.5, colW - 24).slice(0, 2);
+  const hasAttn = !!data.contact_name;
+  const boxH = Math.max(86, 36 + nameLines.length * 14 + addrLines.length * 11 + (data.tax_office || data.tax_no ? 11 : 0) + (hasAttn ? 14 : 0));
   // Müşteri
   page.drawRectangle({ x: M, y: H - y - boxH, width: colW, height: boxH, color: LIGHT, borderColor: GRIDLINE, borderWidth: 1 });
   page.drawRectangle({ x: M, y: H - y - boxH, width: 3, height: boxH, color: BLUE });
   text(page, "MÜŞTERİ", M + 12, y + 10, { size: 8, font: fBold, color: SLATE });
-  text(page, data.customer_name || "—", M + 12, y + 24, { size: 12, font: fBold });
-  let cy = y + 40;
-  for (const ln of wrap(data.customer_address || "", fReg, 8.5, colW - 24).slice(0, 2)) { text(page, ln, M + 12, cy, { size: 8.5, color: SLATE }); cy += 11; }
-  if (data.tax_office || data.tax_no) text(page, `VD: ${data.tax_office || "—"}  VN: ${data.tax_no || "—"}`, M + 12, cy, { size: 8.5, color: SLATE });
+  let cy = y + 24;
+  for (const ln of nameLines) { text(page, ln, M + 12, cy, { size: 11, font: fBold }); cy += 14; }
+  for (const ln of addrLines) { text(page, ln, M + 12, cy, { size: 8.5, color: SLATE }); cy += 11; }
+  if (data.tax_office || data.tax_no) { text(page, `VD: ${data.tax_office || "—"}  VN: ${data.tax_no || "—"}`, M + 12, cy, { size: 8.5, color: SLATE }); cy += 11; }
+  if (data.contact_name) text(page, `Sayın ${data.contact_name} dikkatine;`, M + 12, cy, { size: 8.5, font: fBold });
   // Teklif bilgi
   const bx = M + colW + 14;
   page.drawRectangle({ x: bx, y: H - y - boxH, width: colW, height: boxH, color: LIGHT, borderColor: GRIDLINE, borderWidth: 1 });
@@ -123,17 +130,17 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
   for (const [k, v] of info) { text(page, k, bx + 12, iy, { size: 9.5, color: SLATE }); rightText(page, v, bx + colW - 12, iy, { size: 9.5, font: fBold }); iy += 17; }
 
   y += boxH + 18;
-  text(page, "Hazırlamış olduğumuz fiyat teklifimizi değerlendirmenize sunarız.", M, y, { size: 9.5, color: BLUE });
+  text(page, "Yapmış olduğumuz görüşmeler sonrasında hazırlamış olduğumuz fiyat teklifimizi değerlendirmenize sunarız.", M, y, { size: 9.5, color: BLUE });
   y += 18;
 
   // ── Kalemler tablosu ──
-  const cols = { desc: M + 8, qty: W - M - 270, price: W - M - 202, disc: W - M - 148, kdv: W - M - 110, net: W - M - 8 };
+  const cols = { desc: M + 8, qty: W - M - 278, price: W - M - 210, disc: W - M - 150, kdv: W - M - 108, net: W - M - 8 };
   page.drawRectangle({ x: M, y: H - y - 20, width: W - M * 2, height: 20, color: DARK });
   text(page, "AÇIKLAMA", cols.desc, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
-  rightText(page, "MİKTAR", cols.qty + 40, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
-  rightText(page, "FİYAT", cols.price + 40, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
-  rightText(page, "İSK", cols.disc + 22, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
-  rightText(page, "KDV", cols.kdv + 22, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
+  rightText(page, "MİKTAR", cols.qty + 46, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
+  rightText(page, "FİYAT", cols.price + 42, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
+  rightText(page, "İSK", cols.disc + 24, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
+  rightText(page, "KDV", cols.kdv + 24, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
   rightText(page, "TUTAR", cols.net, y + 6, { size: 8, font: fBold, color: rgb(1, 1, 1) });
   y += 20;
 
@@ -146,10 +153,10 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
     let dy = y + 7;
     for (const ln of descLines) { text(page, ln, cols.desc, dy, { size: 9, color: rgb(0.12, 0.16, 0.22) }); dy += 12; }
     const mid = y + 7;
-    rightText(page, `${it.quantity} ${it.unit || ""}`.trim(), cols.qty + 40, mid, { size: 9, color: SLATE });
-    rightText(page, money(it.unit_price, cur), cols.price + 40, mid, { size: 9, color: SLATE });
-    rightText(page, `%${it.discount || 0}`, cols.disc + 22, mid, { size: 9, color: SLATE });
-    rightText(page, `%${it.kdv_rate || 0}`, cols.kdv + 22, mid, { size: 9, color: SLATE });
+    rightText(page, `${it.quantity} ${it.unit || ""}`.trim(), cols.qty + 46, mid, { size: 9, color: SLATE });
+    rightText(page, money(it.unit_price, cur), cols.price + 42, mid, { size: 9, color: SLATE });
+    rightText(page, `%${it.discount || 0}`, cols.disc + 24, mid, { size: 9, color: SLATE });
+    rightText(page, `%${it.kdv_rate || 0}`, cols.kdv + 24, mid, { size: 9, color: SLATE });
     rightText(page, money(net, cur), cols.net, mid, { size: 9.5, font: fBold });
     y += rowH;
     page.drawLine({ start: { x: M, y: H - y }, end: { x: W - M, y: H - y }, thickness: 0.5, color: GRIDLINE });
@@ -183,6 +190,14 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
     page.drawRectangle({ x: M, y: H - y - nH, width: W - M * 2, height: nH, color: LIGHT, borderColor: GRIDLINE, borderWidth: 1 });
     let ny = y + 9;
     for (const ln of lines) { text(page, ln, M + 12, ny, { size: 9, color: SLATE }); ny += 12; }
+    y += nH + 8;
+  }
+  if (data.quote_note) {
+    const lines = wrap(`📌 ${data.quote_note}`, fReg, 9, W - M * 2 - 24);
+    const nH = lines.length * 12 + 16;
+    page.drawRectangle({ x: M, y: H - y - nH, width: W - M * 2, height: nH, color: rgb(1, 0.98, 0.88), borderColor: rgb(0.99, 0.9, 0.53), borderWidth: 1 });
+    let ny = y + 9;
+    for (const ln of lines) { text(page, ln, M + 12, ny, { size: 9, color: rgb(0.57, 0.25, 0.04) }); ny += 12; }
     y += nH + 14;
   }
 
