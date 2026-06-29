@@ -23,6 +23,7 @@ interface Quote {
   id: string; quote_no: string; company_id?: string; customer_name?: string;
   quote_date?: string; valid_until?: string; currency: string; exchange_rate?: number;
   description?: string; items: Item[]; subtotal: number; discount_total: number;
+  extra_discount?: number; quote_note?: string;
   net_total: number; kdv_total: number; grand_total: number; status: string;
   created_by?: string; created_at: string; companies?: { name: string };
 }
@@ -66,6 +67,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [preparedBy, setPreparedBy] = useState(currentUserName);
   const [status, setStatus] = useState("draft");
   const [items, setItems] = useState<Item[]>([]);
+  const [extraDiscount, setExtraDiscount] = useState(0);
+  const [quoteNote, setQuoteNote] = useState("");
   const [saving, setSaving] = useState(false);
 
   // ürün arama
@@ -117,17 +120,22 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       const net = gross - disc;
       subtotal += gross; discount_total += disc; net_total += net; kdv_total += net * (+it.kdv_rate || 0) / 100;
     }
-    return { subtotal, discount_total, net_total, kdv_total, grand_total: net_total + kdv_total };
-  }, [items]);
+    // Sabit tutar indirimi: KDV matrahından düş, KDV orantılı azalt
+    const extra = Math.max(0, Math.min(extraDiscount || 0, net_total));
+    const ratio = net_total > 0 ? (net_total - extra) / net_total : 1;
+    const net_after = net_total - extra;
+    const kdv_after = kdv_total * ratio;
+    return { subtotal, discount_total, extra_discount: extra, net_total: net_after, kdv_total: kdv_after, grand_total: net_after + kdv_after };
+  }, [items, extraDiscount]);
 
   function resetForm() {
-    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setPreparedBy(currentUserName); setStatus("draft"); setItems([]); setSearch(""); setResults([]);
+    setCompanyId(""); setQuoteNo(""); setQDate(today()); setValidUntil(""); setCurrency("TL"); setRate(""); setDesc(""); setPreparedBy(currentUserName); setStatus("draft"); setItems([]); setExtraDiscount(0); setQuoteNote(""); setSearch(""); setResults([]);
   }
   function openNew() { resetForm(); setEditId(null); setView("edit"); }
   function openEdit(q: Quote) {
     setEditId(q.id); setCompanyId(q.company_id || ""); setQuoteNo(q.quote_no || "");
     setQDate(q.quote_date || today()); setValidUntil(q.valid_until || ""); setCurrency(q.currency || "TL");
-    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []);
+    setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus(q.status || "draft"); setItems(q.items || []); setExtraDiscount(q.extra_discount || 0); setQuoteNote(q.quote_note || "");
     setSearch(""); setResults([]); setView("edit");
   }
   // Sonraki revize numarası: TKF-2026-0001 -> TKF-2026-0001-R2 -> -R3 ...
@@ -143,7 +151,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     setQuoteNo(asRevision ? nextRevisionNo(q.quote_no) : ""); // revize ise -R no, değilse yeni otomatik no
     setQDate(today()); setValidUntil(""); setCurrency(q.currency || "TL");
     setRate(q.exchange_rate ? String(q.exchange_rate) : ""); setDesc(q.description || ""); setPreparedBy(q.created_by || currentUserName); setStatus("draft");
-    setItems((q.items || []).map(it => ({ ...it }))); setSearch(""); setResults([]);
+    setItems((q.items || []).map(it => ({ ...it }))); setExtraDiscount(0); setQuoteNote(""); setSearch(""); setResults([]);
     setCopySource(null); setView("edit");
   }
   // Editördeki mevcut formdan bir kaynak teklif kur (kopyalama seçimi için)
@@ -178,7 +186,8 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       customer_name: companies.find(c => c.id === companyId)?.name || null,
       quote_no: quoteNo || undefined,
       quote_date: qDate, valid_until: validUntil || null,
-      currency, exchange_rate: rate ? Number(rate) : 1, description: desc, items,
+      currency, exchange_rate: rate ? Number(rate) : 1, description: desc, quote_note: quoteNote || null, items,
+      extra_discount: extraDiscount || 0,
       created_by: preparedBy || currentUserName || null, status,
     };
     try {
@@ -316,7 +325,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       <td style="border:0;width:300px;">
         <div class="totbox">
           <div class="totrow"><span>Brüt Toplam</span><span style="font-weight:600;color:#1f2937;">${m(totals.subtotal)}</span></div>
-          ${totals.discount_total ? `<div class="totrow"><span>İndirim</span><span style="color:#dc2626;font-weight:600;">- ${m(totals.discount_total)}</span></div>` : ""}
+          ${(totals.discount_total + (totals.extra_discount || 0)) ? `<div class="totrow"><span>İndirim</span><span style="color:#dc2626;font-weight:600;">- ${m(totals.discount_total + (totals.extra_discount || 0))}</span></div>` : ""}
           <div class="totrow"><span>Net Toplam</span><span style="font-weight:600;color:#1f2937;">${m(totals.net_total)}</span></div>
           <div class="totrow"><span>${kdvLabel}</span><span style="font-weight:600;color:#1f2937;">${m(totals.kdv_total)}</span></div>
           <div class="totrow grand"><span>GENEL TOPLAM</span><span>${m(totals.grand_total)}</span></div>
@@ -325,6 +334,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     </tr></table>
 
     ${desc ? `<div style="margin-top:14px;padding:12px 15px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.55;white-space:pre-wrap;">${desc}</div>` : ""}
+    ${quoteNote ? `<div style="margin-top:8px;padding:9px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.55;white-space:pre-wrap;">📌 ${quoteNote}</div>` : ""}
 
     <div style="font-size:12px;color:#374151;margin-top:18px;line-height:1.55;">
       Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
@@ -858,12 +868,45 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
 
           {/* Toplamlar */}
           <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "16px" }}>
-            <div style={{ minWidth: "260px" }}>
-              {[["Brüt Toplam", totals.subtotal, "#64748b"], ["İndirim", totals.discount_total, "#dc2626"], ["Net Toplam", totals.net_total, "#64748b"], ["KDV", totals.kdv_total, "#64748b"]].map(([l, v, c], i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: c as string }}>
-                  <span>{l as string}</span><span style={{ fontWeight: 600 }}>{i === 1 ? "- " : ""}{money(v as number, currency)}</span>
+            <div style={{ minWidth: "300px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: "#64748b" }}>
+                <span>Brüt Toplam</span><span style={{ fontWeight: 600 }}>{money(totals.subtotal, currency)}</span>
+              </div>
+              {totals.discount_total > 0 && (
+                <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: "#dc2626" }}>
+                  <span>Kalem İndirimi</span><span style={{ fontWeight: 600 }}>- {money(totals.discount_total, currency)}</span>
                 </div>
-              ))}
+              )}
+              {/* Sabit tutar indirimi */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: "#dc2626", gap: "12px" }}>
+                <span style={{ whiteSpace: "nowrap" }}>Ek İndirim (KDV hariç)</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                  <span style={{ fontWeight: 600, color: "#dc2626" }}>-</span>
+                  <input
+                    type="number" min="0" step="any"
+                    value={extraDiscount || ""}
+                    onChange={e => setExtraDiscount(Math.max(0, +e.target.value || 0))}
+                    placeholder="0"
+                    style={{ width: "100px", border: "1.5px solid #fca5a5", borderRadius: "6px", padding: "4px 8px", fontSize: "13px", fontWeight: 600, color: "#dc2626", background: "#fff7f7", outline: "none", textAlign: "right" }}
+                  />
+                </div>
+              </div>
+              {/* Not alanı */}
+              <div style={{ padding: "6px 0 4px" }}>
+                <textarea
+                  value={quoteNote}
+                  onChange={e => setQuoteNote(e.target.value)}
+                  placeholder="Not ekle (ör. teslimat adresi, şart…)"
+                  rows={2}
+                  style={{ width: "100%", boxSizing: "border-box", padding: "6px 9px", border: "1.5px solid #e2e8f0", borderRadius: "7px", fontSize: "12px", color: "#374151", background: "#fafbfc", outline: "none", resize: "vertical", fontFamily: "inherit", lineHeight: 1.5 }}
+                />
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: "#64748b" }}>
+                <span>Net Toplam</span><span style={{ fontWeight: 600 }}>{money(totals.net_total, currency)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", fontSize: "13px", color: "#64748b" }}>
+                <span>KDV</span><span style={{ fontWeight: 600 }}>{money(totals.kdv_total, currency)}</span>
+              </div>
               <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 0 0", marginTop: "6px", borderTop: "2px solid #eef2f7", fontSize: "16px", fontWeight: 900, color: "#0052ff" }}>
                 <span>GENEL TOPLAM</span><span>{money(totals.grand_total, currency)}</span>
               </div>

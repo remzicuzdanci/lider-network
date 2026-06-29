@@ -15,7 +15,7 @@ import {
   AlertCircle, ShieldCheck, Headphones, FileText,
   ArrowUpRight, Zap, HelpCircle, Server, Receipt,
   Wifi, WifiOff, Star, ExternalLink, Package,
-  AlertTriangle, CheckCircle2,
+  AlertTriangle, CheckCircle2, MessageCircle, Send, X, Settings,
 } from "lucide-react";
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -71,7 +71,6 @@ export default function PanelClient({
   const [statusFilter, setFilter] = useState("all");
   const [search, setSearch]       = useState("");
   const [activePage, setActivePage] = useState<ActivePage>("panel");
-  const [companyView, setCompanyView] = useState(false);
   // Cihazlar
   const [assets, setAssets]           = useState<Record<string, string>[]>([]);
   const [assetsLoaded, setAssetsLoaded] = useState(false);
@@ -81,15 +80,22 @@ export default function PanelClient({
   // Uptime widget
   const [uptimeOk, setUptimeOk]       = useState<boolean | null>(null);
 
-  const fetchTickets = useCallback(async (cv = companyView) => {
+  // Chat widget
+  type ChatMsg = { id: string; content: string; sender_type: string; sender_name: string; created_at: string };
+  const [chatOpen, setChatOpen]           = useState(false);
+  const [chatInput, setChatInput]         = useState("");
+  const [chatSending, setChatSending]     = useState(false);
+  const [chatTicketId, setChatTicketId]   = useState<string | null>(null);
+  const [chatMessages, setChatMessages]   = useState<ChatMsg[]>([]);
+
+  const fetchTickets = useCallback(async () => {
     setLoading(true);
-    const url = cv && company ? "/api/destek/tickets?view=company" : "/api/destek/tickets";
-    const res = await fetch(url);
+    const res = await fetch("/api/destek/tickets");
     if (res.ok) setTickets((await res.json()).tickets || []);
     setLoading(false);
-  }, [companyView, company]);
+  }, []);
 
-  useEffect(() => { fetchTickets(companyView); }, [fetchTickets, companyView]);
+  useEffect(() => { fetchTickets(); }, [fetchTickets]);
 
   // Lazy-load cihazlar when page first opens
   useEffect(() => {
@@ -111,6 +117,17 @@ export default function PanelClient({
     }
   }, [activePage, quotesLoaded]);
 
+  // Chat: poll for new messages every 5s while open
+  useEffect(() => {
+    if (!chatOpen || !chatTicketId) return;
+    const load = () => fetch(`/api/destek/chat?ticket_id=${chatTicketId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.messages) setChatMessages(d.messages); });
+    load();
+    const id = setInterval(load, 5000);
+    return () => clearInterval(id);
+  }, [chatOpen, chatTicketId]);
+
   // Check lidernetwork.com.tr uptime once on mount
   useEffect(() => {
     fetch("/api/uptime?url=lidernetwork.com.tr")
@@ -124,6 +141,25 @@ export default function PanelClient({
     await sb.auth.signOut();
     router.push(paths.landing);
     router.refresh();
+  }
+
+  async function handleChatSend(e: React.FormEvent) {
+    e.preventDefault();
+    if (!chatInput.trim() || chatSending) return;
+    setChatSending(true);
+    const body: Record<string, string> = { message: chatInput.trim() };
+    if (chatTicketId) body.ticket_id = chatTicketId;
+    const r = await fetch("/api/destek/chat", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    if (r.ok) {
+      const d = await r.json();
+      if (d.ticket_id) {
+        setChatTicketId(d.ticket_id);
+        // Optimistically add customer message
+        setChatMessages(prev => [...prev, { id: Date.now().toString(), content: chatInput.trim(), sender_type: "customer", sender_name: fullName, created_at: new Date().toISOString() }]);
+      }
+      setChatInput("");
+    }
+    setChatSending(false);
   }
 
   const filtered = tickets.filter((t) => {
@@ -389,19 +425,6 @@ export default function PanelClient({
               </div>
             )}
 
-            {/* Şirket görünümü toggle */}
-            {company && (
-              <div style={{ display: "flex", gap: "6px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "10px 14px", marginBottom: "10px", alignItems: "center", flexWrap: "wrap" }}>
-                <span style={{ fontSize: "12px", color: "#6b7280", fontWeight: 600 }}>Görünüm:</span>
-                <button onClick={() => setCompanyView(false)} style={{ padding: "5px 14px", borderRadius: "8px", border: "1.5px solid", borderColor: !companyView ? "#0052ff" : "#e5e7ef", background: !companyView ? "#eff6ff" : "transparent", color: !companyView ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: !companyView ? 700 : 400, cursor: "pointer" }}>
-                  Benim Taleplerim
-                </button>
-                <button onClick={() => setCompanyView(true)} style={{ padding: "5px 14px", borderRadius: "8px", border: "1.5px solid", borderColor: companyView ? "#0052ff" : "#e5e7ef", background: companyView ? "#eff6ff" : "transparent", color: companyView ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: companyView ? 700 : 400, cursor: "pointer" }}>
-                  {company} Talepleri
-                </button>
-              </div>
-            )}
-
             {/* Filter + search */}
             <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "14px 16px", marginBottom: "12px", display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
               {[["all","Tümü"],["open","Açık"],["in_progress","İşlemde"],["resolved","Çözüldü"],["closed","Kapalı"]].map(([v, l]) => (
@@ -518,6 +541,73 @@ export default function PanelClient({
           </>
         )}
       </main>
+
+      {/* ══ CHAT WIDGET ══════════════════════════════════════════════════ */}
+      <div style={{ position: "fixed", bottom: "24px", right: "24px", zIndex: 1000 }}>
+        {chatOpen ? (
+          <div style={{ width: 340, background: "#fff", borderRadius: "16px", boxShadow: "0 12px 48px rgba(0,0,0,.18)", border: "1px solid #e5e7ef", display: "flex", flexDirection: "column", maxHeight: "520px" }}>
+            {/* Header */}
+            <div style={{ background: "linear-gradient(135deg,#0052ff,#6366f1)", borderRadius: "16px 16px 0 0", padding: "14px 18px", display: "flex", alignItems: "center", gap: "10px" }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(255,255,255,.2)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Headphones size={18} color="#fff" />
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#fff" }}>Lider Network Destek</p>
+                <p style={{ margin: 0, fontSize: "11px", color: "rgba(255,255,255,.7)" }}>Pzt–Cum 09:00–18:00</p>
+              </div>
+              <button onClick={() => setChatOpen(false)} style={{ background: "rgba(255,255,255,.15)", border: "none", borderRadius: "8px", width: 28, height: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <X size={14} color="#fff" />
+              </button>
+            </div>
+
+            {/* Messages */}
+            <div style={{ flex: 1, overflowY: "auto", padding: "16px", display: "flex", flexDirection: "column", gap: "10px", minHeight: "200px", maxHeight: "340px" }}>
+              {chatMessages.length === 0 && !chatTicketId && (
+                <div style={{ textAlign: "center", padding: "20px 10px" }}>
+                  <div style={{ fontSize: "32px", marginBottom: "8px" }}>👋</div>
+                  <p style={{ margin: "0 0 4px", fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>Merhaba, {fullName.split(" ")[0]}!</p>
+                  <p style={{ margin: 0, fontSize: "13px", color: "#6b7280", lineHeight: 1.5 }}>Hızlı bir soru sormak veya destek almak için mesaj yazın. Yanıtınız ticket üzerinden gelecektir.</p>
+                </div>
+              )}
+              {chatMessages.map(msg => {
+                const isAdmin = msg.sender_type === "admin";
+                return (
+                  <div key={msg.id} style={{ display: "flex", justifyContent: isAdmin ? "flex-start" : "flex-end" }}>
+                    <div style={{ maxWidth: "80%", background: isAdmin ? "#f4f6fb" : "#0052ff", borderRadius: isAdmin ? "4px 12px 12px 12px" : "12px 4px 12px 12px", padding: "8px 12px" }}>
+                      {isAdmin && <p style={{ margin: "0 0 3px", fontSize: "10px", fontWeight: 700, color: "#6b7280" }}>Lider Network</p>}
+                      <p style={{ margin: 0, fontSize: "13px", color: isAdmin ? "#1a1d2e" : "#fff", lineHeight: 1.5 }}>{msg.content}</p>
+                    </div>
+                  </div>
+                );
+              })}
+              {chatTicketId && chatMessages.length === 0 && (
+                <p style={{ textAlign: "center", fontSize: "12px", color: "#9ca3af", margin: "auto 0" }}>Ekip en kısa sürede yanıt verecek...</p>
+              )}
+            </div>
+
+            {/* Input */}
+            <form onSubmit={handleChatSend} style={{ borderTop: "1px solid #f0f2f8", padding: "12px", display: "flex", gap: "8px" }}>
+              <input
+                value={chatInput}
+                onChange={e => setChatInput(e.target.value)}
+                placeholder="Mesajınızı yazın..."
+                disabled={chatSending}
+                style={{ flex: 1, padding: "9px 12px", borderRadius: "8px", border: "1px solid #e5e7ef", fontSize: "13px", outline: "none", background: "#f8f9fb" }}
+              />
+              <button type="submit" disabled={!chatInput.trim() || chatSending}
+                style={{ width: 36, height: 36, borderRadius: "8px", border: "none", background: chatInput.trim() ? "#0052ff" : "#e5e7ef", color: "#fff", cursor: chatInput.trim() ? "pointer" : "default", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <Send size={15} color={chatInput.trim() ? "#fff" : "#9ca3af"} />
+              </button>
+            </form>
+          </div>
+        ) : (
+          <button onClick={() => setChatOpen(true)}
+            style={{ width: 52, height: 52, borderRadius: "50%", background: "linear-gradient(135deg,#0052ff,#6366f1)", border: "none", boxShadow: "0 4px 20px rgba(0,82,255,.4)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+            <MessageCircle size={22} color="#fff" />
+            {chatTicketId && <span style={{ position: "absolute", top: 0, right: 0, width: 12, height: 12, background: "#22c55e", borderRadius: "50%", border: "2px solid #fff" }} />}
+          </button>
+        )}
+      </div>
     </div>
   );
 }
@@ -771,48 +861,104 @@ function SlaPage() {
 }
 
 // ── Bildirimler Sayfası ────────────────────────────────────────────────────
+const NOTIF_KEY = "ln_notif_prefs_v1";
+const NOTIF_DEFAULTS = { on_reply: true, on_status: true, on_resolved: true, weekly_summary: false };
+
 function BildirimlerPage({ tickets, counts, paths }: { tickets: Ticket[]; counts: { open: number; in_progress: number }; paths: ReturnType<typeof useDestekPaths> }) {
   const openTickets = tickets.filter((t) => t.status === "open");
   const inProgress  = tickets.filter((t) => t.status === "in_progress");
+  const [showPrefs, setShowPrefs] = useState(false);
+  const [prefs, setPrefs] = useState(NOTIF_DEFAULTS);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(NOTIF_KEY);
+      if (saved) setPrefs({ ...NOTIF_DEFAULTS, ...JSON.parse(saved) });
+    } catch { /* ignore */ }
+  }, []);
+
+  function togglePref(key: keyof typeof NOTIF_DEFAULTS) {
+    const next = { ...prefs, [key]: !prefs[key] };
+    setPrefs(next);
+    try { localStorage.setItem(NOTIF_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+  }
+
+  const prefItems: { key: keyof typeof NOTIF_DEFAULTS; label: string; desc: string; icon: string }[] = [
+    { key: "on_reply",   label: "Yanıt geldiğinde",       desc: "Destek ekibinden yeni mesaj gelince bildir",  icon: "💬" },
+    { key: "on_status",  label: "Durum değiştiğinde",      desc: "Talebinizin durumu güncellenince bildir",     icon: "🔄" },
+    { key: "on_resolved",label: "Talep çözüldüğünde",      desc: "Destek talebi tamamlandığında bildir",       icon: "✅" },
+    { key: "weekly_summary", label: "Haftalık özet",       desc: "Her Pazartesi açık taleplerinizin özeti",    icon: "📊" },
+  ];
 
   return (
     <div style={{ maxWidth: "680px" }}>
-      <div style={{ marginBottom: "28px" }}>
-        <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
-          Bildirimler
-        </h1>
-        <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>Dikkat gerektiren talepleriniz.</p>
+      <div style={{ marginBottom: "28px", display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
+        <div>
+          <h1 style={{ fontFamily: "var(--font-family-headline)", fontSize: "22px", fontWeight: 800, color: "#1a1d2e", margin: "0 0 6px" }}>
+            Bildirimler
+          </h1>
+          <p style={{ color: "#6b7280", fontSize: "14px", margin: 0 }}>
+            {showPrefs ? "E-posta bildirim tercihlerinizi yönetin." : "Dikkat gerektiren talepleriniz."}
+          </p>
+        </div>
+        <button onClick={() => setShowPrefs(p => !p)}
+          style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 14px", borderRadius: "8px", border: `1.5px solid ${showPrefs ? "#0052ff" : "#e5e7ef"}`, background: showPrefs ? "#eff6ff" : "#fff", color: showPrefs ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+          <Settings size={14} /> {showPrefs ? "Bildirimlere Dön" : "Tercihler"}
+        </button>
       </div>
 
-      {counts.open === 0 && counts.in_progress === 0 ? (
-        <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", padding: "32px", textAlign: "center" }}>
-          <div style={{ fontSize: "36px", marginBottom: "8px" }}>✅</div>
-          <p style={{ fontWeight: 700, color: "#15803d", margin: "0 0 4px" }}>Tüm talepler güncel</p>
-          <p style={{ fontSize: "13px", color: "#16a34a", margin: 0 }}>Bekleyen bildiriminiz bulunmuyor.</p>
+      {showPrefs ? (
+        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+          <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "12px 16px", fontSize: "13px", color: "#92400e" }}>
+            💡 Tercihleriniz bu tarayıcıda saklanır. Farklı bir cihazda giriş yaparsanız tekrar ayarlamanız gerekebilir.
+          </div>
+          {prefItems.map(item => (
+            <div key={item.key} style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "12px", padding: "16px 20px", display: "flex", alignItems: "center", gap: "16px" }}>
+              <span style={{ fontSize: "24px", flexShrink: 0 }}>{item.icon}</span>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: "0 0 2px", fontSize: "14px", fontWeight: 700, color: "#1a1d2e" }}>{item.label}</p>
+                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>{item.desc}</p>
+              </div>
+              <button onClick={() => togglePref(item.key)}
+                style={{ width: 44, height: 24, borderRadius: "12px", border: "none", background: prefs[item.key] ? "#0052ff" : "#e5e7ef", cursor: "pointer", position: "relative", flexShrink: 0, transition: "background .2s" }}>
+                <span style={{ position: "absolute", top: 2, left: prefs[item.key] ? 22 : 2, width: 20, height: 20, borderRadius: "50%", background: "#fff", transition: "left .2s", boxShadow: "0 1px 4px rgba(0,0,0,.2)" }} />
+              </button>
+            </div>
+          ))}
         </div>
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-          {openTickets.map((t) => (
-            <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #bfdbfe", borderRadius: "12px", textDecoration: "none" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", flexShrink: 0, marginTop: 6 }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · Yanıt bekleniyor</p>
-              </div>
-              <span style={{ flexShrink: 0, background: "#eff6ff", color: "#1d4ed8", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>Açık</span>
-            </Link>
-          ))}
-          {inProgress.map((t) => (
-            <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #ddd6fe", borderRadius: "12px", textDecoration: "none" }}>
-              <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#8b5cf6", flexShrink: 0, marginTop: 6 }} />
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
-                <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · İşlemde</p>
-              </div>
-              <span style={{ flexShrink: 0, background: "#f5f3ff", color: "#7c3aed", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>İşlemde</span>
-            </Link>
-          ))}
-        </div>
+        <>
+          {counts.open === 0 && counts.in_progress === 0 ? (
+            <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "14px", padding: "32px", textAlign: "center" }}>
+              <div style={{ fontSize: "36px", marginBottom: "8px" }}>✅</div>
+              <p style={{ fontWeight: 700, color: "#15803d", margin: "0 0 4px" }}>Tüm talepler güncel</p>
+              <p style={{ fontSize: "13px", color: "#16a34a", margin: 0 }}>Bekleyen bildiriminiz bulunmuyor.</p>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+              {openTickets.map((t) => (
+                <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #bfdbfe", borderRadius: "12px", textDecoration: "none" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6", flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · Yanıt bekleniyor</p>
+                  </div>
+                  <span style={{ flexShrink: 0, background: "#eff6ff", color: "#1d4ed8", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>Açık</span>
+                </Link>
+              ))}
+              {inProgress.map((t) => (
+                <Link key={t.id} href={paths.ticket(t.id)} style={{ display: "flex", gap: "14px", alignItems: "flex-start", padding: "16px 20px", background: "#fff", border: "1.5px solid #ddd6fe", borderRadius: "12px", textDecoration: "none" }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#8b5cf6", flexShrink: 0, marginTop: 6 }} />
+                  <div style={{ flex: 1 }}>
+                    <p style={{ margin: "0 0 3px", fontWeight: 700, fontSize: "14px", color: "#1a1d2e" }}>{t.subject}</p>
+                    <p style={{ margin: 0, fontSize: "12px", color: "#6b7280" }}>#{String(t.ticket_number).padStart(4,"0")} · İşlemde</p>
+                  </div>
+                  <span style={{ flexShrink: 0, background: "#f5f3ff", color: "#7c3aed", borderRadius: "6px", padding: "3px 10px", fontSize: "11px", fontWeight: 700 }}>İşlemde</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   );

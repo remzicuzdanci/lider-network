@@ -2,9 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAdminSession, getSessionUser } from "@/lib/admin-auth";
 import { supabase } from "@/lib/supabase";
 import { sendQuoteEmail } from "@/lib/quote-mail";
-import { buildQuotePdf } from "@/lib/quote-pdf";
+import { buildQuoteHtml } from "@/lib/quote-html";
+import { htmlToPdf } from "@/lib/html-to-pdf";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 const SITE_BASE = process.env.PDF_ASSET_BASE || "https://www.lidernetwork.com.tr";
 
 // POST /api/admin/quotes/send  { id, email }
@@ -34,7 +35,7 @@ export async function POST(req: NextRequest) {
   // Teklif PDF'ini üret (ekte gidecek). Hata olursa eksiz devam et.
   let pdf: Buffer | undefined;
   try {
-    pdf = await buildQuotePdf({
+    const html = buildQuoteHtml({
       quote_no: q.quote_no,
       customer_name: q.customer_name || company?.name,
       customer_address: company?.address,
@@ -46,13 +47,16 @@ export async function POST(req: NextRequest) {
       currency: q.currency || "TL",
       prepared_by: q.created_by,
       description: q.description,
+      quote_note: q.quote_note,
       items: q.items || [],
       totals: {
-        subtotal: q.subtotal, discount_total: q.discount_total, net_total: q.net_total,
-        kdv_total: q.kdv_total, grand_total: q.grand_total,
+        subtotal: q.subtotal,
+        discount_total: (q.discount_total || 0) + (q.extra_discount || 0),
+        net_total: q.net_total, kdv_total: q.kdv_total, grand_total: q.grand_total,
       },
-      approvalUrl: `${SITE_BASE}/teklif/onay/${id}`,
+      qr: `${SITE_BASE}/teklif/onay/${id}`,
     });
+    pdf = await htmlToPdf(html);
   } catch (e) {
     console.error("Teklif PDF üretilemedi (eksiz gönderilecek):", e);
   }
@@ -67,8 +71,9 @@ export async function POST(req: NextRequest) {
       currency: q.currency || "TL",
       description: q.description,
       items: q.items || [],
-      subtotal: q.subtotal, discount_total: q.discount_total, net_total: q.net_total,
-      kdv_total: q.kdv_total, grand_total: q.grand_total,
+      subtotal: q.subtotal,
+      discount_total: (q.discount_total || 0) + (q.extra_discount || 0),
+      net_total: q.net_total, kdv_total: q.kdv_total, grand_total: q.grand_total,
       toEmail: email,
       pdf,
       pdfName: `Teklif-${q.quote_no}.pdf`,

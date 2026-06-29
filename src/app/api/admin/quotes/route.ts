@@ -16,7 +16,7 @@ interface QuoteItem {
 
 function num(v: unknown): number { const n = Number(v); return isNaN(n) ? 0 : n; }
 
-function computeTotals(items: QuoteItem[]) {
+function computeTotals(items: QuoteItem[], extraDiscount = 0) {
   let subtotal = 0, discount_total = 0, net_total = 0, kdv_total = 0;
   for (const it of items) {
     const gross = num(it.quantity) * num(it.unit_price);
@@ -25,9 +25,12 @@ function computeTotals(items: QuoteItem[]) {
     const kdv   = net * num(it.kdv_rate) / 100;
     subtotal += gross; discount_total += disc; net_total += net; kdv_total += kdv;
   }
-  const grand_total = net_total + kdv_total;
+  const extra = Math.max(0, Math.min(extraDiscount, net_total));
+  const ratio = net_total > 0 ? (net_total - extra) / net_total : 1;
+  const net_after = net_total - extra;
+  const kdv_after = kdv_total * ratio;
   const r = (n: number) => Math.round(n * 100) / 100;
-  return { subtotal: r(subtotal), discount_total: r(discount_total), net_total: r(net_total), kdv_total: r(kdv_total), grand_total: r(grand_total) };
+  return { subtotal: r(subtotal), discount_total: r(discount_total), net_total: r(net_after), kdv_total: r(kdv_after), grand_total: r(net_after + kdv_after) };
 }
 
 async function nextQuoteNo(): Promise<string> {
@@ -76,7 +79,8 @@ export async function POST(req: NextRequest) {
 
   const b = await req.json();
   const items: QuoteItem[] = Array.isArray(b.items) ? b.items : [];
-  const totals = computeTotals(items);
+  const extraDiscount = Math.max(0, num(b.extra_discount));
+  const totals = computeTotals(items, extraDiscount);
   const quote_no = b.quote_no?.trim() || await nextQuoteNo();
 
   const { data, error } = await supabase
@@ -90,7 +94,9 @@ export async function POST(req: NextRequest) {
       currency:      b.currency || "TL",
       exchange_rate: b.exchange_rate ?? 1,
       description:   b.description || null,
+      quote_note:    b.quote_note || null,
       items,
+      extra_discount: extraDiscount,
       ...totals,
       status:        b.status || "draft",
       created_by:    b.created_by || user.name,
@@ -111,13 +117,16 @@ export async function PATCH(req: NextRequest) {
   if (!b.id) return NextResponse.json({ error: "id gerekli" }, { status: 400 });
 
   const fields: Record<string, unknown> = { updated_at: new Date().toISOString() };
-  const ALLOWED = ["quote_no","company_id","customer_name","quote_date","valid_until","currency","exchange_rate","description","status","created_by"] as const;
+  const ALLOWED = ["quote_no","company_id","customer_name","quote_date","valid_until","currency","exchange_rate","description","quote_note","status","created_by"] as const;
   for (const k of ALLOWED) if (k in b) fields[k] = b[k];
 
-  if ("items" in b) {
+  if ("extra_discount" in b) fields.extra_discount = Math.max(0, num(b.extra_discount));
+
+  if ("items" in b || "extra_discount" in b) {
     const items: QuoteItem[] = Array.isArray(b.items) ? b.items : [];
+    const extraDiscount = Math.max(0, num(b.extra_discount));
     fields.items = items;
-    Object.assign(fields, computeTotals(items));
+    Object.assign(fields, computeTotals(items, extraDiscount));
   }
 
   const { data, error } = await supabase
