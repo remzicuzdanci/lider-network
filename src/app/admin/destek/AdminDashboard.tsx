@@ -716,15 +716,85 @@ export default function AdminDashboard() {
   const rptMaxPri = Math.max(...rptPriCounts.map(c=>c.count),1);
   const rptStatusCounts = ["open","in_progress","resolved","closed"].map((s) => ({ s, label: STATUS_LABEL[s], style: STATUS_STYLE[s], count: rptTickets.filter((t) => t.status===s).length }));
   const rptDays = useMemo(() => {
-    const days = rptDateMode==="month" ? new Date(rptYear,rptMonth+1,0).getDate() : 7;
-    return Array.from({length:days}).map((_,i) => {
-      let d: Date;
-      if (rptDateMode==="month") { d=new Date(rptYear,rptMonth,i+1); d.setHours(0,0,0,0); }
-      else { d=new Date(); d.setDate(d.getDate()-(days-1-i)); d.setHours(0,0,0,0); }
-      const end=new Date(d); end.setDate(end.getDate()+1);
-      return { label: rptDateMode==="month" ? String(i+1) : d.toLocaleDateString("tr-TR",{day:"2-digit",month:"short"}), count: rptTickets.filter((t) => { const dt=new Date(t.created_at); return dt>=d && dt<end; }).length };
+    const filt = (d: Date, end: Date) => rptTickets.filter(t => { const dt = new Date(t.created_at); return dt >= d && dt < end; }).length;
+    if (rptDateMode === "month") {
+      const days = new Date(rptYear, rptMonth + 1, 0).getDate();
+      return Array.from({ length: days }).map((_, i) => {
+        const d = new Date(rptYear, rptMonth, i + 1); d.setHours(0,0,0,0);
+        const end = new Date(d); end.setDate(end.getDate() + 1);
+        return { label: String(i + 1), count: filt(d, end) };
+      });
+    }
+    if (rptDateMode === "range" && rptFrom && rptTo) {
+      const from = new Date(rptFrom); from.setHours(0,0,0,0);
+      const to = new Date(rptTo); to.setHours(0,0,0,0);
+      const diff = Math.round((to.getTime() - from.getTime()) / 86400000) + 1;
+      if (diff <= 60) {
+        return Array.from({ length: diff }).map((_, i) => {
+          const d = new Date(from); d.setDate(d.getDate() + i);
+          const end = new Date(d); end.setDate(end.getDate() + 1);
+          return { label: d.toLocaleDateString("tr-TR", { day:"2-digit", month:"short" }), count: filt(d, end) };
+        });
+      }
+      const weeks: { label: string; count: number }[] = [];
+      let cur = new Date(from);
+      while (cur <= to) {
+        const end = new Date(cur); end.setDate(end.getDate() + 7);
+        weeks.push({ label: cur.toLocaleDateString("tr-TR", { day:"2-digit", month:"short" }), count: filt(cur, end) });
+        cur = new Date(end);
+      }
+      return weeks;
+    }
+    // preset mode
+    if (rptPreset === "today") {
+      const today = new Date(); today.setHours(0,0,0,0);
+      return Array.from({ length: 24 }).map((_, i) => {
+        const d = new Date(today); d.setHours(i);
+        const end = new Date(today); end.setHours(i + 1);
+        return { label: `${i}:00`, count: filt(d, end) };
+      });
+    }
+    if (rptPreset === "week") {
+      return Array.from({ length: 7 }).map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (6 - i)); d.setHours(0,0,0,0);
+        const end = new Date(d); end.setDate(end.getDate() + 1);
+        return { label: d.toLocaleDateString("tr-TR", { day:"2-digit", month:"short" }), count: filt(d, end) };
+      });
+    }
+    if (rptPreset === "month") {
+      return Array.from({ length: 30 }).map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (29 - i)); d.setHours(0,0,0,0);
+        const end = new Date(d); end.setDate(end.getDate() + 1);
+        return { label: d.toLocaleDateString("tr-TR", { day:"2-digit", month:"short" }), count: filt(d, end) };
+      });
+    }
+    if (rptPreset === "quarter") {
+      return Array.from({ length: 13 }).map((_, i) => {
+        const d = new Date(); d.setDate(d.getDate() - (12 - i) * 7); d.setHours(0,0,0,0);
+        const end = new Date(d); end.setDate(end.getDate() + 7);
+        return { label: d.toLocaleDateString("tr-TR", { day:"2-digit", month:"short" }), count: filt(d, end) };
+      });
+    }
+    if (rptPreset === "year") {
+      const n = new Date();
+      return Array.from({ length: 12 }).map((_, i) => {
+        const d = new Date(n.getFullYear(), n.getMonth() - (11 - i), 1);
+        const end = new Date(d.getFullYear(), d.getMonth() + 1, 1);
+        return { label: MONTHS[d.getMonth()].slice(0, 3), count: filt(d, end) };
+      });
+    }
+    // "all" — monthly buckets
+    const map = new Map<string, { label: string; count: number }>();
+    rptTickets.forEach(t => {
+      const d = new Date(t.created_at);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+      const label = `${MONTHS[d.getMonth()].slice(0, 3)} ${String(d.getFullYear()).slice(-2)}`;
+      const prev = map.get(key) || { label, count: 0 };
+      map.set(key, { label, count: prev.count + 1 });
     });
-  }, [rptTickets,rptDateMode,rptMonth,rptYear]);
+    if (map.size === 0) return [];
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0])).map(([, v]) => v);
+  }, [rptTickets, rptDateMode, rptPreset, rptMonth, rptYear, rptFrom, rptTo]);
   const rptMaxDay = Math.max(...rptDays.map(d=>d.count),1);
   const uniqueCustomers = useMemo(() => { const map=new Map<string,string>(); allTickets.forEach(t=>{if(!map.has(t.customer_email))map.set(t.customer_email,`${t.customer_name}${t.company ? ` — ${t.company}` : ""}`)}); return Array.from(map.entries()); }, [allTickets]);
   const uniqueStaff = useMemo(() => { const s=new Set<string>(); allTickets.forEach(t=>{ if(t.created_by_staff) s.add(t.created_by_staff); if(t.assigned_to) s.add(t.assigned_to); }); return Array.from(s); }, [allTickets]);
@@ -1862,12 +1932,24 @@ export default function AdminDashboard() {
 
             <div style={{ background: "#fff", border: "1px solid #e5e7ef", borderRadius: "14px", padding: "22px 24px", marginBottom: "14px" }}>
               <h4 style={{ margin: "0 0 20px", fontSize: "13px", fontWeight: 700, color: "#1a1d2e", display: "flex", alignItems: "center", gap: "6px" }}>
-                <TrendingUp size={14} color="#0052ff" /> Günlük Talep Akışı
-                {rptDateMode==="month" && <span style={{ fontWeight:400,color:"#9ca3af" }}> — {MONTHS[rptMonth]} {rptYear}</span>}
+                <TrendingUp size={14} color="#0052ff" />
+                {rptDateMode==="month" ? "Günlük Talep Akışı" : rptPreset==="today" ? "Saatlik Talep Akışı" : rptPreset==="all"||rptDateMode==="range" ? "Aylık Talep Akışı" : rptPreset==="year" ? "Aylık Talep Akışı" : "Talep Akışı"}
+                <span style={{ fontWeight:400,color:"#9ca3af" }}>
+                  {rptDateMode==="month" && ` — ${MONTHS[rptMonth]} ${rptYear}`}
+                  {rptDateMode==="preset" && rptPreset==="week" && " — Son 7 Gün"}
+                  {rptDateMode==="preset" && rptPreset==="month" && " — Son 30 Gün"}
+                  {rptDateMode==="preset" && rptPreset==="quarter" && " — Son 90 Gün (haftalık)"}
+                  {rptDateMode==="preset" && rptPreset==="year" && " — Son 12 Ay"}
+                  {rptDateMode==="preset" && rptPreset==="all" && ` — Tüm Zamanlar (${rptDays.length} ay)`}
+                </span>
               </h4>
-              <div style={{ display:"flex",gap:rptDateMode==="month"?"2px":"8px",alignItems:"flex-end",height:"100px",overflowX:"auto",paddingBottom:"4px" }}>
+              {(() => {
+                const barW = rptDateMode==="month" ? "24px" : rptPreset==="today" ? "28px" : rptPreset==="month" ? "18px" : rptPreset==="quarter" ? "36px" : "48px";
+                const barGap = rptDateMode==="month" ? "2px" : rptPreset==="month" ? "2px" : "6px";
+                return (
+              <div style={{ display:"flex",gap:barGap,alignItems:"flex-end",height:"100px",overflowX:"auto",paddingBottom:"4px" }}>
                 {rptDays.map((d,i) => (
-                  <div key={i} style={{ flex:"0 0 auto",minWidth:rptDateMode==="month"?"24px":"52px",display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",height:"100%" }}>
+                  <div key={i} style={{ flex:"0 0 auto",minWidth:barW,display:"flex",flexDirection:"column",alignItems:"center",gap:"4px",height:"100%" }}>
                     {d.count>0 && <span style={{ fontSize:"10px",fontWeight:700,color:"#0052ff" }}>{d.count}</span>}
                     <div style={{ flex:1,width:"100%",display:"flex",alignItems:"flex-end" }}>
                       <div style={{ width:"100%",height:`${Math.max((d.count/rptMaxDay)*100,4)}%`,background:d.count>0?"linear-gradient(180deg,#0052ff,#6366f1)":"#f0f2f8",borderRadius:"4px 4px 0 0",transition:"height .4s" }} />
@@ -1876,6 +1958,8 @@ export default function AdminDashboard() {
                   </div>
                 ))}
               </div>
+                );
+              })()}
             </div>
 
             {/* Personel Performansı */}
