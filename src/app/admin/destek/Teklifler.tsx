@@ -565,7 +565,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       return true;
     });
     const stats = [
-      { id: "all", label: "Toplam", value: quotes.length, color: "#0052ff" },
+      { id: "all", label: "Toplam", value: total, color: "#0052ff" },
       { id: "draft", label: "Taslak", value: quotes.filter(q => q.status === "draft").length, color: "#64748b" },
       { id: "sent", label: "Gönderildi", value: quotes.filter(q => q.status === "sent").length, color: "#0891b2" },
       { id: "accepted", label: "Kabul", value: quotes.filter(q => q.status === "accepted").length, color: "#15803d" },
