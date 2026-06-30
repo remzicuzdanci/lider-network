@@ -63,6 +63,9 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
+      // ── EN blog → TR blog (içerik Türkçe, EN versiyonu kopya sayılıyor) ───────
+      { source: "/en/blog/:slug*", permanent: true, destination: "/tr/blog/:slug*" },
+
       // ── Wix kalıntısı ─────────────────────────────────────────────────────────
       { source: "/_api/:path*", permanent: false, destination: "/tr" },
     ];

@@ -31,12 +31,17 @@ export async function generateMetadata({
     description: post.excerpt,
     keywords: post.tags,
     alternates: {
-      canonical: `${baseUrl}/${locale}/blog/${slug}`,
+      // Blog içerikleri Türkçe — canonical her zaman /tr/ işaret eder
+      canonical: `${baseUrl}/tr/blog/${slug}`,
+      languages: {
+        tr: `${baseUrl}/tr/blog/${slug}`,
+        "x-default": `${baseUrl}/tr/blog/${slug}`,
+      },
     },
     openGraph: {
       title: post.title,
       description: post.excerpt,
-      url: `${baseUrl}/${locale}/blog/${slug}`,
+      url: `${baseUrl}/tr/blog/${slug}`,
       type: "article",
       publishedTime: post.publishedAt,
       tags: post.tags,
