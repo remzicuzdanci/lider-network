@@ -171,42 +171,48 @@ export async function sendTicketCreatedEmail(ticket: Ticket): Promise<void> {
   const trackUrl = `${siteUrl}/tr/destek/ticket/${ticket.id}`;
 
   const body = `
-    <!-- Greeting -->
     <p style="font-size:16px;color:#1e293b;margin:0 0 6px">Sayın <strong>${esc(ticket.customer_name)}</strong>,</p>
-    <p style="font-size:14px;color:#64748b;margin:0 0 24px;line-height:1.6">
-      Destek talebiniz başarıyla oluşturuldu. Teknik ekibimiz talebinizi inceleyip en kısa sürede size geri dönüş yapacaktır.
+    <p style="font-size:14px;color:#64748b;margin:0 0 28px;line-height:1.6">
+      Destek talebiniz tarafımıza ulaşmıştır. Teknik ekibimiz en kısa sürede sizinle iletişime geçecektir.
     </p>
 
-    <!-- Ticket No -->
-    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:20px 24px;margin-bottom:24px;text-align:center">
-      <div style="font-size:11px;color:#3b82f6;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:4px">Talep Numaranız</div>
+    <!-- Talep Numarası -->
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:12px;padding:24px;margin-bottom:28px;text-align:center">
+      <div style="font-size:11px;color:#3b82f6;text-transform:uppercase;letter-spacing:1.5px;font-weight:700;margin-bottom:6px">Talep Numaranız</div>
       ${bigTicketNo(ticket.ticket_number)}
-      <div style="font-size:12px;color:#64748b">Bu numarayı saklayın — talebinizi takip etmek için kullanacaksınız.</div>
+      <div style="font-size:12px;color:#64748b;margin-top:4px">Bu numarayı saklayın — talebinizi takip etmek için kullanacaksınız.</div>
     </div>
 
-    ${sectionTitle("Talep Detayları")}
+    <!-- Özet -->
+    <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;margin-bottom:28px">
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td style="padding:13px 18px;border-bottom:1px solid #e2e8f0">
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px">Konu</div>
+            <div style="font-size:14px;font-weight:700;color:#1e293b">${esc(ticket.subject)}</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:13px 18px;border-bottom:1px solid #e2e8f0">
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px">Öncelik</div>
+            <span style="font-size:13px;font-weight:700;color:${priColors[ticket.priority] || "#64748b"}">${priLabels[ticket.priority] || ticket.priority}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:13px 18px">
+            <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;font-weight:700;margin-bottom:3px">Tarih</div>
+            <div style="font-size:13px;color:#475569">${formatDate(ticket.created_at)}</div>
+          </td>
+        </tr>
+      </table>
+    </div>
 
-    <table width="100%" cellpadding="0" cellspacing="0">
-      <tr>
-        <td width="50%" style="padding-right:8px;vertical-align:top">
-          ${fieldAccent("Öncelik", priLabels[ticket.priority] || ticket.priority, priColors[ticket.priority] || "#64748b")}
-        </td>
-        <td width="50%" style="padding-left:8px;vertical-align:top">
-          ${field("Kategori", catLabels[ticket.category] || ticket.category)}
-        </td>
-      </tr>
-    </table>
-
-    ${field("Konu", esc(ticket.subject))}
-    ${field("Açıklama", `<span style="white-space:pre-wrap">${esc(ticket.description)}</span>`)}
-    ${field("Oluşturulma Tarihi", formatDate(ticket.created_at))}
-
-    <div style="margin-top:28px;text-align:center">
+    <div style="text-align:center;margin-bottom:24px">
       ${btn("Talebinizi Takip Edin →", trackUrl)}
     </div>
 
-    <p style="margin-top:24px;font-size:13px;color:#94a3b8;text-align:center">
-      Acil durumlarda: <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none">+90 312 232 02 88</a>
+    <p style="font-size:13px;color:#94a3b8;text-align:center;margin:0">
+      Acil durumlarda: <a href="tel:+903122320288" style="color:#0052ff;text-decoration:none;font-weight:600">+90 312 232 02 88</a>
     </p>
   `;
 

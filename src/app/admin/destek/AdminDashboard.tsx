@@ -63,6 +63,8 @@ const PRI_COLOR: Record<string, { text: string; bg: string }> = {
   urgent: { text: "#dc2626", bg: "#fef2f2" },
 };
 const CAT_LABEL: Record<string, string> = { technical: "Teknik", billing: "Fatura", general: "Genel", feature_request: "Özellik" };
+const PRI_ORDER: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+const STATUS_ORDER: Record<string, number> = { open: 4, in_progress: 3, resolved: 2, closed: 1 };
 const MONTHS = ["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"];
 const SECTORS = ["Savunma & Kamu","Sağlık","Üretim & Sanayi","Eğitim","Enerji","Kurumsal & Finans","Turizm & Otelcilik","İnşaat & Gayrimenkul","BT & Yazılım","Perakende","Diğer"];
 
@@ -182,6 +184,14 @@ export default function AdminDashboard() {
   const [compSaving, setCompSaving]       = useState(false);
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Müşteri Geçmişi paneli
+  type HistoryCompany = { id: string; name: string };
+  const [historyCompany, setHistoryCompany] = useState<HistoryCompany | null>(null);
+  const [historyTab, setHistoryTab]         = useState<"tickets" | "quotes" | "assets">("tickets");
+  const [historyQuotes, setHistoryQuotes]   = useState<Record<string, unknown>[]>([]);
+  const [historyAssets, setHistoryAssets]   = useState<Record<string, unknown>[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+
   // Staff - loaded from staff_users table via /api/admin/staff
   const [staff, setStaff]             = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
@@ -217,6 +227,12 @@ export default function AdminDashboard() {
   const [slaToast, setSlaToast]         = useState("");
   const [slaChecking, setSlaChecking]   = useState(false);
 
+  // Ticket list UX
+  const [sortCol, setSortCol]             = useState<string>("created_at");
+  const [sortDir, setSortDir]             = useState<"asc" | "desc">("desc");
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [quickStatusId, setQuickStatusId] = useState<string | null>(null);
+
   // Monthly summary toast
   const [mSummaryToast, setMSummaryToast] = useState("");
 
@@ -229,7 +245,7 @@ export default function AdminDashboard() {
   const now = new Date();
   const [rptCustomer, setRptCustomer] = useState("all");
   const [rptDateMode, setRptDateMode] = useState<"preset"|"month"|"range">("preset");
-  const [rptPreset, setRptPreset]     = useState("month");
+  const [rptPreset, setRptPreset]     = useState("all");
   const [rptMonth, setRptMonth]       = useState(now.getMonth());
   const [rptYear, setRptYear]         = useState(now.getFullYear());
   const [rptFrom, setRptFrom]         = useState("");
@@ -281,10 +297,11 @@ export default function AdminDashboard() {
     setTickets(data.tickets || []);
     setTotal(data.total ?? 0);
     setLoading(false);
+    setLastRefreshed(new Date());
   }, [statusF, priorityF, categoryF, dateF, search, page, router]);
 
   const fetchStats       = useCallback(async () => { const r = await fetch("/api/admin/stats"); if (r.ok) setStats(await r.json()); }, []);
-  const fetchAllTickets  = useCallback(async () => { const r = await fetch("/api/tickets?limit=500"); if (r.ok) setAllTickets((await r.json()).tickets || []); }, []);
+  const fetchAllTickets  = useCallback(async () => { const r = await fetch("/api/tickets?all=1"); if (r.ok) setAllTickets((await r.json()).tickets || []); }, []);
   const fetchRptQuotes   = useCallback(async () => { if (rptQuotesLoaded) return; const r = await fetch("/api/admin/quotes?all=1"); if (r.ok) { setRptAllQuotes((await r.json()).quotes || []); setRptQuotesLoaded(true); } }, [rptQuotesLoaded]);
   const fetchRptAssets   = useCallback(async () => { if (rptAssetsLoaded) return; const r = await fetch("/api/admin/assets?all=1"); if (r.ok) { setRptAllAssets((await r.json()).assets || []); setRptAssetsLoaded(true); } }, [rptAssetsLoaded]);
   const fetchCustomers   = useCallback(async () => { setCustLoading(true); const r = await fetch(`/api/admin/customers?filter=${custFilter}`); if (r.ok) setCustomers((await r.json()).customers || []); setCustLoading(false); }, [custFilter]);
@@ -294,6 +311,14 @@ export default function AdminDashboard() {
   useEffect(() => { fetchTickets(); fetchStats(); fetchAllTickets(); fetchCompanies(); fetchStaff(); }, [fetchTickets, fetchStats, fetchAllTickets, fetchCompanies, fetchStaff]);
 
   useEffect(() => { if (tab === "reports") { fetchRptQuotes(); fetchRptAssets(); } }, [tab, fetchRptQuotes, fetchRptAssets]);
+
+  // Hızlı durum menüsünü dışarı tıklayınca kapat
+  useEffect(() => {
+    if (!quickStatusId) return;
+    const close = () => setQuickStatusId(null);
+    document.addEventListener("click", close);
+    return () => document.removeEventListener("click", close);
+  }, [quickStatusId]);
 
   // Filtre veya arama değişince sayfa 1'e dön + seçimi temizle
   useEffect(() => { setPage(1); setSelectedIds(new Set()); }, [statusF, priorityF, categoryF, dateF, search]);
@@ -335,6 +360,20 @@ export default function AdminDashboard() {
     return () => { active = false; };
   }, [tab]);
   useEffect(() => { if (tab === "staff") fetchStaff(); }, [tab, fetchStaff]);
+
+  useEffect(() => {
+    if (!historyCompany) return;
+    setHistoryLoading(true);
+    setHistoryQuotes([]); setHistoryAssets([]);
+    Promise.all([
+      fetch(`/api/admin/quotes?company_id=${historyCompany.id}`).then(r => r.ok ? r.json() : { quotes: [] }),
+      fetch(`/api/admin/assets?company_id=${historyCompany.id}`).then(r => r.ok ? r.json() : { assets: [] }),
+    ]).then(([qd, ad]) => {
+      setHistoryQuotes(qd.quotes || []);
+      setHistoryAssets(ad.assets || []);
+      setHistoryLoading(false);
+    });
+  }, [historyCompany]);
 
   async function logout() { await fetch("/api/admin/auth", { method: "DELETE" }); router.push("/admin/login"); }
 
@@ -623,6 +662,18 @@ export default function AdminDashboard() {
       setBulkAssignTo("");
       fetchTickets(); fetchStats();
     } finally { setBulkWorking(false); }
+  }
+
+  // ── Hızlı durum değişimi ──────────────────────────────────────────────────
+  async function quickChangeStatus(ticketId: string, newStatus: string) {
+    setQuickStatusId(null);
+    const r = await fetch(`/api/tickets/${ticketId}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }) });
+    if (r.ok) { fetchTickets(); fetchStats(); }
+  }
+
+  function toggleSort(col: string) {
+    if (sortCol === col) setSortDir(d => d === "asc" ? "desc" : "asc");
+    else { setSortCol(col); setSortDir("desc"); }
   }
 
   // ── Staff setup ────────────────────────────────────────────────────────────
@@ -1128,10 +1179,17 @@ export default function AdminDashboard() {
                 <Plus size={15} /> {isProspect ? "Dış Müşteri Ekle" : "Şirket Ekle"}
               </button>
             )}
-            <button onClick={() => { fetchTickets(); fetchStats(); fetchAllTickets(); if(tab==="customers") fetchCustomers(); if(tab==="companies") fetchCompanies(); if(tab==="staff") fetchStaff(); }}
-              style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
-              <RefreshCw size={14} /> Yenile
-            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              {lastRefreshed && tab === "tickets" && (
+                <span style={{ fontSize: "11px", color: "#9ca3af" }}>
+                  {(() => { const m = Math.round((Date.now() - lastRefreshed.getTime()) / 60000); return m <= 0 ? "az önce güncellendi" : `son ${m}dk önce güncellendi`; })()}
+                </span>
+              )}
+              <button onClick={() => { fetchTickets(); fetchStats(); fetchAllTickets(); if(tab==="customers") fetchCustomers(); if(tab==="companies") fetchCompanies(); if(tab==="staff") fetchStaff(); }}
+                style={{ display: "inline-flex", alignItems: "center", gap: "7px", padding: "9px 18px", background: "#fff", border: "1.5px solid #e5e7ef", borderRadius: "10px", color: "#6b7280", fontSize: "13px", fontWeight: 600, cursor: "pointer" }}>
+                <RefreshCw size={14} /> Yenile
+              </button>
+            </div>
           </div>
           {/* SLA Toast */}
           {slaToast && (
@@ -1252,13 +1310,34 @@ export default function AdminDashboard() {
                             style={{ cursor: "pointer", width: 15, height: 15 }}
                           />
                         </th>
-                        {["#No","Müşteri / Şirket","Konu","Kat.","Öncelik","Durum","SLA","Tarih",""].map((h,i) => (
-                          <th key={i} style={{ padding: "11px 14px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", whiteSpace: "nowrap" }}>{h}</th>
-                        ))}
+                        {(() => {
+                          const base: React.CSSProperties = { padding: "11px 14px", textAlign: "left", fontSize: "11px", fontWeight: 700, textTransform: "uppercase", letterSpacing: ".5px", whiteSpace: "nowrap" };
+                          const sortable = (col: string): React.CSSProperties => ({ ...base, color: sortCol === col ? "#0052ff" : "#9ca3af", cursor: "pointer", userSelect: "none" });
+                          const plain: React.CSSProperties = { ...base, color: "#9ca3af" };
+                          const ind = (col: string) => sortCol === col ? (sortDir === "asc" ? " ▲" : " ▼") : " ⇅";
+                          return (<>
+                            <th style={sortable("ticket_number")} onClick={() => toggleSort("ticket_number")}>#No{ind("ticket_number")}</th>
+                            <th style={plain}>Müşteri / Şirket</th>
+                            <th style={plain}>Konu</th>
+                            <th style={plain}>Kat.</th>
+                            <th style={sortable("priority")} onClick={() => toggleSort("priority")}>Öncelik{ind("priority")}</th>
+                            <th style={sortable("status")} onClick={() => toggleSort("status")}>Durum{ind("status")}</th>
+                            <th style={plain}>SLA</th>
+                            <th style={sortable("created_at")} onClick={() => toggleSort("created_at")}>Tarih{ind("created_at")}</th>
+                            <th style={plain}></th>
+                          </>);
+                        })()}
                       </tr>
                     </thead>
                     <tbody>
-                      {tickets.map((t) => {
+                      {[...tickets].sort((a, b) => {
+                        let av: string | number, bv: string | number;
+                        if (sortCol === "ticket_number") { av = a.ticket_number; bv = b.ticket_number; }
+                        else if (sortCol === "priority") { av = PRI_ORDER[a.priority] ?? 0; bv = PRI_ORDER[b.priority] ?? 0; }
+                        else if (sortCol === "status") { av = STATUS_ORDER[a.status] ?? 0; bv = STATUS_ORDER[b.status] ?? 0; }
+                        else { av = a.created_at; bv = b.created_at; }
+                        return (av < bv ? -1 : av > bv ? 1 : 0) * (sortDir === "asc" ? 1 : -1);
+                      }).map((t) => {
                         const sla=slaDue(t); const sc=STATUS_STYLE[t.status]||STATUS_STYLE.open; const pc=PRI_COLOR[t.priority]||PRI_COLOR.medium;
                         return (
                           <tr key={t.id} onClick={() => router.push(`/admin/destek/${t.id}`)}
@@ -1283,22 +1362,53 @@ export default function AdminDashboard() {
                               <span style={{ fontSize: "12px", fontWeight: 800, color: "#0052ff", background: "#eff6ff", borderRadius: "6px", padding: "3px 8px" }}>#{String(t.ticket_number).padStart(4,"0")}</span>
                             </td>
                             <td style={{ padding: "14px", minWidth: "160px" }}>
-                              <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{t.customer_name}</p>
-                              {t.company && <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af" }}>{t.company}</p>}
+                              {!t.customer_name || t.customer_name === "Yetkili" ? (
+                                <>
+                                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{t.company || "—"}</p>
+                                  {t.customer_name && <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af" }}>{t.customer_name}</p>}
+                                </>
+                              ) : (
+                                <>
+                                  <p style={{ margin: 0, fontSize: "13px", fontWeight: 700, color: "#1a1d2e" }}>{t.customer_name}</p>
+                                  {t.company && <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af" }}>{t.company}</p>}
+                                </>
+                              )}
                             </td>
                             <td style={{ padding: "14px", maxWidth: "240px" }}>
                               <p style={{ margin: 0, fontSize: "13px", color: "#1a1d2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.subject}</p>
                               {t.created_by_staff && <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af" }}>👤 {t.created_by_staff.split("@")[0]}</p>}
+                              {t.assigned_to && t.assigned_to !== t.created_by_staff && <p style={{ margin: 0, fontSize: "11px", color: "#6b7280" }}>🧑‍💻 {t.assigned_to.split("@")[0]}</p>}
                             </td>
                             <td style={{ padding: "14px", fontSize: "12px", color: "#6b7280", whiteSpace: "nowrap" }}>{CAT_LABEL[t.category]}</td>
                             <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                               <span style={{ fontSize: "12px", fontWeight: 700, color: pc.text, background: pc.bg, padding: "3px 10px", borderRadius: "6px" }}>{PRI_LABEL[t.priority]}</span>
                             </td>
-                            <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
-                              <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "8px", background: sc.bg, fontSize: "12px", fontWeight: 600, color: sc.text }}>
-                                <span style={{ width: 6, height: 6, borderRadius: "50%", background: sc.dot, flexShrink: 0 }} />
-                                {STATUS_LABEL[t.status]}
-                              </span>
+                            <td style={{ padding: "14px", whiteSpace: "nowrap" }} onClick={e => e.stopPropagation()}>
+                              <div style={{ position: "relative", display: "inline-block" }}>
+                                <span
+                                  title="Durumu değiştir"
+                                  onClick={() => setQuickStatusId(quickStatusId === t.id ? null : t.id)}
+                                  style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "4px 10px", borderRadius: "8px", background: sc.bg, fontSize: "12px", fontWeight: 600, color: sc.text, cursor: "pointer", userSelect: "none" }}>
+                                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: sc.dot, flexShrink: 0 }} />
+                                  {STATUS_LABEL[t.status]} ▾
+                                </span>
+                                {quickStatusId === t.id && (
+                                  <div style={{ position: "absolute", top: "100%", left: 0, zIndex: 200, background: "#fff", border: "1px solid #e5e7ef", borderRadius: "10px", boxShadow: "0 8px 24px rgba(0,0,0,.12)", minWidth: "130px", marginTop: "4px", overflow: "hidden" }}>
+                                    {(["open", "in_progress", "resolved", "closed"] as const).map(s => {
+                                      const ssc = STATUS_STYLE[s];
+                                      return (
+                                        <div key={s}
+                                          onClick={() => quickChangeStatus(t.id, s)}
+                                          style={{ padding: "8px 14px", cursor: "pointer", fontSize: "12px", fontWeight: 600, color: ssc.text, background: t.status === s ? ssc.bg : "transparent" }}
+                                          onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = ssc.bg; }}
+                                          onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = t.status === s ? ssc.bg : "transparent"; }}>
+                                          {STATUS_LABEL[s]}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td style={{ padding: "14px", whiteSpace: "nowrap" }}>
                               <span style={{ fontSize: "12px", fontWeight: 600, color: sla.color, background: sla.bg, padding: "3px 8px", borderRadius: "6px" }}>{sla.label}</span>
@@ -1506,6 +1616,9 @@ export default function AdminDashboard() {
                       <button onClick={() => { setNtCompanyId(c.id); setNewTicketModal(true); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", padding: "6px 14px", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
                         <Plus size={13} /> Talep Aç
                       </button>
+                      <button onClick={() => { setHistoryCompany({ id: c.id, name: c.name }); setHistoryTab("tickets"); }} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "8px", padding: "6px 14px", color: "#7c3aed", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                        📋 Geçmiş
+                      </button>
                       <button onClick={() => sendMonthlyToCompany(c.id)} style={{ display: "flex", alignItems: "center", gap: "6px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "6px 14px", color: "#15803d", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
                         📧 Aylık Rapor Gönder
                       </button>
@@ -1622,7 +1735,7 @@ export default function AdminDashboard() {
                   </div>
                   {rptDateMode==="preset" && (
                     <div style={{ display:"flex",gap:"4px",flexWrap:"wrap" }}>
-                      {[["today","Bugün"],["week","7G"],["month","30G"],["quarter","90G"],["year","1Y"]].map(([v,l]) => (
+                      {[["all","Tümü"],["today","Bugün"],["week","7G"],["month","30G"],["quarter","90G"],["year","1Y"]].map(([v,l]) => (
                         <button key={v} onClick={() => setRptPreset(v)} style={{ padding:"5px 11px",borderRadius:"8px",border:`1.5px solid ${rptPreset===v?"#0052ff":"#e5e7ef"}`,fontSize:"12px",cursor:"pointer",background:rptPreset===v?"#eff6ff":"#fff",color:rptPreset===v?"#0052ff":"#6b7280" }}>{l}</button>
                       ))}
                     </div>
@@ -2258,6 +2371,110 @@ export default function AdminDashboard() {
         </div>
       )}
       <AdminToast />
+
+      {/* ══ MÜŞTERİ GEÇMİŞİ PANELİ ══════════════════════════════════════ */}
+      {historyCompany && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 500, display: "flex" }}>
+          <div onClick={() => setHistoryCompany(null)} style={{ flex: 1, background: "rgba(15,23,42,.45)" }} />
+          <div style={{ width: "min(680px,100vw)", background: "#fff", display: "flex", flexDirection: "column", boxShadow: "-8px 0 48px rgba(0,0,0,.18)", overflowY: "auto" }}>
+            {/* Header */}
+            <div style={{ padding: "20px 24px 16px", borderBottom: "1px solid #e5e7ef", display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+              <div style={{ flex: 1 }}>
+                <p style={{ margin: 0, fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px" }}>Müşteri Geçmişi</p>
+                <p style={{ margin: "3px 0 0", fontSize: "17px", fontWeight: 800, color: "#1a1d2e" }}>{historyCompany.name}</p>
+              </div>
+              <button onClick={() => setHistoryCompany(null)} style={{ width: 32, height: 32, borderRadius: "8px", border: "1px solid #e5e7ef", background: "#f8f9fb", color: "#6b7280", fontSize: "16px", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>✕</button>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", borderBottom: "1px solid #e5e7ef", padding: "0 24px", flexShrink: 0 }}>
+              {([["tickets","🎫 Talepler"], ["quotes","📄 Teklifler"], ["assets","🖥️ Cihazlar"]] as const).map(([t, l]) => {
+                const counts = { tickets: allTickets.filter(x => x.company_id === historyCompany.id).length, quotes: historyQuotes.length, assets: historyAssets.length };
+                return (
+                  <button key={t} onClick={() => setHistoryTab(t)}
+                    style={{ padding: "12px 16px", border: "none", borderBottom: `2.5px solid ${historyTab === t ? "#0052ff" : "transparent"}`, background: "transparent", fontSize: "13px", fontWeight: historyTab === t ? 700 : 500, color: historyTab === t ? "#0052ff" : "#9ca3af", cursor: "pointer", display: "flex", alignItems: "center", gap: "6px" }}>
+                    {l}
+                    <span style={{ fontSize: "10px", fontWeight: 700, background: historyTab === t ? "#eff6ff" : "#f4f6fb", color: historyTab === t ? "#0052ff" : "#9ca3af", borderRadius: "10px", padding: "1px 7px" }}>{counts[t]}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Content */}
+            <div style={{ flex: 1, padding: "20px 24px", overflowY: "auto" }}>
+              {historyLoading && historyTab !== "tickets" ? (
+                <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
+              ) : historyTab === "tickets" ? (
+                (() => {
+                  const companyTickets = allTickets.filter(t => t.company_id === historyCompany.id);
+                  return companyTickets.length === 0 ? (
+                    <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Bu şirkete ait talep bulunamadı.</div>
+                  ) : (
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                      {companyTickets.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map(t => {
+                        const sc = STATUS_STYLE[t.status] || STATUS_STYLE.open;
+                        const pc = PRI_COLOR[t.priority] || PRI_COLOR.medium;
+                        return (
+                          <div key={t.id} onClick={() => { router.push(`/admin/destek/${t.id}`); setHistoryCompany(null); }}
+                            style={{ background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}
+                            onMouseEnter={e => (e.currentTarget.style.background = "#eff6ff")}
+                            onMouseLeave={e => (e.currentTarget.style.background = "#f8f9fb")}>
+                            <span style={{ fontSize: "12px", fontWeight: 800, color: "#0052ff", background: "#eff6ff", borderRadius: "6px", padding: "2px 8px", flexShrink: 0 }}>#{String(t.ticket_number).padStart(4,"0")}</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1a1d2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t.subject}</p>
+                              <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9ca3af" }}>{timeAgo(t.created_at)}</p>
+                            </div>
+                            <span style={{ fontSize: "11px", fontWeight: 700, color: pc.text, background: pc.bg, padding: "2px 8px", borderRadius: "5px", flexShrink: 0 }}>{PRI_LABEL[t.priority]}</span>
+                            <span style={{ fontSize: "11px", fontWeight: 600, color: sc.text, background: sc.bg, padding: "2px 8px", borderRadius: "5px", flexShrink: 0 }}>{STATUS_LABEL[t.status]}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()
+              ) : historyTab === "quotes" ? (
+                historyQuotes.length === 0 ? (
+                  <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Bu şirkete ait teklif bulunamadı.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {historyQuotes.map((q: Record<string, unknown>) => (
+                      <div key={String(q.id)} style={{ background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1a1d2e" }}>{String(q.title || q.id)}</p>
+                          <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9ca3af" }}>{q.created_at ? timeAgo(String(q.created_at)) : ""}</p>
+                        </div>
+                        {q.grand_total != null && <span style={{ fontSize: "13px", fontWeight: 700, color: "#0052ff" }}>{Number(q.grand_total).toLocaleString("tr-TR")} {String(q.currency || "TRY")}</span>}
+                        <span style={{ fontSize: "11px", fontWeight: 700, padding: "2px 9px", borderRadius: "5px", background: "#f0fdf4", color: "#15803d" }}>{String(q.status || "")}</span>
+                      </div>
+                    ))}
+                  </div>
+                )
+              ) : (
+                historyAssets.length === 0 ? (
+                  <div style={{ padding: "40px", textAlign: "center", color: "#9ca3af" }}>Bu şirkete ait cihaz bulunamadı.</div>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {historyAssets.map((a: Record<string, unknown>) => (
+                      <div key={String(a.id)} style={{ background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", padding: "12px 16px", display: "flex", alignItems: "center", gap: "12px" }}>
+                        <span style={{ fontSize: "20px" }}>🖥️</span>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1a1d2e" }}>{[String(a.brand || ""), String(a.model || "")].filter(Boolean).join(" ")}{a.serial_no ? <span style={{ fontWeight: 400, color: "#9ca3af" }}> · {String(a.serial_no)}</span> : ""}</p>
+                          <p style={{ margin: "2px 0 0", fontSize: "11px", color: "#9ca3af" }}>{String(a.type || "")} {a.ip_address ? `· ${String(a.ip_address)}` : ""}</p>
+                        </div>
+                        {a.warranty_end != null && (() => { const wd = new Date(String(a.warranty_end)); const expired = wd < new Date(); return (
+                          <span style={{ fontSize: "11px", fontWeight: 600, padding: "2px 9px", borderRadius: "5px", background: expired ? "#fef2f2" : "#f0fdf4", color: expired ? "#dc2626" : "#15803d" }}>
+                            {expired ? "Garantisi bitti" : `Garanti: ${wd.toLocaleDateString("tr-TR")}`}
+                          </span>
+                        ); })()}
+                      </div>
+                    ))}
+                  </div>
+                )
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
