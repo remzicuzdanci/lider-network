@@ -21,6 +21,52 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  async redirects() {
+    return [
+      // ── Eski (locale prefix'siz) sayfalar → yeni locale'li karşılıkları ──────
+      { source: "/anasayfa",                permanent: true,  destination: "/tr" },
+      { source: "/kurumsal",                permanent: true,  destination: "/tr/hakkimizda" },
+      { source: "/vizyonumuz",              permanent: true,  destination: "/tr/hakkimizda" },
+      { source: "/kurumsal-bt-hizmetleri-1", permanent: true, destination: "/tr/hizmetler" },
+      { source: "/sistem-cozumleri",        permanent: true,  destination: "/tr/sistem-entegrasyonu" },
+
+      // ── Blog: ASCII slug → Türkçe karakter içeren doğru slug ─────────────────
+      // (Google linkleri ASCII ile tarıyor, asıl slug Türkçe karakter içeriyor)
+      {
+        source: "/tr/blog/vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon",
+        destination: "/tr/blog/vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",
+        permanent: true,
+      },
+      {
+        source: "/en/blog/vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon",
+        destination: "/en/blog/vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",
+        permanent: true,
+      },
+      {
+        source: "/tr/blog/dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi",
+        destination: "/tr/blog/dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",
+        permanent: true,
+      },
+      {
+        source: "/en/blog/dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi",
+        destination: "/en/blog/dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",
+        permanent: true,
+      },
+      {
+        source: "/tr/blog/veeam-immutable-backup-ransomware-korumasi",
+        destination: "/tr/blog/veeam-immutable-backup-ransomware-koruması",
+        permanent: true,
+      },
+      {
+        source: "/en/blog/veeam-immutable-backup-ransomware-korumasi",
+        destination: "/tr/blog/veeam-immutable-backup-ransomware-koruması",
+        permanent: true,
+      },
+
+      // ── Wix kalıntısı ─────────────────────────────────────────────────────────
+      { source: "/_api/:path*", permanent: false, destination: "/tr" },
+    ];
+  },
   async headers() {
     return [
       {
