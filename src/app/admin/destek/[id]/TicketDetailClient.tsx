@@ -38,6 +38,8 @@ const CAT_LABELS: Record<string, string> = {
   technical: "Teknik Destek", billing: "Fatura/Lisans", general: "Genel", feature_request: "Özellik İsteği",
 };
 
+interface StaffMember { id: string; name: string; email: string; }
+
 export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
   const router = useRouter();
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -47,6 +49,8 @@ export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
   const [replyText, setReplyText] = useState("");
   const [sending, setSending] = useState(false);
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [staff, setStaff] = useState<StaffMember[]>([]);
+  const [assigning, setAssigning] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchTicket = useCallback(async () => {
@@ -60,6 +64,10 @@ export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
   }, [ticketId, router]);
 
   useEffect(() => { fetchTicket(); }, [fetchTicket]);
+
+  useEffect(() => {
+    fetch("/api/admin/staff").then(r => r.ok ? r.json() : { staff: [] }).then(d => setStaff(d.staff || []));
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -95,6 +103,17 @@ export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
     });
     if (res.ok) fetchTicket();
     setStatusUpdating(false);
+  }
+
+  async function updateAssignment(assignedTo: string) {
+    setAssigning(true);
+    const res = await fetch(`/api/tickets/${ticketId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ assigned_to: assignedTo || null }),
+    });
+    if (res.ok) fetchTicket();
+    setAssigning(false);
   }
 
   async function updatePriority(priority: string) {
@@ -335,6 +354,25 @@ export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Assignment */}
+          <div style={{ marginBottom: "24px" }}>
+            <p style={{ fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px", marginBottom: "10px" }}>Atanan Personel</p>
+            <select
+              value={ticket.assigned_to || ""}
+              onChange={e => updateAssignment(e.target.value)}
+              disabled={assigning}
+              style={{ width: "100%", padding: "8px 10px", borderRadius: "8px", border: "1px solid #e5e7ef", fontSize: "13px", color: "#1a1d2e", background: "#fff", cursor: "pointer", opacity: assigning ? .6 : 1 }}
+            >
+              <option value="">— Atanmadı —</option>
+              {staff.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
+            </select>
+            {ticket.assigned_to && (
+              <button onClick={() => updateAssignment("")} style={{ marginTop: "6px", fontSize: "11px", color: "#9ca3af", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+                ✕ Atamayı Kaldır
+              </button>
+            )}
           </div>
 
           <hr style={{ border: "none", borderTop: "1px solid #e5e7ef", margin: "0 0 20px" }} />

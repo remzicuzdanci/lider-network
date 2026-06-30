@@ -106,7 +106,9 @@ export async function GET(request: NextRequest) {
   const date     = searchParams.get("date");
   const search   = searchParams.get("q");
   const page  = Math.max(1, parseInt(searchParams.get("page") || "1"));
-  const limit = Math.min(100, parseInt(searchParams.get("limit") || "25"));
+  const requestedLimit = parseInt(searchParams.get("limit") || "25");
+  // all=1 → raporlar için limit kaldırılır (admin-only endpoint, güvenli)
+  const limit = searchParams.get("all") === "1" ? 5000 : Math.min(100, requestedLimit);
 
   let query = supabase
     .from("tickets")
