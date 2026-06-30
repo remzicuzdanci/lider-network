@@ -10,7 +10,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isTr
       ? "FortiSwitch ile güvenli ağ omurgası: FortiLink ile FortiGate üzerinden tek panelden yönetim, Zero Trust NAC ve PoE çözümleri. Lider Network Fortinet Yetkili Partner."
       : "Secure network backbone with FortiSwitch: single-pane management via FortiLink, Zero Trust NAC and PoE. Lider Network — Fortinet Authorized Partner.",
-    alternates: { canonical: `${baseUrl}/${locale}/fortinet/fortiswitch` },
+    alternates: {
+      canonical: `${baseUrl}/${locale}/fortinet/fortiswitch`,
+      languages: {
+        tr: `${baseUrl}/tr/fortinet/fortiswitch`,
+        en: `${baseUrl}/en/fortinet/fortiswitch`,
+        "x-default": `${baseUrl}/tr/fortinet/fortiswitch`,
+      },
+    },
   };
 }
 

@@ -9,7 +9,7 @@ export default function robots(): MetadataRoute.Robots {
         // Tüm arama motorları — admin/destek/api hariç her şey taranabilir
         userAgent: "*",
         allow: "/",
-        disallow: ["/admin", "/api", "/destek"],
+        disallow: ["/admin", "/api", "/destek", "/tr/destek", "/en/destek"],
       },
       {
         // AI yanıt motorlarına (ChatGPT, Claude, Perplexity, Google AI
@@ -47,7 +47,7 @@ export default function robots(): MetadataRoute.Robots {
           "Bytespider",
         ],
         allow: "/",
-        disallow: ["/admin", "/api", "/destek"],
+        disallow: ["/admin", "/api", "/destek", "/tr/destek", "/en/destek"],
       },
     ],
     sitemap: `${baseUrl}/sitemap.xml`,

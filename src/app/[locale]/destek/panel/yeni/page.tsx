@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { supabase } from "@/lib/supabase";
 import YeniTalepClient from "./YeniTalepClient";
+
+export const metadata: Metadata = {
+  title: "Yeni Talep | Lider Network Destek",
+  robots: { index: false, follow: false },
+};
 
 export default async function YeniTalepPage() {
   const headersList = await headers();

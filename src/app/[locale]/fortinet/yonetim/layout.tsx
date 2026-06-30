@@ -10,7 +10,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isTr
       ? "FortiManager ile merkezi politika yönetimi, FortiAnalyzer ile log/analiz ve 7/24 SOC izleme. Tek panelden Fortinet altyapı yönetimi. Lider Network Yetkili Partner."
       : "Central policy management with FortiManager, logging/analytics with FortiAnalyzer and 24/7 SOC monitoring. Lider Network — Fortinet Authorized Partner.",
-    alternates: { canonical: `${baseUrl}/${locale}/fortinet/yonetim` },
+    alternates: {
+      canonical: `${baseUrl}/${locale}/fortinet/yonetim`,
+      languages: {
+        tr: `${baseUrl}/tr/fortinet/yonetim`,
+        en: `${baseUrl}/en/fortinet/yonetim`,
+        "x-default": `${baseUrl}/tr/fortinet/yonetim`,
+      },
+    },
   };
 }
 

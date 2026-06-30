@@ -10,7 +10,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isTr
       ? "FortiClient ZTNA ve FortiEDR ile uç nokta güvenliği: gelişmiş tehdit koruması, EDR/XDR ve merkezi yönetim. Lider Network Fortinet Yetkili Partner."
       : "Endpoint security with FortiClient ZTNA and FortiEDR: advanced threat protection, EDR/XDR and central management. Lider Network — Fortinet Authorized Partner.",
-    alternates: { canonical: `${baseUrl}/${locale}/fortinet/endpoint` },
+    alternates: {
+      canonical: `${baseUrl}/${locale}/fortinet/endpoint`,
+      languages: {
+        tr: `${baseUrl}/tr/fortinet/endpoint`,
+        en: `${baseUrl}/en/fortinet/endpoint`,
+        "x-default": `${baseUrl}/tr/fortinet/endpoint`,
+      },
+    },
   };
 }
 

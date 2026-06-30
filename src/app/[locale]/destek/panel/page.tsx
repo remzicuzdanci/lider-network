@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createSupabaseServer } from "@/lib/supabase-server";
 import { supabase } from "@/lib/supabase";
 import PanelClient from "./PanelClient";
+
+export const metadata: Metadata = {
+  title: "Destek Paneli | Lider Network",
+  robots: { index: false, follow: false },
+};
 
 export default async function PanelPage() {
   const headersList = await headers();

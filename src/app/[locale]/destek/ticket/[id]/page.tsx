@@ -1,9 +1,15 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import type { Ticket, TicketMessage } from "@/lib/supabase";
 import TicketTrackClient from "./TicketTrackClient";
 
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Destek Talebi | Lider Network",
+  robots: { index: false, follow: false },
+};
 
 export default async function TicketTrackPage({
   params,

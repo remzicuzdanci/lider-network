@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { TicketCheck, Clock, Shield, Zap, ArrowRight, Phone, Mail } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Destek | Lider Network",
+  robots: { index: false, follow: false },
+};
 
 export default function DesktekLanding() {
   return (

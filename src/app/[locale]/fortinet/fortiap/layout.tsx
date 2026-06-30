@@ -10,7 +10,14 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     description: isTr
       ? "FortiAP ile güvenli kablosuz ağ: FortiGate üzerinden merkezi yönetim, AI tabanlı radyo optimizasyonu ve Zero Trust güvenlik. Lider Network Fortinet Yetkili Partner."
       : "Secure wireless with FortiAP: central management via FortiGate, AI-driven radio optimization and Zero Trust security. Lider Network — Fortinet Authorized Partner.",
-    alternates: { canonical: `${baseUrl}/${locale}/fortinet/fortiap` },
+    alternates: {
+      canonical: `${baseUrl}/${locale}/fortinet/fortiap`,
+      languages: {
+        tr: `${baseUrl}/tr/fortinet/fortiap`,
+        en: `${baseUrl}/en/fortinet/fortiap`,
+        "x-default": `${baseUrl}/tr/fortinet/fortiap`,
+      },
+    },
   };
 }
 
