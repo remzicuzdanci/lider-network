@@ -16,6 +16,7 @@ import ITToolsWidget from "@/components/ui/ITToolsWidget";
 import "../globals.css";
 
 const GA_ID = "G-XC94L879N9";
+const AW_ID = "AW-18181879824";
 
 const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
@@ -261,6 +262,7 @@ export default async function LocaleLayout({
           function gtag(){dataLayer.push(arguments);}
           gtag('js', new Date());
           gtag('config', '${GA_ID}');
+          gtag('config', '${AW_ID}');
         `}</Script>
       </body>
     </html>
