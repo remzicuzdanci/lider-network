@@ -1,0 +1,21 @@
+{
+  "name": "Lider Network",
+  "short_name": "Lider Network",
+  "description": "Fortinet Yetkili Partner – Siber Güvenlik ve BT Altyapı Çözümleri",
+  "start_url": "/tr",
+  "display": "browser",
+  "background_color": "#101415",
+  "theme_color": "#101415",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

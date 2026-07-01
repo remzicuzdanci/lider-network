@@ -61,6 +61,13 @@ export default function ContactForm() {
       if (response.ok) {
         setSubmitStatus("success");
         reset();
+        if (typeof window !== "undefined" && typeof window.gtag === "function") {
+          window.gtag("event", "generate_lead", {
+            event_category: "contact_form",
+            event_label: "iletisim_formu",
+            send_to: ["G-XC94L879N9", "AW-18181879824"],
+          });
+        }
         setTimeout(() => setSubmitStatus("idle"), 6000);
       } else {
         setSubmitStatus("error");
