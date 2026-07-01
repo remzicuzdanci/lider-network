@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { Hanken_Grotesk, Inter, Geist } from "next/font/google";
+import Script from "next/script";
 import { routing } from "@/i18n/routing";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
@@ -13,6 +14,8 @@ import BackToTop from "@/components/ui/BackToTop";
 import CookieBanner from "@/components/ui/CookieBanner";
 import ITToolsWidget from "@/components/ui/ITToolsWidget";
 import "../globals.css";
+
+const GA_ID = "G-XC94L879N9";
 
 const hankenGrotesk = Hanken_Grotesk({
   subsets: ["latin"],
@@ -252,6 +255,13 @@ export default async function LocaleLayout({
             </>
           )}
         </NextIntlClientProvider>
+        <Script src={`https://www.googletagmanager.com/gtag/js?id=${GA_ID}`} strategy="afterInteractive" />
+        <Script id="ga4-init" strategy="afterInteractive">{`
+          window.dataLayer = window.dataLayer || [];
+          function gtag(){dataLayer.push(arguments);}
+          gtag('js', new Date());
+          gtag('config', '${GA_ID}');
+        `}</Script>
       </body>
     </html>
   );
