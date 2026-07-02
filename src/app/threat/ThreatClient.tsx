@@ -47,15 +47,15 @@ const SOURCES = [
 const STEPS = [
   {
     n: "1", icon: "🔌",
-    title: "External Connector'ları oluşturun (3 adet)",
-    body: "Security Fabric → External Connectors → Create New → Threat Feeds. Her feed için ayrı connector açın:",
+    title: "External Connector'ları oluşturun",
+    body: "Security Fabric → External Connectors → Create New → Threat Feeds. Kullanmak istediğiniz her feed türü için ayrı connector açın:",
     list: [
       "LIDER-DOMAIN → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/domain.txt",
       "LIDER-IP → Type: IP Address → URI: threat.lidernetwork.com.tr/feeds/ipv4.txt",
       "LIDER-URL → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/url.txt",
     ],
     urls: null,
-    tip: "Her connector için Refresh Rate: 60 dakika, Status: Enabled ayarlayın. Kayıt sonrası connector kartı turuncu → yeşile dönmeli. 60F/80F gibi küçük cihazlar için Lite Feed sekmesindeki URL'leri kullanın.",
+    tip: "Her connector için Refresh Rate: 60 dakika, Status: Enabled ayarlayın. Kayıt sonrası connector kartı turuncu → yeşile dönmeli. 60F/80F gibi düşük bellekli cihazlar için Lite Feed sekmesindeki URL'leri kullanın.",
   },
   {
     n: "2", icon: "🌐",
