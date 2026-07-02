@@ -48,14 +48,16 @@ const STEPS = [
   {
     n: "1", icon: "🔌",
     title: "External Connector'ları oluşturun",
-    body: "Security Fabric → External Connectors → Create New → Threat Feeds. Kullanmak istediğiniz her feed türü için ayrı connector açın:",
+    body: "Security Fabric → External Connectors → Create New → Threat Feeds. Her feed için ayrı connector açın:",
     list: [
-      "LIDER-DOMAIN → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/domain.txt",
-      "LIDER-IP → Type: IP Address → URI: threat.lidernetwork.com.tr/feeds/ipv4.txt",
-      "LIDER-URL → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/url.txt",
+      "LIDER-DOMAIN → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/domain.txt (DNS Filter için)",
+      "LIDER-IP → Type: IP Address → URI: threat.lidernetwork.com.tr/feeds/ipv4.txt (Firewall Policy için)",
+      "LIDER-IPV6 → Type: IP Address → URI: threat.lidernetwork.com.tr/feeds/ipv6.txt (Firewall Policy için)",
+      "LIDER-URL → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/url.txt (DNS Filter için)",
+      "LIDER-URL-WF → Type: Domain Name → URI: threat.lidernetwork.com.tr/feeds/url.txt (Web Filter'da görünmesi için ayrıca eklenir)",
     ],
     urls: null,
-    tip: "Her connector için Refresh Rate: 60 dakika, Status: Enabled ayarlayın. Kayıt sonrası connector kartı turuncu → yeşile dönmeli. 60F/80F gibi düşük bellekli cihazlar için Lite Feed sekmesindeki URL'leri kullanın.",
+    tip: "URL feed'i Web Filter'da otomatik çıkmaz — bunun için aynı URL ile ikinci bir Domain Name connector açmanız gerekir. Her connector için Refresh Rate: 60 dakika, Status: Enabled. Kayıt sonrası kart turuncu → yeşile dönmeli.",
   },
   {
     n: "2", icon: "🌐",
