@@ -70,9 +70,66 @@ async function fetchUsomJson(): Promise<{ domain: string[]; ipv4: string[]; ipv6
   } catch { return null; }
 }
 
+// Meşru servisler — bu domainler ve alt domainleri feed'e asla girmez
+const DOMAIN_WHITELIST = new Set([
+  // Sosyal medya & mesajlaşma
+  "whatsapp.com", "whatsapp.net",
+  "facebook.com", "fb.com", "fbcdn.net", "fb.me",
+  "instagram.com", "cdninstagram.com",
+  "twitter.com", "x.com", "t.co", "twimg.com",
+  "tiktok.com", "tiktokcdn.com", "tiktokv.com",
+  "linkedin.com", "licdn.com",
+  "pinterest.com",
+  "reddit.com", "redd.it", "redditmedia.com", "reddituploads.com",
+  "snapchat.com", "sc-cdn.net",
+  "telegram.org", "t.me",
+  "discord.com", "discordapp.com", "discordapp.net",
+  "signal.org",
+  "threads.net",
+  // Video & eğlence
+  "youtube.com", "youtu.be", "ytimg.com", "googlevideo.com", "yt3.ggpht.com",
+  "netflix.com", "nflxvideo.net", "nflximg.com",
+  "twitch.tv", "twitchsvc.net",
+  "spotify.com", "scdn.co",
+  // Google servisleri
+  "google.com", "googleapis.com", "gstatic.com", "googleusercontent.com",
+  "gmail.com", "google.com.tr",
+  "chrome.com", "chromium.org",
+  "android.com", "goo.gl",
+  // Microsoft servisleri
+  "microsoft.com", "microsoftonline.com", "live.com", "outlook.com",
+  "office.com", "office365.com", "sharepoint.com", "teams.microsoft.com",
+  "windows.com", "windowsupdate.com", "msftconnecttest.com",
+  "azure.com", "azureedge.net", "azurewebsites.net",
+  "skype.com", "sfbassets.com",
+  "bing.com", "msn.com",
+  // Apple servisleri
+  "apple.com", "icloud.com", "mzstatic.com", "aaplimg.com",
+  // Amazon / AWS
+  "amazon.com", "amazonaws.com", "cloudfront.net",
+  // CDN & altyapı
+  "cloudflare.com", "cloudflare-dns.com",
+  "akamai.com", "akamaihd.net", "akamaized.net",
+  "fastly.com", "fastly.net",
+  "jsdelivr.net", "unpkg.com",
+]);
+
+function isDomainWhitelisted(domain: string): boolean {
+  const d = domain.toLowerCase();
+  if (DOMAIN_WHITELIST.has(d)) return true;
+  // Alt domain kontrolü: "sub.whatsapp.net" → "whatsapp.net" eşleşir
+  const parts = d.split(".");
+  for (let i = 1; i < parts.length - 1; i++) {
+    if (DOMAIN_WHITELIST.has(parts.slice(i).join("."))) return true;
+  }
+  return false;
+}
+
 // Tüm domain kaynakları — paralel çekilir, birleştirilir
 const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
-  // Steven Black base ~130k — adware/malware, sosyal medya yok
+  // Hagezi Pro hosts formatı ~400k domain — reklam/tracking/malware
+  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",            fmt: "hosts" },
+  // Steven Black base ~130k — adware/malware
   { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",                      fmt: "hosts" },
   // USOM / anil-yelken mirror — Türkiye güvenlik tehditleri
   { url: "https://www.usom.gov.tr/url-list.txt",                                                   fmt: "plain" },
@@ -260,7 +317,7 @@ export async function GET(req: Request) {
   const mergeWithUsom = (base: string[], usom: string[] | undefined) =>
     usom?.length ? [...new Set([...base, ...usom])].sort() : base;
 
-  const domainRecords = mergeWithUsom(domainRes.records, usom?.domain);
+  const domainRecords = mergeWithUsom(domainRes.records, usom?.domain).filter(d => !isDomainWhitelisted(d));
   const ipv4Records   = mergeWithUsom(ipv4Res.records,   usom?.ipv4);
   const ipv6Records   = mergeWithUsom(ipv6Res.records,   usom?.ipv6);
   const urlRecords    = mergeWithUsom(urlRes.records,     usom?.url);
