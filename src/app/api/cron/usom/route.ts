@@ -112,6 +112,44 @@ const DOMAIN_WHITELIST = new Set([
   "akamai.com", "akamaihd.net", "akamaized.net",
   "fastly.com", "fastly.net",
   "jsdelivr.net", "unpkg.com",
+  // Fortinet / FortiGate — cihazın kendi update & lisans sunucuları
+  "fortinet.com", "fortiguard.com", "forticloud.com", "fortigate.com",
+  // Video konferans
+  "zoom.us", "zoom.com", "zoomgov.com", "zoomcdn.com",
+  "webex.com", "webexapis.com", "webex.com.tr",
+  "gotomeeting.com", "logmein.com",
+  // Kurumsal iletişim & iş birliği
+  "slack.com", "slack-edge.com", "slackb.com",
+  "dropbox.com", "dropboxstatic.com",
+  "box.com", "boxcdn.net",
+  "notion.so", "notion.com",
+  "trello.com", "atlassian.com", "atlassian.net", "jira.com",
+  // Geliştirici araçları
+  "github.com", "github.io", "githubusercontent.com", "githubassets.com",
+  "gitlab.com",
+  "npmjs.com", "npm.community",
+  // Adobe — lisans & CC sunucuları
+  "adobe.com", "adobecc.com", "typekit.com", "adobedtm.com", "adobeaemcloud.com",
+  // Oyun & eğlence platformları
+  "steampowered.com", "steamcontent.com", "steamstatic.com",
+  "epicgames.com", "unrealengine.com",
+  "ea.com", "eaassets-a.akamaihd.net",
+  "battle.net", "blizzard.com",
+  // Türkiye e-devlet & kamu
+  "turkiye.gov.tr", "e-devlet.com",
+  "sgk.gov.tr", "gib.gov.tr", "gib.gov.tr",
+  "nvi.gov.tr", "meb.gov.tr", "saglik.gov.tr",
+  "btk.gov.tr", "icisleri.gov.tr",
+  // Türk bankaları & finans
+  "garanti.com.tr", "garantibbva.com.tr",
+  "isbank.com.tr",
+  "akbank.com",
+  "yapikredi.com.tr", "ykb.com",
+  "halkbank.com.tr",
+  "ziraatbank.com.tr", "ziraat.com.tr",
+  "vakifbank.com.tr",
+  "enpara.com", "fibabanka.com.tr",
+  "iyzico.com", "paytr.com", "param.com.tr",
 ]);
 
 function isDomainWhitelisted(domain: string): boolean {
