@@ -116,15 +116,17 @@ export async function GET(req: Request) {
   const feeds = [
     { type: "domain",   records: domains },
     { type: "ipv4",     records: ipv4s },
-    { type: "ipv6",     records: [] as string[] },
     { type: "url",      records: urls },
-    // URL lite feeds — URLhaus/OpenPhish zaten aktif kayıtlar, aynı içerik
     { type: "url_90d",  records: urls },
     { type: "url_180d", records: urls },
     { type: "url_365d", records: urls },
   ];
 
   for (const f of feeds) {
+    if (f.records.length === 0) {
+      writeResults[f.type] = { ok: false, status: 0, body: "SKIPPED: fetch returned 0 records" };
+      continue;
+    }
     writeResults[f.type] = await supabaseUpsert(
       f.type,
       f.records.join("\n"),
