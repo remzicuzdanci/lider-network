@@ -140,6 +140,15 @@ const DOMAIN_WHITELIST = new Set([
   "sgk.gov.tr", "gib.gov.tr", "gib.gov.tr",
   "nvi.gov.tr", "meb.gov.tr", "saglik.gov.tr",
   "btk.gov.tr", "icisleri.gov.tr",
+  // Uzak masaüstü & destek araçları
+  "anydesk.com", "anydesk.net",
+  "teamviewer.com", "teamviewer.net",
+  "rustdesk.com",
+  "supremocontrol.com",
+  "splashtop.com",
+  "parsec.app",
+  "remotepc.com",
+  "showmypc.com",
   // Türk bankaları & finans
   "garanti.com.tr", "garantibbva.com.tr",
   "isbank.com.tr",
