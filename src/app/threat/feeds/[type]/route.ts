@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 
@@ -23,7 +23,6 @@ export async function GET(
     return new NextResponse("Not Found", { status: 404 });
   }
 
-  // DB'deki feed_type: tam → "domain", lite → "domain_90d"
   const feedType = isLite ? `${base}_${maybeSuffix}` : base;
 
   const sb = createClient(
@@ -38,7 +37,7 @@ export async function GET(
     .single();
 
   if (error || !data?.content) {
-    // Lite feed henüz yazılmamışsa tam feed'i dön
+    // Lite feed yoksa tam feed'e dön
     if (isLite) {
       const { data: full } = await sb
         .from("threat_feeds")
@@ -46,7 +45,7 @@ export async function GET(
         .eq("feed_type", base)
         .single();
       if (full?.content) {
-        return resolveAndServe(full.content, base, full.updated_at, maybeSuffix);
+        return resolveAndServe(full.content, base, full.updated_at, maybeSuffix, sb);
       }
     }
     return new NextResponse(`# ${feedType} feed henüz oluşturulmadı\n`, {
@@ -55,36 +54,45 @@ export async function GET(
     });
   }
 
-  return resolveAndServe(data.content, feedType, data.updated_at, isLite ? maybeSuffix : undefined);
+  return resolveAndServe(data.content, base, data.updated_at, isLite ? maybeSuffix : undefined, sb);
 }
 
-// Storage referansını çöz ve içeriği döndür
 async function resolveAndServe(
   raw: string,
-  feedType: string,
+  base: string,
   updatedAt: string | null,
-  window?: string
+  window: string | undefined,
+  sb: SupabaseClient
 ): Promise<NextResponse> {
+  const feedType = window ? `${base}_${window}` : base;
   let content = raw;
-  if (raw.startsWith("storage:")) {
-    const path = raw.slice("storage:".length); // "threat-feeds/domain.txt"
-    const url  = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path}`;
-    try {
-      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
-      if (!res.ok) {
-        return new NextResponse("# Feed geçici olarak kullanılamıyor\n", {
+
+  // Chunk'lara bölünmüş büyük feed (domain__0, domain__1, …)
+  if (raw.startsWith("chunked:")) {
+    const N = parseInt(raw.slice("chunked:".length), 10);
+    if (!isNaN(N) && N > 0) {
+      const keys = Array.from({ length: N }, (_, i) => `${base}__${i}`);
+      const { data: rows } = await sb
+        .from("threat_feeds")
+        .select("feed_type, content")
+        .in("feed_type", keys);
+
+      if (rows && rows.length > 0) {
+        rows.sort((a, b) => {
+          const ai = parseInt(a.feed_type.split("__")[1] ?? "0", 10);
+          const bi = parseInt(b.feed_type.split("__")[1] ?? "0", 10);
+          return ai - bi;
+        });
+        content = rows.map(r => r.content ?? "").join("\n");
+      } else {
+        return new NextResponse("# Feed yükleniyor, lütfen bekleyin\n", {
           status: 503,
           headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" },
         });
       }
-      content = await res.text();
-    } catch {
-      return new NextResponse("# Feed geçici olarak kullanılamıyor\n", {
-        status: 503,
-        headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" },
-      });
     }
   }
+
   return txtResponse(content, feedType, updatedAt, window);
 }
 

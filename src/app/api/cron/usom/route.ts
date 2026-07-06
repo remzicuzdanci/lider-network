@@ -189,46 +189,13 @@ async function fetchAndMergeUrls(urls: string[], parse: (raw: string) => string[
   return { records: [...set].sort(), sourceLog: log };
 }
 
-const STORAGE_BUCKET = "threat-feeds";
+// Büyük içerik için chunk boyutu (~800KB) — PostgREST body limiti içinde kalır
+const CHUNK_SIZE = 800_000;
 
-// Bucket oluştur (zaten varsa hata görmezden gelinir)
-async function ensureStorageBucket(sbUrl: string, key: string): Promise<void> {
-  await fetch(`${sbUrl}/storage/v1/bucket`, {
-    method: "POST",
-    headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ id: STORAGE_BUCKET, name: STORAGE_BUCKET, public: true }),
-    signal: AbortSignal.timeout(10_000),
-  }).catch(() => null);
-}
-
-async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
+async function sbWrite(feedType: string, content: string, count: number, now: string): Promise<boolean> {
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key   = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!sbUrl || !key) return false;
-
-  const now = new Date().toISOString();
-
-  // Büyük içerik (>1MB) → Supabase Storage'a yükle, tabloda referans tut
-  let tableContent = content;
-  if (content.length > 1_000_000) {
-    await ensureStorageBucket(sbUrl, key);
-    const uploadRes = await fetch(`${sbUrl}/storage/v1/object/${STORAGE_BUCKET}/${feedType}.txt`, {
-      method: "POST",
-      headers: {
-        "apikey": key,
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "text/plain; charset=utf-8",
-        "x-upsert": "true",
-        "Cache-Control": "no-cache",
-      },
-      body: content,
-      signal: AbortSignal.timeout(120_000),
-    });
-    if (!uploadRes.ok) return false;
-    tableContent = `storage:${STORAGE_BUCKET}/${feedType}.txt`;
-  }
-
-  // Metadata (ve küçük içerik) tabloya yaz
   try {
     const r = await fetch(`${sbUrl}/rest/v1/threat_feeds`, {
       method: "POST",
@@ -238,11 +205,45 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates,return=minimal",
       },
-      body: JSON.stringify([{ feed_type: feedType, content: tableContent, record_count: count, updated_at: now }]),
-      signal: AbortSignal.timeout(15_000),
+      body: JSON.stringify([{ feed_type: feedType, content, record_count: count, updated_at: now }]),
+      signal: AbortSignal.timeout(30_000),
     });
     return r.ok;
   } catch { return false; }
+}
+
+async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
+  const now = new Date().toISOString();
+
+  // Küçük içerik → doğrudan yaz
+  if (content.length <= CHUNK_SIZE) {
+    return sbWrite(feedType, content, count, now);
+  }
+
+  // Büyük içerik → satır sınırlarında parçala, numaralı satırlara yaz
+  const chunks: string[] = [];
+  let cur = "";
+  for (const line of content.split("\n")) {
+    const candidate = cur ? cur + "\n" + line : line;
+    if (candidate.length > CHUNK_SIZE) {
+      if (cur) chunks.push(cur);
+      cur = line;
+    } else {
+      cur = candidate;
+    }
+  }
+  if (cur) chunks.push(cur);
+
+  // Ana satır: kayıt sayısı + chunk işareti
+  const mainOk = await sbWrite(feedType, `chunked:${chunks.length}`, count, now);
+  if (!mainOk) return false;
+
+  // Chunk satırları: domain__0, domain__1, …
+  for (let i = 0; i < chunks.length; i++) {
+    const ok = await sbWrite(`${feedType}__${i}`, chunks[i], 0, now);
+    if (!ok) return false;
+  }
+  return true;
 }
 
 export async function GET(req: Request) {
