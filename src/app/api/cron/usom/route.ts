@@ -8,23 +8,37 @@ const HEADERS = {
   "Accept": "text/plain,*/*",
 };
 
-// Domain: TÜM kaynaklar paralel çekilir ve birleştirilir
-const DOMAIN_SOURCES = [
-  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", fmt: "hosts" as const },
-  { url: "https://www.usom.gov.tr/url-list.txt",                              fmt: "plain" as const },
-  { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt", fmt: "plain" as const },
+// Tüm domain kaynakları — paralel çekilir, birleştirilir
+const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
+  // Hagezi Pro hosts formatı ~400k domain — GitHub CDN
+  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",            fmt: "hosts" },
+  // Steven Black base ~130k
+  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",                      fmt: "hosts" },
+  // Steven Black fakenews+gambling+porn+social ek domainler
+  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn-social/hosts", fmt: "hosts" },
+  // USOM / anil-yelken mirror
+  { url: "https://www.usom.gov.tr/url-list.txt",                                                   fmt: "plain" },
+  { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",               fmt: "plain" },
 ];
 
-// Diğer feed'ler: ilk başarılı kaynak kullanılır
-const IP_SOURCES   = [
+// Tüm IPv4 kaynakları — paralel çekilir, birleştirilir
+const IPV4_SOURCES = [
+  "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/1.txt",  // seviye 1 — en kapsamlı
+  "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/2.txt",
   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
+  "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",               // Feodo botnet C2
+  "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",      // Emerging Threats
   "https://www.usom.gov.tr/ip-list.txt",
   "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
 ];
+
+// IPv6 kaynakları
 const IPV6_SOURCES = [
   "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ipv6.txt",
 ];
-const URL_SOURCES  = [
+
+// URL kaynakları — paralel çekilir, birleştirilir
+const URL_SOURCES = [
   "https://urlhaus.abuse.ch/downloads/text_online/",
   "https://openphish.com/feed.txt",
   "https://www.usom.gov.tr/zararli-baglantilar.txt",
@@ -40,22 +54,23 @@ async function fetchText(url: string, timeoutMs = 45_000): Promise<string | null
   } catch { return null; }
 }
 
-// hosts dosyası: "0.0.0.0 hostname" formatından hostname çıkar
-function parseHostsFormat(raw: string): string[] {
+function parseHosts(raw: string): string[] {
   const out: string[] = [];
   for (const line of raw.split(/\r?\n/)) {
     const l = line.trim();
     if (!l || l.startsWith("#")) continue;
-    const m = l.match(/^0\.0\.0\.0\s+(\S+)/);
-    if (m && m[1] !== "0.0.0.0" && m[1] !== "localhost" && m[1].includes(".")) {
-      out.push(m[1].toLowerCase());
+    const m = l.match(/^(?:0\.0\.0\.0|127\.0\.0\.1)\s+(\S+)/);
+    if (m) {
+      const h = m[1].toLowerCase();
+      if (h !== "0.0.0.0" && h !== "localhost" && h !== "localhost.localdomain" && h.includes(".")) {
+        out.push(h);
+      }
     }
   }
   return out;
 }
 
-// Plain metin: her satır bir kayıt
-function parsePlainFormat(raw: string): string[] {
+function parsePlain(raw: string): string[] {
   return raw.split(/\r?\n/)
     .map(l => l.trim())
     .filter(l => l && !l.startsWith("#") && !l.startsWith("!") && !l.startsWith("//") && l.length > 3);
@@ -67,37 +82,50 @@ function parseIpv4(raw: string): string[] {
     .filter(l => l && !l.startsWith("#") && /^(\d{1,3}\.){3}\d{1,3}/.test(l));
 }
 
-// Tüm domain kaynaklarını paralel çek ve birleştir
-async function fetchDomains(): Promise<{ records: string[]; sources: string[] }> {
-  const results = await Promise.all(
-    DOMAIN_SOURCES.map(async ({ url, fmt }) => {
-      const text = await fetchText(url);
-      if (!text) return { domains: [] as string[], url, success: false };
-      const domains = fmt === "hosts" ? parseHostsFormat(text) : parsePlainFormat(text);
-      return { domains, url, success: domains.length > 0 };
-    })
-  );
-
-  const combined = new Set<string>();
-  const usedSources: string[] = [];
-  for (const r of results) {
-    if (r.success) {
-      r.domains.forEach(d => combined.add(d));
-      usedSources.push(`${r.url.split("/").slice(-1)[0]}(${r.domains.length})`);
-    }
-  }
-  return { records: [...combined].sort(), sources: usedSources };
+function parseIpv6(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#") && l.includes(":"));
 }
 
-// İlk başarılı kaynaktan veri çek
-async function fetchFirst(urls: string[], parse: (raw: string) => string[]): Promise<{ records: string[]; source: string }> {
-  for (const url of urls) {
-    const text = await fetchText(url);
-    if (!text) continue;
-    const records = [...new Set(parse(text))].sort();
-    if (records.length > 0) return { records, source: url.split("/").slice(-1)[0] };
+// Kaynakları paralel çek ve birleştir
+async function fetchAndMerge(
+  sources: { url: string; fmt: "hosts" | "plain" }[],
+  parse: (raw: string, fmt: "hosts" | "plain") => string[]
+): Promise<{ records: string[]; sourceLog: string[] }> {
+  const results = await Promise.all(
+    sources.map(async ({ url, fmt }) => {
+      const text = await fetchText(url);
+      if (!text) return { items: [] as string[], label: "", ok: false };
+      const items = parse(text, fmt);
+      const label = url.split("/").pop() ?? url;
+      return { items, label: `${label}(${items.length})`, ok: items.length > 0 };
+    })
+  );
+  const set = new Set<string>();
+  const log: string[] = [];
+  for (const r of results) {
+    if (r.ok) { r.items.forEach(i => set.add(i)); log.push(r.label); }
   }
-  return { records: [], source: "none" };
+  return { records: [...set].sort(), sourceLog: log };
+}
+
+async function fetchAndMergeUrls(urls: string[], parse: (raw: string) => string[]): Promise<{ records: string[]; sourceLog: string[] }> {
+  const results = await Promise.all(
+    urls.map(async url => {
+      const text = await fetchText(url);
+      if (!text) return { items: [] as string[], label: "", ok: false };
+      const items = parse(text);
+      const label = url.split("/").pop() ?? url;
+      return { items, label: `${label}(${items.length})`, ok: items.length > 0 };
+    })
+  );
+  const set = new Set<string>();
+  const log: string[] = [];
+  for (const r of results) {
+    if (r.ok) { r.items.forEach(i => set.add(i)); log.push(r.label); }
+  }
+  return { records: [...set].sort(), sourceLog: log };
 }
 
 async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
@@ -132,27 +160,27 @@ export async function GET(req: Request) {
   const started = Date.now();
 
   const [domainRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
-    fetchDomains(),
-    fetchFirst(IP_SOURCES,   parseIpv4),
-    fetchFirst(IPV6_SOURCES, parsePlainFormat),
-    fetchFirst(URL_SOURCES,  parsePlainFormat),
+    fetchAndMerge(DOMAIN_SOURCES, (raw, fmt) => fmt === "hosts" ? parseHosts(raw) : parsePlain(raw)),
+    fetchAndMergeUrls(IPV4_SOURCES, parseIpv4),
+    fetchAndMergeUrls(IPV6_SOURCES, parseIpv6),
+    fetchAndMergeUrls(URL_SOURCES,  parsePlain),
   ]);
 
   const feeds = [
-    { type: "domain", records: domainRes.records, source: domainRes.sources.join("+") || "none" },
-    { type: "ipv4",   records: ipv4Res.records,   source: ipv4Res.source },
-    { type: "ipv6",   records: ipv6Res.records,   source: ipv6Res.source },
-    { type: "url",    records: urlRes.records,     source: urlRes.source },
+    { type: "domain", records: domainRes.records, sources: domainRes.sourceLog },
+    { type: "ipv4",   records: ipv4Res.records,   sources: ipv4Res.sourceLog },
+    { type: "ipv6",   records: ipv6Res.records,   sources: ipv6Res.sourceLog },
+    { type: "url",    records: urlRes.records,     sources: urlRes.sourceLog },
   ];
 
-  const results: Record<string, { count: number; source: string; ok: boolean }> = {};
+  const results: Record<string, { count: number; sources: string[]; ok: boolean }> = {};
   for (const f of feeds) {
     if (f.records.length === 0) {
-      results[f.type] = { count: 0, source: f.source, ok: false };
+      results[f.type] = { count: 0, sources: f.sources, ok: false };
       continue;
     }
     const ok = await supabaseUpsert(f.type, f.records.join("\n"), f.records.length);
-    results[f.type] = { count: f.records.length, source: f.source, ok };
+    results[f.type] = { count: f.records.length, sources: f.sources, ok };
   }
 
   return NextResponse.json({
