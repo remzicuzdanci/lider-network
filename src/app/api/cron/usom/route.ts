@@ -189,14 +189,46 @@ async function fetchAndMergeUrls(urls: string[], parse: (raw: string) => string[
   return { records: [...set].sort(), sourceLog: log };
 }
 
+const STORAGE_BUCKET = "threat-feeds";
+
+// Bucket oluştur (zaten varsa hata görmezden gelinir)
+async function ensureStorageBucket(sbUrl: string, key: string): Promise<void> {
+  await fetch(`${sbUrl}/storage/v1/bucket`, {
+    method: "POST",
+    headers: { "apikey": key, "Authorization": `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ id: STORAGE_BUCKET, name: STORAGE_BUCKET, public: true }),
+    signal: AbortSignal.timeout(10_000),
+  }).catch(() => null);
+}
+
 async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key   = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!sbUrl || !key) return false;
 
-  // Domain içeriği 400k+ satırda ~10MB olabilir — 120s yeterli
-  const timeoutMs = feedType === "domain" ? 120_000 : 30_000;
+  const now = new Date().toISOString();
 
+  // Büyük içerik (>1MB) → Supabase Storage'a yükle, tabloda referans tut
+  let tableContent = content;
+  if (content.length > 1_000_000) {
+    await ensureStorageBucket(sbUrl, key);
+    const uploadRes = await fetch(`${sbUrl}/storage/v1/object/${STORAGE_BUCKET}/${feedType}.txt`, {
+      method: "POST",
+      headers: {
+        "apikey": key,
+        "Authorization": `Bearer ${key}`,
+        "Content-Type": "text/plain; charset=utf-8",
+        "x-upsert": "true",
+        "Cache-Control": "no-cache",
+      },
+      body: content,
+      signal: AbortSignal.timeout(120_000),
+    });
+    if (!uploadRes.ok) return false;
+    tableContent = `storage:${STORAGE_BUCKET}/${feedType}.txt`;
+  }
+
+  // Metadata (ve küçük içerik) tabloya yaz
   try {
     const r = await fetch(`${sbUrl}/rest/v1/threat_feeds`, {
       method: "POST",
@@ -206,8 +238,8 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
         "Content-Type": "application/json",
         "Prefer": "resolution=merge-duplicates,return=minimal",
       },
-      body: JSON.stringify([{ feed_type: feedType, content, record_count: count, updated_at: new Date().toISOString() }]),
-      signal: AbortSignal.timeout(timeoutMs),
+      body: JSON.stringify([{ feed_type: feedType, content: tableContent, record_count: count, updated_at: now }]),
+      signal: AbortSignal.timeout(15_000),
     });
     return r.ok;
   } catch { return false; }

@@ -46,7 +46,7 @@ export async function GET(
         .eq("feed_type", base)
         .single();
       if (full?.content) {
-        return txtResponse(full.content, base, full.updated_at, maybeSuffix);
+        return resolveAndServe(full.content, base, full.updated_at, maybeSuffix);
       }
     }
     return new NextResponse(`# ${feedType} feed henüz oluşturulmadı\n`, {
@@ -55,7 +55,37 @@ export async function GET(
     });
   }
 
-  return txtResponse(data.content, feedType, data.updated_at, isLite ? maybeSuffix : undefined);
+  return resolveAndServe(data.content, feedType, data.updated_at, isLite ? maybeSuffix : undefined);
+}
+
+// Storage referansını çöz ve içeriği döndür
+async function resolveAndServe(
+  raw: string,
+  feedType: string,
+  updatedAt: string | null,
+  window?: string
+): Promise<NextResponse> {
+  let content = raw;
+  if (raw.startsWith("storage:")) {
+    const path = raw.slice("storage:".length); // "threat-feeds/domain.txt"
+    const url  = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/${path}`;
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(30_000) });
+      if (!res.ok) {
+        return new NextResponse("# Feed geçici olarak kullanılamıyor\n", {
+          status: 503,
+          headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" },
+        });
+      }
+      content = await res.text();
+    } catch {
+      return new NextResponse("# Feed geçici olarak kullanılamıyor\n", {
+        status: 503,
+        headers: { "Content-Type": "text/plain; charset=utf-8", "Retry-After": "60" },
+      });
+    }
+  }
+  return txtResponse(content, feedType, updatedAt, window);
 }
 
 function txtResponse(content: string, feedType: string, updatedAt: string | null, window?: string) {
