@@ -76,8 +76,6 @@ const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
   { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",            fmt: "hosts" },
   // Steven Black base ~130k
   { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",                      fmt: "hosts" },
-  // Steven Black fakenews+gambling+porn (social hariç — WhatsApp/Meta bloklanmasın)
-  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/alternates/fakenews-gambling-porn/hosts", fmt: "hosts" },
   // USOM / anil-yelken mirror
   { url: "https://www.usom.gov.tr/url-list.txt",                                                   fmt: "plain" },
   { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",               fmt: "plain" },
