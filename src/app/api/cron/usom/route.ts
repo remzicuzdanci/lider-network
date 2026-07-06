@@ -193,6 +193,10 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
   const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key   = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!sbUrl || !key) return false;
+
+  // Domain içeriği 400k+ satırda ~10MB olabilir — 120s yeterli
+  const timeoutMs = feedType === "domain" ? 120_000 : 30_000;
+
   try {
     const r = await fetch(`${sbUrl}/rest/v1/threat_feeds`, {
       method: "POST",
@@ -203,7 +207,7 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
         "Prefer": "resolution=merge-duplicates,return=minimal",
       },
       body: JSON.stringify([{ feed_type: feedType, content, record_count: count, updated_at: new Date().toISOString() }]),
-      signal: AbortSignal.timeout(20_000),
+      signal: AbortSignal.timeout(timeoutMs),
     });
     return r.ok;
   } catch { return false; }
