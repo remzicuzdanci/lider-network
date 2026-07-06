@@ -8,40 +8,28 @@ const HEADERS = {
   "Accept": "text/plain,*/*",
 };
 
-// Her feed için kaynak listesi — ilk başarılı olan kullanılır
-const SOURCES: Record<string, string[]> = {
-  domain: [
-    // Hagezi Pro Plus ~500k domain, GitHub CDN üzerinden hızlı
-    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.plus.txt",
-    // Yedek: Hagezi Pro ~400k
-    "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt",
-    // Son çare: USOM TXT (az kayıt ama erişilebilir)
-    "https://www.usom.gov.tr/url-list.txt",
-    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",
-  ],
-  ipv4: [
-    "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
-    "https://www.usom.gov.tr/ip-list.txt",
-    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
-  ],
-  ipv6: [
-    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ipv6.txt",
-  ],
-  url: [
-    "https://urlhaus.abuse.ch/downloads/text_online/",
-    "https://openphish.com/feed.txt",
-    "https://www.usom.gov.tr/zararli-baglantilar.txt",
-    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-url.txt",
-  ],
-};
+// Domain: TÜM kaynaklar paralel çekilir ve birleştirilir
+const DOMAIN_SOURCES = [
+  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", fmt: "hosts" as const },
+  { url: "https://www.usom.gov.tr/url-list.txt",                              fmt: "plain" as const },
+  { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt", fmt: "plain" as const },
+];
 
-// Minimum kayıt eşiği — altında kalırsa bir sonraki kaynağa geçilir
-const MIN_RECORDS: Record<string, number> = {
-  domain: 10_000,
-  ipv4:   1_000,
-  ipv6:   1,
-  url:    100,
-};
+// Diğer feed'ler: ilk başarılı kaynak kullanılır
+const IP_SOURCES   = [
+  "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
+  "https://www.usom.gov.tr/ip-list.txt",
+  "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
+];
+const IPV6_SOURCES = [
+  "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ipv6.txt",
+];
+const URL_SOURCES  = [
+  "https://urlhaus.abuse.ch/downloads/text_online/",
+  "https://openphish.com/feed.txt",
+  "https://www.usom.gov.tr/zararli-baglantilar.txt",
+  "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-url.txt",
+];
 
 async function fetchText(url: string, timeoutMs = 45_000): Promise<string | null> {
   try {
@@ -52,22 +40,62 @@ async function fetchText(url: string, timeoutMs = 45_000): Promise<string | null
   } catch { return null; }
 }
 
-function parseLines(raw: string, feedType: string): string[] {
-  const lines = raw.split(/\r?\n/).map(l => l.trim());
-  if (feedType === "ipv4") {
-    return lines.filter(l => l && !l.startsWith("#") && /^(\d{1,3}\.){3}\d{1,3}/.test(l));
+// hosts dosyası: "0.0.0.0 hostname" formatından hostname çıkar
+function parseHostsFormat(raw: string): string[] {
+  const out: string[] = [];
+  for (const line of raw.split(/\r?\n/)) {
+    const l = line.trim();
+    if (!l || l.startsWith("#")) continue;
+    const m = l.match(/^0\.0\.0\.0\s+(\S+)/);
+    if (m && m[1] !== "0.0.0.0" && m[1] !== "localhost" && m[1].includes(".")) {
+      out.push(m[1].toLowerCase());
+    }
   }
-  // Domain / URL: yorum satırlarını at, boş olmayanları al
-  return lines.filter(l => l && !l.startsWith("#") && !l.startsWith("!") && !l.startsWith("//") && l.length > 3);
+  return out;
 }
 
-async function fetchBest(feedType: string): Promise<{ records: string[]; source: string }> {
-  const min = MIN_RECORDS[feedType] ?? 1;
-  for (const url of SOURCES[feedType] ?? []) {
+// Plain metin: her satır bir kayıt
+function parsePlainFormat(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#") && !l.startsWith("!") && !l.startsWith("//") && l.length > 3);
+}
+
+function parseIpv4(raw: string): string[] {
+  return raw.split(/\r?\n/)
+    .map(l => l.trim().split(/\s+/)[0])
+    .filter(l => l && !l.startsWith("#") && /^(\d{1,3}\.){3}\d{1,3}/.test(l));
+}
+
+// Tüm domain kaynaklarını paralel çek ve birleştir
+async function fetchDomains(): Promise<{ records: string[]; sources: string[] }> {
+  const results = await Promise.all(
+    DOMAIN_SOURCES.map(async ({ url, fmt }) => {
+      const text = await fetchText(url);
+      if (!text) return { domains: [] as string[], url, success: false };
+      const domains = fmt === "hosts" ? parseHostsFormat(text) : parsePlainFormat(text);
+      return { domains, url, success: domains.length > 0 };
+    })
+  );
+
+  const combined = new Set<string>();
+  const usedSources: string[] = [];
+  for (const r of results) {
+    if (r.success) {
+      r.domains.forEach(d => combined.add(d));
+      usedSources.push(`${r.url.split("/").slice(-1)[0]}(${r.domains.length})`);
+    }
+  }
+  return { records: [...combined].sort(), sources: usedSources };
+}
+
+// İlk başarılı kaynaktan veri çek
+async function fetchFirst(urls: string[], parse: (raw: string) => string[]): Promise<{ records: string[]; source: string }> {
+  for (const url of urls) {
     const text = await fetchText(url);
     if (!text) continue;
-    const records = [...new Set(parseLines(text, feedType))].sort();
-    if (records.length >= min) return { records, source: url };
+    const records = [...new Set(parse(text))].sort();
+    if (records.length > 0) return { records, source: url.split("/").slice(-1)[0] };
   }
   return { records: [], source: "none" };
 }
@@ -103,23 +131,21 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  // Tüm feed'leri paralel çek
   const [domainRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
-    fetchBest("domain"),
-    fetchBest("ipv4"),
-    fetchBest("ipv6"),
-    fetchBest("url"),
+    fetchDomains(),
+    fetchFirst(IP_SOURCES,   parseIpv4),
+    fetchFirst(IPV6_SOURCES, parsePlainFormat),
+    fetchFirst(URL_SOURCES,  parsePlainFormat),
   ]);
 
   const feeds = [
-    { type: "domain", ...domainRes },
-    { type: "ipv4",   ...ipv4Res },
-    { type: "ipv6",   ...ipv6Res },
-    { type: "url",    ...urlRes },
+    { type: "domain", records: domainRes.records, source: domainRes.sources.join("+") || "none" },
+    { type: "ipv4",   records: ipv4Res.records,   source: ipv4Res.source },
+    { type: "ipv6",   records: ipv6Res.records,   source: ipv6Res.source },
+    { type: "url",    records: urlRes.records,     source: urlRes.source },
   ];
 
   const results: Record<string, { count: number; source: string; ok: boolean }> = {};
-
   for (const f of feeds) {
     if (f.records.length === 0) {
       results[f.type] = { count: 0, source: f.source, ok: false };
