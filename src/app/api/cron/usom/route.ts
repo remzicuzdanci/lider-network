@@ -11,7 +11,9 @@ const BROWSER_HEADERS = {
 };
 
 const FALLBACK_FEEDS: Record<string, string> = {
-  ipv4: "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
+  // Hagezi mini: ~90k domain, plain format, GitHub CDN üzerinden hızlı gelir
+  domain: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/mini.txt",
+  ipv4:   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
 };
 
 const URL_FEEDS = [
@@ -95,18 +97,29 @@ export async function GET(req: Request) {
   const started = Date.now();
 
   // Veri çek
-  const [ipTxt, urls] = await Promise.all([
+  const [domainTxt, ipTxt, urls] = await Promise.all([
+    fetchText(FALLBACK_FEEDS.domain),
     fetchText(FALLBACK_FEEDS.ipv4),
     fetchUrlFeeds(),
   ]);
 
   const ipv4s = ipTxt ? [...new Set(parseIpFile(ipTxt))].sort() : [];
 
-  // Domain listesini URL feed'inden türet — ayrı fetch gerekmez, kesin çalışır
-  const domains = [...new Set(
-    urls.map(u => { try { return new URL(u).hostname; } catch { return null; } })
-        .filter((d): d is string => !!d && d.includes(".") && !d.match(/^\d+\.\d+\.\d+\.\d+$/))
-  )].sort();
+  // Hagezi plain domain format: her satırda bir domain (# ile başlayanlar yorum)
+  const domainSet = new Set<string>();
+  if (domainTxt) {
+    for (const line of domainTxt.split(/\r?\n/)) {
+      const d = line.trim();
+      if (d && !d.startsWith("#") && !d.startsWith("!") && d.includes(".")) {
+        domainSet.add(d.toLowerCase());
+      }
+    }
+  }
+  // URL feed'indeki host adlarını da ekle
+  for (const u of urls) {
+    try { const h = new URL(u).hostname; if (h.includes(".")) domainSet.add(h); } catch { /* skip */ }
+  }
+  const domains = [...domainSet].sort();
 
   // Her feed için Supabase'e yaz, sonucu kaydet
   const writeResults: Record<string, { ok: boolean; status: number; body: string }> = {};
