@@ -72,11 +72,9 @@ async function fetchUsomJson(): Promise<{ domain: string[]; ipv4: string[]; ipv6
 
 // Tüm domain kaynakları — paralel çekilir, birleştirilir
 const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
-  // Hagezi Pro hosts formatı ~400k domain — GitHub CDN
-  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",            fmt: "hosts" },
-  // Steven Black base ~130k
+  // Steven Black base ~130k — adware/malware, sosyal medya yok
   { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",                      fmt: "hosts" },
-  // USOM / anil-yelken mirror
+  // USOM / anil-yelken mirror — Türkiye güvenlik tehditleri
   { url: "https://www.usom.gov.tr/url-list.txt",                                                   fmt: "plain" },
   { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",               fmt: "plain" },
 ];
