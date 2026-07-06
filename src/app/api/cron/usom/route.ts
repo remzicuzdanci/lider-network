@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -189,38 +190,34 @@ async function fetchAndMergeUrls(urls: string[], parse: (raw: string) => string[
   return { records: [...set].sort(), sourceLog: log };
 }
 
-// Büyük içerik için chunk boyutu (~800KB) — PostgREST body limiti içinde kalır
+// Büyük içerik için chunk boyutu (~800KB) — güvenli sınır
 const CHUNK_SIZE = 800_000;
 
-async function sbWrite(feedType: string, content: string, count: number, now: string): Promise<boolean> {
-  const sbUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key   = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!sbUrl || !key) return false;
-  try {
-    const r = await fetch(`${sbUrl}/rest/v1/threat_feeds`, {
-      method: "POST",
-      headers: {
-        "apikey": key,
-        "Authorization": `Bearer ${key}`,
-        "Content-Type": "application/json",
-        "Prefer": "resolution=merge-duplicates,return=minimal",
-      },
-      body: JSON.stringify([{ feed_type: feedType, content, record_count: count, updated_at: now }]),
-      signal: AbortSignal.timeout(30_000),
-    });
-    return r.ok;
-  } catch { return false; }
+function getSb() {
+  return createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
 }
 
 async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
+  const sb  = getSb();
   const now = new Date().toISOString();
 
-  // Küçük içerik → doğrudan yaz
-  if (content.length <= CHUNK_SIZE) {
-    return sbWrite(feedType, content, count, now);
-  }
+  const write = async (type: string, data: string, cnt: number) => {
+    const { error } = await sb
+      .from("threat_feeds")
+      .upsert(
+        { feed_type: type, content: data, record_count: cnt, updated_at: now },
+        { onConflict: "feed_type" }
+      );
+    return !error;
+  };
 
-  // Büyük içerik → satır sınırlarında parçala, numaralı satırlara yaz
+  // Küçük içerik → tek satırda yaz
+  if (content.length <= CHUNK_SIZE) return write(feedType, content, count);
+
+  // Büyük içerik → satır sınırlarında parçala
   const chunks: string[] = [];
   let cur = "";
   for (const line of content.split("\n")) {
@@ -234,14 +231,12 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
   }
   if (cur) chunks.push(cur);
 
-  // Ana satır: kayıt sayısı + chunk işareti
-  const mainOk = await sbWrite(feedType, `chunked:${chunks.length}`, count, now);
-  if (!mainOk) return false;
+  // Ana satır: chunk sayısı işareti
+  if (!await write(feedType, `chunked:${chunks.length}`, count)) return false;
 
   // Chunk satırları: domain__0, domain__1, …
   for (let i = 0; i < chunks.length; i++) {
-    const ok = await sbWrite(`${feedType}__${i}`, chunks[i], 0, now);
-    if (!ok) return false;
+    if (!await write(`${feedType}__${i}`, chunks[i], 0)) return false;
   }
   return true;
 }
