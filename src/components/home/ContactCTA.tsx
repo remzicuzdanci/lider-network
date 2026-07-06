@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useTranslations, useLocale } from "next-intl";
 import { ArrowRight, Phone } from "lucide-react";
+import { trackPhoneClick } from "@/lib/gtag";
 
 export default function ContactCTA() {
   const locale = useLocale();
@@ -74,6 +75,7 @@ export default function ContactCTA() {
               <a
                 href="tel:+903122320288"
                 className="btn-secondary text-base px-8 py-4 w-full sm:w-auto justify-center"
+                onClick={() => trackPhoneClick("contact_cta")}
               >
                 <Phone className="w-5 h-5" aria-hidden="true" />
                 +90 312 232 02 88

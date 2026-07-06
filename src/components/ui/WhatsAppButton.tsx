@@ -1,5 +1,7 @@
 "use client";
 
+import { trackWhatsAppClick } from "@/lib/gtag";
+
 export default function WhatsAppButton() {
   return (
     <a
@@ -7,6 +9,7 @@ export default function WhatsAppButton() {
       target="_blank"
       rel="noopener noreferrer"
       aria-label="WhatsApp ile iletişime geç"
+      onClick={() => trackWhatsAppClick()}
       className="fixed bottom-6 right-6 z-50 flex items-center gap-2.5 px-4 py-3 rounded-full transition-all duration-300 hover:scale-110 group"
       style={{
         backgroundColor: "#25D366",

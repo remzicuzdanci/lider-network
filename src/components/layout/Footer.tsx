@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTranslations, useLocale } from "next-intl";
+import { trackPhoneClick } from "@/lib/gtag";
 import {
   MapPin,
   Phone,
@@ -237,6 +238,7 @@ export default function Footer() {
                   href="tel:+903122320288"
                   className="text-sm transition-colors duration-200"
                   style={{ color: "var(--color-outline)" }}
+                  onClick={() => trackPhoneClick("footer")}
                 >
                   {t("contact.info.phoneValue")}
                 </a>

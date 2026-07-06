@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useTranslations, useLocale } from "next-intl";
 import { Send, CheckCircle2, AlertCircle } from "lucide-react";
+import { trackLeadGeneration } from "@/lib/gtag";
 
 const contactSchema = z.object({
   name: z
@@ -61,13 +62,7 @@ export default function ContactForm() {
       if (response.ok) {
         setSubmitStatus("success");
         reset();
-        if (typeof window !== "undefined" && typeof window.gtag === "function") {
-          window.gtag("event", "generate_lead", {
-            event_category: "contact_form",
-            event_label: "iletisim_formu",
-            send_to: ["G-XC94L879N9", "AW-18181879824"],
-          });
-        }
+        trackLeadGeneration("contact_form");
         setTimeout(() => setSubmitStatus("idle"), 6000);
       } else {
         setSubmitStatus("error");

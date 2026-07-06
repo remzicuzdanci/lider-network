@@ -583,7 +583,7 @@ export default function FortiSwitchPage() {
               Ücretsiz Teklif Al
             </Link>
             <a
-              href="tel:+902121234567"
+              href="tel:+903122320288"
               className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold transition-all hover:bg-white/10"
               style={{
                 border: "1px solid rgba(255,255,255,0.15)",

@@ -1198,7 +1198,7 @@ function CTASection() {
                   Acil Denetim Talebi
                 </a>
                 <a
-                  href="tel:+90"
+                  href="tel:+903122320288"
                   className="inline-flex items-center gap-2 px-5 py-2.5 rounded font-semibold text-sm text-white transition-all duration-200 hover:bg-white/10"
                   style={{
                     border: "1px solid rgba(255, 255, 255, 0.60)",

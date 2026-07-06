@@ -3,6 +3,7 @@ import Image from "next/image";
 import { getTranslations } from "next-intl/server";
 import { MapPin, Phone, Mail, Clock, ShoppingCart, Headphones, Linkedin } from "lucide-react";
 import ContactForm from "@/components/ui/ContactForm";
+import TrackedPhoneLink from "@/components/ui/TrackedPhoneLink";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -236,8 +237,8 @@ export default async function ContactPage({
             </a>
 
             {/* Phone */}
-            <a
-              href="tel:+903122320288"
+            <TrackedPhoneLink
+              source="iletisim_card"
               className="group p-6 rounded-xl industrial-border transition-all duration-300 hover:border-primary/60 hover:-translate-y-1"
               style={{ backgroundColor: "rgba(18,18,20,0.85)", backdropFilter: "blur(12px)" }}
             >
@@ -260,7 +261,7 @@ export default async function ContactPage({
               >
                 {isTr ? "Hft içi 08:30 – 17:30" : "Weekdays 08:30 – 17:30"}
               </p>
-            </a>
+            </TrackedPhoneLink>
           </div>
         </div>
       </section>
@@ -346,13 +347,13 @@ export default async function ContactPage({
                     >
                       {t("info.phone")}
                     </p>
-                    <a
-                      href="tel:+903122320288"
+                    <TrackedPhoneLink
+                      source="iletisim_sidebar"
                       className="text-sm font-medium transition-colors"
                       style={{ color: "var(--color-on-surface-variant)" }}
                     >
                       {t("info.phoneValue")}
-                    </a>
+                    </TrackedPhoneLink>
                   </div>
                 </div>
               </div>
