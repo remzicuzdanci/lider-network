@@ -50,7 +50,11 @@ export async function GET() {
   }
 
   const total = Object.values(stats).reduce((s, v) => s + v.count, 0);
-  const last_updated = data?.find(r => r.updated_at)?.updated_at ?? null;
+  const last_updated = Object.values(stats).reduce((latest, v) => {
+    if (!v.updated_at) return latest;
+    if (!latest) return v.updated_at;
+    return v.updated_at > latest ? v.updated_at : latest;
+  }, null as string | null);
 
   return NextResponse.json(
     { stats, total, last_updated, is_partial: false },
