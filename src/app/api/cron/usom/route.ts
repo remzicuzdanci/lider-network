@@ -8,6 +8,67 @@ const HEADERS = {
   "Accept": "text/plain,*/*",
 };
 
+// USOM JSON API — Türkiye IP'si gibi görünmek için tarayıcı başlıkları
+const USOM_HEADERS = {
+  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
+  "Accept": "application/json, text/plain, */*",
+  "Accept-Language": "tr-TR,tr;q=0.9",
+  "Referer": "https://www.usom.gov.tr/",
+  "Origin": "https://www.usom.gov.tr",
+};
+
+const USOM_API = "https://www.usom.gov.tr/api/address/index.json";
+const USOM_PER_PAGE = 2000;
+
+interface UsomRecord { url: string; type: string; }
+
+// USOM JSON API'den sayfalama ile veri çek (geo-block yoksa çalışır)
+async function fetchUsomJson(): Promise<{ domain: string[]; ipv4: string[]; ipv6: string[]; url: string[] } | null> {
+  try {
+    // Meta çek
+    const metaRes = await fetch(`${USOM_API}?page=1&per-page=${USOM_PER_PAGE}`, {
+      headers: USOM_HEADERS,
+      signal: AbortSignal.timeout(10_000),
+    });
+    if (!metaRes.ok) return null;
+    const meta = await metaRes.json();
+    const pg = meta?.meta?.pagination ?? meta?.pagination ?? {};
+    const totalPages = Number(pg["page-count"] ?? pg.pageCount ?? pg.totalPages ?? 1);
+    if (!totalPages) return null;
+
+    const all: UsomRecord[] = Array.isArray(meta?.models) ? meta.models : Array.isArray(meta?.data) ? meta.data : [];
+
+    // Kalan sayfaları paralel çek (bütçe: 120 saniye)
+    const started = Date.now();
+    const CONCURRENCY = 10;
+    for (let p = 2; p <= totalPages; p += CONCURRENCY) {
+      if (Date.now() - started > 120_000) break;
+      const batch = Array.from({ length: Math.min(CONCURRENCY, totalPages - p + 1) }, (_, i) => p + i);
+      const pages = await Promise.all(batch.map(async page => {
+        try {
+          const r = await fetch(`${USOM_API}?page=${page}&per-page=${USOM_PER_PAGE}`, {
+            headers: USOM_HEADERS, signal: AbortSignal.timeout(10_000),
+          });
+          if (!r.ok) return [];
+          const j = await r.json();
+          return Array.isArray(j?.models) ? j.models : Array.isArray(j?.data) ? j.data : [];
+        } catch { return []; }
+      }));
+      for (const page of pages) all.push(...page);
+    }
+
+    if (all.length === 0) return null;
+
+    const norm = (s: string) => s.trim().toLowerCase();
+    return {
+      domain: [...new Set(all.filter(r => norm(r.type) === "domain").map(r => r.url.trim()).filter(Boolean))].sort(),
+      ipv4:   [...new Set(all.filter(r => norm(r.type) === "ip" && !r.url.includes(":")).map(r => r.url.trim()).filter(Boolean))].sort(),
+      ipv6:   [...new Set(all.filter(r => norm(r.type) === "ip" && r.url.includes(":")).map(r => r.url.trim()).filter(Boolean))].sort(),
+      url:    [...new Set(all.filter(r => norm(r.type) === "url").map(r => r.url.trim()).filter(Boolean))].sort(),
+    };
+  } catch { return null; }
+}
+
 // Tüm domain kaynakları — paralel çekilir, birleştirilir
 const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
   // Hagezi Pro hosts formatı ~400k domain — GitHub CDN
@@ -159,18 +220,33 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  const [domainRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
+  // USOM JSON API ve diğer kaynakları paralel başlat
+  const [usom, domainRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
+    fetchUsomJson(),
     fetchAndMerge(DOMAIN_SOURCES, (raw, fmt) => fmt === "hosts" ? parseHosts(raw) : parsePlain(raw)),
     fetchAndMergeUrls(IPV4_SOURCES, parseIpv4),
     fetchAndMergeUrls(IPV6_SOURCES, parseIpv6),
     fetchAndMergeUrls(URL_SOURCES,  parsePlain),
   ]);
 
+  // USOM JSON verilerini diğer kaynaklarla birleştir
+  const mergeWithUsom = (base: string[], usom: string[] | undefined) =>
+    usom?.length ? [...new Set([...base, ...usom])].sort() : base;
+
+  const domainRecords = mergeWithUsom(domainRes.records, usom?.domain);
+  const ipv4Records   = mergeWithUsom(ipv4Res.records,   usom?.ipv4);
+  const ipv6Records   = mergeWithUsom(ipv6Res.records,   usom?.ipv6);
+  const urlRecords    = mergeWithUsom(urlRes.records,     usom?.url);
+
+  const usomLog = usom
+    ? `usom-api(d:${usom.domain.length},ip:${usom.ipv4.length},url:${usom.url.length})`
+    : "usom-api:blocked";
+
   const feeds = [
-    { type: "domain", records: domainRes.records, sources: domainRes.sourceLog },
-    { type: "ipv4",   records: ipv4Res.records,   sources: ipv4Res.sourceLog },
-    { type: "ipv6",   records: ipv6Res.records,   sources: ipv6Res.sourceLog },
-    { type: "url",    records: urlRes.records,     sources: urlRes.sourceLog },
+    { type: "domain", records: domainRecords, sources: [...domainRes.sourceLog, usomLog] },
+    { type: "ipv4",   records: ipv4Records,   sources: [...ipv4Res.sourceLog,   usomLog] },
+    { type: "ipv6",   records: ipv6Records,   sources: [...ipv6Res.sourceLog,   usomLog] },
+    { type: "url",    records: urlRecords,     sources: [...urlRes.sourceLog,    usomLog] },
   ];
 
   const results: Record<string, { count: number; sources: string[]; ok: boolean }> = {};
