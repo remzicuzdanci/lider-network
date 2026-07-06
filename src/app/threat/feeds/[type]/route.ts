@@ -30,20 +30,24 @@ export async function GET(
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
-  const { data, error } = await sb
+  const { data: rows, error } = await sb
     .from("threat_feeds")
     .select("content, updated_at, record_count")
     .eq("feed_type", feedType)
-    .single();
+    .order("updated_at", { ascending: false })
+    .limit(1);
+  const data = rows?.[0] ?? null;
 
   if (error || !data?.content) {
     // Lite feed yoksa tam feed'e dön
     if (isLite) {
-      const { data: full } = await sb
+      const { data: fullRows } = await sb
         .from("threat_feeds")
         .select("content, updated_at")
         .eq("feed_type", base)
-        .single();
+        .order("updated_at", { ascending: false })
+        .limit(1);
+      const full = fullRows?.[0] ?? null;
       if (full?.content) {
         return resolveAndServe(full.content, base, full.updated_at, maybeSuffix, sb);
       }

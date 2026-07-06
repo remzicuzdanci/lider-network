@@ -205,12 +205,11 @@ async function supabaseUpsert(feedType: string, content: string, count: number):
   const now = new Date().toISOString();
 
   const write = async (type: string, data: string, cnt: number) => {
+    // DELETE + INSERT: unique constraint olmasa da çalışır
+    await sb.from("threat_feeds").delete().eq("feed_type", type);
     const { error } = await sb
       .from("threat_feeds")
-      .upsert(
-        { feed_type: type, content: data, record_count: cnt, updated_at: now },
-        { onConflict: "feed_type" }
-      );
+      .insert({ feed_type: type, content: data, record_count: cnt, updated_at: now });
     return !error;
   };
 
