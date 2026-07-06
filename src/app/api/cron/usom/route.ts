@@ -10,13 +10,6 @@ const BROWSER_HEADERS = {
   "Referer": "https://www.usom.gov.tr/",
 };
 
-// Steven Black hosts dosyası 4MB+ olduğu için timeout'a giriyor.
-// Daha küçük ve hızlı kaynaklar kullanıyoruz.
-const DOMAIN_FEEDS = [
-  "https://hole.cert.pl/domains/domains.txt",                                       // CERT Poland ~100k domain
-  "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt",   // Hagezi Pro ~400k domain
-];
-
 const FALLBACK_FEEDS: Record<string, string> = {
   ipv4: "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
 };
@@ -34,11 +27,6 @@ async function fetchText(url: string): Promise<string | null> {
   } catch { return null; }
 }
 
-function parseHostsFile(raw: string): string[] {
-  return raw.split(/\r?\n/)
-    .map(l => { const m = l.match(/^0\.0\.0\.0\s+(\S+)/); return m ? m[1] : null; })
-    .filter((v): v is string => !!v && v !== "0.0.0.0" && v !== "localhost" && !v.startsWith("#"));
-}
 
 function parseIpFile(raw: string): string[] {
   return raw.split(/\r?\n/)
@@ -106,23 +94,19 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  // Veri çek — domain için birden fazla kaynaktan topla
-  const [domainTxts, ipTxt, urls] = await Promise.all([
-    Promise.all(DOMAIN_FEEDS.map(u => fetchText(u))),
+  // Veri çek
+  const [ipTxt, urls] = await Promise.all([
     fetchText(FALLBACK_FEEDS.ipv4),
     fetchUrlFeeds(),
   ]);
 
-  const domainSet = new Set<string>();
-  for (const txt of domainTxts) {
-    if (!txt) continue;
-    for (const line of txt.split(/\r?\n/)) {
-      const d = line.trim().split(/\s+/)[0];
-      if (d && !d.startsWith("#") && d.includes(".")) domainSet.add(d.toLowerCase());
-    }
-  }
-  const domains = [...domainSet].sort();
-  const ipv4s   = ipTxt    ? [...new Set(parseIpFile(ipTxt))].sort()       : [];
+  const ipv4s = ipTxt ? [...new Set(parseIpFile(ipTxt))].sort() : [];
+
+  // Domain listesini URL feed'inden türet — ayrı fetch gerekmez, kesin çalışır
+  const domains = [...new Set(
+    urls.map(u => { try { return new URL(u).hostname; } catch { return null; } })
+        .filter((d): d is string => !!d && d.includes(".") && !d.match(/^\d+\.\d+\.\d+\.\d+$/))
+  )].sort();
 
   // Her feed için Supabase'e yaz, sonucu kaydet
   const writeResults: Record<string, { ok: boolean; status: number; body: string }> = {};
