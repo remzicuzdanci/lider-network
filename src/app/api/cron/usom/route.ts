@@ -10,9 +10,15 @@ const BROWSER_HEADERS = {
   "Referer": "https://www.usom.gov.tr/",
 };
 
+// Steven Black hosts dosyası 4MB+ olduğu için timeout'a giriyor.
+// Daha küçük ve hızlı kaynaklar kullanıyoruz.
+const DOMAIN_FEEDS = [
+  "https://hole.cert.pl/domains/domains.txt",                                       // CERT Poland ~100k domain
+  "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/pro.txt",   // Hagezi Pro ~400k domain
+];
+
 const FALLBACK_FEEDS: Record<string, string> = {
-  domain: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",
-  ipv4:   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
+  ipv4: "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
 };
 
 const URL_FEEDS = [
@@ -100,14 +106,22 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  // Veri çek
-  const [hostsTxt, ipTxt, urls] = await Promise.all([
-    fetchText(FALLBACK_FEEDS.domain),
+  // Veri çek — domain için birden fazla kaynaktan topla
+  const [domainTxts, ipTxt, urls] = await Promise.all([
+    Promise.all(DOMAIN_FEEDS.map(u => fetchText(u))),
     fetchText(FALLBACK_FEEDS.ipv4),
     fetchUrlFeeds(),
   ]);
 
-  const domains = hostsTxt ? [...new Set(parseHostsFile(hostsTxt))].sort() : [];
+  const domainSet = new Set<string>();
+  for (const txt of domainTxts) {
+    if (!txt) continue;
+    for (const line of txt.split(/\r?\n/)) {
+      const d = line.trim().split(/\s+/)[0];
+      if (d && !d.startsWith("#") && d.includes(".")) domainSet.add(d.toLowerCase());
+    }
+  }
+  const domains = [...domainSet].sort();
   const ipv4s   = ipTxt    ? [...new Set(parseIpFile(ipTxt))].sort()       : [];
 
   // Her feed için Supabase'e yaz, sonucu kaydet
