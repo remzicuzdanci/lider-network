@@ -3,86 +3,82 @@ import { NextResponse } from "next/server";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 
-const BROWSER_HEADERS = {
-  "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36",
-  "Accept": "text/plain,*/*",
-  "Accept-Language": "tr-TR,tr;q=0.9",
+const SOURCES: Record<string, string[]> = {
+  domain: [
+    "https://www.usom.gov.tr/url-list.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",
+  ],
+  ipv4: [
+    "https://www.usom.gov.tr/ip-list.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
+    "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
+  ],
+  ipv6: [
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ipv6.txt",
+  ],
+  url: [
+    "https://www.usom.gov.tr/zararli-baglantilar.txt",
+    "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-url.txt",
+    "https://urlhaus.abuse.ch/downloads/text_online/",
+    "https://openphish.com/feed.txt",
+  ],
+};
+
+const HEADERS = {
+  "User-Agent": "Mozilla/5.0 (compatible; LiderNetwork-ThreatFeed/1.0; +https://threat.lidernetwork.com.tr)",
+  "Accept": "text/plain,text/html,*/*",
+  "Accept-Language": "tr-TR,tr;q=0.9,en;q=0.8",
   "Referer": "https://www.usom.gov.tr/",
 };
 
-const FALLBACK_FEEDS: Record<string, string> = {
-  // Hagezi mini: ~90k domain, plain format, GitHub CDN üzerinden hızlı gelir
-  domain: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/domains/mini.txt",
-  ipv4:   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
-};
-
-const URL_FEEDS = [
-  "https://urlhaus.abuse.ch/downloads/text_online/",
-  "https://openphish.com/feed.txt",
-];
-
-async function fetchText(url: string): Promise<string | null> {
-  try {
-    const r = await fetch(url, { headers: BROWSER_HEADERS, signal: AbortSignal.timeout(25_000) });
-    if (!r.ok) return null;
-    return await r.text();
-  } catch { return null; }
-}
-
-
-function parseIpFile(raw: string): string[] {
-  return raw.split(/\r?\n/)
-    .map(l => l.trim().split(/\s+/)[0])
-    .filter(v => v && !v.startsWith("#") && /^(\d{1,3}\.){3}\d{1,3}/.test(v));
-}
-
-function parseUrlFile(raw: string): string[] {
-  return raw.split(/\r?\n/)
-    .map(l => l.trim())
-    .filter(v => v && !v.startsWith("#") && (v.startsWith("http://") || v.startsWith("https://")));
-}
-
-async function fetchUrlFeeds(): Promise<string[]> {
-  const results = await Promise.all(URL_FEEDS.map(u => fetchText(u)));
-  const all: string[] = [];
-  for (const txt of results) {
-    if (txt) all.push(...parseUrlFile(txt));
+async function fetchText(urls: string[]): Promise<{ content: string; source: string } | null> {
+  for (const url of urls) {
+    try {
+      const r = await fetch(url, { headers: HEADERS, signal: AbortSignal.timeout(20_000) });
+      if (!r.ok) continue;
+      const text = await r.text();
+      if (text && text.trim().length > 10) return { content: text, source: url };
+    } catch { continue; }
   }
-  return [...new Set(all)].sort();
+  return null;
 }
 
-// Supabase'e direkt REST ile yaz — JS client bypass
-async function supabaseUpsert(feedType: string, content: string, count: number): Promise<{ ok: boolean; status: number; body: string }> {
-  const url  = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key  = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+function isValidIpv4(s: string): boolean {
+  return /^(\d{1,3}\.){3}\d{1,3}(\/\d{1,2})?$/.test(s) &&
+    s.replace(/\/\d+$/, "").split(".").every(o => parseInt(o) <= 255);
+}
 
-  if (!url || !key) return { ok: false, status: 0, body: "ENV MISSING" };
+function parseLines(raw: string): string[] {
+  return raw
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith("#") && !l.startsWith("//") && l.length > 3);
+}
 
-  const payload = [{
-    feed_type:    feedType,
-    content,
-    record_count: count,
-    updated_at:   new Date().toISOString(),
-  }];
+async function supabaseUpsert(feedType: string, content: string, count: number): Promise<boolean> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return false;
 
   try {
     const r = await fetch(`${url}/rest/v1/threat_feeds`, {
       method: "POST",
       headers: {
-        "apikey":       key,
+        "apikey": key,
         "Authorization": `Bearer ${key}`,
-        "Content-Type":  "application/json",
-        "Prefer":        "resolution=merge-duplicates,return=minimal",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates,return=minimal",
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify([{
+        feed_type: feedType,
+        content,
+        record_count: count,
+        updated_at: new Date().toISOString(),
+      }]),
       signal: AbortSignal.timeout(15_000),
     });
-
-    const body = await r.text();
-    return { ok: r.ok, status: r.status, body: body.slice(0, 300) };
-  } catch (e) {
-    return { ok: false, status: 0, body: String(e) };
-  }
+    return r.ok;
+  } catch { return false; }
 }
 
 export async function GET(req: Request) {
@@ -95,64 +91,36 @@ export async function GET(req: Request) {
   }
 
   const started = Date.now();
+  const results: Record<string, { count: number; source: string; ok: boolean }> = {};
 
-  // Veri çek
-  const [domainTxt, ipTxt, urls] = await Promise.all([
-    fetchText(FALLBACK_FEEDS.domain),
-    fetchText(FALLBACK_FEEDS.ipv4),
-    fetchUrlFeeds(),
-  ]);
-
-  const ipv4s = ipTxt ? [...new Set(parseIpFile(ipTxt))].sort() : [];
-
-  // Hagezi plain domain format: her satırda bir domain (# ile başlayanlar yorum)
-  const domainSet = new Set<string>();
-  if (domainTxt) {
-    for (const line of domainTxt.split(/\r?\n/)) {
-      const d = line.trim();
-      if (d && !d.startsWith("#") && !d.startsWith("!") && d.includes(".")) {
-        domainSet.add(d.toLowerCase());
+  await Promise.all(
+    Object.entries(SOURCES).map(async ([type, urls]) => {
+      const res = await fetchText(urls);
+      if (!res) {
+        results[type] = { count: 0, source: "unavailable", ok: false };
+        return;
       }
-    }
-  }
-  // URL feed'indeki host adlarını da ekle
-  for (const u of urls) {
-    try { const h = new URL(u).hostname; if (h.includes(".")) domainSet.add(h); } catch { /* skip */ }
-  }
-  const domains = [...domainSet].sort();
 
-  // Her feed için Supabase'e yaz, sonucu kaydet
-  const writeResults: Record<string, { ok: boolean; status: number; body: string }> = {};
+      let lines = parseLines(res.content);
+      if (type === "ipv4") lines = lines.filter(l => isValidIpv4(l));
 
-  const feeds = [
-    { type: "domain",   records: domains },
-    { type: "ipv4",     records: ipv4s },
-    { type: "url",      records: urls },
-    { type: "url_90d",  records: urls },
-    { type: "url_180d", records: urls },
-    { type: "url_365d", records: urls },
-  ];
+      const unique = [...new Set(lines)].sort();
+      if (unique.length === 0) {
+        results[type] = { count: 0, source: res.source, ok: false };
+        return;
+      }
 
-  for (const f of feeds) {
-    if (f.records.length === 0) {
-      writeResults[f.type] = { ok: false, status: 0, body: "SKIPPED: fetch returned 0 records" };
-      continue;
-    }
-    writeResults[f.type] = await supabaseUpsert(
-      f.type,
-      f.records.join("\n"),
-      f.records.length
-    );
-  }
+      const ok = await supabaseUpsert(type, unique.join("\n"), unique.length);
+      results[type] = { count: unique.length, source: res.source, ok };
+    })
+  );
 
-  const allOk = Object.values(writeResults).every(r => r.ok);
+  const total = Object.values(results).reduce((s, v) => s + v.count, 0);
 
   return NextResponse.json({
-    success: allOk,
+    success: Object.values(results).some(v => v.ok),
     elapsed_ms: Date.now() - started,
-    fetched: { domain: domains.length, ipv4: ipv4s.length, url: urls.length },
-    supabase_url: (process.env.NEXT_PUBLIC_SUPABASE_URL || "").slice(0, 50),
-    using_service_key: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
-    write_results: writeResults,
+    total,
+    results,
   });
 }
