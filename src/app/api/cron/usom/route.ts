@@ -190,6 +190,9 @@ const IPV4_SOURCES = [
   "https://raw.githubusercontent.com/stamparm/ipsum/master/levels/3.txt",
   "https://feodotracker.abuse.ch/downloads/ipblocklist.txt",               // Feodo botnet C2
   "https://rules.emergingthreats.net/fwrules/emerging-Block-IPs.txt",      // Emerging Threats
+  "https://cinsscore.com/list/ci-badguys.txt",                             // CINS Score — bilinen kötü IP'ler
+  "https://www.spamhaus.org/drop/drop.txt",                                // Spamhaus DROP — suç örgütü IP blokları
+  "https://www.spamhaus.org/drop/edrop.txt",                               // Spamhaus eDROP — genişletilmiş liste
   "https://www.usom.gov.tr/ip-list.txt",
   "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-ip.txt",
 ];
