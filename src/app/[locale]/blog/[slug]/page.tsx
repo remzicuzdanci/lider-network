@@ -26,6 +26,9 @@ export async function generateMetadata({
   const post = getPost(slug);
   if (!post) return {};
 
+  const catLabel = categories.find((c) => c.id === post.category)?.label ?? "";
+  const ogImage = `${baseUrl}/api/og?title=${encodeURIComponent(post.title)}&category=${encodeURIComponent(catLabel)}&color=${encodeURIComponent(post.categoryColor)}`;
+
   return {
     title: `${post.title} | Lider Network Blog`,
     description: post.excerpt,
@@ -45,6 +48,13 @@ export async function generateMetadata({
       type: "article",
       publishedTime: post.publishedAt,
       tags: post.tags,
+      images: [{ url: ogImage, width: 1200, height: 630, alt: post.title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: post.title,
+      description: post.excerpt,
+      images: [ogImage],
     },
   };
 }
