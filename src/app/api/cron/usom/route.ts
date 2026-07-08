@@ -172,15 +172,24 @@ function isDomainWhitelisted(domain: string): boolean {
   return false;
 }
 
-// Tüm domain kaynakları — paralel çekilir, birleştirilir
-const DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
-  // Hagezi Pro hosts formatı ~400k domain — reklam/tracking/malware
-  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt",            fmt: "hosts" },
-  // Steven Black base ~130k — adware/malware
-  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",                      fmt: "hosts" },
-  // USOM / anil-yelken mirror — Türkiye güvenlik tehditleri
-  { url: "https://www.usom.gov.tr/url-list.txt",                                                   fmt: "plain" },
-  { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt",               fmt: "plain" },
+// Türk TLD'leri — uluslararası listelerden bu uzantılar çıkarılır
+// USOM zaten Türk tehditleri takip ediyor, Hagezi/StevenBlack bilmiyor
+const TR_TLDS = [".tr"];
+
+function hasTurkishTld(domain: string): boolean {
+  return TR_TLDS.some(tld => domain.endsWith(tld));
+}
+
+// Uluslararası domain kaynakları — Türk TLD'leri filtrelenir
+const INTL_DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
+  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/pro.txt", fmt: "hosts" },
+  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",           fmt: "hosts" },
+];
+
+// Türkiye güvenlik kaynakları — .com.tr dahil tüm domainler korunur
+const TR_DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
+  { url: "https://www.usom.gov.tr/url-list.txt",                                fmt: "plain" },
+  { url: "https://raw.githubusercontent.com/anil-yelken/usom/main/usom-domain.txt", fmt: "plain" },
 ];
 
 // Tüm IPv4 kaynakları — paralel çekilir, birleştirilir
@@ -354,20 +363,27 @@ export async function GET(req: Request) {
 
   const started = Date.now();
 
-  // USOM JSON API ve diğer kaynakları paralel başlat
-  const [usom, domainRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
+  // Tüm kaynakları paralel çek
+  const [usom, intlRes, trRes, ipv4Res, ipv6Res, urlRes] = await Promise.all([
     fetchUsomJson(),
-    fetchAndMerge(DOMAIN_SOURCES, (raw, fmt) => fmt === "hosts" ? parseHosts(raw) : parsePlain(raw)),
+    fetchAndMerge(INTL_DOMAIN_SOURCES, (raw, fmt) => fmt === "hosts" ? parseHosts(raw) : parsePlain(raw)),
+    fetchAndMerge(TR_DOMAIN_SOURCES,   (raw, fmt) => fmt === "hosts" ? parseHosts(raw) : parsePlain(raw)),
     fetchAndMergeUrls(IPV4_SOURCES, parseIpv4),
     fetchAndMergeUrls(IPV6_SOURCES, parseIpv6),
     fetchAndMergeUrls(URL_SOURCES,  parsePlain),
   ]);
 
+  // Uluslararası listelerden .tr uzantıları çıkar — USOM zaten Türk tehditleri takip ediyor
+  const intlDomains = intlRes.records.filter(d => !hasTurkishTld(d));
+
   // USOM JSON verilerini diğer kaynaklarla birleştir
   const mergeWithUsom = (base: string[], usom: string[] | undefined) =>
     usom?.length ? [...new Set([...base, ...usom])].sort() : base;
 
-  const domainRecords = mergeWithUsom(domainRes.records, usom?.domain).filter(d => !isDomainWhitelisted(d));
+  const domainRecords = mergeWithUsom(
+    [...new Set([...intlDomains, ...trRes.records])].sort(),
+    usom?.domain
+  ).filter(d => !isDomainWhitelisted(d));
   const ipv4Records   = mergeWithUsom(ipv4Res.records,   usom?.ipv4);
   const ipv6Records   = mergeWithUsom(ipv6Res.records,   usom?.ipv6);
   const urlRecords    = mergeWithUsom(urlRes.records,     usom?.url);
@@ -377,7 +393,7 @@ export async function GET(req: Request) {
     : "usom-api:blocked";
 
   const feeds = [
-    { type: "domain", records: domainRecords, sources: [...domainRes.sourceLog, usomLog] },
+    { type: "domain", records: domainRecords, sources: [...intlRes.sourceLog, ...trRes.sourceLog, usomLog] },
     { type: "ipv4",   records: ipv4Records,   sources: [...ipv4Res.sourceLog,   usomLog] },
     { type: "ipv6",   records: ipv6Records,   sources: [...ipv6Res.sourceLog,   usomLog] },
     { type: "url",    records: urlRecords,     sources: [...urlRes.sourceLog,    usomLog] },
