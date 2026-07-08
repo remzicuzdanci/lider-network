@@ -150,7 +150,7 @@ const DOMAIN_WHITELIST = new Set([
   "remotepc.com",
   "showmypc.com",
   // Türk bankaları & finans
-  "garanti.com.tr", "garantibbva.com.tr",
+  "garanti.com.tr", "garantibbva.com.tr", "garantibbvafilo.com.tr",
   "isbank.com.tr",
   "akbank.com",
   "yapikredi.com.tr", "ykb.com",
