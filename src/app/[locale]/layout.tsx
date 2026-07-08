@@ -211,9 +211,8 @@ export default async function LocaleLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="icon" href="/api/icon?size=32" type="image/png" sizes="32x32" />
-        <link rel="icon" href="/api/icon?size=192" type="image/png" sizes="192x192" />
-        <link rel="apple-touch-icon" href="/api/icon?size=180" />
+        <link rel="icon" href="/icon-512.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/icon-512.png" />
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#101415" />
         {!isDestekSubdomain && (
