@@ -7464,6 +7464,406 @@ get vpn ssl monitor</code></pre>
     `,
   },
 
+  {
+    slug: "fortigate-ztna-ssl-vpn-sifir-guven-erisim",
+    title: "FortiGate ZTNA: SSL-VPN'den Sıfır Güven Erişimine Geçiş Rehberi",
+    excerpt:
+      "Fortinet'in ZTNA (Zero Trust Network Access) mimarisi, geleneksel SSL-VPN'in yerini alıyor. SSL-VPN'in güvenlik açıkları, ZTNA'nın getirdiği avantajlar ve FortiGate üzerinde geçiş adımları.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["ZTNA", "SSL-VPN", "FortiGate", "Sıfır Güven", "FortiClient", "Zero Trust", "Uzaktan Erişim"],
+    publishedAt: "2026-07-08",
+    readTime: 10,
+    featured: false,
+    content: `
+<h2>SSL-VPN Neden Artık Yeterli Değil?</h2>
+<p>SSL-VPN teknolojisi 2000'lerin başında kurumsal uzaktan erişim için devrimsel bir çözümdü. Ancak 2020'lerden itibaren saldırı yüzeyi olarak ciddi bir hedef haline geldi. Fortinet dahil tüm büyük üreticilerin SSL-VPN ürünlerinde yıl boyunca kritik CVE'ler yayımlanıyor.</p>
+
+<p>SSL-VPN'in temel problemi mimariseldir: kullanıcıya ağ erişimi verildiğinde, yetkilendirme kontrolü tek bir noktada (kimlik doğrulama) yapılır. Kullanıcı ağa girince içeride çok geniş bir hareket alanı bulur. Bu durum lateral movement saldırılarını kolaylaştırır.</p>
+
+<h3>SSL-VPN'in Bilinen Güvenlik Riskleri</h3>
+<ul>
+  <li>FortiOS SSL-VPN buffer overflow CVE'leri (CVE-2023-27997, CVE-2024-21762 vb.)</li>
+  <li>Kimlik bilgisi çalınmasına karşı tek nokta savunması</li>
+  <li>Bağlandıktan sonra uç nokta güvenliği kontrolü yapılmaması</li>
+  <li>Granüler uygulama bazlı erişim kontrolünün zorluğu</li>
+  <li>Ağ seviyesi erişim — uygulama seviyesi değil</li>
+</ul>
+
+<h2>ZTNA Nedir?</h2>
+<p><strong>Zero Trust Network Access (ZTNA)</strong>, "asla güvenme, her zaman doğrula" prensibine dayalı bir erişim modelidir. Kullanıcı veya cihazın ağın içinde mi dışında mı olduğundan bağımsız olarak, her uygulama erişimi ayrı ayrı doğrulanır ve yetkilendirilir.</p>
+
+<p>FortiGate ZTNA, FortiOS 7.0 ile birlikte genel kullanıma sunuldu ve her sürümde olgunlaştırıldı. Temel fark şudur: SSL-VPN ağa erişim sağlarken, ZTNA uygulamaya erişim sağlar.</p>
+
+<h3>ZTNA Mimarisinin Bileşenleri</h3>
+<ul>
+  <li><strong>ZTNA Access Proxy:</strong> FortiGate üzerinde çalışır, uygulama trafiğini proxy'ler</li>
+  <li><strong>FortiClient EMS:</strong> Uç nokta güvenlik durumunu merkezi olarak yönetir ve ZTNA etiketleri (tags) üretir</li>
+  <li><strong>FortiClient:</strong> İstemci tarafında çalışan ajan — cihaz durumunu EMS'e raporlar</li>
+  <li><strong>ZTNA Tags:</strong> Cihazın güvenlik durumuna göre üretilen etiketler (antivirüs aktif mi, disk şifreleme var mı, OS güncel mi vb.)</li>
+</ul>
+
+<h2>SSL-VPN ile ZTNA Karşılaştırması</h2>
+<table>
+  <thead><tr><th>Özellik</th><th>SSL-VPN</th><th>ZTNA</th></tr></thead>
+  <tbody>
+    <tr><td>Erişim seviyesi</td><td>Ağ (network)</td><td>Uygulama (application)</td></tr>
+    <tr><td>Kimlik doğrulama</td><td>Bağlantı başında bir kez</td><td>Her oturumda sürekli</td></tr>
+    <tr><td>Cihaz güvenlik kontrolü</td><td>Opsiyonel / zayıf</td><td>Zorunlu, granüler</td></tr>
+    <tr><td>Lateral movement riski</td><td>Yüksek</td><td>Çok düşük</td></tr>
+    <tr><td>Uygulama bazlı politika</td><td>Zor</td><td>Yerel, kolay</td></tr>
+    <tr><td>Saldırı yüzeyi</td><td>Büyük (ağ erişimi)</td><td>Küçük (sadece uygulama)</td></tr>
+  </tbody>
+</table>
+
+<h2>FortiGate ZTNA Yapılandırması</h2>
+
+<h3>1. FortiClient EMS Kurulumu</h3>
+<p>ZTNA'nın çalışması için FortiClient EMS (Endpoint Management Server) zorunludur. EMS, cihazların güvenlik durumunu toplar ve FortiGate'e ZTNA etiketleri olarak iletir.</p>
+<pre><code># EMS bağlantısı FortiGate üzerinde
+config endpoint-control fctems
+  edit "EMS-SERVER"
+    set server "ems.sirket.local"
+    set https-port 443
+  next
+end</code></pre>
+
+<h3>2. ZTNA Server Tanımı</h3>
+<p>Erişilecek uygulama için ZTNA server objesi oluşturun:</p>
+<pre><code>config firewall access-proxy
+  edit "RDP-PROXY"
+    set vip "ZTNA-VIP"
+    set client-cert enable
+    config api-gateway
+      edit 1
+        set url-map "/"
+        set service tcp-forwarding
+        config realservers
+          edit 1
+            set addr "RDP-SERVER"
+            set port 3389
+          next
+        end
+      next
+    end
+  next
+end</code></pre>
+
+<h3>3. ZTNA Policy</h3>
+<p>ZTNA erişim politikasında cihaz etiketlerini koşul olarak ekleyin:</p>
+<pre><code>config firewall policy
+  edit 0
+    set name "ZTNA-RDP-Policy"
+    set srcintf "wan1"
+    set dstintf "lan"
+    set action accept
+    set srcaddr "all"
+    set dstaddr "ZTNA-VIP"
+    set ztna-status enable
+    set ztna-tags "EMS-Compliant" "Antivirus-Active"
+  next
+end</code></pre>
+
+<h3>4. ZTNA Etiket Kuralları (EMS'te)</h3>
+<p>EMS üzerinde hangi koşullarda cihaza "uyumlu" etiketi verileceğini belirleyin:</p>
+<ul>
+  <li>FortiClient sürümü ≥ belirli versiyon</li>
+  <li>Real-time protection aktif</li>
+  <li>OS patch seviyesi güncel</li>
+  <li>Disk şifreleme (BitLocker/FileVault) aktif</li>
+  <li>Güvenli olmayan yazılım yüklü değil</li>
+</ul>
+
+<h2>Geçiş Stratejisi: SSL-VPN'den ZTNA'ya</h2>
+<p>SSL-VPN'den ZTNA'ya tek seferde geçmek yerine aşamalı bir yaklaşım önerilir:</p>
+
+<ol>
+  <li><strong>Envanter:</strong> SSL-VPN üzerinden erişilen uygulamaları listeleyin (RDP, SSH, web uygulamaları, dosya paylaşımı)</li>
+  <li><strong>EMS kurulumu:</strong> FortiClient EMS'i devreye alın, mevcut endpoint'lere FortiClient dağıtın</li>
+  <li><strong>Pilot:</strong> Önce dahili BT ekibi için ZTNA erişimi kurun, SSL-VPN'i paralel çalıştırın</li>
+  <li><strong>Uygulama geçişi:</strong> Her uygulamayı birer birer ZTNA'ya taşıyın</li>
+  <li><strong>SSL-VPN kapatma:</strong> Tüm geçişler tamamlandıktan sonra SSL-VPN portalını devre dışı bırakın</li>
+</ol>
+
+<h2>Sonuç</h2>
+<p>ZTNA, SSL-VPN'in güvenlik açıklarını mimarisel olarak çözen modern bir yaklaşımdır. FortiGate + FortiClient EMS kombinasyonu ile kurumsal ortamlarda ZTNA geçişi artık pratikte uygulanabilir hale gelmiştir. Lider Network olarak ZTNA tasarımı, EMS kurulumu ve geçiş projelerinde yanınızdayız.</p>
+    `,
+  },
+
+  {
+    slug: "fortigate-7-4-yeni-ozellikler-kurumsal-guncelleme-rehberi",
+    title: "FortiOS 7.4: Kurumsal Ağlarda Yeni Özellikler ve Güncelleme Rehberi",
+    excerpt:
+      "FortiOS 7.4 ile gelen ZTNA iyileştirmeleri, SD-WAN güncellemeleri, gelişmiş AI tabanlı tehdit tespiti ve FortiGate yönetim kolaylıkları. 7.2'den 7.4'e geçiş öncesi bilinmesi gerekenler.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiOS 7.4", "FortiGate", "Güncelleme", "SD-WAN", "ZTNA", "AI Security", "Fortinet"],
+    publishedAt: "2026-07-06",
+    readTime: 8,
+    content: `
+<h2>FortiOS 7.4'e Genel Bakış</h2>
+<p>Fortinet'in uzun süreli destek (LTS) sürümü olarak konumlanan <strong>FortiOS 7.4</strong>, kurumsal ortamlar için önerilen stabil sürümdür. 7.2'den bu yana gelen en büyük mimarisel değişiklikler ve operasyonel iyileştirmeleri barındırır. Bu yazıda öne çıkan özellikleri ve güncelleme sürecinde dikkat edilmesi gereken noktaları ele alıyoruz.</p>
+
+<h2>Öne Çıkan Yeni Özellikler</h2>
+
+<h3>1. Inline CASB (Cloud Access Security Broker)</h3>
+<p>7.4 ile birlikte FortiGate, bulut uygulama trafiğini inline olarak denetleyebiliyor. Microsoft 365, Google Workspace, Dropbox, Salesforce gibi SaaS uygulamalarına yönelik politikalar artık doğrudan firewall üzerinden uygulanabiliyor. Veri kaybı önleme (DLP) politikaları bulut uygulamalarını da kapsıyor.</p>
+
+<h3>2. Geliştirilmiş SD-WAN Orchestration</h3>
+<p>FortiManager ile entegre çalışan yeni SD-WAN şablonları, merkezi yapılandırmayı önemli ölçüde kolaylaştırdı. Çoklu WAN bağlantıları için uygulama bazlı SLA ölçümü daha granüler hale getirildi. Yeni <strong>SD-WAN Analyzer</strong> ile bağlantı kalitesi geçmişi ve uygulama performansı tek ekranda izlenebiliyor.</p>
+
+<h3>3. ZTNA 2.0 İyileştirmeleri</h3>
+<p>FortiOS 7.4'te ZTNA politikaları arayüzü tamamen yenilendi. Uygulama bazlı erişim kontrolü artık HTTP Header bazlı yönlendirmeyi destekliyor. Agentless ZTNA ile FortiClient yüklü olmayan cihazlar için tarayıcı tabanlı erişim mümkün hale geldi.</p>
+
+<h3>4. FortiAI Entegrasyonu</h3>
+<p>Makine öğrenmesi tabanlı tehdit tespiti 7.4 ile daha gelişmiş hale geldi. <strong>FortiAI</strong> motoru şu alanlarda yerel olarak çalışıyor:</p>
+<ul>
+  <li>Şifreli trafik analizi (TLS inspection gerektirmeden)</li>
+  <li>Davranış bazlı botnet tespiti</li>
+  <li>Anomali tabanlı ağ trafiği analizi</li>
+  <li>Otomatik tehdit puanlama ve karantina önerisi</li>
+</ul>
+
+<h3>5. Yönetim Arayüzü Güncellemeleri</h3>
+<p>GUI'de önemli iyileştirmeler yapıldı:</p>
+<ul>
+  <li><strong>Policy & Objects</strong> menüsü yeniden düzenlendi, arama ve filtreleme geliştirildi</li>
+  <li>Dashboard widget'ları özelleştirilebilir hale getirildi</li>
+  <li>Konfigürasyon değişiklik geçmişi (revision history) daha ayrıntılı tutulmaya başlandı</li>
+  <li>CLI komut önerileri (autocomplete) genişletildi</li>
+</ul>
+
+<h3>6. HA (High Availability) İyileştirmeleri</h3>
+<p>Active-Passive ve Active-Active HA kurulumlarında failover süresi kısaltıldı. Session sync mekanizması optimize edildi — özellikle yüksek trafikli ortamlarda çöküş sonrası bağlantı kopmaları minimize edildi.</p>
+
+<h2>7.2'den 7.4'e Güncelleme: Dikkat Edilmesi Gerekenler</h2>
+
+<h3>Güncelleme Öncesi Kontrol Listesi</h3>
+<table>
+  <thead><tr><th>Kontrol</th><th>Açıklama</th></tr></thead>
+  <tbody>
+    <tr><td>Konfigürasyon yedeği</td><td>execute backup config tftp/ftp ile tam config yedeği alın</td></tr>
+    <tr><td>FortiGuard lisansları</td><td>Tüm abonelikler güncel ve geçerli mi kontrol edin</td></tr>
+    <tr><td>Depolama alanı</td><td>execute disk list ile yeterli alan olduğunu doğrulayın</td></tr>
+    <tr><td>HA sürüm uyumu</td><td>HA cluster'da her iki cihaz da aynı major versiyonda olmalı</td></tr>
+    <tr><td>Upgrade path</td><td>7.0 → 7.2 → 7.4 sırasıyla geçin, direkt 7.0'dan 7.4'e atlamayın</td></tr>
+  </tbody>
+</table>
+
+<h3>Güncelleme Adımları</h3>
+<pre><code># 1. Mevcut sürümü kontrol et
+get system status
+
+# 2. Config yedeği al
+execute backup config ftp 192.168.1.100 /backup/fortigate-backup.conf admin pass
+
+# 3. Firmware indir ve yükle (GUI üzerinden önerilir)
+# System > Firmware > Upload
+
+# 4. Güncelleme sonrası doğrulama
+get system status
+diagnose sys flash list</code></pre>
+
+<h3>7.4'te Kaldırılan / Değişen Özellikler</h3>
+<ul>
+  <li><strong>SSL-VPN web mode kısıtlaması:</strong> Bazı eski browser eklentileri artık desteklenmiyor</li>
+  <li><strong>FortiToken Mobile 2.0 zorunluluğu:</strong> Eski FortiToken uygulaması güncellenmeli</li>
+  <li><strong>Eski cipher suite'ler:</strong> TLS 1.0 ve 1.1 varsayılan olarak devre dışı</li>
+</ul>
+
+<h2>Hangi Versiyonu Kullanmalı?</h2>
+<p>Fortinet'in versiyon önerileri şu şekildedir:</p>
+<ul>
+  <li><strong>7.4.x (LTS):</strong> Üretim ortamları için önerilen stabil sürüm</li>
+  <li><strong>7.2.x:</strong> Uzun süreli destek, ancak yeni özellik gelmiyor</li>
+  <li><strong>7.0.x:</strong> End of Engineering Life'a yaklaşıyor, geçiş planlanmalı</li>
+</ul>
+
+<p>Lider Network olarak FortiOS güncelleme planlaması, test ortamı kurulumu ve üretim geçiş süreçlerinde profesyonel destek sunuyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "synology-dsm-7-2-kurumsal-ozellikler-yenilikler",
+    title: "Synology DSM 7.2: Kurumsal NAS Yönetiminde Yeni Özellikler",
+    excerpt:
+      "Synology DSM 7.2 ile gelen immutable snapshot, SMB Multichannel iyileştirmeleri, Surveillance Station güncellemeleri ve gelişmiş güvenlik özellikleri. Kurumsal NAS altyapısında neler değişti?",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "DSM 7.2", "NAS", "Immutable Snapshot", "SMB Multichannel", "Kurumsal Depolama", "WORM"],
+    publishedAt: "2026-07-07",
+    readTime: 9,
+    content: `
+<h2>DSM 7.2'ye Genel Bakış</h2>
+<p><strong>Synology DiskStation Manager (DSM) 7.2</strong>, kurumsal kullanıcılar için kritik yenilikler getiren önemli bir sürümdür. Özellikle <strong>immutable snapshot</strong> desteği, SMB performans iyileştirmeleri ve güçlendirilmiş güvenlik altyapısı ile öne çıkıyor.</p>
+
+<h2>Öne Çıkan Yeni Özellikler</h2>
+
+<h3>1. Immutable Snapshot (WORM Desteği)</h3>
+<p>DSM 7.2'nin en önemli kurumsal özelliği, <strong>Write Once Read Many (WORM)</strong> uyumlu immutable snapshot desteğidir. Bu özellik sayesinde alınan anlık görüntüler belirli bir süre boyunca silinemez veya değiştirilemez hale getirilebiliyor.</p>
+
+<p>Fidye yazılımı (ransomware) saldırılarına karşı en etkili savunmalardan biri olan immutable snapshot şu senaryolarda kritiktir:</p>
+<ul>
+  <li>Saldırgan NAS'a erişim kazansa bile korunan snapshotları silemez</li>
+  <li>KVKK ve ISO 27001 uyumluluğu için denetim kayıtlarının değiştirilemez tutulması</li>
+  <li>Finansal ve hukuki kayıtların uzun süreli değiştirilemez arşivlenmesi</li>
+</ul>
+
+<pre><code># Snapshot Retention Lock — DSM arayüzünden:
+# Depolama Yöneticisi > Anlık Görüntü > Bekletme Kilidi > Etkinleştir
+# Minimum kilit süresi: 1 gün
+# Maksimum: 10 yıl</code></pre>
+
+<h3>2. SMB Multichannel Geliştirmeleri</h3>
+<p>DSM 7.2, SMB Multichannel desteğini optimize ederek çok NIC'li istemcilerde veri aktarım hızını önemli ölçüde artırdı. 10GbE ve 25GbE bağlantılarda gerçek dünya performansı yüksek belirginlik kazandı.</p>
+<ul>
+  <li>2.5GbE, 10GbE ve 25GbE arayüzlerde SMB 3.x ile bant genişliği toplama</li>
+  <li>Windows Server istemcilerinde otomatik channel negotiation</li>
+  <li>Yük dengeleme algoritması iyileştirildi — büyük dosya transferlerinde %40'a kadar hız artışı</li>
+</ul>
+
+<h3>3. Synology Drive Server Güncellemesi</h3>
+<p>Drive Server 3.x ile birlikte kurumsal dosya işbirliği yetenekleri genişledi:</p>
+<ul>
+  <li><strong>Sürüm geçmişi:</strong> 365 güne kadar dosya versiyonu saklama</li>
+  <li><strong>Seçici senkronizasyon:</strong> İstemcilerde sadece ihtiyaç duyulan klasörleri senkronize etme</li>
+  <li><strong>Admin Console:</strong> Merkezi kullanıcı depolama kotası yönetimi</li>
+  <li><strong>Harici paylaşım güvenliği:</strong> Şifreli link paylaşımı, süre sınırlı erişim</li>
+</ul>
+
+<h3>4. Active Backup for Business Güncellemeleri</h3>
+<p>DSM 7.2 ile Active Backup for Business'ın yeni özellikleri:</p>
+<ul>
+  <li>VMware vSphere 8.0 desteği</li>
+  <li>Microsoft Hyper-V Gen 2 VM desteği</li>
+  <li>Fiziksel Windows/Linux sunucu yedekleme için agent iyileştirmeleri</li>
+  <li>Çapraz hiper-vizör geri yükleme (VMware'den Hyper-V'ye P2V/V2V)</li>
+  <li>Tek dosya düzeyinde granüler geri yükleme (Granular Recovery)</li>
+</ul>
+
+<h3>5. Güvenlik Güncellemeleri</h3>
+<p>DSM 7.2, güvenlik altyapısını önemli ölçüde güçlendirdi:</p>
+
+<h4>Secure SignIn ve WebAuthn</h4>
+<p>FIDO2/WebAuthn standardı ile donanım güvenlik anahtarları (YubiKey, FIDO2 USB key) kullanılarak DSM girişi mümkün hale geldi. Kimlik avı saldırılarına karşı en güçlü 2FA yöntemi artık Synology'de yerel olarak destekleniyor.</p>
+
+<h4>Adaptive MFA</h4>
+<p>Risk bazlı çok faktörlü doğrulama: bilinmeyen konumdan veya yeni cihazdan giriş denemesinde otomatik olarak ek doğrulama isteniyor.</p>
+
+<h4>Network Firewall İyileştirmeleri</h4>
+<p>DSM dahili güvenlik duvarı coğrafi IP bloklama özelliğiyle güçlendirildi. Türkiye dışından gelen yönetim erişimini tek tıkla kısıtlamak mümkün.</p>
+
+<h2>DSM Sürüm Güncelleme Rehberi</h2>
+
+<h3>Güncelleme Öncesi</h3>
+<ol>
+  <li><strong>Hyper Backup ile tam yedek alın</strong> — güncelleme sonrası sorun yaşanırsa geri dönüş için</li>
+  <li>Yüklü paketlerin DSM 7.2 uyumluluğunu kontrol edin (Synology Paket Merkezi'nden)</li>
+  <li>RAID/SHR dizisi sağlıklı mı kontrol edin: Depolama Yöneticisi > Depolama Havuzu</li>
+  <li>UPS bağlantısı varsa güncelleme sırasında aktif olduğundan emin olun</li>
+</ol>
+
+<h3>Güncelleme Sonrası Doğrulama</h3>
+<ul>
+  <li>Hyper Backup görevleri çalışıyor mu?</li>
+  <li>Active Backup yedekleme planları aktif mi?</li>
+  <li>Surveillance Station kamera bağlantıları sorunsuz mu?</li>
+  <li>SMB/NFS paylaşımlarına erişim sağlanıyor mu?</li>
+  <li>Synology Drive senkronizasyonu çalışıyor mu?</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>DSM 7.2, immutable snapshot ve gelişmiş SMB performansı ile kurumsal NAS altyapısı için belirgin bir adım oldu. Özellikle ransomware koruması ve uyumluluk gereksinimleri açısından WORM desteği kritik önem taşıyor. Lider Network olarak Synology NAS kurulumu, DSM yapılandırması ve yedekleme tasarımında uzman desteği sunuyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "synology-beestation-kisisel-kurumsal-bulut-depolama",
+    title: "Synology BeeStation: NAS'ı Olmayan Kullanıcılar İçin Kişisel Bulut",
+    excerpt:
+      "Synology BeeStation, kurulum gerektirmeyen, Synology C2 destekli kişisel bulut depolama çözümüdür. KOBİ ve bireysel kullanıcılar için Google Drive alternatifi, farka ve avantajları.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology BeeStation", "Kişisel Bulut", "C2 Storage", "NAS Alternatifi", "Google Drive Alternatifi", "Synology"],
+    publishedAt: "2026-07-04",
+    readTime: 7,
+    content: `
+<h2>BeeStation Nedir?</h2>
+<p><strong>Synology BeeStation</strong>, geleneksel NAS cihazlarının karmaşık kurulum ve yönetim süreçleri olmadan kişisel bulut depolama sunan yeni nesil bir Synology ürünüdür. Teknik bilgisi olmayan kullanıcılar veya IT altyapısına yatırım yapmak istemeyen KOBİ'ler için ideal bir çözümdür.</p>
+
+<h2>Geleneksel NAS ile Farkı</h2>
+<table>
+  <thead><tr><th>Özellik</th><th>Synology NAS</th><th>BeeStation</th></tr></thead>
+  <tbody>
+    <tr><td>Kurulum süreci</td><td>DSM kurulumu, disk yapılandırması</td><td>Tak-çalıştır (5 dakika)</td></tr>
+    <tr><td>Teknik gereksinim</td><td>Orta-ileri</td><td>Minimum</td></tr>
+    <tr><td>Genişletilebilirlik</td><td>Yüksek (disk, bellek, paketler)</td><td>Sınırlı (tek disk)</td></tr>
+    <tr><td>Uygulama ekosistemi</td><td>Surveillance, Drive, Backup vb.</td><td>Dosya depolama odaklı</td></tr>
+    <tr><td>Hedef kitle</td><td>KOBİ, kurumsal</td><td>Bireysel, küçük ekip</td></tr>
+    <tr><td>Fiyat</td><td>Cihaz + disk ayrı</td><td>Dahili disk, all-in-one</td></tr>
+  </tbody>
+</table>
+
+<h2>Teknik Özellikler</h2>
+<p>BeeStation'ın donanım özellikleri:</p>
+<ul>
+  <li><strong>Depolama:</strong> Dahili 4TB HDD (BST150-4T modeli)</li>
+  <li><strong>Bağlantı:</strong> 1GbE LAN + Wi-Fi (Wi-Fi 5)</li>
+  <li><strong>Güç tüketimi:</strong> Standby'da çok düşük, otomatik uyku modu</li>
+  <li><strong>Erişilebilirlik:</strong> iOS ve Android uygulamaları üzerinden her yerden</li>
+  <li><strong>Bulut yedekleme:</strong> Synology C2 ile otomatik yedekleme seçeneği</li>
+</ul>
+
+<h2>BeeStation Nasıl Çalışır?</h2>
+
+<h3>Kurulum Süreci</h3>
+<ol>
+  <li>BeeStation'ı prize takın ve modeme bağlayın</li>
+  <li>Bee mobil uygulamasını indirin</li>
+  <li>QR kodu tarayarak cihazı eşleştirin</li>
+  <li>Synology hesabıyla oturum açın</li>
+  <li>Kullanmaya başlayın — tamamdır</li>
+</ol>
+
+<p>Port yönlendirme, DDNS, SSL sertifikası gibi teknik adımlar gerektirmez. Synology'nin QuickConnect altyapısı uzaktan erişimi otomatik olarak yönetir.</p>
+
+<h3>Temel Özellikler</h3>
+<ul>
+  <li><strong>Otomatik fotoğraf senkronizasyonu:</strong> Telefon kamerasından çekilen fotoğraflar anında BeeStation'a yüklenir</li>
+  <li><strong>Dosya paylaşımı:</strong> Link oluşturarak dosya ve klasörleri paylaşın</li>
+  <li><strong>Çoklu kullanıcı:</strong> Aile üyeleri veya küçük ekip için birden fazla hesap</li>
+  <li><strong>Bilgisayar yedekleme:</strong> Windows ve macOS için otomatik yedekleme</li>
+  <li><strong>C2 Cloud entegrasyonu:</strong> Synology C2 Storage ile 3-2-1 yedekleme kuralını uygulama</li>
+</ul>
+
+<h2>BeeStation'ın KOBİ İçin Kullanım Senaryoları</h2>
+
+<h3>Senaryo 1: Küçük Ofis Dosya Paylaşımı</h3>
+<p>5-10 kişilik bir ekip için NAS'a yatırım yapmadan merkezi dosya depolama ve paylaşım altyapısı. Her çalışan Bee uygulamasıyla dosyalara erişebilir, yönetici paylaşım izinlerini kontrol eder.</p>
+
+<h3>Senaryo 2: Ofis Dışı Çalışanlar İçin Dosya Erişimi</h3>
+<p>Sık seyahat eden veya uzaktan çalışan personelin ofis dosyalarına güvenli erişimi. VPN gerektirmez, Synology'nin kendi güvenli tünel altyapısı kullanılır.</p>
+
+<h3>Senaryo 3: Muhasebe Kayıtları Arşivleme</h3>
+<p>Fatura, sözleşme ve mali kayıtların düşük maliyetle uzun süreli depolanması. C2 yedekleme ile ikinci kopya otomatik olarak bulutta tutulur.</p>
+
+<h2>BeeStation vs Google Drive / OneDrive</h2>
+<table>
+  <thead><tr><th>Özellik</th><th>BeeStation</th><th>Google Drive / OneDrive</th></tr></thead>
+  <tbody>
+    <tr><td>Aylık maliyet</td><td>Tek seferlik cihaz alımı</td><td>Kullanıcı başına aylık ücret</td></tr>
+    <tr><td>Veri gizliliği</td><td>Veriler kendi cihazınızda</td><td>Üçüncü taraf sunucuları</td></tr>
+    <tr><td>Depolama sınırı</td><td>4TB (cihaz kapasitesi)</td><td>Pakete göre değişken</td></tr>
+    <tr><td>KVKK uyumu</td><td>Kolay (yerelde veri)</td><td>Ek düzenleme gerekebilir</td></tr>
+    <tr><td>İnternet bağımlılığı</td><td>LAN'da internet olmadan da erişim</td><td>Her zaman internet gerekli</td></tr>
+  </tbody>
+</table>
+
+<h2>Sonuç</h2>
+<p>Synology BeeStation, geleneksel NAS'ın güvenilirliğini kurumsal olmayan kullanıcılara açan akıllı bir üründür. Bulut abonelik maliyetlerinden kaçınmak isteyen, veri gizliliğine önem veren ve kurumsal NAS yönetimine ihtiyaç duymayan küçük işletmeler için güçlü bir alternatif sunar. Lider Network olarak BeeStation danışmanlığı ve kurulumunda yanınızdayız.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
