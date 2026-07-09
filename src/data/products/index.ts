@@ -21,7 +21,8 @@ export const brands: BrandData[] = [
     accentColor: "#EE3124",
     categories: [
       { slug: "fortigate", label: "FortiGate" },
-      { slug: "fortiswitch", label: "FortiSwitch" },
+      { slug: "fortiswitch", label: "FortiSwitch Erişim" },
+      { slug: "fortiswitch-omurga", label: "FortiSwitch Omurga" },
       { slug: "fortiap", label: "FortiAP" },
       { slug: "fortianalyzer", label: "FortiAnalyzer" },
       { slug: "fortimanager", label: "FortiManager" },
