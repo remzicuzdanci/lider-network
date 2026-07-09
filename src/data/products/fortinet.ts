@@ -1298,6 +1298,36 @@ export const fortinetProducts: Product[] = [
 
   // ── FortiAP K Serisi (Wi-Fi 7) ─────────────────────────────────
   {
+    slug: "fortiap-231k",
+    brand: "Fortinet",
+    brandSlug: "fortinet",
+    category: "FortiAP",
+    categorySlug: "fortiap",
+    series: "K Serisi",
+    name: "FortiAP 231K",
+    shortName: "231K",
+    description: "Wi-Fi 7 (802.11be) iç mekan erişim noktası. 231G'nin halefi olarak 6 GHz bant, MLO ve yüksek kanal genişliği desteği ile bir sonraki nesil kablosuz ağ deneyimi sunar.",
+    targetAudience: ["KOBİ", "Orta Ölçekli", "Kurumsal"],
+    specs: [
+      { label: "Wi-Fi Standardı", value: "Wi-Fi 7 (802.11be)" },
+      { label: "Bant", value: "Tri-band (2.4 + 5 + 6 GHz)" },
+      { label: "Anten", value: "Dahili 2x2 MU-MIMO" },
+      { label: "Bağlantı", value: "1x 2,5GE RJ45 (PoE++)" },
+      { label: "Ek Özellikler", value: "MLO / BLE / Zigbee" },
+    ],
+    highlights: [
+      "Wi-Fi 7 MLO — birden fazla bant eş zamanlı bağlantı",
+      "6 GHz bant ile tıkanıklıksız, ultra düşük gecikme",
+      "231G'ye göre belirgin kapasite ve hız artışı",
+      "FortiGate Security Fabric entegrasyonu",
+    ],
+    badge: "Wi-Fi 7",
+    isNew: true,
+    metaTitle: "FortiAP 231K | Wi-Fi 7 İç Mekan AP — Lider Network",
+    metaDescription: "FortiAP 231K: Wi-Fi 7, tri-band, MLO, 2.5GE uplink. KOBİ ve kurumsal için yeni nesil kablosuz ağ erişim noktası.",
+    keywords: ["fortiap 231k", "wifi 7 access point", "fortiap k serisi", "802.11be ap", "fortiap 231k fiyat"],
+  },
+  {
     slug: "fortiap-241k",
     brand: "Fortinet",
     brandSlug: "fortinet",
