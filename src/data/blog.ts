@@ -7864,6 +7864,357 @@ diagnose sys flash list</code></pre>
     `,
   },
 
+  {
+    slug: "fortideceptor-nedir-aldatma-tabanli-tehdit-tespiti",
+    title: "FortiDeceptor Nedir? Saldırganları Tuzağa Düşüren Aldatma Teknolojisi",
+    excerpt:
+      "FortiDeceptor, ağınızda sahte varlıklar (decoy) oluşturarak saldırganları tuzağa çeken ve lateral movement'ı gerçek zamanlı tespit eden Fortinet'in aldatma tabanlı güvenlik platformudur. Honeypot'tan farkı, kurumsal entegrasyonu ve nasıl çalıştığı.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiDeceptor", "Deception Technology", "Honeypot", "Lateral Movement", "Fortinet", "Siber Güvenlik", "Tehdit Tespiti", "Security Fabric"],
+    publishedAt: "2026-07-09",
+    readTime: 11,
+    featured: false,
+    content: `
+<h2>FortiDeceptor Nedir?</h2>
+<p><strong>FortiDeceptor</strong>, Fortinet'in <em>aldatma tabanlı tehdit tespiti (deception technology)</em> platformudur. Ağınızın içine gerçekmiş gibi görünen sahte sunucular, iş istasyonları, ağ cihazları ve kimlik bilgileri yerleştirerek saldırganları bu tuzaklara çeker. Bir saldırgan bu sahte varlıklarla etkileşime geçtiği anda — henüz gerçek bir zarar vermeden — anında tespit edilir ve otomatik yanıt tetiklenir.</p>
+
+<p>Geleneksel güvenlik araçları (firewall, IPS, EDR) <strong>bilinen tehditleri engeller</strong>. FortiDeceptor ise farklı bir strateji izler: <strong>bilinmeyen saldırganları aktif olarak avlar</strong>. Çünkü meşru bir kullanıcının sahte varlıklara erişmesi için hiçbir nedeni yoktur — etkileşim başlı başına bir tehdit göstergesidir.</p>
+
+<h2>Geleneksel Honeypot ile Farkı</h2>
+<table>
+  <thead><tr><th>Özellik</th><th>Eski Nesil Honeypot</th><th>FortiDeceptor</th></tr></thead>
+  <tbody>
+    <tr><td>Kurulum karmaşıklığı</td><td>Manuel, zaman alıcı</td><td>Merkezi yönetim, şablon tabanlı</td></tr>
+    <tr><td>Ölçeklenebilirlik</td><td>Sınırlı</td><td>Binlerce decoy, çoklu VLAN</td></tr>
+    <tr><td>Entegrasyon</td><td>İzole çalışır</td><td>Security Fabric, FortiGate, FortiSIEM</td></tr>
+    <tr><td>Otomatik yanıt</td><td>Yok</td><td>Otomatik karantina, politika bloklama</td></tr>
+    <tr><td>Decoy türleri</td><td>Genellikle tek tip (SSH/HTTP)</td><td>Windows, Linux, IoT, OT, ICS, SCADA</td></tr>
+    <tr><td>Sahte kimlik bilgileri</td><td>Yok</td><td>Active Directory breadcrumb desteği</td></tr>
+    <tr><td>Fidye yazılımı tespiti</td><td>Çok sınırlı</td><td>Özel ransomware decoy'ları</td></tr>
+  </tbody>
+</table>
+
+<h2>FortiDeceptor Nasıl Çalışır?</h2>
+
+<h3>1. Decoy (Sahte Varlık) Oluşturma</h3>
+<p>FortiDeceptor, gerçek ağınızın bir kopyasını simüle eder. Sahte varlıklar (decoy) şunları içerebilir:</p>
+<ul>
+  <li><strong>Sahte sunucular:</strong> Windows Server, Linux, web server, veritabanı sunucusu</li>
+  <li><strong>Sahte ağ cihazları:</strong> Router, switch, IP kamera, yazıcı simülasyonları</li>
+  <li><strong>OT/ICS/SCADA decoy'ları:</strong> Endüstriyel kontrol sistemleri simülasyonu</li>
+  <li><strong>Sahte kimlik bilgileri (breadcrumb):</strong> Gerçek iş istasyonlarına yerleştirilen sahte şifreler, kayıtlı RDP bağlantıları, tarayıcı geçmişi — saldırgan bunları kullanmaya çalışınca yakalanır</li>
+  <li><strong>Ransomware decoy dosyaları:</strong> Fidye yazılımlarının şifrelemeye başladığı anda tetiklenen sahte dosyalar</li>
+</ul>
+
+<h3>2. Breadcrumb (Ekmek Kırıntısı) Teknolojisi</h3>
+<p>FortiDeceptor'ın en güçlü özelliklerinden biri <strong>breadcrumb</strong> desteğidir. Gerçek iş istasyonlarına ve sunuculara sahte iz bilgileri yerleştirilir:</p>
+<ul>
+  <li>Tarayıcıda kayıtlı sahte şifreler (FortiDeceptor'a işaret eder)</li>
+  <li>Windows Credential Manager'da sahte domain hesabı</li>
+  <li>Ağ sürücüsü olarak eşlenmiş sahte paylaşım klasörü</li>
+  <li>SSH known_hosts dosyasında sahte sunucu girişleri</li>
+</ul>
+<p>Saldırgan çalışan bir bilgisayarı ele geçirdiğinde bu breadcrumb'ları keşfeder ve FortiDeceptor tuzağına yönlendirilir.</p>
+
+<h3>3. Tespit ve Otomatik Yanıt</h3>
+<p>Bir saldırgan decoy ile etkileşime geçtiği anda:</p>
+<ol>
+  <li>FortiDeceptor gerçek zamanlı alarm üretir</li>
+  <li>Saldırganın IP, MAC adresi, kullanıcı adı ve davranışı loglanır</li>
+  <li>Security Fabric entegrasyonu ile FortiGate'e otomatik karantina komutu gönderilir</li>
+  <li>FortiSIEM/FortiAnalyzer'a olay kaydı iletilir</li>
+  <li>E-posta, SMS veya webhook ile güvenlik ekibi uyarılır</li>
+</ol>
+
+<h2>Hangi Tehditleri Tespit Eder?</h2>
+
+<h3>Lateral Movement (Yanal Hareket)</h3>
+<p>Saldırganların ağ içinde bir sistemden diğerine geçme sürecini tespit etmek, geleneksel araçlarla son derece zordur. FortiDeceptor, saldırganın decoy'a ilk dokunuşunda lateral movement'ı yakalar — gerçek bir zarar vermeden önce.</p>
+
+<h3>Ransomware Erken Uyarısı</h3>
+<p>Fidye yazılımları sistematik olarak dosyaları tarar ve şifreler. FortiDeceptor'ın yerleştirdiği sahte dosya dizinleri, ransomware aktivitesini ilk saniyelerinde tespit eder. Güvenlik ekibi diğer sistemler etkilenmeden önce müdahale edebilir.</p>
+
+<h3>Kimlik Bilgisi Hırsızlığı</h3>
+<p>Pass-the-Hash, Kerberoasting ve AD credential dumping saldırıları breadcrumb'lar sayesinde anında yakalanır.</p>
+
+<h3>OT/ICS Saldırıları</h3>
+<p>Endüstriyel ortamlarda SCADA ve PLC sistemlerini taklit eden decoy'lar, bu kritik altyapılara yönelik saldırıları güvenli şekilde tespit eder.</p>
+
+<h2>Deployment Modelleri</h2>
+
+<h3>Donanım Appliance</h3>
+<ul>
+  <li><strong>FDC-100G:</strong> Küçük ve orta ölçekli işletmeler için, 1GbE portlu kompakt form</li>
+  <li><strong>FDC-1000G:</strong> Kurumsal ortamlar, yüksek yoğunluklu decoy kapasitesi</li>
+</ul>
+
+<h3>Sanal Makine (VM)</h3>
+<p>VMware vSphere, Microsoft Hyper-V ve KVM üzerinde sanal appliance olarak kurulabilir. Mevcut sanallaştırma altyapısına entegre edilebilir.</p>
+
+<h3>Çoklu Segment Desteği</h3>
+<p>FortiDeceptor, tek bir yönetim noktasından onlarca VLAN segmentine decoy dağıtabilir. Her VLAN için ayrı decoy profili tanımlanabilir: örneğin IT ağında Windows Server, OT ağında PLC simülasyonu.</p>
+
+<h2>Security Fabric Entegrasyonu</h2>
+<p>FortiDeceptor, Fortinet Security Fabric'in kritik bir parçasıdır:</p>
+<ul>
+  <li><strong>FortiGate:</strong> Tespit edilen saldırgan IP'si otomatik olarak engellenir veya karantinaya alınır</li>
+  <li><strong>FortiAnalyzer:</strong> Tüm decoy etkileşimleri merkezi log yönetimine iletilir</li>
+  <li><strong>FortiSIEM:</strong> SIEM korelasyon kurallarına FortiDeceptor olayları dahil edilir</li>
+  <li><strong>FortiSOAR:</strong> Playbook otomasyonu ile müdahale süreci otomatikleştirilir</li>
+  <li><strong>FortiEDR:</strong> Uç nokta tespiti ile FortiDeceptor alarmları çapraz korelasyon</li>
+</ul>
+
+<h2>Kurumsal Kullanım Senaryoları</h2>
+
+<h3>Senaryo 1: Fidye Yazılımı Erken Uyarı Sistemi</h3>
+<p>Dosya sunucularına ve kritik iş istasyonlarına sahte dizinler ve dosyalar eklenir. Ransomware bu dosyaları şifrelemeye başladığı anda alarm tetiklenir, etkilenen sistem izole edilir.</p>
+
+<h3>Senaryo 2: İçeriden Tehdit Tespiti</h3>
+<p>Yetkili bir kullanıcının erişmesi için hiçbir meşru nedeni olmayan decoy'lar, insider threat senaryolarında kritik kanıt üretir.</p>
+
+<h3>Senaryo 3: Penetrasyon Testi Sınır Belirleme</h3>
+<p>Pentest ekipleri için de değerli — saldırganların ağda ne kadar ilerlediğini ve hangi sistemlere ulaştığını somut olarak gösterir.</p>
+
+<h2>Kimler Kullanmalı?</h2>
+<p>FortiDeceptor özellikle şu sektörler için kritiktir:</p>
+<ul>
+  <li><strong>Finans ve bankacılık:</strong> BDDK uyumu ve APT koruması</li>
+  <li><strong>Sağlık:</strong> HIPAA uyumu, hasta verisi koruması</li>
+  <li><strong>Üretim/OT:</strong> SCADA ve ICS sistemleri koruması</li>
+  <li><strong>Kamu kurumları:</strong> Devlet ağlarında APT tespiti</li>
+  <li><strong>Kritik altyapı:</strong> Enerji, telekomünikasyon, ulaşım</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>FortiDeceptor, güvenlik mimarisindeki en kritik boşluğu kapatır: <strong>ağ içine sızmış saldırganın tespiti</strong>. Firewall saldırganı dışarıda tutar; ama içeri girdiğinde FortiDeceptor onu yakalar. Sıfır yanlış pozitif alarmı, gerçek zamanlı müdahale ve Security Fabric entegrasyonu ile kurumsal güvenlik olgunluk seviyesini bir üst basamağa taşır.</p>
+<p>Lider Network olarak FortiDeceptor tasarımı, decoy stratejisi ve Security Fabric entegrasyonunda danışmanlık hizmeti sunuyoruz.</p>
+    `,
+  },
+
+  {
+    slug: "fortinet-automation-stitch-otomatik-guvenlik-yaniti",
+    title: "Fortinet Automation Stitch: FortiGate'te Olaylara Otomatik Yanıt",
+    excerpt:
+      "FortiOS Automation Stitch, güvenlik olaylarına otomatik yanıt vermenizi sağlar. Yüksek CPU alarmından IP karantinasına, interface down bildiriminden webhook tetiklemesine kadar kurumsal otomasyon senaryoları ve yapılandırma rehberi.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["Automation Stitch", "FortiGate", "FortiOS", "Güvenlik Otomasyonu", "SOAR", "Webhook", "IP Karantina", "Fortinet"],
+    publishedAt: "2026-07-09",
+    readTime: 10,
+    content: `
+<h2>Automation Stitch Nedir?</h2>
+<p><strong>Automation Stitch</strong>, FortiOS'un yerleşik otomasyon motorudur. "Eğer X olayı gerçekleşirse, Y aksiyonunu otomatik olarak gerçekleştir" mantığıyla çalışır. Güvenlik ekiplerinin manuel müdahale etmek zorunda kaldığı tekrarlayan görevleri otomatikleştirir ve olay müdahale süresini (MTTR) dramatik biçimde düşürür.</p>
+
+<p>Dış bir SOAR platformu gerektirmez — FortiGate'in kendisinde yerleşik gelir. FortiOS 6.2 ve üzeri tüm modellerde kullanılabilir.</p>
+
+<h2>Automation Stitch Mimarisi</h2>
+<p>Her Automation Stitch iki temel bileşenden oluşur:</p>
+
+<h3>Trigger (Tetikleyici)</h3>
+<p>Hangi olay gerçekleştiğinde otomasyon devreye girecek?</p>
+<ul>
+  <li><strong>FortiOS Event Log:</strong> Belirli log kategorisi ve seviyesinde (örn: IPS kritik alarm)</li>
+  <li><strong>IOC (Indicator of Compromise):</strong> FortiGuard tarafından tehdit olarak işaretlenen IP/domain ile iletişim</li>
+  <li><strong>Security Rating:</strong> Güvenlik skoru belirli bir eşiğin altına düştüğünde</li>
+  <li><strong>Interface Status:</strong> Bir WAN bağlantısı koptuğunda</li>
+  <li><strong>CPU/Memory Threshold:</strong> Kaynak kullanımı kritik seviyeye ulaştığında</li>
+  <li><strong>Compromised Host:</strong> FortiGuard'ın botnet veritabanındaki bir host iç ağda tespit edildiğinde</li>
+  <li><strong>Schedule:</strong> Belirli zamanlarda düzenli olarak (cron benzeri)</li>
+</ul>
+
+<h3>Action (Aksiyon)</h3>
+<p>Tetikleyici devreye girdiğinde ne yapılacak?</p>
+<ul>
+  <li><strong>Email:</strong> Güvenlik ekibine e-posta bildirimi</li>
+  <li><strong>SMS:</strong> Telefon bildirimi (FortiGate SMS gateway ile)</li>
+  <li><strong>Webhook:</strong> Harici sisteme HTTP POST — Slack, Teams, Jira, PagerDuty vb.</li>
+  <li><strong>CLI Script:</strong> FortiGate CLI komutları çalıştırma</li>
+  <li><strong>Quarantine IP:</strong> Kötü amaçlı IP'yi otomatik karantinaya alma</li>
+  <li><strong>FortiQuarantine:</strong> Uç noktayı ağdan izole etme (NAC)</li>
+  <li><strong>AWS Lambda / Azure Function:</strong> Bulut fonksiyon tetikleme</li>
+  <li><strong>Slack / MS Teams:</strong> Anlık mesajlaşma bildirimi</li>
+</ul>
+
+<h2>Pratik Kullanım Senaryoları</h2>
+
+<h3>Senaryo 1: Kötü Amaçlı IP Otomatik Karantina</h3>
+<p>IPS veya FortiGuard tehdit akışı bir IP'yi kötü amaçlı olarak tespit ettiğinde, sistem beklemeden otomatik engelleme yapar.</p>
+
+<p><strong>GUI Yapılandırması:</strong></p>
+<p>Security Fabric → Automation → Create New</p>
+<ul>
+  <li><strong>Trigger:</strong> FortiOS Event Log → Log Filter: IPS, Severity: Critical</li>
+  <li><strong>Action:</strong> Quarantine IP</li>
+</ul>
+
+<p><strong>CLI Yapılandırması:</strong></p>
+<pre><code>config system automation-trigger
+  edit "IPS-Critical-Trigger"
+    set event-type event-log
+    set logtype ips
+    set log-search-filter "severity=critical"
+  next
+end
+
+config system automation-action
+  edit "Quarantine-Attacker-IP"
+    set action-type quarantine-ip
+    set duration 3600
+  next
+end
+
+config system automation-stitch
+  edit "IPS-Auto-Quarantine"
+    set trigger "IPS-Critical-Trigger"
+    config actions
+      edit 1
+        set action "Quarantine-Attacker-IP"
+      next
+    end
+  next
+end</code></pre>
+
+<h3>Senaryo 2: WAN Kopunca Teams'e Bildirim</h3>
+<p>WAN bağlantısı kesildiğinde Microsoft Teams kanalına otomatik mesaj gönderilir. NOC ekibi bağlantı sorununu anında öğrenir.</p>
+
+<pre><code>config system automation-action
+  edit "Teams-WAN-Alert"
+    set action-type webhook
+    set uri "https://outlook.office.com/webhook/YOUR-TEAMS-WEBHOOK-URL"
+    set http-body '{"text": "⚠️ WAN BAĞLANTISI KESİLDİ — FortiGate: %%log.srcip%%  Zaman: %%log.date%% %%log.time%%"}'
+    set headers "Content-Type: application/json"
+  next
+end
+
+config system automation-trigger
+  edit "WAN-Down-Trigger"
+    set event-type event-log
+    set logtype event
+    set log-search-filter "subtype=system action=link-down"
+  next
+end
+
+config system automation-stitch
+  edit "WAN-Teams-Notification"
+    set trigger "WAN-Down-Trigger"
+    config actions
+      edit 1
+        set action "Teams-WAN-Alert"
+      next
+    end
+  next
+end</code></pre>
+
+<h3>Senaryo 3: Yüksek CPU'da Otomatik Tanılama</h3>
+<p>CPU kullanımı %90'ı aştığında CLI script çalışarak anlık oturum ve process bilgisini toplar, e-posta ile iletir.</p>
+
+<pre><code>config system automation-action
+  edit "CPU-Diagnose-Script"
+    set action-type cli-script
+    set script "
+      diagnose sys top 3 30
+      get system performance status
+      diagnose sys session stat
+    "
+  next
+end
+
+config system automation-trigger
+  edit "High-CPU-Trigger"
+    set event-type event-log
+    set logtype event
+    set log-search-filter "msg=*cpu*high*"
+  next
+end</code></pre>
+
+<h3>Senaryo 4: Botnet Tespitinde Uç Nokta İzolasyonu</h3>
+<p>İç ağda bir cihazın botnet komuta-kontrol sunucusuyla iletişim kurduğu tespit edildiğinde, o cihaz FortiSwitch üzerinden ağdan otomatik izole edilir.</p>
+
+<pre><code>config system automation-trigger
+  edit "Compromised-Host-Trigger"
+    set event-type compromised-host
+  next
+end
+
+config system automation-action
+  edit "FortiQuarantine-Host"
+    set action-type quarantine-fortiswitch
+    set duration 86400
+  next
+end
+
+config system automation-stitch
+  edit "Botnet-Auto-Isolate"
+    set trigger "Compromised-Host-Trigger"
+    config actions
+      edit 1
+        set action "FortiQuarantine-Host"
+        set delay 0
+      next
+    end
+  next
+end</code></pre>
+
+<h3>Senaryo 5: Günlük Güvenlik Raporu</h3>
+<p>Her sabah saat 08:00'de FortiGate'in önceki gece istatistiklerini içeren özet raporu e-posta ile gönderir.</p>
+
+<pre><code>config system automation-trigger
+  edit "Daily-Report-Schedule"
+    set event-type scheduled
+    set schedule-type daily
+    set start-time "08:00:00"
+  next
+end
+
+config system automation-action
+  edit "Send-Daily-Summary"
+    set action-type email
+    set email-to "soc@sirket.com.tr"
+    set email-subject "FortiGate Günlük Güvenlik Özeti — %%log.date%%"
+    set message "Önceki 24 saat özeti: Engellenen bağlantılar, IPS alarmları ve yüksek riskli olaylar için FortiAnalyzer'ı inceleyin."
+  next
+end</code></pre>
+
+<h2>Değişken (Variable) Kullanımı</h2>
+<p>Automation Stitch mesaj şablonlarında log alanlarına dinamik olarak erişebilirsiniz:</p>
+
+<table>
+  <thead><tr><th>Değişken</th><th>Açıklama</th></tr></thead>
+  <tbody>
+    <tr><td><code>%%log.srcip%%</code></td><td>Kaynak IP adresi</td></tr>
+    <tr><td><code>%%log.dstip%%</code></td><td>Hedef IP adresi</td></tr>
+    <tr><td><code>%%log.msg%%</code></td><td>Log mesajı</td></tr>
+    <tr><td><code>%%log.severity%%</code></td><td>Alarm seviyesi</td></tr>
+    <tr><td><code>%%log.date%%</code></td><td>Tarih</td></tr>
+    <tr><td><code>%%log.time%%</code></td><td>Saat</td></tr>
+    <tr><td><code>%%log.user%%</code></td><td>Kullanıcı adı</td></tr>
+    <tr><td><code>%%log.devname%%</code></td><td>FortiGate cihaz adı</td></tr>
+  </tbody>
+</table>
+
+<h2>En İyi Uygulamalar</h2>
+
+<h3>1. Aksiyon Gecikmesi (Delay) Kullanın</h3>
+<p>Özellikle karantina aksiyonlarında yanlış pozitif riskini azaltmak için kısa bir gecikme eklenebilir. 60 saniye bekleme, kritik bir iş sisteminin yanlışlıkla izole edilmesini önleyebilir.</p>
+
+<h3>2. Test Modunda Başlayın</h3>
+<p>Yeni stitch'leri önce e-posta veya webhook aksiyonuyla test edin. Karantina aksiyonuna geçmeden önce tetiklenme koşullarının doğru çalıştığını doğrulayın.</p>
+
+<h3>3. Log Filtreleri Spesifik Tutun</h3>
+<p>Çok geniş bir tetikleyici filtresi, yüksek hacimli alarm üretir. IPS için minimum severity "high" veya "critical" olarak ayarlanması önerilir.</p>
+
+<h3>4. Stitchleri Belgeleyin</h3>
+<p>Her stitch'in adında ne yaptığını belirtin: "IPS-Critical-Quarantine", "WAN-Down-Teams-Alert" gibi. Bakım ve sorun giderme sürecini kolaylaştırır.</p>
+
+<h2>Automation Stitch ile SOAR Entegrasyonu</h2>
+<p>FortiGate Automation Stitch, daha gelişmiş playbook senaryoları için FortiSOAR ile entegre çalışır. Webhook aksiyonu ile FortiSOAR'a olay gönderilir; FortiSOAR zengin playbook mantığıyla (çok adımlı karar ağaçları, harici sistem entegrasyonları) işlemi devralır.</p>
+
+<h2>Sonuç</h2>
+<p>Automation Stitch, FortiGate'i pasif bir güvenlik cihazından aktif bir yanıt motoruna dönüştürür. Güvenlik ekibinin her alarm için manuel müdahale etmek zorunda kalmadan, kritik olaylara saniyeler içinde otomatik yanıt verilmesini sağlar. Lider Network olarak Automation Stitch tasarımı, senaryo geliştirme ve SOAR entegrasyonunda danışmanlık hizmeti sunuyoruz.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
