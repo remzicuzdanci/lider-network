@@ -8215,6 +8215,338 @@ end</code></pre>
     `,
   },
 
+  {
+    slug: "synology-pas7700-amiral-gemisi-all-flash-nvme-depolama",
+    title: "Synology PAS7700: Yeni Amiral Gemimizle Tanışın — Kurumsal All-Flash NVMe Depolama",
+    excerpt:
+      "Synology, Haziran 2026'da kurumsal depolama dünyasına yeni amiral gemisi PAS7700'ü tanıttı. 2 milyon IOPS performans, 30GB/s aktarım hızı ve petabayt ölçeklenebilirlik sunan all-flash NVMe platform.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "PAS7700", "All-Flash", "NVMe", "Kurumsal Depolama", "DSM Enterprise", "PAS Serisi"],
+    publishedAt: "2026-07-09",
+    readTime: 10,
+    featured: false,
+    content: `
+<h2>Synology'nin Yeni Amiral Gemisi: PAS7700</h2>
+<p>Synology, 12 Haziran 2026 tarihinde <strong>PAS7700</strong>'ü duyurarak kurumsal depolama pazarına güçlü bir giriş yaptı. "Yeni amiral gemimizle tanışın" sloganıyla piyasaya çıkan PAS7700; 25 yıllık depolama mühendisliği birikimi ve birinci taraf yazılım deneyimiyle geliştirilen, all-flash NVMe tabanlı bir kurumsal depolama platformudur.</p>
+
+<p>PAS7700, hangi kritik iş yükünü yönetmeniz gerekirse gereksin <strong>performans, güvenilirlik ve kullanım kolaylığı</strong> için tasarlanmıştır. Üretim veritabanları, sanallaştırma altyapıları ve zamana duyarlı medya iş akışları için ideal olan bu platform, veri altyapısında yeni bir çağın kapılarını aralıyor.</p>
+
+<h2>Teknik Özellikler ve Performans</h2>
+
+<h3>2 Milyon IOPS — Gerçek Kurumsal Güç</h3>
+<p>PAS7700, <strong>2 milyon IOPS'a kadar performans</strong> sunabilmektedir. Bu değer, Synology'nin dahili testlerine dayanmakta olup üretim veritabanları ve en kritik hypervisor kümeleri için gerekli olan yoğun I/O iş yüklerini rahatlıkla karşılar.</p>
+
+<h3>30 GB/s Sıralı Veri Aktarım Hızı</h3>
+<p><strong>30 GB/s sıralı okuma/yazma hızı</strong>, büyük veri analizi, video düzenleme ve yüksek çözünürlüklü medya iş akışları gibi bant genişliği yoğun senaryolarda üstün performans sağlar.</p>
+
+<h3>Milisaniye Altı Gecikme</h3>
+<p>PAS7700'ün <strong>sub-millisecond (milisaniyenin altında) gecikme süresi</strong>, en fazla gecikme toleransı olmayan iş yükleri için kritik bir avantaj sunar. Finansal işlemler, gerçek zamanlı analitik ve yüksek frekanslı ticaret sistemleri bu özellikten doğrudan yararlanır.</p>
+
+<h2>Active-Active Güvenilirlik</h2>
+<p>Kurumsal iş yükleri kesinti planlayamaz; depolama aygıtınız da planlamak zorunda kalmamalıdır. PAS7700, <strong>active-active güvenilirlik</strong> mimarisi üzerine inşa edilmiştir:</p>
+<ul>
+  <li>Kesintisiz yazılım güncellemeleri — sistem çalışırken güncelleme yapabilirsiniz</li>
+  <li>Online bakım işlemleri — disk değişimi, genişleme ve yapılandırma değişiklikleri kesintisiz gerçekleştirilir</li>
+  <li>Maksimum servis ve veri kullanılabilirliği — SLA gereksinimlerinizi karşılamak için tasarlanmış mimari</li>
+  <li>Yeni DSM Enterprise platform üzerine inşa edilmiş yüksek erişilebilirlik yetenekleri</li>
+</ul>
+
+<h2>Petabayt Ölçeklenebilirlik</h2>
+<p>PAS7700'ün kapasite ölçeği, kurumların büyüyen veri ihtiyaçlarını karşılayacak şekilde tasarlanmıştır:</p>
+<ul>
+  <li><strong>7 adet PAX224 genişleme ünitesi</strong> desteği ile maksimum kapasiteye ulaşılabilir</li>
+  <li><strong>1,65 PB ham kapasite</strong> — ayrı olarak satılan yedi adet PAX224 ile</li>
+  <li><strong>8 PB'nin üzerinde efektif kapasite</strong> — 5:1 veri azaltma oranı (tekilleştirme + sıkıştırma) uygulandığında</li>
+  <li>Hem dosya hem de blok iş yükleri için uygun kapasite yönetimi</li>
+</ul>
+
+<p>Not: 5:1 veri azaltma oranından elde edilen efektif kapasite kazanımları; veri türüne, hacme ve sistem konfigürasyonuna göre değişiklik gösterir.</p>
+
+<h2>DSM Enterprise Platformu</h2>
+<p>PAS7700, Synology'nin yeni nesil <strong>DSM Enterprise</strong> platformu üzerine inşa edilmiştir. Bu platform, standart DSM'den farklı olarak kurumsal ortamların ihtiyaç duyduğu gelişmiş özellikler sunar:</p>
+<ul>
+  <li>Rol tabanlı erişim kontrolü (RBAC) ile hassas yetkilendirme yönetimi</li>
+  <li>Gelişmiş denetim günlüğü ve uyumluluk raporlaması</li>
+  <li>Kurumsal düzeyde şifreleme ve veri gizliliği özellikleri</li>
+  <li>RESTful API ile kurumsal sistemlere entegrasyon kolaylığı</li>
+  <li>Merkezi yönetim konsolu ile çoklu sistem yönetimi</li>
+</ul>
+
+<h2>Kullanım Senaryoları</h2>
+
+<h3>Üretim Veritabanları</h3>
+<p>Oracle, Microsoft SQL Server, PostgreSQL gibi kritik veritabanı iş yükleri için PAS7700'ün düşük gecikme süresi ve yüksek IOPS kapasitesi, sorgu sürelerini dramatik biçimde azaltır. Milisaniye altı gecikme ile yoğun OLTP (Online Transaction Processing) senaryolarında tutarlı performans garantisi sağlanır.</p>
+
+<h3>Sanallaştırma Altyapıları</h3>
+<p>VMware vSphere, Microsoft Hyper-V ve Nutanix gibi hypervisor platformlarıyla entegrasyon için blok depolama sunan PAS7700, yüzlerce sanal makineye aynı anda yüksek performanslı depolama hizmeti verebilir. Active-active mimarisi, sanallaştırma katmanında sıfıra yakın kesinti süresi anlamına gelir.</p>
+
+<h3>Medya ve İçerik Üretimi</h3>
+<p>4K/8K video düzenleme, render çiftlikleri ve canlı yayın altyapıları için gereken yüksek bant genişliği ihtiyacını 30 GB/s aktarım hızıyla karşılar. Zamana duyarlı medya iş akışlarında tutarsız performans sorunlarını ortadan kaldırır.</p>
+
+<h3>Finansal Hizmetler ve Analitik</h3>
+<p>Gerçek zamanlı risk hesaplama, algoritmik ticaret sistemleri ve büyük veri analitik platformları için gereken sub-millisecond gecikme süresi standardı PAS7700 ile karşılanır.</p>
+
+<h2>Gartner Peer Insights Tanınması</h2>
+<p>Synology, Gartner Peer Insights platformunda yüksek müşteri memnuniyetiyle öne çıkmaktadır. PAS7700 ile birlikte kurumsal depolama segmentindeki konumunu pekiştiren Synology, kamu ve özel sektörün tüm endüstrilerinde tercih edilen bir marka haline gelmiştir.</p>
+
+<h2>Lider Network'ün PAS7700 Desteği</h2>
+<p>Lider Network olarak Synology iş ortağı sıfatıyla PAS7700 satışı, kurulum, yapılandırma ve destek hizmetleri sunuyoruz. PAS7700'ün mevcut altyapınıza entegrasyonu, kapasite planlaması ve DSM Enterprise yapılandırması konularında uzman ekibimiz yanınızda.</p>
+
+<p>PAS7700 hakkında teknik brifing ve demo talebi için bizimle iletişime geçin. IT altyapınızı basitleştirirken performansı maksimuma taşıyalım.</p>
+
+<h2>Sonuç</h2>
+<p>Synology PAS7700, all-flash NVMe depolamada kurumsal düzeyde bir platform sunarak şirketlerin veri altyapısını bir sonraki seviyeye taşımasını sağlıyor. 2 milyon IOPS, 30 GB/s aktarım hızı, milisaniye altı gecikme ve petabayt ölçeklenebilirlik — tüm bunlar tek bir platformda, Synology'nin güvenilir yazılım ekosistemiyle birleşiyor.</p>
+    `,
+  },
+
+  {
+    slug: "synology-rs26-serisi-kurumsal-rack-nas",
+    title: "Synology RS 26 Serisi: 2026 Nesil Kurumsal Rack-Mounted NAS Çözümleri",
+    excerpt:
+      "Synology'nin 2026 nesli RS 26 Serisi rack-mount NAS sistemleri, veri merkezi ortamlarına yönelik geliştirilmiş performans, esneklik ve kurumsal özellikler sunuyor. Kurumsal veri yönetiminde yeni standart.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "RS 26 Serisi", "RackStation", "Rack NAS", "Veri Merkezi", "Kurumsal Depolama", "NAS"],
+    publishedAt: "2026-07-09",
+    readTime: 9,
+    featured: false,
+    content: `
+<h2>Synology RS 26 Serisi Nedir?</h2>
+<p>Synology'nin <strong>RS 26 Serisi</strong>, 2026 yılı için tasarlanmış yeni nesil kurumsal rack-mounted NAS (RackStation) sistemleridir. Veri merkezi ortamlarında yüksek yoğunluklu depolama ihtiyaçlarını karşılamak üzere geliştirilen bu seri; performans, güvenilirlik ve yönetilebilirlik açısından kurumsal standartları yeniden tanımlıyor.</p>
+
+<p>Synology'nin RackStation ailesi, küçük ve orta ölçekli işletmelerden büyük kurumsal ortamlara kadar geniş bir yelpazede kullanılmaktadır. RS 26 Serisi, bu geleneği sürdürürken 2026'nın depolama gereksinimleri göz önünde bulundurularak yeniden tasarlanmıştır.</p>
+
+<h2>RS 26 Serisi Modelleri</h2>
+<p>RS 26 Serisi, farklı kurumsal ihtiyaçlara yönelik çeşitli modeller içermektedir:</p>
+
+<h3>RS3626xs+ — Yüksek Performanslı Kurumsal Model</h3>
+<p>En üst düzey RS 26 modeli olan RS3626xs+, kurumsal veri merkezlerinin yoğun iş yükleri için tasarlanmıştır:</p>
+<ul>
+  <li>12 adet 3.5" veya 2.5" SAS/SATA/SSD sürücü yuvası</li>
+  <li>2 adet M.2 NVMe SSD önbellek yuvası</li>
+  <li>Çift güç kaynağı ile yüksek erişilebilirlik</li>
+  <li>10GbE ağ portu ile yüksek hızlı veri aktarımı</li>
+  <li>ECC RAM desteği ile veri bütünlüğü güvencesi</li>
+</ul>
+
+<h3>RS1626+ — Dengeli Kurumsal Model</h3>
+<p>Kurumsal özellikleri uygun maliyetle birleştiren RS1626+:</p>
+<ul>
+  <li>16 sürücü yuvası ile geniş kapasite seçenekleri</li>
+  <li>Genişleme birimi desteği ile ölçeklenebilir mimari</li>
+  <li>DSM 7.4 ile tam uyumlu</li>
+  <li>Snapshot ve replikasyon özellikleri</li>
+</ul>
+
+<h2>Kurumsal Özellikler</h2>
+
+<h3>Yüksek Erişilebilirlik (HA) Kümesi</h3>
+<p>RS 26 Serisi, <strong>Synology High Availability (SHA)</strong> yazılımıyla birlikte çalışarak aktif-pasif küme oluşturabilir. Birincil birimde arıza meydana geldiğinde ikincil birim otomatik olarak devreye girerek iş sürekliliğini garanti eder. Bu özellik özellikle:</p>
+<ul>
+  <li>7/24 kesintisiz hizmet gerektiren ortamlar</li>
+  <li>SLA taahhüdü olan kurumsal sistemler</li>
+  <li>Veri erişilebilirliğinin kritik olduğu üretim ortamları</li>
+</ul>
+<p>için idealdir.</p>
+
+<h3>SSD Önbellek Hızlandırma</h3>
+<p>NVMe SSD önbellek ile sabit disk tabanlı havuzlarda sık erişilen veriler RAM benzeri hızlarda sunulur. Read-write cache modları sayesinde sistem; iş yükü profiline göre otomatik olarak önbellek stratejisini optimize eder.</p>
+
+<h3>10GbE / 25GbE Ağ Bağlantısı</h3>
+<p>RS 26 Serisi, <strong>10GbE standart ağ portları</strong> ve opsiyonel <strong>25GbE genişleme kartı</strong> desteğiyle yüksek hızlı veri merkezlerinde tam bant genişliğinden yararlanmanızı sağlar. Link aggregation (LACP) desteği ile çoklu portlar tek bir yüksek kapasiteli bağlantı olarak kullanılabilir.</p>
+
+<h2>DSM 7.4 ile Entegre Yönetim</h2>
+<p>RS 26 Serisi, <strong>DSM 7.4</strong> işletim sistemi ile birlikte gelir ve Synology'nin yenilenmiş yönetim arayüzünden tam olarak yararlanır:</p>
+<ul>
+  <li><strong>Storage Manager 2.0</strong> — Yeniden tasarlanmış depolama yönetim arayüzü</li>
+  <li><strong>Synology Drive Server</strong> — Kurumsal bulut dosya paylaşımı</li>
+  <li><strong>Synology Active Backup Suite</strong> — Kapsamlı yedekleme çözümü</li>
+  <li><strong>Synology Office</strong> — Ofis uygulamaları ile entegrasyon</li>
+  <li><strong>Surveillance Station</strong> — IP kamera yönetimi</li>
+</ul>
+
+<h2>Protokol Desteği</h2>
+<p>RS 26 Serisi, kurumsal ortamlarda gereken tüm standart protokolleri destekler:</p>
+<ul>
+  <li><strong>SMB 3.1.1</strong> — Windows ortamları için gelişmiş dosya paylaşımı</li>
+  <li><strong>NFS 4.1</strong> — Linux/Unix sistemleri için ağ dosya sistemi</li>
+  <li><strong>iSCSI</strong> — Blok düzeyinde depolama (SAN benzeri)</li>
+  <li><strong>AFP</strong> — macOS Time Machine desteği</li>
+  <li><strong>FTP/FTPS/SFTP</strong> — Güvenli dosya aktarımı</li>
+  <li><strong>WebDAV</strong> — Web tabanlı erişim</li>
+  <li><strong>S3 uyumlu API</strong> — Bulut entegrasyonu</li>
+</ul>
+
+<h2>Veri Koruma ve Yedekleme</h2>
+
+<h3>Synology Active Backup for Business</h3>
+<p>RS 26 Serisi üzerinde çalışan <strong>Active Backup for Business</strong> paketi, kurumsal ortamlarda kapsamlı veri koruma sağlar:</p>
+<ul>
+  <li>VMware vSphere ve Hyper-V sanal makine yedekleme</li>
+  <li>Fiziksel sunucu ve PC yedekleme (ajan tabanlı)</li>
+  <li>Microsoft 365 ve Google Workspace yedekleme</li>
+  <li>Değişmez yedekleme (WORM) ile fidye yazılımı koruması</li>
+  <li>Anlık geri yükleme ve granüler kurtarma</li>
+</ul>
+
+<h3>Snapshot Replication</h3>
+<p>Synology Snapshot Replication paketi ile anlık görüntüler oluşturulabilir ve uzak bir RS 26 birimine replikasyon yapılabilir. Bu özellik:</p>
+<ul>
+  <li>Fidye yazılımı saldırılarına karşı geri yükleme noktaları</li>
+  <li>DR (Disaster Recovery) senaryoları</li>
+  <li>Test/geliştirme ortamı klonlama</li>
+</ul>
+<p>için kritik önem taşır.</p>
+
+<h2>Güvenlik Özellikleri</h2>
+<p>RS 26 Serisi, kurumsal güvenlik standartlarını karşılayacak şekilde tasarlanmıştır:</p>
+<ul>
+  <li><strong>AES-256 şifreleme</strong> — Hem bağlamda hem de bekleme durumunda şifreleme</li>
+  <li><strong>HTTPS/TLS 1.3</strong> — Güvenli web arayüzü erişimi</li>
+  <li><strong>LDAP/Active Directory</strong> — Kurumsal kimlik doğrulama entegrasyonu</li>
+  <li><strong>SAML 2.0 / SSO</strong> — Tek oturum açma desteği</li>
+  <li><strong>2FA (İki faktörlü kimlik doğrulama)</strong> — Yönetici hesap güvenliği</li>
+  <li><strong>Denetim günlüğü</strong> — Tüm erişim ve işlemlerin kaydı</li>
+  <li><strong>IP engelleme ve erişim kuralları</strong></li>
+</ul>
+
+<h2>Lider Network ile RS 26 Serisi</h2>
+<p>Lider Network olarak Synology yetkili iş ortağı sıfatıyla RS 26 Serisi ürünleri sunuyoruz. Kurumunuzun depolama ihtiyaçlarına göre en uygun modeli seçmenize, disk kapasitesi planlaması yapmanıza ve kurulum/yapılandırma konularında destek sağlıyoruz.</p>
+
+<p>RS 26 Serisi ile veri merkezi depolama altyapınızı modernize etmek ve Synology'nin kurumsal ekosisteminden tam anlamıyla yararlanmak için bizimle iletişime geçin.</p>
+
+<h2>Sonuç</h2>
+<p>Synology RS 26 Serisi, 2026'nın veri merkezleri için yüksek performans, kurumsal güvenilirlik ve kapsamlı yazılım ekosistemi sunuyor. Dosya, blok ve nesne depolama ihtiyaçlarını tek platformda karşılayan RS 26, kurumsal altyapıda depolama maliyetlerini optimize ederken operasyonel karmaşıklığı minimuma indiriyor.</p>
+    `,
+  },
+
+  {
+    slug: "synology-dsm-7-4-yeni-ozellikler-kurumsal-platform",
+    title: "Synology DSM 7.4: Kurumsal Veri Yönetiminde Yeni Bir Dönem",
+    excerpt:
+      "Synology DSM 7.4, DSM Enterprise platformuyla birlikte kurumsal depolama yönetimini yeniden tanımladı. Yeni özellikler, geliştirilmiş güvenlik ve genişletilmiş protokol desteğiyle DSM 7.4'ün getirdikleri.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "DSM 7.4", "DiskStation Manager", "DSM Enterprise", "Synology Update", "NAS Yazılım"],
+    publishedAt: "2026-07-09",
+    readTime: 9,
+    featured: false,
+    content: `
+<h2>DSM 7.4 Nedir?</h2>
+<p>Synology <strong>DSM (DiskStation Manager) 7.4</strong>, NAS ve all-flash depolama platformlarının işletim sistemidir. Haziran 2026 itibarıyla duyurulan DSM 7.4, hem tüketici hem de kurumsal segmente yönelik önemli yenilikler getirirken PAS7700 için ayrı bir <strong>DSM Enterprise</strong> dalını da kapsamaktadır.</p>
+
+<p>DSM 7.0 ile başlayan yeniden mimari süreci, 7.2'de olgunlaşmış; 7.4 ile birlikte Synology, kurumsal müşteriler için ayrı bir platform sunmaktadır. Bu sayede bireysel ve SMB kullanıcılar DSM 7.4'ü kullanırken kurumsal all-flash sistemler DSM Enterprise'dan yararlanmaktadır.</p>
+
+<h2>DSM 7.4'ün Öne Çıkan Yenilikleri</h2>
+
+<h3>Storage Manager 2.0 — Yeniden Tasarlanmış Depolama Yönetimi</h3>
+<p>DSM 7.4 ile birlikte gelen yenilenen <strong>Storage Manager</strong>, depolama havuzu ve birim yönetimini daha sezgisel bir arayüzle sunuyor:</p>
+<ul>
+  <li>Depolama havuzu sağlığını gerçek zamanlı izleme</li>
+  <li>Disk ömrü tahminleme ve erken uyarı sistemi</li>
+  <li>RAID yönetiminde basitleştirilmiş iş akışı</li>
+  <li>SSD önbellek performans grafikleri</li>
+  <li>Kapasite planlaması için gelişmiş istatistikler</li>
+</ul>
+
+<h3>Synology Drive 4.0</h3>
+<p><strong>Synology Drive Server 4.0</strong>, kurumsal dosya senkronizasyonu ve paylaşımında yeni yetenekler sunuyor:</p>
+<ul>
+  <li>Gelişmiş co-editing (eş zamanlı düzenleme) desteği</li>
+  <li>Harici bağlantı şifreleme ile güvenli dosya paylaşımı</li>
+  <li>Versiyon geçmişi genişletilmesi — 365 güne kadar</li>
+  <li>Klasör bazlı izin yönetiminde yeni granülerlik seviyeleri</li>
+  <li>Microsoft 365 ve Google Drive entegrasyonu iyileştirmeleri</li>
+</ul>
+
+<h3>Active Backup Suite — Genişletilmiş Platform Desteği</h3>
+<p>DSM 7.4, <strong>Active Backup for Business</strong> paketine yeni platform desteği ekliyor:</p>
+<ul>
+  <li>Proxmox VE sanal makine yedekleme desteği</li>
+  <li>Genişletilmiş Microsoft 365 kapsama — SharePoint ve Teams veri yedekleme</li>
+  <li>Daha hızlı artımlı yedekleme motoru</li>
+  <li>Şifreli yedekleme arşivleri için merkezi anahtar yönetimi</li>
+  <li>WORM (Write Once, Read Many) yedekleme desteğinin genişletilmesi</li>
+</ul>
+
+<h3>Güvenlik ve Uyumluluk İyileştirmeleri</h3>
+<p>DSM 7.4, kurumsal güvenlik standartlarını karşılamak için kapsamlı güncellemeler getiriyor:</p>
+
+<h4>Sıfır Güven Erişim Modeli</h4>
+<p>Synology Secure SignIn ve C2 Identity servisleriyle entegrasyon sayesinde DSM 7.4, ağ içi erişimlerde de kimlik doğrulama zorunluluğu getirebilir. "Ağ içindeyim, güvenliyim" varsayımı artık geçerli değil.</p>
+
+<h4>Gelişmiş Denetim Günlüğü</h4>
+<p>Tüm dosya erişim, sistem değişikliği ve yönetici işlemlerinin ayrıntılı kaydı artık SIEM sistemlerine syslog formatında gönderilebilmektedir. ISO 27001, SOC 2 ve KVKK uyumluluğu için kritik bir özellik.</p>
+
+<h4>Zamanlanmış Güvenlik Taraması</h4>
+<p>DSM 7.4'te entegre güvenlik açığı tarayıcısı, DSM ve paket sürümlerini düzenli olarak kontrol eder ve yama önerilerini yöneticiye bildirir.</p>
+
+<h3>SMB/NFS Protokol Güncellemeleri</h3>
+<p>DSM 7.4 ile ağ dosya paylaşım protokollerinde önemli iyileştirmeler geldi:</p>
+<ul>
+  <li><strong>SMB 3.1.1 Multichannel</strong> — Çoklu NIC üzerinden yük dağılımı ve bant genişliği artışı</li>
+  <li><strong>SMB Encryption</strong> — İletim güvenliğini zorunlu kılma seçeneği</li>
+  <li><strong>NFS 4.2</strong> — Sunucu taraflı kopyalama ve sparse file desteği</li>
+  <li><strong>pNFS</strong> — Paralel NFS ile yüksek performanslı dosya sistemi erişimi</li>
+</ul>
+
+<h3>Konteyner Yöneticisi — Container Manager Güncellemesi</h3>
+<p>DSM'de konteyner çalıştırma deneyimi DSM 7.4 ile geliştirildi:</p>
+<ul>
+  <li>Docker Compose v2 tam desteği</li>
+  <li>GPU geçiş desteği (AI/ML iş yükleri için)</li>
+  <li>Otomatik güncelleme politikaları</li>
+  <li>Konteyner bazlı kaynak limiti yönetimi</li>
+</ul>
+
+<h2>DSM Enterprise — Kurumsal Sınıf Platform</h2>
+<p>PAS7700 ve üst düzey kurumsal sistemler için geliştirilen <strong>DSM Enterprise</strong>, DSM 7.4'ten ayrı bir dalda konumlanır:</p>
+
+<h3>DSM Enterprise'ın Farkları</h3>
+<ul>
+  <li><strong>Active-Active Cluster</strong> — İki düğümlü aktif-aktif yüksek erişilebilirlik kümesi</li>
+  <li><strong>Non-disruptive Updates</strong> — Rolling update ile sistem kesintisiz güncellenir</li>
+  <li><strong>Enterprise RBAC</strong> — Rol tabanlı erişim kontrolünde kurumsal granülerlik</li>
+  <li><strong>Multi-tenant Yönetim</strong> — Birden fazla kuruluşun aynı sistem üzerinde izole yönetimi</li>
+  <li><strong>API-First Yaklaşım</strong> — RESTful API ile tam otomasyon desteği</li>
+  <li><strong>Gelişmiş İzleme</strong> — Entegre SNMP, syslog ve Prometheus/Grafana uyumluluğu</li>
+</ul>
+
+<h2>DSM 7.4'e Güncelleme Rehberi</h2>
+<p>Mevcut DSM 7.x sistemlerinizi DSM 7.4'e güncellerken aşağıdaki adımları izleyin:</p>
+
+<ol>
+  <li><strong>Yedekleme Alın:</strong> Güncelleme öncesinde Hyper Backup veya Active Backup ile tam sistem yedeği alın</li>
+  <li><strong>Paket Uyumluluğunu Kontrol Edin:</strong> Synology Package Center'da DSM 7.4 ile uyumlu paket sürümlerini doğrulayın</li>
+  <li><strong>Güncelleme Sırasını Planlayın:</strong> HA kümesi varsa önce pasif düğümü güncelleyin, ardından failover yapıp aktif düğümü güncelleyin</li>
+  <li><strong>Test Ortamında Önce Deneyin:</strong> Kritik üretim sistemleri için test ortamında güncelleme pratiği yapın</li>
+  <li><strong>Bakım Penceresi Belirleyin:</strong> Güncelleme işlemi için uygun bir zaman dilimi belirleyin</li>
+</ol>
+
+<h2>Önemli Değişiklikler ve Dikkat Edilmesi Gerekenler</h2>
+<p>DSM 7.4'e geçerken bazı değişikliklere dikkat edilmelidir:</p>
+<ul>
+  <li>PHP 7.4 desteği kaldırılmıştır; Web Station kullananlar PHP 8.x'e geçmelidir</li>
+  <li>Classic Photo Station ve Moments artık desteklenmemektedir; Synology Photos kullanılmalıdır</li>
+  <li>Eski DSM 5.x/6.x paketleri DSM 7.4 ile uyumsuz olabilir</li>
+  <li>TLS 1.0 ve 1.1 protokolleri varsayılan olarak devre dışıdır</li>
+</ul>
+
+<h2>Lider Network'ün DSM Destek Hizmetleri</h2>
+<p>Lider Network olarak Synology NAS sistemlerinizin DSM 7.4'e güncellenmesinde profesyonel destek sağlıyoruz:</p>
+<ul>
+  <li>Güncelleme öncesi sistem değerlendirmesi ve uyumluluk analizi</li>
+  <li>Güvenli güncelleme planlaması ve uygulaması</li>
+  <li>Güncelleme sonrası sistem doğrulama ve optimizasyon</li>
+  <li>DSM 7.4 yeni özelliklerinden yararlanmak için yapılandırma desteği</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Synology DSM 7.4, kurumsal depolama yönetiminde önemli bir adım teşkil etmektedir. DSM Enterprise dalıyla birlikte Synology, artık yalnızca SMB değil, büyük kurumsal ortamların da veri altyapısında güçlü bir seçenek haline gelmiştir. Synology'nin kesintisiz güncelleme, zengin protokol desteği ve kapsamlı yazılım ekosistemi avantajları DSM 7.4 ile daha da pekişmektedir.</p>
+    `,
+  },
+
 ];
 
 export function getPost(slug: string): BlogPost | undefined {
