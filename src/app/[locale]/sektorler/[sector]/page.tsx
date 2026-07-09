@@ -19,7 +19,10 @@ const sectorIcons: Record<string, React.ElementType> = {
 };
 
 export async function generateStaticParams() {
-  return sectors.map((s) => ({ sector: s.slug }));
+  return sectors.flatMap((s) => [
+    { locale: "tr", sector: s.slug },
+    { locale: "en", sector: s.slug },
+  ]);
 }
 
 export async function generateMetadata({
