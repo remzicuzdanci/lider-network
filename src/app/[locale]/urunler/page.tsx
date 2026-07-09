@@ -85,25 +85,6 @@ export default async function UrunlerPage({
               style={{ backgroundColor: "#191c1e", minHeight: 240 }}
             >
               <div>
-                <div
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border mb-6"
-                  style={{
-                    backgroundColor: `${brand.accentColor}12`,
-                    borderColor: `${brand.accentColor}30`,
-                  }}
-                >
-                  <span
-                    className="w-2 h-2 rounded-full"
-                    style={{ backgroundColor: brand.accentColor }}
-                  />
-                  <span
-                    className="text-xs font-semibold uppercase tracking-wider"
-                    style={{ fontFamily: "var(--font-family-label)", color: brand.accentColor }}
-                  >
-                    Yetkili Partner
-                  </span>
-                </div>
-
                 <h2
                   className="text-3xl font-bold text-white mb-3"
                   style={{ fontFamily: "var(--font-family-headline)" }}
