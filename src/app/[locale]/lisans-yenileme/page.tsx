@@ -491,9 +491,9 @@ export default async function LisansYenilemePage({
                   className="text-sm leading-relaxed mb-6"
                   style={{ color: "var(--color-on-surface-variant)" }}
                 >
-                  FortiGate cihazınızın seri numarasını veya Synology NAS modelinizi
-                  iletmeniz yeterli. Aktif lisanslarınızı, sona erme tarihlerini ve
-                  yenileme maliyetini size bildirelim.
+                  FortiGate cihazınızın seri numarasını veya Synology C2 hesap
+                  bilgilerinizi iletmeniz yeterli. Aktif lisanslarınızı, sona erme
+                  tarihlerini ve yenileme maliyetini size bildirelim.
                 </p>
 
                 <div className="space-y-3">
