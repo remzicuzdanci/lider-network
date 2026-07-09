@@ -22,6 +22,7 @@ export default function Footer() {
     { href: `/${locale}`, label: t("nav.home") },
     { href: `/${locale}/hizmetler`, label: t("nav.services") },
     { href: `/${locale}/fortinet`, label: t("nav.fortinet") },
+    { href: `/${locale}/urunler`, label: locale === "tr" ? "Ürün Kataloğu" : "Product Catalog" },
     { href: `/${locale}/sektorler`, label: locale === "tr" ? "Sektörel Çözümler" : "Industry Solutions" },
     { href: `/${locale}/lisans-yenileme`, label: locale === "tr" ? "Lisans Yenileme" : "License Renewal" },
     { href: `/${locale}/ankara-fortinet-partner`, label: locale === "tr" ? "Ankara Fortinet Partner" : "Ankara Fortinet Partner" },
