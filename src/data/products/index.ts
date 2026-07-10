@@ -3,6 +3,9 @@ import { fortinetProducts } from "./fortinet";
 import { synologyProducts } from "./synology";
 import { hpeProducts } from "./hpe";
 import { dellProducts } from "./dell";
+import { veeamProducts } from "./veeam";
+import { apcProducts } from "./apc";
+import { vmwareProducts } from "./vmware";
 
 export type { Product, BrandData };
 
@@ -11,6 +14,9 @@ export const allProducts: Product[] = [
   ...synologyProducts,
   ...hpeProducts,
   ...dellProducts,
+  ...veeamProducts,
+  ...apcProducts,
+  ...vmwareProducts,
 ];
 
 export const brands: BrandData[] = [
@@ -57,6 +63,39 @@ export const brands: BrandData[] = [
     categories: [
       { slug: "poweredge-rack", label: "PowerEdge Rack" },
       { slug: "poweredge-tower", label: "PowerEdge Tower" },
+    ],
+  },
+  {
+    slug: "veeam",
+    name: "Veeam",
+    description: "Yedekleme, replikasyon ve iş sürekliliği çözümleri. VMware, Hyper-V, bulut ve fiziksel ortamları tek platformdan koruyun.",
+    accentColor: "#00B336",
+    categories: [
+      { slug: "veeam-data-platform", label: "Veeam Data Platform" },
+      { slug: "veeam-agent", label: "Veeam Agent" },
+    ],
+  },
+  {
+    slug: "apc",
+    name: "APC by Schneider Electric",
+    description: "UPS kesintisiz güç kaynakları ve güç yönetimi çözümleri. Sunucu odası ve veri merkezi altyapısı için güç güvencesi.",
+    accentColor: "#3DCD58",
+    categories: [
+      { slug: "smart-ups-rack", label: "Smart-UPS Rack" },
+      { slug: "easy-ups-tower", label: "Easy UPS Tower" },
+      { slug: "apc-aksesuar", label: "Aksesuarlar" },
+    ],
+  },
+  {
+    slug: "vmware",
+    name: "VMware by Broadcom",
+    description: "Kurumsal sanallaştırma ve hibrit bulut platformları. vSphere, vSAN ve NSX ile yazılım tanımlı veri merkezi.",
+    accentColor: "#0091DA",
+    categories: [
+      { slug: "vsphere", label: "vSphere" },
+      { slug: "cloud-foundation", label: "Cloud Foundation" },
+      { slug: "vsan", label: "vSAN" },
+      { slug: "nsx", label: "NSX" },
     ],
   },
 ];
