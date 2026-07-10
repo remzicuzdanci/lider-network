@@ -76,17 +76,6 @@ export default async function BrandPage({
             </span>
           </div>
           <div>
-            <div
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold mb-3"
-              style={{
-                backgroundColor: `${brand.accentColor}12`,
-                color: brand.accentColor,
-                border: `1px solid ${brand.accentColor}25`,
-                fontFamily: "var(--font-family-label)",
-              }}
-            >
-              Yetkili Partner
-            </div>
             <h1
               className="text-4xl lg:text-5xl font-bold text-white mb-3"
               style={{ fontFamily: "var(--font-family-headline)" }}
