@@ -162,8 +162,8 @@ export default function Navbar() {
     >
       <nav className="container" role="navigation" aria-label="Ana navigasyon">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo + 20. Yıl */}
-          <div className="flex items-center gap-3">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link
               href={`/${locale}`}
               className="flex items-center group"
@@ -189,67 +189,6 @@ export default function Navbar() {
                 />
               </div>
             </Link>
-
-            {/* 20. Yıl rozeti — SVG */}
-            <svg
-              className="hidden sm:block flex-shrink-0"
-              viewBox="0 0 90 52"
-              style={{ width: 70, height: 40, display: "block" }}
-              xmlns="http://www.w3.org/2000/svg"
-              aria-label="20. Yıl — 2006'dan 2026'ya"
-            >
-              <defs>
-                <linearGradient id="ln-20-blue" x1="0" y1="0" x2="0.6" y2="1">
-                  <stop offset="0%" stopColor="#6b9fff" />
-                  <stop offset="100%" stopColor="#0044ee" />
-                </linearGradient>
-                <linearGradient id="ln-yil-grad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#c8d5ff" />
-                  <stop offset="100%" stopColor="#8fa8ff" />
-                </linearGradient>
-              </defs>
-
-              {/* 2006 — 2026 küçük etiket */}
-              <text
-                x="1"
-                y="9"
-                fontFamily="monospace, sans-serif"
-                fontSize="6.5"
-                fontWeight="500"
-                letterSpacing="0.9"
-                fill="#6b7280"
-              >
-                2006 — 2026
-              </text>
-
-              {/* "20" büyük kalın */}
-              <text
-                x="0"
-                y="46"
-                fontFamily="'Hanken Grotesk', sans-serif"
-                fontSize="42"
-                fontWeight="900"
-                fill="url(#ln-20-blue)"
-              >
-                20
-              </text>
-
-              {/* Turuncu nokta vurgu — "0" içinde */}
-              <circle cx="37" cy="25" r="5.5" fill="#ff5e07" opacity="0.9" />
-
-              {/* "yıl" italik */}
-              <text
-                x="54"
-                y="48"
-                fontFamily="Georgia, 'Times New Roman', serif"
-                fontSize="22"
-                fontStyle="italic"
-                fontWeight="700"
-                fill="#ff9a6c"
-              >
-                yıl
-              </text>
-            </svg>
           </div>
 
           {/* Desktop Nav */}
