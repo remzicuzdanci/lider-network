@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import TeslimTutanagi from "./TeslimTutanagi";
 import { showToast } from "@/lib/admin-toast";
-import * as XLSX from "xlsx";
+import ExcelJS from "exceljs";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -1178,49 +1178,50 @@ function RaporlarTab({ tasks, companies, staff }: { tasks: WorkTask[]; companies
   const dateTag = new Date().toLocaleDateString("tr-TR").replace(/\./g,"-");
 
   // ── Excel çıktısı (3 sayfa) ──
-  function exportExcel() {
-    const wb = XLSX.utils.book_new();
+  async function exportExcel() {
+    const wb = new ExcelJS.Workbook();
 
-    const perfSheet = XLSX.utils.aoa_to_sheet([
-      [`Personel Performans Raporu — ${periodLabel}`],
-      [],
-      ["Personel","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)","Tamamlama %"],
-      ...perf.map(p => [p.name, p.total, p.done, p.prog, p.todo, p.billed, p.amount, `%${p.rate}`]),
-      [],
-      ["TOPLAM", totals.total, totals.done, totals.prog, totals.todo, totals.billed, totals.amount, ""],
-    ]);
-    perfSheet["!cols"] = [{wch:22},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:14},{wch:13}];
-    XLSX.utils.book_append_sheet(wb, perfSheet, "Performans");
+    const perfSheet = wb.addWorksheet("Performans");
+    perfSheet.columns = [{width:22},{width:13},{width:12},{width:12},{width:11},{width:13},{width:14},{width:13}];
+    perfSheet.addRow([`Personel Performans Raporu — ${periodLabel}`]);
+    perfSheet.addRow([]);
+    perfSheet.addRow(["Personel","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)","Tamamlama %"]);
+    perf.forEach(p => perfSheet.addRow([p.name, p.total, p.done, p.prog, p.todo, p.billed, p.amount, `%${p.rate}`]));
+    perfSheet.addRow([]);
+    perfSheet.addRow(["TOPLAM", totals.total, totals.done, totals.prog, totals.todo, totals.billed, totals.amount, ""]);
 
-    const compSheet = XLSX.utils.aoa_to_sheet([
-      [`Müşteri Bazlı Rapor — ${periodLabel}`],
-      [],
-      ["Müşteri","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)"],
-      ...byCompany.map(c => [c.name, c.total, c.done, c.prog, c.todo, c.billed, c.amount]),
-    ]);
-    compSheet["!cols"] = [{wch:28},{wch:13},{wch:12},{wch:12},{wch:11},{wch:13},{wch:14}];
-    XLSX.utils.book_append_sheet(wb, compSheet, "Müşteri Bazlı");
+    const compSheet = wb.addWorksheet("Müşteri Bazlı");
+    compSheet.columns = [{width:28},{width:13},{width:12},{width:12},{width:11},{width:13},{width:14}];
+    compSheet.addRow([`Müşteri Bazlı Rapor — ${periodLabel}`]);
+    compSheet.addRow([]);
+    compSheet.addRow(["Müşteri","Toplam Görev","Tamamlanan","Devam Eden","Bekleyen","Faturalanan","Tutar (₺)"]);
+    byCompany.forEach(c => compSheet.addRow([c.name, c.total, c.done, c.prog, c.todo, c.billed, c.amount]));
 
-    const detSheet = XLSX.utils.aoa_to_sheet([
-      [`Görev Detayı — ${periodLabel}`],
-      [],
-      ["Görev","Personel","Müşteri","Kategori","Durum","Bitiş Tarihi","Faturalanacak","Tutar (₺)","Ürünler"],
-      ...detail.map(t => [
-        t.title,
-        t.assigned_to || "—",
-        t.company_id ? companyName(t.company_id) : "—",
-        catMap[t.category]?.label ?? t.category,
-        statusLabel(t.status),
-        t.due_date ? new Date(t.due_date).toLocaleDateString("tr-TR") : "—",
-        t.billed ? "Evet" : "Hayır",
-        t.billed ? (Number(t.amount)||0) : "",
-        t.products || "",
-      ]),
-    ]);
-    detSheet["!cols"] = [{wch:32},{wch:16},{wch:22},{wch:16},{wch:13},{wch:13},{wch:13},{wch:13},{wch:30}];
-    XLSX.utils.book_append_sheet(wb, detSheet, "Görev Detayı");
+    const detSheet = wb.addWorksheet("Görev Detayı");
+    detSheet.columns = [{width:32},{width:16},{width:22},{width:16},{width:13},{width:13},{width:13},{width:13},{width:30}];
+    detSheet.addRow([`Görev Detayı — ${periodLabel}`]);
+    detSheet.addRow([]);
+    detSheet.addRow(["Görev","Personel","Müşteri","Kategori","Durum","Bitiş Tarihi","Faturalanacak","Tutar (₺)","Ürünler"]);
+    detail.forEach(t => detSheet.addRow([
+      t.title,
+      t.assigned_to || "—",
+      t.company_id ? companyName(t.company_id) : "—",
+      catMap[t.category]?.label ?? t.category,
+      statusLabel(t.status),
+      t.due_date ? new Date(t.due_date).toLocaleDateString("tr-TR") : "—",
+      t.billed ? "Evet" : "Hayır",
+      t.billed ? (Number(t.amount)||0) : "",
+      t.products || "",
+    ]));
 
-    XLSX.writeFile(wb, `Lider-Network-Rapor-${periodLabel.replace(/[ /]/g,"_")}-${dateTag}.xlsx`);
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Lider-Network-Rapor-${periodLabel.replace(/[ /]/g,"_")}-${dateTag}.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
   }
 
   // ── PDF çıktısı (özet + 3 tablo) ──
