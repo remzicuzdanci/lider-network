@@ -28,44 +28,23 @@ const nextConfig: NextConfig = {
   async redirects() {
     return [
       // ── Eski (locale prefix'siz) sayfalar → yeni locale'li karşılıkları ──────
-      { source: "/anasayfa",                permanent: true,  destination: "/tr" },
-      { source: "/kurumsal",                permanent: true,  destination: "/tr/hakkimizda" },
-      { source: "/vizyonumuz",              permanent: true,  destination: "/tr/hakkimizda" },
+      { source: "/anasayfa",                 permanent: true, destination: "/tr" },
+      { source: "/kurumsal",                 permanent: true, destination: "/tr/hakkimizda" },
+      { source: "/misyonumuz",               permanent: true, destination: "/tr/hakkimizda" },
+      { source: "/vizyonumuz",               permanent: true, destination: "/tr/hakkimizda" },
       { source: "/kurumsal-bt-hizmetleri-1", permanent: true, destination: "/tr/hizmetler" },
-      { source: "/sistem-cozumleri",        permanent: true,  destination: "/tr/sistem-entegrasyonu" },
+      { source: "/sistem-cozumleri",         permanent: true, destination: "/tr/sistem-entegrasyonu" },
+      { source: "/sistem-%C3%A7%C3%B6z%C3%BCmleri", permanent: true, destination: "/tr/sistem-entegrasyonu" },
+      { source: "/yaz%C4%B1l%C4%B1m-%C3%A7%C3%B6z%C3%BCmleri", permanent: true, destination: "/tr/hizmetler" },
+      { source: "/gizlilik-politikam%C4%B1z", permanent: true, destination: "/tr/kvkk" },
+      { source: "/depolama-%C3%A7%C3%B6z%C3%BCmleri", permanent: true, destination: "/tr/veri-depolama" },
+      { source: "/yedekleme-%C3%A7%C3%B6z%C3%BCmleri", permanent: true, destination: "/tr/veri-depolama" },
 
-      // ── Blog: ASCII slug → Türkçe karakter içeren doğru slug ─────────────────
-      // (Google linkleri ASCII ile tarıyor, asıl slug Türkçe karakter içeriyor)
-      {
-        source: "/tr/blog/vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon",
-        destination: "/tr/blog/vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",
-        permanent: true,
-      },
-      {
-        source: "/en/blog/vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon",
-        destination: "/en/blog/vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",
-        permanent: true,
-      },
-      {
-        source: "/tr/blog/dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi",
-        destination: "/tr/blog/dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",
-        permanent: true,
-      },
-      {
-        source: "/en/blog/dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi",
-        destination: "/en/blog/dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",
-        permanent: true,
-      },
-      {
-        source: "/tr/blog/veeam-immutable-backup-ransomware-korumasi",
-        destination: "/tr/blog/veeam-immutable-backup-ransomware-koruması",
-        permanent: true,
-      },
-      {
-        source: "/en/blog/veeam-immutable-backup-ransomware-korumasi",
-        destination: "/tr/blog/veeam-immutable-backup-ransomware-koruması",
-        permanent: true,
-      },
+      // ── Blog: Türkçe char slug → ASCII slug (doğru yön: karakter içeren → ASCII) ─
+      { source: "/tr/blog/vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",     permanent: true, destination: "/tr/blog/vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon" },
+      { source: "/tr/blog/windows-server-hyper-v-sanallaştirma-kurulum-ve-yonetim", permanent: true, destination: "/tr/blog/windows-server-hyper-v-sanallastirma-kurulum-ve-yonetim" },
+      { source: "/tr/blog/dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",      permanent: true, destination: "/tr/blog/dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi" },
+      { source: "/tr/blog/veeam-immutable-backup-ransomware-koruması",            permanent: true, destination: "/tr/blog/veeam-immutable-backup-ransomware-korumasi" },
 
       // ── EN blog → TR blog (içerik Türkçe, EN versiyonu kopya sayılıyor) ───────
       { source: "/en/blog/:slug*", permanent: true, destination: "/tr/blog/:slug*" },

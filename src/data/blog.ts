@@ -1645,7 +1645,7 @@ end</code></pre>
     `,
   },
   {
-    slug: "veeam-immutable-backup-ransomware-koruması",
+    slug: "veeam-immutable-backup-ransomware-korumasi",
     title: "Veeam ile Immutable Backup: Ransomware'e Karşı Son Savunma Hattı",
     excerpt:
       "Fidye yazılımı saldırılarına karşı en etkili koruma, değiştirilemez (immutable) yedeklerdir. Veeam'in hardened repository, S3 Object Lock ve air-gap çözümleriyle verilerinizi nasıl koruduğunu anlatıyoruz.",
@@ -1926,7 +1926,7 @@ end</code></pre>
     `,
   },
   {
-    slug: "vmware-nsx-ag-sanallaştirma-ve-mikro-segmentasyon",
+    slug: "vmware-nsx-ag-sanallastirma-ve-mikro-segmentasyon",
     title: "VMware NSX ile Ağ Sanallaştırma ve Mikro-Segmentasyon",
     excerpt:
       "VMware NSX, veri merkezinizdeki ağ ve güvenlik katmanını yazılım tanımlı hale getirir. Mikro-segmentasyon ile yanal (east-west) saldırı yüzeyini minimuma indirmenin yollarını anlatıyoruz.",
@@ -2460,7 +2460,7 @@ end</code></pre>
     `,
   },
   {
-    slug: "windows-server-hyper-v-sanallaştirma-kurulum-ve-yonetim",
+    slug: "windows-server-hyper-v-sanallastirma-kurulum-ve-yonetim",
     title: "Windows Server Hyper-V ile Sanallaştırma: Kurulum, Yönetim ve Best Practice",
     excerpt:
       "Microsoft Hyper-V, Windows Server'a dahil yerleşik sanallaştırma platformudur. VM oluşturma, live migration, Failover Cluster, replikasyon ve VMware ile karşılaştırma konularında kapsamlı rehber.",
@@ -4640,7 +4640,7 @@ end</code></pre>
     `,
   },
   {
-    slug: "dahua-nvr-yapılandırma-ve-uzaktan-izleme-rehberi",
+    slug: "dahua-nvr-yapilandirma-ve-uzaktan-izleme-rehberi",
     title: "Dahua NVR Yapılandırması ve Uzaktan İzleme Rehberi",
     excerpt:
       "Dahua NVR kurulumu, disk yapılandırması, kamera ekleme, kayıt planlaması ve DMSS/DSS Pro ile uzaktan izleme ayarlarını adım adım ele alıyoruz. Kurumsal güvenlik kamera altyapısı için pratik rehber.",
