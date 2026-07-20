@@ -162,32 +162,66 @@ export default function Navbar() {
     >
       <nav className="container" role="navigation" aria-label="Ana navigasyon">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo */}
-          <Link
-            href={`/${locale}`}
-            className="flex items-center group"
-            aria-label="Lider Network Ana Sayfa"
-          >
-            <div
-              className="transition-opacity duration-200 opacity-95 group-hover:opacity-100"
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: 8,
-                padding: "4px 14px",
-                display: "flex",
-                alignItems: "center",
-              }}
+          {/* Logo + 20. Yıl */}
+          <div className="flex items-center gap-3">
+            <Link
+              href={`/${locale}`}
+              className="flex items-center group"
+              aria-label="Lider Network Ana Sayfa"
             >
-              <Image
-                src="/logo.png"
-                alt="Lider Network"
-                width={160}
-                height={58}
-                style={{ height: 58, width: "auto", objectFit: "contain", display: "block" }}
-                priority
-              />
+              <div
+                className="transition-opacity duration-200 opacity-95 group-hover:opacity-100"
+                style={{
+                  backgroundColor: "#ffffff",
+                  borderRadius: 8,
+                  padding: "4px 14px",
+                  display: "flex",
+                  alignItems: "center",
+                }}
+              >
+                <Image
+                  src="/logo.png"
+                  alt="Lider Network"
+                  width={160}
+                  height={58}
+                  style={{ height: 58, width: "auto", objectFit: "contain", display: "block" }}
+                  priority
+                />
+              </div>
+            </Link>
+
+            {/* 20. Yıl rozeti */}
+            <div
+              className="hidden sm:flex flex-col items-start leading-none"
+              style={{ gap: 3 }}
+            >
+              <span
+                style={{
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.18em",
+                  color: "#F59E0B",
+                  fontFamily: "var(--font-family-label)",
+                  textTransform: "uppercase",
+                  opacity: 0.85,
+                }}
+              >
+                2006 — 2026
+              </span>
+              <span
+                style={{
+                  fontSize: 15,
+                  fontWeight: 800,
+                  letterSpacing: "-0.01em",
+                  color: "#FCD34D",
+                  fontFamily: "var(--font-family-headline)",
+                  lineHeight: 1,
+                }}
+              >
+                20. Yıl
+              </span>
             </div>
-          </Link>
+          </div>
 
           {/* Desktop Nav */}
           <ul className="hidden lg:flex items-center gap-1" role="list">
