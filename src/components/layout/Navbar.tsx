@@ -162,8 +162,8 @@ export default function Navbar() {
     >
       <nav className="container" role="navigation" aria-label="Ana navigasyon">
         <div className="flex items-center justify-between h-16 md:h-20">
-          {/* Logo + 20. Yıl */}
-          <div className="flex items-center gap-2">
+          {/* Logo */}
+          <div className="flex items-center">
             <Link
               href={`/${locale}`}
               className="flex items-center group"
@@ -189,16 +189,6 @@ export default function Navbar() {
                 />
               </div>
             </Link>
-
-            {/* 20. Yıl mühür görseli */}
-            <Image
-              src="/20yil.jpg"
-              alt="20. Yıl"
-              width={52}
-              height={52}
-              className="hidden sm:block flex-shrink-0"
-              style={{ borderRadius: "50%", objectFit: "cover" }}
-            />
           </div>
 
           {/* Desktop Nav */}
