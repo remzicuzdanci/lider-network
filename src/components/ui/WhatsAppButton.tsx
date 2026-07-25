@@ -5,7 +5,7 @@ import { trackWhatsAppClick } from "@/lib/gtag";
 export default function WhatsAppButton() {
   return (
     <a
-      href="https://wa.me/905323492259?text=Merhaba%2C%20Lider%20Network%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
+      href="https://wa.me/903122320288?text=Merhaba%2C%20Lider%20Network%20hakk%C4%B1nda%20bilgi%20almak%20istiyorum."
       target="_blank"
       rel="noopener noreferrer"
       aria-label="WhatsApp ile iletişime geç"
