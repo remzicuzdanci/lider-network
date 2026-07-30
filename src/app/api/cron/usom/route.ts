@@ -182,8 +182,7 @@ function hasTurkishTld(domain: string): boolean {
 
 // Uluslararası domain kaynakları — Türk TLD'leri filtrelenir
 const INTL_DOMAIN_SOURCES: { url: string; fmt: "hosts" | "plain" }[] = [
-  { url: "https://raw.githubusercontent.com/hagezi/dns-blocklists/main/hosts/multi.txt", fmt: "hosts" },
-  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts",           fmt: "hosts" },
+  { url: "https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts", fmt: "hosts" },
 ];
 
 // Türkiye güvenlik kaynakları — .com.tr dahil tüm domainler korunur
