@@ -161,6 +161,30 @@ const DOMAIN_WHITELIST = new Set([
   "iyzico.com", "paytr.com", "param.com.tr",
 ]);
 
+// Meşru servis IP aralıkları — feed'e asla girmez
+// [network_uint32, mask_uint32]
+function ipToU32(ip: string): number {
+  return ip.split(".").reduce((a, o) => ((a << 8) + parseInt(o)) >>> 0, 0) >>> 0;
+}
+const IP_WHITELIST_CIDRS: [number, number][] = [
+  // Apple — tüm 17.0.0.0/8 bloğu (Mac, iPhone, iCloud, App Store, güncelleme sunucuları)
+  [ipToU32("17.0.0.0"),   0xFF000000],
+  // Cloudflare — 1.1.1.0/24, 1.0.0.0/24 (DNS), 104.16.0.0/13, 104.24.0.0/14 (CDN)
+  [ipToU32("1.1.1.0"),    0xFFFFFF00],
+  [ipToU32("1.0.0.0"),    0xFFFFFF00],
+  [ipToU32("104.16.0.0"), 0xFFF80000],
+  [ipToU32("104.24.0.0"), 0xFFFC0000],
+  // Google DNS & NTP
+  [ipToU32("8.8.8.0"),    0xFFFFFF00],
+  [ipToU32("8.8.4.0"),    0xFFFFFF00],
+  // Fortinet FortiGuard güncelleme sunucuları
+  [ipToU32("208.91.112.0"), 0xFFFFF000],
+];
+function isIpWhitelisted(ip: string): boolean {
+  const n = ipToU32(ip.split("/")[0]); // CIDR notasyonunu temizle
+  return IP_WHITELIST_CIDRS.some(([net, mask]) => (n & mask) === (net & mask));
+}
+
 function isDomainWhitelisted(domain: string): boolean {
   const d = domain.toLowerCase();
   if (DOMAIN_WHITELIST.has(d)) return true;
@@ -383,7 +407,7 @@ export async function GET(req: Request) {
     [...new Set([...intlDomains, ...trRes.records])].sort(),
     usom?.domain
   ).filter(d => !isDomainWhitelisted(d));
-  const ipv4Records   = mergeWithUsom(ipv4Res.records,   usom?.ipv4);
+  const ipv4Records   = mergeWithUsom(ipv4Res.records,   usom?.ipv4).filter(ip => !isIpWhitelisted(ip));
   const ipv6Records   = mergeWithUsom(ipv6Res.records,   usom?.ipv6);
   const urlRecords    = mergeWithUsom(urlRes.records,     usom?.url);
 
