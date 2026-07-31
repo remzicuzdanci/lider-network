@@ -212,7 +212,7 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
       const qrPng = await QRCode.toBuffer(data.approvalUrl, { margin: 1, width: 200, color: { dark: "#0f172a", light: "#ffffff" } });
       const qr = await doc.embedPng(qrPng);
       page.drawImage(qr, { x: M, y: H - y - QR_SIZE, width: QR_SIZE, height: QR_SIZE });
-      text(page, "Telefonla okutup", M + QR_SIZE + 10, y + 26, { size: 8, font: fBold, color: BLUE });
+      text(page, "QR kodu okutarak", M + QR_SIZE + 10, y + 26, { size: 8, font: fBold, color: BLUE });
       text(page, "teklifi onaylayın", M + QR_SIZE + 10, y + 38, { size: 8, font: fBold, color: BLUE });
     } catch { /* QR opsiyonel */ }
   }

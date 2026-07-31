@@ -345,7 +345,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     <table style="width:100%;border:0;border-collapse:collapse;margin-top:26px;"><tr>
       ${qr ? `<td style="border:0;width:128px;vertical-align:top;padding-right:20px;text-align:center;">
         <img src="${qr}" alt="Onay QR" style="width:104px;height:104px;display:block;border:1px solid #e8edf3;border-radius:8px;margin:0 auto;" />
-        <div style="font-size:9.5px;color:#475569;margin-top:5px;line-height:1.4;font-weight:700;">📱 Telefonla okutup<br/>onaylayın</div>
+        <div style="font-size:9.5px;color:#475569;margin-top:5px;line-height:1.4;font-weight:700;">📱 QR kodu okutarak<br/>onaylayın</div>
       </td>` : ""}
       <td style="border:0;width:50%;padding-right:28px;vertical-align:top;">
         <div style="height:42px;"></div>
