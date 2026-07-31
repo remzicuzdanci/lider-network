@@ -78,7 +78,7 @@ function docHtml(n: Partial<DeliveryNote>): string {
           <img src="https://www.lidernetwork.com.tr/logo.png" alt="Lider Network" style="height:56px;width:auto;display:block" />
         </span>
         <div style="color:#bfcfff;font-size:11px;margin-top:10px">Lider Network Teknoloji Danışmanlık Tic. Ltd. Şti.</div>
-        <div style="color:#8fa8ff;font-size:10.5px;margin-top:2px">Vergi No: 1234567890 &nbsp;·&nbsp; Ankara</div>
+        <div style="color:#8fa8ff;font-size:10.5px;margin-top:2px">Vergi No: 608 046 2147 &nbsp;·&nbsp; Birlik Mh. 448. Cd. 119/2 Çankaya / ANKARA</div>
       </td>
       <td style="border:0;vertical-align:middle;text-align:right">
         <div style="color:#fff;font-size:28px;font-weight:900;letter-spacing:1.5px;text-transform:uppercase">TESLİM TUTANAĞI</div>
