@@ -20,7 +20,7 @@ async function logo() {
   return _logo;
 }
 
-export interface QuotePdfItem { description: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit?: string }
+export interface QuotePdfItem { description: string; note?: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit?: string }
 export interface QuotePdfData {
   quote_no: string;
   customer_name?: string | null;
@@ -148,10 +148,12 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
     const gross = (+it.quantity || 0) * (+it.unit_price || 0);
     const net = gross - gross * (+it.discount || 0) / 100;
     const descLines = wrap(`${i + 1}. ${it.description || ""}`, fReg, 9, cols.qty - cols.desc - 14);
-    const rowH = Math.max(20, descLines.length * 12 + 8);
+    const noteLines = it.note ? wrap(it.note, fReg, 8, cols.qty - cols.desc - 18) : [];
+    const rowH = Math.max(20, descLines.length * 12 + noteLines.length * 10 + 8);
     if (i % 2) page.drawRectangle({ x: M, y: H - y - rowH, width: W - M * 2, height: rowH, color: rgb(0.96, 0.97, 1) });
     let dy = y + 7;
     for (const ln of descLines) { text(page, ln, cols.desc, dy, { size: 9, color: rgb(0.12, 0.16, 0.22) }); dy += 12; }
+    for (const ln of noteLines) { text(page, ln, cols.desc + 8, dy, { size: 8, color: SLATE }); dy += 10; }
     const mid = y + 7;
     rightText(page, `${it.quantity} ${it.unit || ""}`.trim(), cols.qty + 46, mid, { size: 9, color: SLATE });
     rightText(page, money(it.unit_price, cur), cols.price + 42, mid, { size: 9, color: SLATE });

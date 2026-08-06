@@ -18,7 +18,7 @@ const PRODUCT_TYPES: { id: string; label: string }[] = [
   { id: "stoksuz", label: "Stoksuz Ürün" },
   { id: "hizmet", label: "Hizmet" },
 ];
-interface Item { product_id?: string | null; description: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit: string; }
+interface Item { product_id?: string | null; description: string; note?: string; quantity: number; unit_price: number; discount: number; kdv_rate: number; unit: string; }
 interface Quote {
   id: string; quote_no: string; company_id?: string; customer_name?: string;
   quote_date?: string; valid_until?: string; currency: string; exchange_rate?: number;
@@ -40,7 +40,7 @@ const STATUS: Record<string, { label: string; color: string; bg: string }> = {
 const money = (n: number, cur: string) => `${SYM[cur] || cur + " "}${Number(n || 0).toLocaleString("tr-TR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 const today = () => new Date().toISOString().slice(0, 10);
-function emptyItem(): Item { return { description: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
+function emptyItem(): Item { return { description: "", note: "", quantity: 1, unit_price: 0, discount: 0, kdv_rate: 20, unit: "Adet" }; }
 
 export default function Teklifler({ companies = [], initialCompanyId = "", staff = [], currentUserName = "", onCreateDelivery }: { companies?: Company[]; currentUserName?: string; initialCompanyId?: string; staff?: string[]; onCreateDelivery?: (data: { customer_name: string; company_id: string | null; items: { name: string; qty: number; unit: string }[] }) => void }) {
   const [quotes, setQuotes] = useState<Quote[]>([]);
@@ -160,7 +160,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   }
 
   function addProduct(p: Product) {
-    setItems(prev => [...prev, { product_id: p.id, description: p.name, quantity: 1, unit_price: p.unit_price || 0, discount: 0, kdv_rate: p.kdv_rate ?? 20, unit: p.unit || "Adet" }]);
+    setItems(prev => [...prev, { product_id: p.id, description: p.name, note: "", quantity: 1, unit_price: p.unit_price || 0, discount: 0, kdv_rate: p.kdv_rate ?? 20, unit: p.unit || "Adet" }]);
     setSearch(""); setResults([]);
   }
   function addBlank() { setItems(prev => [...prev, emptyItem()]); }
@@ -233,7 +233,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
       const net = gross - gross * (+it.discount || 0) / 100;
       const bg = i % 2 ? "#f5f8ff" : "#ffffff";
       return `<tr style="background:${bg};">
-        <td style="padding:8px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}</td>
+        <td style="padding:8px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}${it.note ? `<div style="font-size:10.5px;color:#6b7280;font-style:italic;margin-top:3px;padding-left:12px;">${it.note}</div>` : ""}</td>
         <td style="padding:8px 12px;font-size:12px;text-align:center;white-space:nowrap;color:#475569;">${it.quantity} ${it.unit || ""}</td>
         <td style="padding:8px 12px;font-size:12px;text-align:right;white-space:nowrap;color:#475569;">${m(it.unit_price)}</td>
         <td style="padding:8px 12px;font-size:12px;text-align:center;color:#475569;">%${it.discount || 0}</td>
@@ -848,7 +848,10 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
                             <button onClick={() => moveItem(i, 1)} disabled={i === items.length - 1} title="Aşağı taşı" style={{ ...mvBtn, opacity: i === items.length - 1 ? .35 : 1, cursor: i === items.length - 1 ? "default" : "pointer" }}><ChevronDown size={13} /></button>
                           </div>
                         </td>
-                        <td style={{ padding: "4px 5px" }}><input value={it.description} onChange={e => setItem(i, { description: e.target.value })} placeholder="Açıklama" style={{ ...cell, textAlign: "left" }} /></td>
+                        <td style={{ padding: "4px 5px" }}>
+                          <input value={it.description} onChange={e => setItem(i, { description: e.target.value })} placeholder="Açıklama" style={{ ...cell, textAlign: "left" }} />
+                          <input value={it.note || ""} onChange={e => setItem(i, { note: e.target.value })} placeholder="↳ not / açıklama satırı (opsiyonel)" style={{ ...cell, textAlign: "left", marginTop: "3px", fontSize: "11px", color: "#6b7280", borderColor: "#e5e7ef", fontStyle: "italic" }} />
+                        </td>
                         <td style={{ padding: "4px 5px", width: "70px" }}><input type="number" step="any" value={it.quantity} onChange={e => setItem(i, { quantity: +e.target.value })} style={cell} /></td>
                         <td style={{ padding: "4px 5px", width: "90px" }}><input type="number" step="any" value={it.unit_price} onChange={e => setItem(i, { unit_price: +e.target.value })} style={cell} /></td>
                         <td style={{ padding: "4px 5px", width: "62px" }}><input type="number" step="any" value={it.discount} onChange={e => setItem(i, { discount: +e.target.value })} style={cell} /></td>

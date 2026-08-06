@@ -6,7 +6,7 @@ function money(n: number, cur: string) {
 function dt(d?: string | null) { return d ? new Date(d).toLocaleDateString("tr-TR") : "—"; }
 
 export interface QuoteHtmlItem {
-  description: string; quantity: number; unit_price: number;
+  description: string; note?: string; quantity: number; unit_price: number;
   discount: number; kdv_rate: number; unit?: string;
 }
 export interface QuoteHtmlData {
@@ -39,7 +39,7 @@ export function buildQuoteHtml(data: QuoteHtmlData): string {
     const net = gross - gross * (+it.discount || 0) / 100;
     const bg = i % 2 ? "#f5f8ff" : "#ffffff";
     return `<tr style="background:${bg};">
-      <td style="padding:8px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}</td>
+      <td style="padding:8px 14px;font-size:12px;color:#1f2937;"><span style="color:#0052ff;font-weight:700;">${i + 1}.</span> ${it.description || ""}${it.note ? `<div style="font-size:10.5px;color:#6b7280;font-style:italic;margin-top:3px;padding-left:12px;">${it.note}</div>` : ""}</td>
       <td style="padding:8px 12px;font-size:12px;text-align:center;white-space:nowrap;color:#475569;">${it.quantity} ${it.unit || ""}</td>
       <td style="padding:8px 12px;font-size:12px;text-align:right;white-space:nowrap;color:#475569;">${m(it.unit_price)}</td>
       <td style="padding:8px 12px;font-size:12px;text-align:center;color:#475569;">%${it.discount || 0}</td>
