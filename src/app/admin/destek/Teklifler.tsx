@@ -339,7 +339,7 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
     <div style="margin-top:16px;padding:11px 15px;background:#f0f4ff;border:1px solid #c7d7fc;border-left:3px solid #0052ff;border-radius:8px;font-size:11px;color:#374151;line-height:1.7;">
       <span style="font-weight:700;color:#0052ff;letter-spacing:.2px;">GENEL KOŞULLAR</span><br/>
       · Fatura; sipariş onayınıza istinaden kesildiği tarihte geçerli olan <strong>T.C. Merkez Bankası (TCMB) döviz satış kuru</strong> esas alınarak düzenlenecektir.<br/>
-      · <strong>Teslimat süresi:</strong> Sipariş tarihinden itibaren <strong>7 (yedi) iş günü</strong> içinde gerçekleştirilecektir. Teslimat adrese yapılır.<br/>
+      · <strong>Teslimat süresi:</strong> Sipariş tarihinden itibaren <strong>7 (yedi) iş günü</strong> içinde gerçekleştirilecektir.<br/>
       · <strong>Ödeme koşulları:</strong> Nakit, EFT veya Havale.
     </div>
 
