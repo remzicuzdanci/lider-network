@@ -203,6 +203,27 @@ export async function buildQuotePdf(data: QuotePdfData): Promise<Buffer> {
     y += nH + 14;
   }
 
+  // ── Genel koşullar ──
+  const CONDITIONS = [
+    "· Fatura; sipariş onayınıza istinaden kesildiği tarihte geçerli olan T.C. Merkez Bankası (TCMB) döviz satış kuru esas alınarak düzenlenecektir.",
+    "· Teslimat süresi: Sipariş tarihinden itibaren 7 (yedi) iş günü içinde gerçekleştirilecektir. Teslimat adrese yapılır.",
+    "· Ödeme koşulları: Nakit, EFT veya Havale.",
+  ];
+  const condW = W - M * 2;
+  const condLines: { text: string; bold: boolean }[] = [{ text: "GENEL KOŞULLAR", bold: true }];
+  for (const c of CONDITIONS) {
+    for (const ln of wrap(c, fReg, 8.5, condW - 24)) condLines.push({ text: ln, bold: false });
+  }
+  const condH = condLines.length * 11 + 12;
+  page.drawRectangle({ x: M, y: H - y - condH, width: condW, height: condH, color: rgb(0.94, 0.96, 1), borderColor: rgb(0.78, 0.86, 0.99), borderWidth: 1 });
+  page.drawRectangle({ x: M, y: H - y - condH, width: 3, height: condH, color: BLUE });
+  let cy2 = y + 8;
+  for (const ln of condLines) {
+    text(page, ln.text, M + 10, cy2, { size: ln.bold ? 8.5 : 8.5, font: ln.bold ? fBold : fReg, color: ln.bold ? BLUE : SLATE });
+    cy2 += 11;
+  }
+  y += condH + 14;
+
   // ── İmza alanları + QR ──
   y += 20;
   const QR_SIZE = 68;

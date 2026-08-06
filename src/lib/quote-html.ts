@@ -147,7 +147,14 @@ export function buildQuoteHtml(data: QuoteHtmlData): string {
   ${data.description ? `<div style="margin-top:14px;padding:12px 15px;background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;font-size:12px;color:#475569;line-height:1.55;white-space:pre-wrap;">${data.description}</div>` : ""}
   ${data.quote_note ? `<div style="margin-top:8px;padding:9px 14px;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;font-size:12px;color:#92400e;line-height:1.55;white-space:pre-wrap;">📌 ${data.quote_note}</div>` : ""}
 
-  <div style="font-size:12px;color:#374151;margin-top:18px;line-height:1.55;">
+  <div style="margin-top:16px;padding:11px 15px;background:#f0f4ff;border:1px solid #c7d7fc;border-left:3px solid #0052ff;border-radius:8px;font-size:11px;color:#374151;line-height:1.7;">
+    <span style="font-weight:700;color:#0052ff;letter-spacing:.2px;">GENEL KOŞULLAR</span><br/>
+    · Fatura; sipariş onayınıza istinaden kesildiği tarihte geçerli olan <strong>T.C. Merkez Bankası (TCMB) döviz satış kuru</strong> esas alınarak düzenlenecektir.<br/>
+    · <strong>Teslimat süresi:</strong> Sipariş tarihinden itibaren <strong>7 (yedi) iş günü</strong> içinde gerçekleştirilecektir. Teslimat adrese yapılır.<br/>
+    · <strong>Ödeme koşulları:</strong> Nakit, EFT veya Havale.
+  </div>
+
+  <div style="font-size:12px;color:#374151;margin-top:16px;line-height:1.55;">
     Teklifimiz ile ilgili sorularınızı cevaplandırmaya hazır olduğumuzu belirtir, çalışmalarınızda başarılar dileriz.
     <div style="margin-top:10px;">Saygılarımızla,</div>
   </div>
