@@ -52,8 +52,9 @@ export function validateNamedToken(token: string): SessionUser | null {
     const day = Number(dayStr);
     const curDay = Math.floor(Date.now() / (1000 * 60 * 60 * 24));
     if (curDay - day > 2) return null; // expired after 2 days
-    const expected = crypto.createHmac("sha256", SECRET).update(payload).digest("hex");
-    if (sig !== expected) return null;
+    const expected = crypto.createHmac("sha256", SECRET).update(payload).digest();
+    const sigBuf = Buffer.from(sig, "hex");
+    if (sigBuf.length !== expected.length || !crypto.timingSafeEqual(sigBuf, expected)) return null;
     return { email, role: role as SessionUser["role"], name: decodeURIComponent(nameEncoded) };
   } catch {
     return null;

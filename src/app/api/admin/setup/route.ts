@@ -18,7 +18,7 @@ function randomPass(): string {
 }
 
 const INITIAL_STAFF = [
-  { email: "remzi.cuzdanci@lidernetwork.com.tr",  name: "Remzi Cuzdancı",  role: "super_admin" },
+  { email: "remzi.cuzdanci@lidernetwork.com.tr",  name: "Remzi CUZDANCI",  role: "super_admin" },
   { email: "yunus.oztekin@lidernetwork.com.tr",   name: "Yunus Öztekin",   role: "super_admin" },
   { email: "enes.yildiz@lidernetwork.com.tr",     name: "Enes Yıldız",     role: "staff" },
   { email: "murat.aykac@lidernetwork.com.tr",     name: "Murat Aykaç",     role: "staff" },
@@ -27,9 +27,14 @@ const INITIAL_STAFF = [
 ];
 
 async function runSetup(key: string | null) {
-  // Authorization
-  if (!process.env.ADMIN_PASSWORD || key !== process.env.ADMIN_PASSWORD) {
-    return NextResponse.json({ error: "Yetkisiz — key parametresi yanlış veya eksik" }, { status: 401 });
+  if (!key || !process.env.ADMIN_PASSWORD) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  }
+  const keyBuf = Buffer.from(key.padEnd(128));
+  const pwBuf  = Buffer.from(process.env.ADMIN_PASSWORD.padEnd(128));
+  const match  = keyBuf.length === pwBuf.length && crypto.timingSafeEqual(keyBuf, pwBuf) && key === process.env.ADMIN_PASSWORD;
+  if (!match) {
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
   }
 
   // Check if already set up
@@ -64,14 +69,9 @@ async function runSetup(key: string | null) {
   });
 }
 
-// GET — tarayıcıdan direkt açılabilir
-export async function GET(req: NextRequest) {
-  const key = new URL(req.url).searchParams.get("key");
-  return runSetup(key);
-}
-
-// POST — curl / fetch ile de çalışır
+// POST only — key request body'de gelir, URL loglarına düşmez
+// curl -X POST https://.../api/admin/setup -H "Content-Type: application/json" -d '{"key":"<ADMIN_PASSWORD>"}'
 export async function POST(req: NextRequest) {
-  const key = new URL(req.url).searchParams.get("key");
-  return runSetup(key);
+  const body = await req.json().catch(() => ({}));
+  return runSetup(body?.key ?? null);
 }

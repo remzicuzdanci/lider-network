@@ -167,16 +167,42 @@ function ipToU32(ip: string): number {
   return ip.split(".").reduce((a, o) => ((a << 8) + parseInt(o)) >>> 0, 0) >>> 0;
 }
 const IP_WHITELIST_CIDRS: [number, number][] = [
-  // Apple — tüm 17.0.0.0/8 bloğu (Mac, iPhone, iCloud, App Store, güncelleme sunucuları)
-  [ipToU32("17.0.0.0"),   0xFF000000],
-  // Cloudflare — 1.1.1.0/24, 1.0.0.0/24 (DNS), 104.16.0.0/13, 104.24.0.0/14 (CDN)
-  [ipToU32("1.1.1.0"),    0xFFFFFF00],
-  [ipToU32("1.0.0.0"),    0xFFFFFF00],
-  [ipToU32("104.16.0.0"), 0xFFF80000],
-  [ipToU32("104.24.0.0"), 0xFFFC0000],
-  // Google DNS & NTP
-  [ipToU32("8.8.8.0"),    0xFFFFFF00],
-  [ipToU32("8.8.4.0"),    0xFFFFFF00],
+  // Apple — 17.0.0.0/8 (Mac, iPhone, iCloud, App Store, güncelleme)
+  [ipToU32("17.0.0.0"),     0xFF000000],
+
+  // Cloudflare DNS — 1.1.1.0/24, 1.0.0.0/24
+  [ipToU32("1.1.1.0"),      0xFFFFFF00],
+  [ipToU32("1.0.0.0"),      0xFFFFFF00],
+  // Cloudflare CDN — 104.16.0.0/13, 104.24.0.0/14
+  [ipToU32("104.16.0.0"),   0xFFF80000],
+  [ipToU32("104.24.0.0"),   0xFFFC0000],
+
+  // Google DNS
+  [ipToU32("8.8.8.0"),      0xFFFFFF00],
+  [ipToU32("8.8.4.0"),      0xFFFFFF00],
+  // Google genel altyapı
+  [ipToU32("74.125.0.0"),   0xFFFF0000],  // 74.125.0.0/16
+  [ipToU32("173.194.0.0"),  0xFFFF0000],  // 173.194.0.0/16
+  [ipToU32("172.217.0.0"),  0xFFFF0000],  // 172.217.0.0/16
+  [ipToU32("216.58.192.0"), 0xFFFFE000],  // 216.58.192.0/19
+  [ipToU32("142.250.0.0"),  0xFFFE0000],  // 142.250.0.0/15
+
+  // Microsoft / Azure / Office 365 / Teams
+  [ipToU32("13.107.4.0"),   0xFFFFFF00],  // 13.107.4.0/24  — Office 365
+  [ipToU32("13.107.6.0"),   0xFFFFFF00],  // 13.107.6.0/24  — Office 365
+  [ipToU32("13.107.64.0"),  0xFFFFC000],  // 13.107.64.0/18 — Teams / SharePoint
+  [ipToU32("40.96.0.0"),    0xFFF00000],  // 40.96.0.0/12   — Microsoft genel
+  [ipToU32("52.96.0.0"),    0xFFFC0000],  // 52.96.0.0/14   — Exchange Online
+
+  // Microsoft Windows Update — 23.72.0.0/13
+  [ipToU32("23.72.0.0"),    0xFFF80000],
+
+  // Zoom — AWS üzerinde ama sabit CIDR'ları var
+  [ipToU32("3.7.35.0"),     0xFFFFFF80],  // 3.7.35.0/25
+  [ipToU32("3.80.20.128"),  0xFFFFFF80],  // 3.80.20.128/25
+  [ipToU32("3.235.69.0"),   0xFFFFFF80],  // 3.235.69.0/25
+  [ipToU32("18.235.90.128"),0xFFFFFF80],  // 18.235.90.128/25
+
   // Fortinet FortiGuard güncelleme sunucuları
   [ipToU32("208.91.112.0"), 0xFFFFF000],
 ];
