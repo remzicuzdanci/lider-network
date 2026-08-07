@@ -56,6 +56,386 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "fortios-cve-2025-68686-cisa-kev-acil-yama",
+    title: "CISA Uyardı: FortiOS Güvenlik Açığı (CVE-2025-68686) 10 Ağustos'a Kadar Yamalanmalı",
+    excerpt: "CISA, CVE-2025-68686 açığını 'Bilinen İstismar Edilen Güvenlik Açıkları' kataloğuna ekledi. Federal kurumlar için son tarih 10 Ağustos 2026. Aktif istismar devam ederken kuruluşların derhal harekete geçmesi gerekiyor.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiOS", "CVE-2025-68686", "CISA", "KEV", "Güvenlik Açığı", "Acil Yama"],
+    publishedAt: "2026-08-07",
+    readTime: 7,
+    featured: true,
+    content: `
+<h2>CISA'dan Acil Uyarı: FortiOS Açığı Aktif Olarak İstismar Ediliyor</h2>
+<p>ABD Siber Güvenlik ve Altyapı Güvenliği Ajansı (CISA), CVE-2025-68686 numaralı FortiOS güvenlik açığını resmi <strong>Bilinen İstismar Edilen Güvenlik Açıkları (KEV)</strong> kataloğuna ekledi. Federal sivil yürütme kurumları (FCEB) için yamayı uygulama son tarihi <strong>10 Ağustos 2026</strong> olarak belirlendi.</p>
+
+<p>Bu gelişme, açığın yalnızca teorik düzeyde değil, halihazırda gerçek saldırılarda aktif biçimde kullanıldığı anlamına gelir. CISA'nın KEV kataloğuna eklenmesi, kamu kurumlarının ötesinde özel sektör kuruluşları için de güçlü bir uyarı niteliği taşımaktadır.</p>
+
+<h2>CVE-2025-68686 Nedir?</h2>
+<p>CVE-2025-68686, FortiOS işletim sisteminde tespit edilen kritik önem derecesine sahip bir güvenlik açığıdır. Ayrıntılar şöyle özetlenebilir:</p>
+<ul>
+  <li><strong>CVSS Skoru:</strong> 9.6 (Kritik)</li>
+  <li><strong>Etkilenen Sistemler:</strong> FortiOS 7.4.x, 7.2.x, 7.0.x ve önceki sürümler</li>
+  <li><strong>Açık Türü:</strong> Kimlik doğrulama gerektirmeyen uzaktan kod çalıştırma (RCE)</li>
+  <li><strong>Saldırı Yüzeyi:</strong> Ağ tabanlı; saldırgan, yönetim arayüzü veya SSL-VPN aracılığıyla cihaza erişim sağlayabilir</li>
+  <li><strong>İstismar Karmaşıklığı:</strong> Düşük — özel beceri gerektirmiyor</li>
+</ul>
+
+<p>Fortinet, bu açığın önce fidye yazılımı grupları, ardından devlet destekli tehdit aktörleri tarafından istismar edildiğini doğruladı. Saldırılar özellikle Avrupa, Orta Doğu ve Asya-Pasifik bölgelerindeki FortiGate cihazlarını hedef alıyor.</p>
+
+<h2>Hangi Sürümler Etkileniyor?</h2>
+<table style="width:100%;border-collapse:collapse;font-size:14px;margin:12px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">FortiOS Sürümü</th>
+      <th style="padding:10px 14px;text-align:left;">Durum</th>
+      <th style="padding:10px 14px;text-align:left;">Yama Sürümü</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.4.0 – 7.4.4</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.4.5 veya üzeri</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.2.0 – 7.2.9</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.2.10 veya üzeri</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.0.0 – 7.0.16</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #fee2e2;">7.0.17 veya üzeri</td>
+    </tr>
+    <tr style="background:#f0fdf4;">
+      <td style="padding:9px 14px;">7.6.x</td>
+      <td style="padding:9px 14px;color:#16a34a;font-weight:700;">ETKİLENMİYOR</td>
+      <td style="padding:9px 14px;">—</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Saldırganlar Ne Yapıyor?</h2>
+<p>Güvenlik araştırmacıları ve Fortinet'in FortiGuard Labs ekibi, bu açığı aktif olarak kullanan saldırganların şu faaliyetleri gerçekleştirdiğini belgeledi:</p>
+<ul>
+  <li>Yönetim arayüzüne kimlik doğrulamasız erişim sağlayarak yönetici hesapları oluşturma</li>
+  <li>SSL-VPN üzerinden ağ içine sızma ve lateral movement gerçekleştirme</li>
+  <li>Kalıcılık için özel implantlar ve webshell'ler yerleştirme</li>
+  <li>Fidye yazılımı yüklemesi öncesinde veri sızdırma (double extortion)</li>
+  <li>Ele geçirilen cihazları botnet altyapısına dahil etme</li>
+</ul>
+
+<h2>Derhal Yapılması Gerekenler</h2>
+<p>10 Ağustos son tarihine bakılmaksızın kuruluşların aşağıdaki adımları hemen uygulaması kritik önem taşımaktadır:</p>
+
+<h3>1. Acil Yama Uygulaması</h3>
+<p>FortiOS cihazlarınızı etkilenen sürümde çalıştırıyorsanız derhal en güncel yamayı uygulayın. Fortinet Support portalından (support.fortinet.com) yazılım güncellemesini indirip planlı bakım penceresi olmadan bile uygulayın — aktif istismar riski, kısa süreli kesintinin çok üzerindedir.</p>
+
+<h3>2. Yönetim Arayüzünü İzole Edin</h3>
+<p>Hemen yama uygulanamıyorsa yönetim arayüzüne (HTTPS/SSH) erişimi kısıtlayın. Güvenilen IP adresleri dışından yönetim erişimini engeller ve HTTPS/SSH bağlantı noktalarını (443, 8443, 22) internete açık bırakmayın.</p>
+
+<h3>3. Mevcut İzleme ve Alarm Sistemlerinizi Güncelleyin</h3>
+<p>SIEM/SOC ekiplerinize bu CVE için Fortinet'in yayımladığı tehdit imzalarını ve IoC (Compromise Göstergesi) listelerini ekleyin. FortiGuard Labs, saldırıları tespit etmek için hazır IPS imzaları yayımladı.</p>
+
+<h3>4. SSL-VPN Loglarını Denetleyin</h3>
+<p>Son 30 günün VPN ve yönetim erişim loglarını gözden geçirerek yetkisiz oturum açma denemelerini, bilinmeyen kaynak IP'lerden gelen erişimleri ve beklenmedik yapılandırma değişikliklerini inceleyin.</p>
+
+<h2>FortiGate Yönetiminde Uzman Desteği</h2>
+<p>Lider Network olarak, kuruluşunuzun FortiGate cihazlarının güvenliğini ve güncelliğini sürdürmeniz için kapsamlı hizmetler sunuyoruz:</p>
+<ul>
+  <li>Acil yamalar dahil proaktif FortiOS güncelleme yönetimi</li>
+  <li>Fortinet güvenlik açığı tarama ve risk değerlendirmesi</li>
+  <li>SSL-VPN ve yönetim arayüzü güvenlik sertleştirmesi</li>
+  <li>7/24 FortiGate izleme ve olay müdahalesi</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>CVE-2025-68686, Fortinet cihaz güvenliğini bir kez daha gündemin başına taşıdı. CISA'nın KEV kataloğuna eklenmesi ve 10 Ağustos son tarihi, bu açığın ciddiyetini resmi olarak tescil etmektedir. Yama uygulamak, yönetim erişimini kısıtlamak ve logları denetlemek — bu üç adım, olası bir ihlali önlemenin en hızlı yoludur.</p>
+<p><strong>FortiGate cihazlarınızın güvenlik durumunu değerlendirmek veya acil yama sürecinde destek almak için Lider Network ile iletişime geçin.</strong></p>
+    `,
+  },
+  {
+    slug: "yapay-zeka-siber-saldirilari-2026-deepfake-ai-phishing",
+    title: "Yapay Zekâ Destekli Siber Saldırılar 2026: Deepfake, AI Phishing ve Otomatik Malware",
+    excerpt: "2026'da siber tehdit aktörleri yapay zekâyı silah olarak kullanıyor. CEO sesi taklit eden deepfake ses aramaları, saniyeler içinde kişiselleştirilen kimlik avı e-postaları ve kendi kendini güncelleyen zararlı yazılımlar — AI destekli saldırı dalgası her geçen gün büyüyor.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Yapay Zeka", "Deepfake", "AI Phishing", "Siber Güvenlik", "Sosyal Mühendislik", "2026"],
+    publishedAt: "2026-08-05",
+    readTime: 9,
+    content: `
+<h2>Siber Saldırılarda Yeni Bir Dönem: Yapay Zekâ Silah Haline Geldi</h2>
+<p>Siber güvenlik dünyası, yapay zekânın hem savunmacı hem de saldırgan taraflarca eş zamanlı olarak kullanıldığı yeni bir döneme girdi. 2026 yılının ilk yarısında küresel güvenlik şirketlerinin raporları, AI destekli saldırıların frekans, sofistike ve başarı oranı açısından önceki yıllara kıyasla ciddi biçimde arttığını ortaya koyuyor.</p>
+
+<p>Bu yazıda, organizasyonların bugün karşılaştığı başlıca AI destekli tehdit türlerini, gerçek saldırı örneklerini ve bu tehditlere karşı alınabilecek pratik önlemleri ele alıyoruz.</p>
+
+<h2>1. Deepfake Ses ve Video Saldırıları</h2>
+<p>Deepfake teknolojisi artık özel bir ekip ya da pahalı altyapı gerektirmiyor. 2026 başı itibarıyla birçok ücretsiz veya düşük maliyetli araç, yalnızca birkaç dakikalık ses kaydıyla ikna edici derecede gerçekçi ses kopyaları oluşturabiliyor.</p>
+
+<h3>Gerçek Saldırı Senaryoları</h3>
+<ul>
+  <li><strong>CEO Dolandırıcılığı (BEC 2.0):</strong> Saldırganlar, şirket CEO'sunun ya da CFO'sunun sesini klonlayarak finans departmanını telefonla arayıp acil fon transferi talep ediyor. Avrupa'da bir imalat firması bu yöntemle 2,3 milyon Euro kaybetti.</li>
+  <li><strong>Video Konferans Takliği:</strong> Gerçek zamanlı deepfake araçları sayesinde saldırganlar, video görüşmelerinde tanınan bir çalışanın yüzünü taklit edebiliyor. Hong Kong'da bir çalışan, üst yönetimi taklit eden deepfake video konferans nedeniyle 25 milyon dolar aktardı.</li>
+  <li><strong>Kimlik Belgesi Sahteciliği:</strong> AI üretimi yüz görselleri, uzaktan kimlik doğrulama sistemlerini atlatmak için kullanılıyor.</li>
+</ul>
+
+<h2>2. AI Destekli Kimlik Avı (Spear Phishing)</h2>
+<p>Geleneksel phishing saldırıları kitlesel ve genel içerikli e-postalara dayanırken, AI destekli spear phishing her hedef için özelleştirilmiş, kişiye özel içerik üretiyor.</p>
+
+<h3>Nasıl Çalışıyor?</h3>
+<p>Saldırgan araçları şu adımları otomatik olarak gerçekleştiriyor:</p>
+<ul>
+  <li>Hedefin LinkedIn, Twitter/X, şirket web sitesi ve sızdırılmış veritabanlarından profil bilgisi toplama (OSINT)</li>
+  <li>Büyük dil modelleri (LLM) aracılığıyla hedefin üslubunu, ilgi alanlarını ve bağlamını yansıtan e-posta taslağı oluşturma</li>
+  <li>Spam filtrelerini atlatmak için her gönderimde benzersiz dil varyasyonları üretme</li>
+  <li>Yanıt oranlarını optimize etmek için A/B test döngüsü çalıştırma</li>
+</ul>
+
+<p>Güvenlik firması Cofense'in 2026 Q2 raporuna göre, AI üretimi kimlik avı e-postalarının çalışanlar tarafından tespit edilme oranı yalnızca %3 iken, geleneksel kimlik avı e-postaları %17 oranında fark ediliyor. Bu, AI phishing'in 5 kat daha etkili olduğu anlamına geliyor.</p>
+
+<h2>3. Otomatik ve Adaptatif Malware</h2>
+<p>AI destekli zararlı yazılımların en tehlikeli özelliği, hedef ortama uyum sağlama kapasitesidir. Güvenlik araştırmacıları bu tehdit sınıfını "polymorphic AI malware" olarak tanımlıyor.</p>
+
+<h3>Özellikleri</h3>
+<ul>
+  <li><strong>Kod Mutasyonu:</strong> Her çalıştırmada kendi kodunu yeniden üreterek imza tabanlı antivirüsleri atlatma</li>
+  <li><strong>Ortam Keşfi:</strong> Hedef sistemin güvenlik yazılımlarını, ağ topolojisini ve yamalar durumunu otomatik analiz etme</li>
+  <li><strong>Saldırı Yolu Optimizasyonu:</strong> Tespit riskini minimize ederek en etkili lateral movement rotasını belirleme</li>
+  <li><strong>Yerleşik LLM:</strong> Bazı gelişmiş örneklerde zararlı yazılım, C2 sunucusuyla iletişim kurmak yerine yerleşik küçük dil modeli kullanarak otonom karar alıyor</li>
+</ul>
+
+<h2>4. AI Destekli Keşif ve Zafiyeti İstismar</h2>
+<p>Saldırganlar, hedef organizasyonların açıklarını tespit etmek için otonom AI ajanlar kullanıyor. Bu ajanlar geleneksel pentest araçlarının hızının çok üzerinde çalışarak dakikalar içinde kapsamlı güvenlik açığı haritası çıkarabiliyor.</p>
+
+<h2>Kuruluşunuzu Nasıl Korumalısınız?</h2>
+
+<h3>Teknik Önlemler</h3>
+<ul>
+  <li><strong>AI Destekli E-posta Güvenliği:</strong> Geleneksel imza tabanlı filtreler yerine davranış analizi ve anomali tespiti kullanan çözümlere geçin (Microsoft Defender for Office 365, Proofpoint Aegis)</li>
+  <li><strong>Çok Faktörlü Kimlik Doğrulama (MFA):</strong> TOTP veya hardware token tabanlı MFA, AI phishing ile elde edilen kimlik bilgilerinin kullanılmasını engeller</li>
+  <li><strong>Sıfır Güven Mimarisi:</strong> Ağ içi lateral movement'ı kısıtlayan mikrosegmentasyon ve least-privilege erişim politikaları</li>
+  <li><strong>Deepfake Tespit Araçları:</strong> Video konferans ve ses doğrulama için AI destekli tespit çözümleri kullanın</li>
+</ul>
+
+<h3>İnsan Faktörü</h3>
+<ul>
+  <li>Finansal transferler ve kritik işlemler için <strong>bant dışı doğrulama</strong> prosedürü oluşturun — "CEO aradı, para gönder" taleplerine karşı yazılı onay şartı</li>
+  <li>Çalışanlara AI deepfake ve spear phishing konusunda gerçek örneklerle güvenlik farkındalığı eğitimi verin</li>
+  <li>Şirket kültüründe "doğrulama yapmak zayıflık değil, sorumluluktur" anlayışını yerleştirin</li>
+</ul>
+
+<h2>Lider Network'ün AI Tehditlerine Yönelik Çözümleri</h2>
+<p>Lider Network olarak, kuruluşunuzun AI destekli siber tehditlere karşı hazırlıklı olması için şu hizmetleri sunuyoruz:</p>
+<ul>
+  <li>AI kimlik avı simülasyonu ve çalışan farkındalık eğitimleri</li>
+  <li>Sıfır Güven Mimarisi tasarımı ve implementasyonu</li>
+  <li>E-posta güvenliği çözümlerinin değerlendirilmesi ve konuşlandırılması</li>
+  <li>Güvenlik olgunluk değerlendirmesi ve yol haritası oluşturma</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>AI destekli saldırılar, siber güvenlikte "insanın en zayıf halka olduğu" varsayımını daha da güçlendiriyor. Deepfake'ler, kişiselleştirilmiş phishing ve adaptatif malware — bu üç tehdit, geleneksel savunma katmanlarını tek başına aşmaya yetecek sofistike düzeye ulaştı. Karşılık olarak kuruluşların da AI destekli savunma araçlarına, güçlü süreç kontrollerine ve düzenli eğitimlere yatırım yapması artık seçenek değil, zorunluluk haline geldi.</p>
+    `,
+  },
+  {
+    slug: "fidye-yazilimi-2026-yuzde-20-artis-edr-killer-araclari",
+    title: "Fidye Yazılımı 2026: %20 Artış, 146 Aktif Grup ve EDR'ı Bypass Eden Araçlar",
+    excerpt: "2026'nın ilk yarısında fidye yazılımı saldırıları bir önceki yılın aynı dönemine göre %20 arttı. 146 aktif fidye yazılımı grubu operasyon yürütürken, 'EDR killer' araçlarının kullanımı da hız kazanıyor. Peki kurumlar bu tehdide nasıl hazırlanmalı?",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Fidye Yazılımı", "Ransomware", "EDR", "Siber Tehdit", "2026", "SOC"],
+    publishedAt: "2026-07-24",
+    readTime: 8,
+    content: `
+<h2>Fidye Yazılımı Tehdidi 2026'da Yeni Zirvelere Ulaştı</h2>
+<p>Siber güvenlik firması Symantec ve Mandiant'ın 2026 yılı ortası tehdit istihbarat raporları, fidye yazılımı saldırılarında endişe verici bir tablo ortaya koyuyor: 2026'nın ilk altı ayında kayıt altına alınan fidye yazılımı olayları, 2025'in aynı dönemine kıyasla <strong>%20 artış</strong> gösterdi.</p>
+
+<p>Özellikle dikkat çeken bir bulgu, aktif fidye yazılımı grubunun sayısının 146'ya ulaşmasıdır. Bu grupların bir kısmı eski gruplardan ayrılan operatörler tarafından kurulan "yeni markalar" iken, bir kısmı farklı ülkelerdeki bağımsız aktörlerden oluşuyor. Fidye yazılımı hizmeti (RaaS) modeli, teknik bilgi gereksinimini azaltarak bu alandaki "giriş engelini" dramatik biçimde düşürdü.</p>
+
+<h2>Sektörel Hedefler</h2>
+<p>2026'nın ilk yarısında en çok hedef alınan sektörler şöyle sıralandı:</p>
+<ul>
+  <li><strong>Sağlık:</strong> Hasta verisi ve kesintisiz hizmet baskısı, fidye ödeme olasılığını artırıyor</li>
+  <li><strong>Eğitim:</strong> Yetersiz bütçe ve BT kaynakları, savunmacı kapasiteyi kısıtlıyor</li>
+  <li><strong>İmalat ve Lojistik:</strong> Operasyonel süreklilik baskısı fidye ödemeye zorluyor</li>
+  <li><strong>Kamu ve Altyapı:</strong> Kritik servisler nedeniyle yüksek etki potansiyeli</li>
+  <li><strong>Finans ve Sigorta:</strong> Yüksek fidye ödeme kapasitesi</li>
+</ul>
+
+<h2>EDR Killer: Güvenlik Yazılımını Etkisiz Hale Getiren Araçlar</h2>
+<p>2026'da fidye yazılımı saldırılarında en dikkat çekici teknik gelişme, <strong>"EDR killer"</strong> araçlarının yaygınlaşmasıdır. Bu araçlar, kurbanın sisteminde yüklü Uç Nokta Tespit ve Müdahale (EDR) yazılımlarını devre dışı bırakmak için tasarlandı.</p>
+
+<h3>EDR Killer Araçları Nasıl Çalışır?</h3>
+<ul>
+  <li><strong>Savunmasız Sürücü Kötüye Kullanımı (BYOVD):</strong> Saldırganlar, Windows çekirdeğine erişim sağlayan meşru ama güvenlik açıklı sürücüleri sisteme yükleyerek EDR süreçlerini kernel düzeyinde sonlandırıyor</li>
+  <li><strong>API Engelleme:</strong> EDR yazılımlarının kullandığı sistem çağrılarını ve kernel callback mekanizmalarını bloke etme</li>
+  <li><strong>Süreç Enjeksiyonu:</strong> EDR ajanının bellek alanına kötü amaçlı kod enjekte ederek davranışını manipüle etme</li>
+  <li><strong>Servis Kaldırma:</strong> Yönetici ayrıcalıkları elde edildikten sonra EDR servisini ve sürücülerini sistemden tamamen kaldırma</li>
+</ul>
+
+<h3>Dikkat Çeken EDR Killer Araçları</h3>
+<p>Güvenlik araştırmacıları, 2026'da aktif kullanılan çeşitli EDR killer araçlarını belgeledi. Bu araçların büyük çoğunluğu dark web forumlarında veya Telegram kanallarında ücret karşılığı veya ücretsiz olarak paylaşılıyor. En yaygın kullanılan teknik ise BYOVD (Bring Your Own Vulnerable Driver) yöntemi olup bu saldırılar, meşru imzalı ama yamlanmamış sürücüleri kullanıyor.</p>
+
+<h2>Çift Gasp (Double Extortion) ve Üçlü Gasp</h2>
+<p>Günümüz fidye yazılımı saldırılarında sadece şifreleme yeterli görülmüyor. Grupların büyük çoğunluğu çift veya üçlü gasp stratejisi uyguluyor:</p>
+<ul>
+  <li><strong>Birinci katman:</strong> Sistemleri şifreleme ve veri erişimini engelleme</li>
+  <li><strong>İkinci katman:</strong> Fidye ödenmezse çalınan verileri yayımlama tehdidi (veri sızdırma siteleri)</li>
+  <li><strong>Üçüncü katman:</strong> Kurbanın müşterilerine, iş ortaklarına veya düzenleyici kurumlara ihbarda bulunma tehdidi</li>
+</ul>
+
+<h2>Savunma Stratejileri</h2>
+
+<h3>EDR'ın Ötesinde Koruma Katmanları</h3>
+<p>EDR killer saldırıları göz önüne alındığında, EDR'ı tek savunma katmanı olarak görmek risklidir. Çok katmanlı bir strateji şunları içermelidir:</p>
+<ul>
+  <li><strong>Kernel düzeyinde koruma:</strong> Microsoft Credential Guard, Hypervisor Protected Code Integrity (HVCI) ve Secure Boot gibi donanım destekli güvenlik özellikleri</li>
+  <li><strong>Sürücü izin listesi (Driver Allowlisting):</strong> Yalnızca onaylanmış sürücülerin sisteme yüklenmesine izin verin</li>
+  <li><strong>Ağ segmentasyonu:</strong> Fidye yazılımının yayılmasını engellemek için mikrosegmentasyon uygulayın</li>
+  <li><strong>Değişmez yedekleme:</strong> 3-2-1-1-0 yedekleme kuralı; en az bir kopyayı hava boşluklu (air-gapped) ortamda tutun</li>
+  <li><strong>Ayrıcalıklı hesap yönetimi (PAM):</strong> Domain admin ve local admin haklarının sıkı kontrolü</li>
+</ul>
+
+<h3>Olay Müdahale Hazırlığı</h3>
+<ul>
+  <li>Yılda en az iki kez fidye yazılımı tatbikatı yapın — teknik ekibin yanı sıra üst yönetim ve hukuk birimini de dahil edin</li>
+  <li>Fidye ödeme kararı dahil tüm seçenekleri önceden tartışın ve bir karar ağacı oluşturun</li>
+  <li>Siber sigorta poliçenizin fidye yazılımı kapsamını ve bildirim gerekliliklerini gözden geçirin</li>
+  <li>Yetkili bir olay müdahale firmasıyla önceden retainer anlaşması yapın</li>
+</ul>
+
+<h2>Lider Network ile Fidye Yazılımı Savunması</h2>
+<p>Lider Network olarak, fidye yazılımı tehdidine karşı kapsamlı bir savunma ekosistemi oluşturmanıza yardımcı oluyoruz:</p>
+<ul>
+  <li>Yedekleme çözümlerinin gözden geçirilmesi ve değişmez yedekleme altyapısı kurulumu</li>
+  <li>Ağ segmentasyonu ve sıfır güven erişim kontrolü</li>
+  <li>FortiEDR, Bitdefender GravityZone gibi EDR çözümlerinin konuşlandırılması</li>
+  <li>Olay müdahale planı (IRP) hazırlama ve tatbikat yönetimi</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>%20 artış, 146 aktif grup ve EDR'ı etkisiz kılan araçlar — fidye yazılımı tehdidi 2026'da yalnızca büyümüyor, aynı zamanda daha sofistike bir hal alıyor. Bu tehdidin gerçekçi biçimde ele alınması; teknik savunma katmanlarının güçlendirilmesini, çalışan farkındalığını ve her an devreye alınabilecek bir müdahale planının varlığını gerektiriyor.</p>
+    `,
+  },
+  {
+    slug: "fortinet-temmuz-2026-guvenlik-yamalari-fortios-fortiproxy-fortipam",
+    title: "Fortinet Temmuz 2026 Güvenlik Güncellemeleri: 7 Kritik Yama",
+    excerpt: "Fortinet, Temmuz 2026'da FortiOS, FortiProxy, FortiPAM ve FortiSandbox'ı etkileyen 7 kritik güvenlik açığını kapatan yamaları yayımladı. Açıkların biri RCE, ikisi yetkisiz erişim içeriyor. Sistem yöneticileri için hızlı başvuru kılavuzu.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["Fortinet", "FortiOS", "FortiProxy", "FortiPAM", "Güvenlik Yaması", "CVE", "Temmuz 2026"],
+    publishedAt: "2026-07-15",
+    readTime: 6,
+    content: `
+<h2>Fortinet Temmuz 2026 Güvenlik Bülteni</h2>
+<p>Fortinet, Temmuz 2026 güvenlik bülteni kapsamında ürün portföyünü etkileyen 7 güvenlik açığına yönelik yamalar yayımladı. Yamalar FortiOS, FortiProxy, FortiPAM ve FortiSandbox platformlarını kapsıyor. Kurumların mümkün olan en kısa sürede güncelleme yapması önerilmektedir.</p>
+
+<h2>Kritik ve Yüksek Önem Dereceli Açıklar</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 12px;text-align:left;">CVE</th>
+      <th style="padding:10px 12px;text-align:left;">Ürün</th>
+      <th style="padding:10px 12px;text-align:left;">Tür</th>
+      <th style="padding:10px 12px;text-align:center;">CVSS</th>
+      <th style="padding:10px 12px;text-align:left;">Yama</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-22001</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">FortiOS</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Uzaktan Kod Çalıştırma (RCE)</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">9.3</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">7.4.5 / 7.2.10</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-23187</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">FortiProxy</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Kimlik Doğrulamasız Erişim</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">9.1</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">7.4.4 / 7.2.11</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;font-family:monospace;font-weight:700;">CVE-2026-24503</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">FortiPAM</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Yetki Yükseltme</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;text-align:center;color:#ea580c;font-weight:700;">8.8</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">1.4.2</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;font-family:monospace;font-weight:700;">CVE-2026-25001</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">FortiOS</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Bellek Taşması (DoS)</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;text-align:center;color:#ea580c;font-weight:700;">8.2</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">7.4.5 / 7.2.10</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;font-family:monospace;font-weight:700;">CVE-2026-26334</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">FortiSandbox</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Kimlik Doğrulamasız API Erişimi</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;text-align:center;color:#ea580c;font-weight:700;">8.0</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">5.0.3</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;font-family:monospace;">CVE-2026-27819</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;">FortiProxy</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;">XSS (Depolanan)</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;text-align:center;color:#ca8a04;">7.4</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #e2e8f0;">7.4.4</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 12px;font-family:monospace;">CVE-2026-28102</td>
+      <td style="padding:9px 12px;">FortiPAM</td>
+      <td style="padding:9px 12px;">Bilgi İfşası</td>
+      <td style="padding:9px 12px;text-align:center;color:#ca8a04;">6.5</td>
+      <td style="padding:9px 12px;">1.4.2</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>En Kritik Açık: FortiOS RCE (CVE-2026-22001)</h2>
+<p>Bültenin en kritik açığı, FortiOS'un SSL-VPN web portalındaki bir yığın tabanlı tampon taşması güvenlik açığıdır. Kimlik doğrulaması yapılmamış uzak bir saldırgan, özel olarak hazırlanmış HTTP istekleri göndererek cihaz üzerinde keyfi kod veya komutlar çalıştırabilir.</p>
+
+<p><strong>Neden acil?</strong> SSL-VPN, birçok organizasyonda doğrudan internete açıktır ve ek kimlik doğrulama katmanı gerektirmez. Bu durum, açığın saldırganlar tarafından kolayca keşfedilip istismar edilebileceği anlamına gelir.</p>
+
+<h3>Geçici Hafifletme (Hemen Yama Uygulanamıyorsa)</h3>
+<ul>
+  <li>SSL-VPN portal erişimini güvenilir IP adreslerine kısıtlayın</li>
+  <li>FortiOS yönetim arayüzünü (port 443) internetten izole edin</li>
+  <li>IPS imzalarını güncel tutun — Fortinet, FortiGuard üzerinden tespit imzaları yayımladı</li>
+</ul>
+
+<h2>FortiProxy Kimlik Doğrulamasız Erişim (CVE-2026-23187)</h2>
+<p>FortiProxy'nin yönetim API'sinde tespit edilen bu açık, saldırganların geçerli kimlik bilgileri olmadan yönetim işlemleri gerçekleştirmesine olanak tanıyor. Özellikle FortiProxy'yi merkezi web filtresi ve proxy olarak kullanan kurumlar için öncelikli yama hedefi oluşturuyor.</p>
+
+<h2>FortiPAM Yetki Yükseltme (CVE-2026-24503)</h2>
+<p>Ayrıcalıklı Erişim Yönetimi çözümü FortiPAM'de tespit edilen bu açık, düşük ayrıcalıklı bir hesapla kimlik doğrulaması yapan saldırganın yönetici haklarına yükselmesine olanak sağlıyor. PAM çözümlerinin kritik hesapları koruduğu göz önüne alındığında, bu açık son derece ciddi bir risk barındırıyor.</p>
+
+<h2>Güncelleme Öncelik Sırası</h2>
+<p>Tüm yamaları aynı anda uygulamak mümkün değilse aşağıdaki öncelik sırasını takip edin:</p>
+<ol>
+  <li><strong>1. Öncelik:</strong> FortiOS güncellemesi (CVE-2026-22001 ve CVE-2026-25001 — RCE ve DoS)</li>
+  <li><strong>2. Öncelik:</strong> FortiProxy güncellemesi (CVE-2026-23187 — kimlik doğrulamasız erişim)</li>
+  <li><strong>3. Öncelik:</strong> FortiPAM güncellemesi (CVE-2026-24503 ve CVE-2026-28102)</li>
+  <li><strong>4. Öncelik:</strong> FortiSandbox güncellemesi (CVE-2026-26334)</li>
+</ol>
+
+<h2>Fortinet Güvenlik Yönetiminde Lider Network Desteği</h2>
+<p>Lider Network olarak Fortinet ürünlerinin güvenlik yönetiminde tam kapsamlı destek sunuyoruz:</p>
+<ul>
+  <li>FortiOS, FortiProxy, FortiPAM ve FortiSandbox güncelleme yönetimi</li>
+  <li>Güvenlik bültenlerinin kurumunuza özel etki analizi</li>
+  <li>Yama test ve uygulama hizmetleri (servis kesintisi olmadan)</li>
+  <li>FortiGuard abonelik ve lisans yönetimi</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Fortinet'in Temmuz 2026 güvenlik bülteni, ürün portföyünün farklı katmanlarını etkileyen 7 kritik açığı kapsamaktadır. Özellikle FortiOS RCE açığı (CVSS 9.3) ve FortiProxy kimlik doğrulamasız erişim açığı, internete açık sistemlerde hızlı yama uygulanmasını zorunlu kılmaktadır. Fortinet Support portalı (support.fortinet.com) üzerinden güncel yama dosyalarına ve bülten detaylarına erişebilirsiniz.</p>
+    `,
+  },
+  {
     slug: "fortibleed-fortinet-firewall-guvenligi-kontrol-listesi",
     title: "FortiBleed: 73.000+ Fortinet Cihazı Ele Geçirildi — Hemen Yapılması Gerekenler",
     excerpt:
