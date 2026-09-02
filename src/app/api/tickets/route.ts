@@ -105,32 +105,50 @@ export async function GET(request: NextRequest) {
   const category = searchParams.get("category");
   const date     = searchParams.get("date");
   const search   = searchParams.get("q");
+  const fetchAll = searchParams.get("all") === "1";
   const page  = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const requestedLimit = parseInt(searchParams.get("limit") || "25");
-  // all=1 → raporlar için limit kaldırılır (admin-only endpoint, güvenli)
-  const limit = searchParams.get("all") === "1" ? 5000 : Math.min(100, requestedLimit);
+  const limit = fetchAll ? 1000 : Math.min(100, requestedLimit);
 
-  let query = supabase
-    .from("tickets")
-    .select("*", { count: "exact" })
-    .order("created_at", { ascending: false })
-    .range((page - 1) * limit, page * limit - 1);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function applyFilters(q: any): any {
+    if (status   && status   !== "all") q = q.eq("status", status);
+    if (priority && priority !== "all") q = q.eq("priority", priority);
+    if (category && category !== "all") q = q.eq("category", category);
+    if (date && date !== "all") {
+      const cutoff = new Date();
+      if (date === "today") cutoff.setHours(0, 0, 0, 0);
+      else if (date === "week")  cutoff.setDate(cutoff.getDate() - 7);
+      else if (date === "month") cutoff.setDate(cutoff.getDate() - 30);
+      q = q.gte("created_at", cutoff.toISOString());
+    }
+    if (search) q = q.or(`subject.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,company.ilike.%${search}%`);
+    return q;
+  }
 
-  if (status   && status   !== "all") query = query.eq("status", status);
-  if (priority && priority !== "all") query = query.eq("priority", priority);
-  if (category && category !== "all") query = query.eq("category", category);
-  if (date && date !== "all") {
-    const cutoff = new Date();
-    if (date === "today") cutoff.setHours(0, 0, 0, 0);
-    else if (date === "week")  cutoff.setDate(cutoff.getDate() - 7);
-    else if (date === "month") cutoff.setDate(cutoff.getDate() - 30);
-    query = query.gte("created_at", cutoff.toISOString());
+  // all=1 → raporlar için Supabase'in 1000 satır sınırını aşmak adına sayfalı çekim
+  if (fetchAll) {
+    const BATCH = 1000;
+    let allData: unknown[] = [];
+    let totalCount = 0;
+    let offset = 0;
+    while (true) {
+      const q = applyFilters(
+        supabase.from("tickets").select("*", { count: offset === 0 ? "exact" : undefined }).order("created_at", { ascending: false })
+      ).range(offset, offset + BATCH - 1);
+      const { data, error, count } = await q;
+      if (error) return NextResponse.json({ error: "Veritabanı hatası" }, { status: 500 });
+      if (offset === 0 && count !== null) totalCount = count;
+      allData = allData.concat(data ?? []);
+      if (!data || data.length < BATCH) break;
+      offset += BATCH;
+    }
+    return NextResponse.json({ tickets: allData, total: totalCount, page: 1, limit: allData.length });
   }
-  if (search) {
-    query = query.or(
-      `subject.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,company.ilike.%${search}%`
-    );
-  }
+
+  const query = applyFilters(
+    supabase.from("tickets").select("*", { count: "exact" }).order("created_at", { ascending: false }).range((page - 1) * limit, page * limit - 1)
+  );
 
   const { data: tickets, error, count } = await query;
   if (error) return NextResponse.json({ error: "Veritabanı hatası" }, { status: 500 });
