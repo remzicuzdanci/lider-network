@@ -56,6 +56,304 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "synology-dsm-cve-2026-32746-cvss98-kritik-rce-acigi",
+    title: "Synology DSM'de CVSS 9.8 Kritik Güvenlik Açığı: Kimlik Doğrulamasız Uzaktan Komut Çalıştırma",
+    excerpt: "CVE-2026-32746 olarak takip edilen açık, kimliği doğrulanmamış uzak saldırganların Synology NAS cihazlarında keyfi komut çalıştırmasına olanak tanıyor. CVSS 9.8 skoru ile DSM 7.3, 7.2.2 ve 7.2.1 kullanan tüm sistemler acilen güncellenmeli.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "DSM", "CVE-2026-32746", "RCE", "NAS Güvenliği", "Kritik Güvenlik Açığı", "Telnet"],
+    publishedAt: "2026-09-12",
+    readTime: 7,
+    featured: true,
+    content: `
+<h2>Synology DSM'de Kritik Uzaktan Komut Çalıştırma Açığı</h2>
+<p>Synology, DiskStation Manager (DSM) yazılımında CVSS v3 skoru <strong>9.8</strong> olan kritik bir güvenlik açığını kapatan acil güvenlik güncellemesi yayımladı. <strong>CVE-2026-32746</strong> olarak takip edilen bu açık, <strong>kimliği doğrulanmamış</strong> uzak saldırganların etkilenen NAS cihazlarında keyfi komutlar çalıştırmasına olanak tanımaktadır.</p>
+
+<p>Açık, GNU Inetutils paketinin telnetd servisinde bulunmaktadır. Telnet servisi varsayılan olarak devre dışı olsa da pek çok kurumsal ortamda yönetim kolaylığı amacıyla aktif tutulmaktadır — bu durum, söz konusu sistemleri doğrudan risk altına sokmaktadır.</p>
+
+<h2>Açığın Teknik Detayları</h2>
+<ul>
+  <li><strong>CVE numarası:</strong> CVE-2026-32746</li>
+  <li><strong>CVSS v3 Skoru:</strong> 9.8 (Kritik)</li>
+  <li><strong>Açık türü:</strong> Kimlik doğrulamasız uzaktan kod/komut çalıştırma (Unauthenticated RCE)</li>
+  <li><strong>Etkilenen bileşen:</strong> GNU Inetutils paketindeki telnetd servisi (v2.7 ve öncesi)</li>
+  <li><strong>Saldırı vektörü:</strong> Ağ üzerinden — fiziksel erişim veya kullanıcı etkileşimi gerektirmiyor</li>
+  <li><strong>İstismar karmaşıklığı:</strong> Düşük</li>
+</ul>
+
+<h2>Hangi DSM Sürümleri Etkileniyor?</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 12px;text-align:left;">DSM Sürümü</th>
+      <th style="padding:10px 12px;text-align:left;">Durum</th>
+      <th style="padding:10px 12px;text-align:left;">Güvenli Sürüm</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">DSM 7.3.x</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-weight:600;">7.3.2-86009-3 veya üzeri</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">DSM 7.2.2.x</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-weight:600;">7.2.2-72806-8 veya üzeri</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">DSM 7.2.1.x</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-weight:600;">7.2.1-69057-11 veya üzeri</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;">DSM 7.1 ve öncesi</td>
+      <td style="padding:9px 12px;color:#dc2626;font-weight:700;">ETKİLENİYOR</td>
+      <td style="padding:9px 12px;">DSM 7.2.1 veya üzerine geçin</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Synology NAS Neden Cazip Bir Hedef?</h2>
+<p>Synology NAS cihazları, kurumsal ve KOBİ ortamlarında kritik bir konumda yer alır:</p>
+<ul>
+  <li>Şirket dosyaları, veritabanı yedekleri ve arşivlerin depolanması</li>
+  <li>Hyper Backup, Active Backup for Business ile sunucu ve iş istasyonu yedeklemeleri</li>
+  <li>VMware, Hyper-V gibi sanallaştırma platformlarının yedek hedefi</li>
+  <li>Merkezi kimlik doğrulama ve kullanıcı yönetimi (LDAP, Active Directory entegrasyonu)</li>
+</ul>
+<p>Bu nedenle fidye yazılımı grupları ve veri hırsızlığı odaklı saldırganlar için NAS cihazları son derece değerli hedefler. Nitekim Avrupa polisi, Synology NAS'ları özellikle hedef alan <strong>"Diskstation" fidye yazılımı çetesini</strong> yakın zamanda EUROPOL koordinasyonuyla çökertmeyi başardı.</p>
+
+<h2>Derhal Yapılması Gerekenler</h2>
+
+<h3>1. DSM'yi Güncelleyin (En Yüksek Öncelik)</h3>
+<p>DSM güncellemesini uygulamak için: <strong>Denetim Masası → Güncelleme ve Geri Yükleme → DSM Güncellemesi</strong> yolunu izleyin. Kritik güvenlik açığı nedeniyle güncelleme, planlı bakım penceresi beklenmeden hemen uygulanmalıdır.</p>
+
+<h3>2. Telnet Servisini Devre Dışı Bırakın</h3>
+<p>Hemen güncelleme yapamıyorsanız geçici tedbir olarak Telnet servisini devre dışı bırakın:</p>
+<ul>
+  <li><strong>Denetim Masası → Terminal ve SNMP → Terminal</strong></li>
+  <li>"Telnet servisini etkinleştir" seçeneğinin işaretini kaldırın</li>
+  <li>SSH servisini de yalnızca ihtiyaç varsa aktif tutun; güçlü şifre veya anahtar tabanlı kimlik doğrulama kullanın</li>
+</ul>
+
+<h3>3. Yönetim Arayüzüne Erişimi Sınırlandırın</h3>
+<ul>
+  <li>DSM yönetim arayüzünü (5000/5001 portları) internetten izole edin; VPN üzerinden erişim zorunlu kılın</li>
+  <li>Güvenlik Duvarı kurallarıyla yalnızca güvenilen IP aralıklarından erişime izin verin</li>
+  <li>Doğrudan internete açık NAS cihazlarını güvenlik duvarı/proxy arkasına alın</li>
+</ul>
+
+<h3>4. Yedekleme Bütünlüğünü Doğrulayın</h3>
+<p>Bu tür açıklar en sık yedek sistemleri hedef almak için kullanılır. Mevcut yedeklerinizin bütünlüğünü kontrol edin ve değiştirilemez (immutable) yedekleme yapılandırmanızı gözden geçirin.</p>
+
+<h2>Synology NAS Güvenlik Sertleştirmesi İçin Temel Kontroller</h2>
+<ul>
+  <li>Varsayılan "admin" hesabını devre dışı bırakın, yeni yönetici hesabı oluşturun</li>
+  <li>İki faktörlü kimlik doğrulamayı (2FA) tüm hesaplar için zorunlu kılın</li>
+  <li>Başarısız giriş denemelerinde otomatik IP engelleme aktif edin</li>
+  <li>QuickConnect yerine VPN ile erişimi tercih edin</li>
+  <li>Synology'nin Güvenlik Danışmanı (Security Advisor) aracıyla düzenli tarama yapın</li>
+  <li>DSM bildirimlerini e-posta ile takip edin</li>
+</ul>
+
+<h2>Lider Network Synology Desteği</h2>
+<p>Lider Network olarak Synology NAS sistemlerinizin güncel ve güvenli tutulması için şu hizmetleri sunuyoruz:</p>
+<ul>
+  <li>Acil DSM güvenlik güncellemesi uygulaması</li>
+  <li>NAS güvenlik sertleştirmesi ve yapılandırma denetimi</li>
+  <li>Hyper Backup ve Active Backup for Business çözümleri</li>
+  <li>Değiştirilemez (immutable) yedekleme mimarisinin kurulumu</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>CVE-2026-32746, CVSS 9.8 skoru ve kimlik doğrulamasız istismar potansiyeliyle Synology kullanıcıları için acil müdahale gerektiren bir açıktır. DSM güncellemenizi şimdi yapın, Telnet servisini kapatın ve yönetim arayüzünü internetten izole edin. NAS cihazları, yedekleme ve şirket verilerinin merkezi olması nedeniyle fidye yazılımı gruplarının birincil hedefleri arasında — bu gerçeği göz önünde bulundurarak proaktif önlem alın.</p>
+    `,
+  },
+  {
+    slug: "azure-kimlik-bilgisi-kampanyasi-mcdonalds-vodafone-fortune500",
+    title: "Azure Kimlik Bilgisi Kampanyası: McDonald's ve Vodafone Dahil 3,6 Milyon Fortune 500 Kaydı Çalındı",
+    excerpt: "'TheHatman' takma adlı tehdit aktörü, Azure ve Entra kimlik bilgilerini ele geçirerek McDonald's, TCS ve Vodafone dahil büyük şirketlere ait 3,64 milyon çalışan kaydını dark web'de sattı. Bulut kimlik güvenliğinde kritik dersler.",
+    category: "microsoft",
+    categoryColor: "#00a4ef",
+    tags: ["Azure", "Microsoft", "Kimlik Bilgisi Hırsızlığı", "Veri İhlali", "Fortune 500", "Bulut Güvenliği", "Entra ID"],
+    publishedAt: "2026-08-20",
+    readTime: 7,
+    content: `
+<h2>Azure'da Kimlik Bilgisi Hırsızlığı Kampanyası</h2>
+<p>Ağustos 2026'nın ortasından itibaren dark web'de belgelenen kapsamlı bir kampanyada, <strong>"TheHatman"</strong> takma adıyla bilinen bir tehdit aktörü, dünyanın en büyük şirketlerine ait milyonlarca kurumsal kaydı satışa çıkardı. Verilerin ele geçirildiği platform: Microsoft Azure ve Entra ID (eski adıyla Azure Active Directory).</p>
+
+<p>Güvenlik araştırmacıları ve SecurityWeek'in raporlarına göre, toplam <strong>3,64 milyon çalışan ve kurumsal kayıt</strong> açığa çıktı. Etkilenen şirketler arasında <strong>McDonald's, Tata Consultancy Services (TCS), Vodafone</strong> ve diğer Fortune 500 şirketleri yer alıyor.</p>
+
+<h2>Saldırı Nasıl Gerçekleşti?</h2>
+<p>Dikkat çekici nokta şu: Bu kampanya, Azure platformunun kendisindeki bir güvenlik açığından değil, <strong>kimlik sınırı uygulama başarısızlıklarından</strong> kaynaklandı. Saldırganlar:</p>
+<ol>
+  <li><strong>Kimlik bilgilerini çaldı:</strong> Phishing, credential stuffing veya üçüncü taraf ihlallerinden elde edilen çalışan hesap bilgileriyle Azure/Entra ID'ye giriş yaptı</li>
+  <li><strong>Yetki yükseltti:</strong> Ele geçirilen hesapların Azure tenant'ındaki erişim izinlerini kötüye kullandı</li>
+  <li><strong>Veri sızdırdı:</strong> Microsoft Graph API ve diğer Azure servislerini kullanarak kurumsal dizin bilgilerini, çalışan kayıtlarını ve dahili iletişim verilerini toplu halde çekti</li>
+  <li><strong>Sattı:</strong> Elde edilen verileri düzenlenmiş paketler halinde dark web'de pazarladı</li>
+</ol>
+
+<p>Microsoft'un Storm-2949 takip raporunda belgelediği benzer teknik, "ele geçirilen bir kimliği tüm buluta yayılan bir ihlale dönüştürme" olarak tanımlandı — bu kampanya aynı teknik desenin yeni bir örneğidir.</p>
+
+<h2>Çalınan Veriler Ne İçeriyor?</h2>
+<ul>
+  <li>Çalışan adları, e-posta adresleri ve dahili iletişim bilgileri</li>
+  <li>Kurumsal organizasyon şemaları ve departman bilgileri</li>
+  <li>Yönetici ve üst düzey çalışan profilleri</li>
+  <li>Bazı vakalarda dahili sistem erişim bilgileri ve dahili servis URL'leri</li>
+</ul>
+
+<p>Bu verilerin değeri, doğrudan kullanımının ötesinde: Saldırganlar kurumsal yapıyı bilerek <strong>hedefe özel spear phishing</strong> ve <strong>CEO sahtekarlığı (BEC)</strong> saldırıları hazırlayabilir.</p>
+
+<h2>Neden Bu Kadar Çok Şirket Etkilendi?</h2>
+<p>Güvenlik uzmanları bu kampanyada yaygın kurumsal zafiyetleri vurguluyor:</p>
+<ul>
+  <li><strong>MFA eksikliği veya zayıf MFA:</strong> SMS tabanlı iki faktörlü doğrulama, SIM swap saldırılarıyla atlatılabiliyor. Phishing'e dayanıklı FIDO2/hardware token kullanımı hâlâ sınırlı</li>
+  <li><strong>Koşulsuz erişim politikası:</strong> Çalışan hesaplarına herhangi bir konumdan, cihazdan ve saatte erişim açık — Koşullu Erişim (Conditional Access) politikaları uygulanmamış</li>
+  <li><strong>Aşırı geniş uygulama izinleri:</strong> Microsoft Graph API izinleri gerektiğinden fazla kapsamlı tanımlanmış; tek ele geçirilen hesap tüm dizini okuyabiliyor</li>
+  <li><strong>Kimlik bilgisi hijyeni eksikliği:</strong> Eski çalışan hesapları deaktive edilmemiş, üçüncü taraf veri ihlallerinde açığa çıkan parolalar değiştirilmemiş</li>
+</ul>
+
+<h2>Kuruluşunuzu Nasıl Korursunuz?</h2>
+
+<h3>Kimlik Güvenliği Temelleri</h3>
+<ul>
+  <li><strong>FIDO2 / Passkey tabanlı kimlik doğrulama:</strong> Microsoft Authenticator'ın phishing-resistant modunu veya FIDO2 donanım anahtarlarını (YubiKey vb.) etkinleştirin</li>
+  <li><strong>Koşullu Erişim politikaları:</strong> Coğrafi konum, cihaz uyumluluğu ve risk skoru bazlı erişim politikaları tanımlayın; şüpheli konumlardan gelen girişleri otomatik engelle</li>
+  <li><strong>Ayrıcalıklı Kimlik Yönetimi (PIM):</strong> Azure PIM ile yönetici rollerini kalıcı değil, talep bazlı ve süreli atayın</li>
+  <li><strong>Microsoft Entra ID Protection:</strong> Risk tabanlı oturum açma politikalarını etkinleştirin; yüksek riskli oturumları otomatik olarak MFA'ya veya engele yönlendirin</li>
+</ul>
+
+<h3>İzleme ve Tespit</h3>
+<ul>
+  <li>Microsoft Entra ID Sign-in loglarını düzenli gözden geçirin; olağandışı saat, konum veya uygulama erişimlerini alarm olarak tanımlayın</li>
+  <li>Microsoft Graph API üzerinden toplu veri çekme girişimlerini izleyin</li>
+  <li>Microsoft Defender for Cloud Apps ile bulut uygulama davranışını analiz edin</li>
+  <li>SIEM'inize Azure audit loglarını entegre edin</li>
+</ul>
+
+<h3>Minimum Ayrıcalık (Least Privilege)</h3>
+<ul>
+  <li>Tüm servis hesaplarının ve uygulama kayıtlarının Microsoft Graph izinlerini gözden geçirin; yalnızca ihtiyaç duyulan izinleri verin</li>
+  <li>Eski/kullanılmayan servis hesaplarını ve uygulama kayıtlarını kaldırın</li>
+  <li>İnsan dışı kimlikler (service principal) için sertifika tabanlı kimlik doğrulamayı tercih edin; gizli anahtar (secret) kullanımını sınırlayın</li>
+</ul>
+
+<h2>Etkilenip Etkilenmediğinizi Nasıl Anlarsınız?</h2>
+<p>Kuruluşunuzun bu veya benzer kampanyalardan etkilenip etkilenmediğini değerlendirmek için şu adımları izleyin:</p>
+<ul>
+  <li>Microsoft Entra ID'de son 90 günün oturum açma raporunu gözden geçirin — bilinmeyen IP'ler, ülkeler veya beklenmedik uygulama erişimleri</li>
+  <li>Microsoft Güvenli Puan (Secure Score) değerlendirmesini çalıştırın</li>
+  <li>Have I Been Pwned veya benzeri servislerle kurumsal e-posta adreslerini sorgulayın</li>
+  <li>Ayrıcalıklı rol atamalarında son değişiklikleri denetleyin</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>3,64 milyon kayıt ve dünyanın tanınmış şirketleri — bu kampanya, bulut kimlik güvenliğinin artık "isteğe bağlı" değil zorunlu bir yatırım olduğunu açıkça ortaya koyuyor. Azure veya Microsoft 365 kullanan her kuruluşun kimlik güvenliği duruşunu acilen değerlendirmesi ve Koşullu Erişim, PIM ve FIDO2 MFA gibi temel kontrolleri hayata geçirmesi gerekiyor. Platform güvenli olsa bile kimlik ihlalleri, platformun tüm güvenlik katmanlarını devre dışı bırakabiliyor.</p>
+    `,
+  },
+  {
+    slug: "microsoft-agustos-2026-patch-tuesday-421-cve-kuzey-kore-zero-day",
+    title: "Microsoft Ağustos 2026 Patch Tuesday: 421 CVE ve Kuzey Kore'nin Kernel Rootkit Zero-Day'i",
+    excerpt: "Microsoft'un Ağustos 2026 yaması 421 CVE'yi kapsıyor. Aktif olarak istismar edilen CVE-2026-68820 afd.sys açığı, Kuzey Koreli saldırganlar tarafından kernel-mode rootkit yüklemek için kullanıldı. Operation Dream Job kampanyasının yeni dalgası.",
+    category: "microsoft",
+    categoryColor: "#00a4ef",
+    tags: ["Microsoft", "Patch Tuesday", "Zero-Day", "Kuzey Kore", "CVE-2026-68820", "Kernel Rootkit", "Operation Dream Job"],
+    publishedAt: "2026-08-12",
+    readTime: 6,
+    content: `
+<h2>Ağustos 2026 Patch Tuesday: 421 CVE, 62 Kritik</h2>
+<p>Microsoft, 12 Ağustos 2026 tarihinde Salı Yaması güvenlik güncellemelerini yayımladı. Bu ay toplam <strong>421 CVE</strong> adreslendi; bunların <strong>62'si Kritik</strong> olarak sınıflandırıldı. Güncelleme; Windows, Microsoft Office, SharePoint Server, Azure servisleri, .NET, PowerShell ve Visual Studio Code'u kapsıyor.</p>
+
+<p>Bu ayki yamaların en kritik kısmı, <strong>aktif olarak istismar edilen bir zero-day</strong> açığıdır. Check Point araştırmacıları tarafından raporlanan açık, Kuzey Koreli tehdit aktörlerinin <strong>kernel-mode rootkit</strong> yüklemek için kullandığı bir güvenlik açığıdır.</p>
+
+<h2>Zero-Day: CVE-2026-68820 — WinSock afd.sys Yetki Yükseltme</h2>
+<p><strong>CVE-2026-68820</strong>, Windows Sockets API'nin kernel modu sürücüsü olan <strong>afd.sys</strong> (Ancillary Function Driver for WinSock) bileşeninde bulunan bir use-after-free (serbest bırakıldıktan sonra kullanım) güvenlik açığıdır.</p>
+
+<h3>Teknik Detaylar</h3>
+<ul>
+  <li><strong>Bileşen:</strong> afd.sys — Windows ağ iletişiminin temel kernel sürücüsü</li>
+  <li><strong>Açık türü:</strong> Use-after-free → race condition → SYSTEM ayrıcalık yükseltme</li>
+  <li><strong>Saldırı profili:</strong> Yerel saldırgan, özel hazırlanmış uygulama çalıştırarak race condition'ı tetikliyor</li>
+  <li><strong>Sonuç:</strong> Tam SYSTEM ayrıcalığı — sistemin tamamında tam kontrol</li>
+  <li><strong>Kullanıcı etkileşimi:</strong> Gerekmiyor</li>
+</ul>
+
+<h2>Kuzey Kore Bağlantısı: Operation Dream Job'un Yeni Dalgası</h2>
+<p>Check Point araştırmacıları, CVE-2026-68820'nin Kuzey Koreli tehdit aktörleri tarafından <strong>Operation Dream Job</strong> kampanyasının yeni bir dalgasında kullanıldığını belgeledi. Bu kampanya, Kuzey Kore istihbarat servislerine bağlı Lazarus Group'un yıllardır sürdürdüğü, savunma, havacılık ve teknoloji sektörü çalışanlarını iş teklifi bahanesiyle hedef alan sosyal mühendislik kampanyasıdır.</p>
+
+<h3>Saldırı Zinciri</h3>
+<ol>
+  <li><strong>Hedef seçimi:</strong> LinkedIn veya iş platformları üzerinden savunma, teknoloji veya kripto sektöründe çalışan kişiler hedefleniyor</li>
+  <li><strong>İlk erişim:</strong> Cazip iş teklifi görünümlü mesajlar aracılığıyla kötü amaçlı belge veya uygulama açtırılıyor</li>
+  <li><strong>Yetki yükseltme:</strong> CVE-2026-68820 kullanılarak standart kullanıcı hesabından SYSTEM ayrıcalığına yükseltme</li>
+  <li><strong>Kalıcılık:</strong> Kernel-mode rootkit yüklenerek uzun süreli, tespit edilmesi güç kalıcı erişim sağlanıyor</li>
+  <li><strong>Hedef:</strong> Fikri mülkiyet hırsızlığı ve uzun vadeli casusluk</li>
+</ol>
+
+<p>Kernel-mode rootkit özellikle tehlikelidir çünkü işletim sisteminin çekirdeğinde çalışarak antivirüs ve EDR yazılımlarından gizlenebilir. Bu düzeyde bir tehdidin tespiti ve temizlenmesi son derece güçtür.</p>
+
+<h2>Diğer Önemli Yamalar</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 12px;text-align:left;">Bileşen</th>
+      <th style="padding:10px 12px;text-align:left;">Açık Türü</th>
+      <th style="padding:10px 12px;text-align:center;">Önem</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Windows Remote Desktop Services</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Uzaktan Kod Çalıştırma</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">Kritik</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Microsoft Office / Visio</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Özel dosya → Kod Çalıştırma</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">Kritik</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Windows Kernel</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Yetki Yükseltme (5 CVE)</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;text-align:center;color:#ea580c;font-weight:700;">Yüksek</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">CVE-2026-62832 (User Profile Svc)</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;">Kamuya Açıklanan Yetki Yükseltme</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #ffedd5;text-align:center;color:#ea580c;font-weight:700;">Yüksek</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 12px;">Azure Arc</td>
+      <td style="padding:9px 12px;">CVSS 10.0 — Kimlik Doğrulama Atlama</td>
+      <td style="padding:9px 12px;text-align:center;color:#dc2626;font-weight:700;">Kritik</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Öncelikli Güncelleme Planı</h2>
+<ul>
+  <li><strong>Bu hafta içinde:</strong> CVE-2026-68820 zero-day yaması — tüm Windows uç noktaları (özellikle internete bakan sistemler ve geliştirici makineleri)</li>
+  <li><strong>Bu hafta içinde:</strong> Azure Arc kritik yaması — hibrit bulut ortamlarında Azure Arc kullanan tüm sunucular</li>
+  <li><strong>Bu ay içinde:</strong> Remote Desktop Services yamaları — RDP erişimi açık sunucular ve VDI altyapıları</li>
+  <li><strong>Rutin döngüde:</strong> Office, Visual Studio Code ve diğer uygulama yamaları</li>
+</ul>
+
+<h2>Operation Dream Job'a Karşı Korunma</h2>
+<p>Kuzey Koreli tehdit aktörlerinin bu kampanyasına karşı alınabilecek ek önlemler:</p>
+<ul>
+  <li>Çalışanlara LinkedIn ve iş platformlarından gelen iş tekliflerine karşı farkındalık eğitimi verin; bilinmeyen dosya veya uygulamaları açmama konusunda net politika belirleyin</li>
+  <li>Uç noktalarda uygulama beyaz listesi (application allowlisting) uygulayın — sadece onaylı uygulamaların çalışmasına izin verin</li>
+  <li>Kernel-mode sürücü yükleme politikalarını sıkılaştırın; HVCI (Hypervisor Protected Code Integrity) etkinleştirin</li>
+  <li>Uç nokta koruma çözümünüzün davranış tabanlı tehdit tespitini aktif edin ve güncel tutun</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>CVE-2026-68820'nin Kuzey Kore bağlantısı, bu yamanın operasyonel önemini sıradan bir yetki yükseltme açığının çok ötesine taşıyor. Kernel-mode rootkit yükleme kapasitesi, başarılı istismar durumunda saldırganın sistemde yıllarca tespit edilmeden kalabileceği anlamına geliyor. Ağustos Patch Tuesday'i rutin güncellemeler arasında değil, bu zero-day özelinde acil müdahale gerektiren bir güncelleme olarak ele alın.</p>
+    `,
+  },
+  {
     slug: "cisa-kev-cisco-citrix-fortinet-eylul-2026-12-eylul-son-tarih",
     title: "CISA Acil Uyarı: Cisco (CVSS 10.0), Citrix ve Fortinet Açıkları Aktif İstismar Altında — 12 Eylül Son Tarih",
     excerpt: "CISA, Cisco FMC'de CVSS 10.0 skorlu kimlik doğrulama atlama açığı dahil üç kritik güvenlik açığını KEV kataloğuna ekledi. Fortinet açığı PivotC2 RAT ile 178 cihazı enfekte etti. Federal son tarih 12 Eylül 2026.",
@@ -64,7 +362,6 @@ export const posts: BlogPost[] = [
     tags: ["CISA", "KEV", "Cisco", "Citrix", "Fortinet", "CVE-2026-20079", "PivotC2", "Acil Yama"],
     publishedAt: "2026-09-10",
     readTime: 8,
-    featured: true,
     content: `
 <h2>CISA'dan Üçlü KEV Uyarısı: Cisco, Citrix ve Fortinet</h2>
 <p>ABD Siber Güvenlik ve Altyapı Güvenliği Ajansı (CISA), Eylül 2026'nın başında Cisco, Citrix ve Fortinet ürünlerini etkileyen üç kritik güvenlik açığını <strong>Bilinen İstismar Edilen Güvenlik Açıkları (KEV)</strong> kataloğuna ekledi. Federal sivil yürütme kurumları (FCEB) için yamaları uygulama son tarihi <strong>12 Eylül 2026</strong> olarak belirlendi.</p>
