@@ -4,28 +4,34 @@ import { getAdminSession } from "@/lib/admin-auth";
 import { sendMonthlySummaryEmail } from "@/lib/ticket-mail";
 import type { Ticket } from "@/lib/supabase";
 
+// Vercel Cron GET handler (her ayın 1'i 08:00 UTC)
+export async function GET(req: NextRequest) {
+  const secret = process.env.CRON_SECRET;
+  const viaCron = !!secret && req.headers.get("authorization") === `Bearer ${secret}`;
+  const viaAdmin = await getAdminSession();
+  if (!viaCron && !viaAdmin) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+  return runSummary(null);
+}
+
 export async function POST(req: NextRequest) {
   const ok = await getAdminSession();
   if (!ok) return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
-
   let body: { companyId?: string } = {};
-  try {
-    body = await req.json();
-  } catch {
-    // body is optional
-  }
+  try { body = await req.json(); } catch { /* body optional */ }
+  return runSummary(body.companyId ?? null);
+}
 
+async function runSummary(companyId: string | null) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-  // Fetch active companies
   let companiesQuery = supabase
     .from("companies")
     .select("*")
     .eq("active", true);
 
-  if (body.companyId) {
-    companiesQuery = companiesQuery.eq("id", body.companyId);
+  if (companyId) {
+    companiesQuery = companiesQuery.eq("id", companyId);
   }
 
   const { data: companies, error: compError } = await companiesQuery;
