@@ -56,6 +56,124 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "fortiguard-baglanamama-sorunu-digicert-crl-anycast-cozumu",
+    title: "FortiGuard 10 Eylül'den Bu Yana Bağlanamıyor mu? DigiCert CRL Değişikliği ve Kalıcı Çözüm",
+    excerpt: "9 Eylül 2026'da DigiCert'in CRL dosyasına IDP eklenmesi bazı FortiGate'lerde 'different CRL scope' hatasına yol açtı. AV/IPS paketleri indirilemiyor, FortiGuard bağlantısı kesildi. Anycast kapat/aç yöntemiyle 2 dakikada çözüm.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiGate", "FortiGuard", "DigiCert", "CRL", "Anycast", "AV/IPS", "Güncelleme Sorunu", "Çözüm"],
+    publishedAt: "2026-09-15",
+    readTime: 6,
+    featured: true,
+    content: `
+<h2>Sorun: 10 Eylül 2026'dan İtibaren FortiGuard Bağlantısı Kesildi</h2>
+<p>Müşterimizin FortiGate cihazında 10 Eylül 2026 sabahından itibaren FortiGuard AV/IPS imza güncellemeleri durmaya başladı. Cihaz arayüzünden alınan tanılama çıktısında şu tablo dikkat çekti:</p>
+
+<pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">last successful time: Thu Sep 10 00:00:35 2026
+FDN availability: unavailable
+Connectivity failure</pre>
+
+<p>İlk bakışta DNS sorunu, internet erişimi, firewall policy veya lisans problemi olduğu düşünülebilir. Ama asıl neden bunların hiçbiri değildi.</p>
+
+<h2>Gerçek Neden: DigiCert CRL Değişikliği</h2>
+<p>Fortinet'in resmi açıklamasına göre sorunun kökü şu: <strong>9 Eylül 2026'da DigiCert</strong>, CRL (Certificate Revocation List) dosyasına <strong>Issuing Distribution Point (IDP)</strong> ekleyerek güncelledi.</p>
+
+<p>Bazı FortiGate modelleri bu değişikliği işlerken <strong>DigiCert High Assurance EV Root CA</strong> sertifika doğrulamasında aşağıdaki hatayı üretiyor:</p>
+
+<pre style="background:#0f172a;color:#fca5a5;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">different CRL scope</pre>
+
+<p>Bu hata, FortiGuard'ın Anycast sunucularıyla kurulan TLS bağlantısını kesiyor. TLS doğrulaması yapılamayınca AV/IPS imza paketleri indirilemiyor, FortiGuard bağlantısı "unavailable" olarak işaretleniyor.</p>
+
+<p><strong>Fortinet özellikle şunu vurguluyor:</strong> Bu, bir sertifika iptal (revoke) sorunu değildir. Sorun yalnızca CRL doğrulama davranışından kaynaklanmaktadır. Yani lisansınız geçerli, sertifikanız sağlıklı — sadece CRL ayrıştırma mekanizması çakıştı.</p>
+
+<h2>Çözüm: Anycast Kapat / Aç (Cache Yenileme)</h2>
+<p>Fortinet'in yayımladığı resmi çözüm, FortiGuard Anycast özelliğini kapatıp açmaktır. Bu işlem Anycast'i kalıcı olarak devre dışı bırakmaz; yalnızca ilgili cache'in temizlenip yeniden oluşturulmasını sağlar.</p>
+
+<p><strong>Adım 1 — Anycast'i devre dışı bırakın:</strong></p>
+<pre style="background:#0f172a;color:#86efac;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">config system fortiguard
+    set fortiguard-anycast disable
+end</pre>
+
+<p><strong>Adım 2 — Anycast'i hemen yeniden etkinleştirin:</strong></p>
+<pre style="background:#0f172a;color:#86efac;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">config system fortiguard
+    set fortiguard-anycast enable
+end</pre>
+
+<p><strong>Adım 3 — Güncellemeyi manuel tetikleyin:</strong></p>
+<pre style="background:#0f172a;color:#86efac;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">execute update-now</pre>
+
+<p>30–60 saniye bekleyip ardından durumu kontrol edin.</p>
+
+<h2>Doğrulama: Bağlantı Geri Geldi mi?</h2>
+<p><strong>FortiGuard bağlantı durumunu kontrol edin:</strong></p>
+<pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">diagnose autoupdate status</pre>
+
+<p>Başarılı çözümde beklenen çıktı:</p>
+<pre style="background:#0f172a;color:#86efac;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">FDN availability: available</pre>
+
+<p><strong>Ardından güncelleme sürümlerini doğrulayın:</strong></p>
+<pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">diagnose autoupdate versions</pre>
+
+<p>Bu çıktıdaki <code style="background:#1e293b;color:#fbbf24;padding:2px 6px;border-radius:4px;">Connectivity failure</code> ibarelerinin kaybolması gerekir. Kaybolduysa cihazınız yeniden güncelleme almaya başlamıştır.</p>
+
+<h2>Neden 10 Eylül'de Bir Anda Bozuldu?</h2>
+<p>Müşterimizin cihaz logunda şunu görüyorduk:</p>
+<pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">last successful time: Thu Sep 10 00:00:35 2026</pre>
+
+<p>10 Eylül sabahı 00:00 UTC'ye kadar her şey normaldi. Sonrasında FortiGuard bağlantısı kesildi. Bu zamanlama tam olarak DigiCert'in CRL dosyasını güncellediği döneme denk geliyor. FortiGate'ler her birkaç saatte bir CRL'yi kontrol eder; cihaz yeni CRL formatıyla karşılaştığında "different CRL scope" hatasıyla bağlantıyı kesti.</p>
+
+<h2>Teşhis Süreci: Neyin Sorun Olmadığını Eledik</h2>
+<p>Bu tür bir sorunla karşılaşıldığında ilk akla gelenler şunlardır:</p>
+<ul>
+  <li>❌ <strong>DNS:</strong> FortiGuard adreslerini çözümlüyor musunuz? → Evet, sorun değil</li>
+  <li>❌ <strong>Internet erişimi:</strong> 8.8.8.8'e ping atıyor musunuz? → Atıyor, sorun değil</li>
+  <li>❌ <strong>Firewall policy:</strong> FortiGuard'a giden trafik engelleniyor mu? → Değil</li>
+  <li>❌ <strong>Lisans:</strong> FortiGuard aboneliği süresi dolmuş mu? → Geçerli</li>
+  <li>✅ <strong>CRL doğrulama:</strong> DigiCert CRL değişikliği → <strong>Asıl neden bu</strong></li>
+</ul>
+
+<h2>Bu Sorunla Karşılaşan Diğer FortiGate Kullanıcıları İçin</h2>
+<p>Aynı belirtilerle karşılaşıyorsanız — FortiGuard "unavailable", AV/IPS güncellemeleri 10 Eylül'den bu yana durmuş — yukarıdaki 3 adımlı prosedürü uygulayın. Büyük ihtimalle 60 saniye içinde sorun çözülecektir.</p>
+
+<p>Eğer <code style="background:#1e293b;color:#fbbf24;padding:2px 6px;border-radius:4px;">FDN availability: available</code> gördükten sonra bile <code>Connectivity failure</code> devam ediyorsa, ikinci olasılık olarak <strong>FortiOS sürümünüzü</strong> kontrol edin. Bazı eski FortiOS sürümlerinde bu CRL davranışı farklı tezahür edebiliyor ve FortiOS güncellemesi gerekebilir.</p>
+
+<h2>Lider Network FortiGate Desteği</h2>
+<p>Bu tür operasyonel sorunları — FortiGuard bağlantısı, imza güncellemeleri, lisans yönetimi, FortiOS güncelleme planlaması — Lider Network olarak yerinde veya uzaktan çözmek için buradayız. FortiGate cihazınızda beklenmedik bir davranış gördüğünüzde doğrudan ulaşın.</p>
+
+<h2>Özet</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Konu</th>
+      <th style="padding:10px 14px;text-align:left;">Detay</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Sorun başlangıcı</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">10 Eylül 2026 ~00:00 UTC</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Kök neden</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">DigiCert CRL → IDP eklendi → "different CRL scope" hatası</td>
+    </tr>
+    <tr style="background:#f8fafc;">
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Etki</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">FortiGuard AV/IPS imzaları indirilemiyor</td>
+    </tr>
+    <tr style="background:#f0fdf4;">
+      <td style="padding:9px 14px;border-bottom:1px solid #bbf7d0;font-weight:600;color:#15803d;">Çözüm</td>
+      <td style="padding:9px 14px;border-bottom:1px solid #bbf7d0;color:#15803d;">Anycast disable → enable → execute update-now</td>
+    </tr>
+    <tr style="background:#f0fdf4;">
+      <td style="padding:9px 14px;font-weight:600;color:#15803d;">Çözüm süresi</td>
+      <td style="padding:9px 14px;color:#15803d;">~60 saniye</td>
+    </tr>
+  </tbody>
+</table>
+    `,
+  },
+  {
     slug: "synology-dsm-cve-2026-32746-cvss98-kritik-rce-acigi",
     title: "Synology DSM'de CVSS 9.8 Kritik Güvenlik Açığı: Kimlik Doğrulamasız Uzaktan Komut Çalıştırma",
     excerpt: "CVE-2026-32746 olarak takip edilen açık, kimliği doğrulanmamış uzak saldırganların Synology NAS cihazlarında keyfi komut çalıştırmasına olanak tanıyor. CVSS 9.8 skoru ile DSM 7.3, 7.2.2 ve 7.2.1 kullanan tüm sistemler acilen güncellenmeli.",
