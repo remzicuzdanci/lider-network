@@ -67,7 +67,7 @@ export const posts: BlogPost[] = [
     featured: true,
     content: `
 <h2>Sorun: 10 Eylül 2026'dan İtibaren FortiGuard Bağlantısı Kesildi</h2>
-<p>Müşterimizin FortiGate cihazında 10 Eylül 2026 sabahından itibaren FortiGuard AV/IPS imza güncellemeleri durmaya başladı. Cihaz arayüzünden alınan tanılama çıktısında şu tablo dikkat çekti:</p>
+<p>10 Eylül 2026 sabahından itibaren pek çok FortiGate cihazında FortiGuard AV/IPS imza güncellemeleri durdu. Cihaz tanılama çıktısında şu tablo dikkat çekti:</p>
 
 <pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">last successful time: Thu Sep 10 00:00:35 2026
 FDN availability: unavailable
@@ -117,7 +117,7 @@ end</pre>
 <p>Bu çıktıdaki <code style="background:#1e293b;color:#fbbf24;padding:2px 6px;border-radius:4px;">Connectivity failure</code> ibarelerinin kaybolması gerekir. Kaybolduysa cihazınız yeniden güncelleme almaya başlamıştır.</p>
 
 <h2>Neden 10 Eylül'de Bir Anda Bozuldu?</h2>
-<p>Müşterimizin cihaz logunda şunu görüyorduk:</p>
+<p>Etkilenen cihazlarda tanılama logunda tipik olarak şu satır görünüyordu:</p>
 <pre style="background:#0f172a;color:#e2e8f0;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">last successful time: Thu Sep 10 00:00:35 2026</pre>
 
 <p>10 Eylül sabahı 00:00 UTC'ye kadar her şey normaldi. Sonrasında FortiGuard bağlantısı kesildi. Bu zamanlama tam olarak DigiCert'in CRL dosyasını güncellediği döneme denk geliyor. FortiGate'ler her birkaç saatte bir CRL'yi kontrol eder; cihaz yeni CRL formatıyla karşılaştığında "different CRL scope" hatasıyla bağlantıyı kesti.</p>
@@ -137,8 +137,8 @@ end</pre>
 
 <p>Eğer <code style="background:#1e293b;color:#fbbf24;padding:2px 6px;border-radius:4px;">FDN availability: available</code> gördükten sonra bile <code>Connectivity failure</code> devam ediyorsa, ikinci olasılık olarak <strong>FortiOS sürümünüzü</strong> kontrol edin. Bazı eski FortiOS sürümlerinde bu CRL davranışı farklı tezahür edebiliyor ve FortiOS güncellemesi gerekebilir.</p>
 
-<h2>Lider Network FortiGate Desteği</h2>
-<p>Bu tür operasyonel sorunları — FortiGuard bağlantısı, imza güncellemeleri, lisans yönetimi, FortiOS güncelleme planlaması — Lider Network olarak yerinde veya uzaktan çözmek için buradayız. FortiGate cihazınızda beklenmedik bir davranış gördüğünüzde doğrudan ulaşın.</p>
+<h2>Sonuç</h2>
+<p>Bu tür beklenmedik operasyonel kesintiler — FortiGuard bağlantısı, imza güncellemeleri, CRL tabanlı TLS sorunları — genellikle üçüncü taraf altyapı değişikliklerinden kaynaklanır ve doğrudan FortiGate yapılandırması üzerinden çözülür. Tanılama adımlarını sistematik uygulamak, gereksiz yere lisans veya policy revizyonuna gidilmesini önler.</p>
 
 <h2>Özet</h2>
 <table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
