@@ -56,6 +56,349 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "cisa-kev-cisco-citrix-fortinet-eylul-2026-12-eylul-son-tarih",
+    title: "CISA Acil Uyarı: Cisco (CVSS 10.0), Citrix ve Fortinet Açıkları Aktif İstismar Altında — 12 Eylül Son Tarih",
+    excerpt: "CISA, Cisco FMC'de CVSS 10.0 skorlu kimlik doğrulama atlama açığı dahil üç kritik güvenlik açığını KEV kataloğuna ekledi. Fortinet açığı PivotC2 RAT ile 178 cihazı enfekte etti. Federal son tarih 12 Eylül 2026.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["CISA", "KEV", "Cisco", "Citrix", "Fortinet", "CVE-2026-20079", "PivotC2", "Acil Yama"],
+    publishedAt: "2026-09-10",
+    readTime: 8,
+    featured: true,
+    content: `
+<h2>CISA'dan Üçlü KEV Uyarısı: Cisco, Citrix ve Fortinet</h2>
+<p>ABD Siber Güvenlik ve Altyapı Güvenliği Ajansı (CISA), Eylül 2026'nın başında Cisco, Citrix ve Fortinet ürünlerini etkileyen üç kritik güvenlik açığını <strong>Bilinen İstismar Edilen Güvenlik Açıkları (KEV)</strong> kataloğuna ekledi. Federal sivil yürütme kurumları (FCEB) için yamaları uygulama son tarihi <strong>12 Eylül 2026</strong> olarak belirlendi.</p>
+
+<p>Bu üç açık, yalnızca federal ağları değil dünya genelindeki kurumsal altyapıları doğrudan tehdit etmektedir. İstismar faaliyetleri gerçek saldırılarda belgelenmiş olup özellikle Fortinet açığı PivotC2 adlı uzaktan erişim trojanının (RAT) dağıtımında aktif biçimde kullanılmaktadır.</p>
+
+<h2>Üç Açığın Detayları</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 12px;text-align:left;">CVE</th>
+      <th style="padding:10px 12px;text-align:left;">Ürün</th>
+      <th style="padding:10px 12px;text-align:left;">Tür</th>
+      <th style="padding:10px 12px;text-align:center;">CVSS</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-20079</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Cisco FMC</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Kimlik Doğrulama Atlama + RCE</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:800;">10.0</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-19490</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Citrix NetScaler ADC/GW</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Kimlik Doğrulama Atlama</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">9.3</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;font-family:monospace;font-weight:700;">CVE-2025-25249</td>
+      <td style="padding:9px 12px;">Fortinet FortiOS / FortiSASE</td>
+      <td style="padding:9px 12px;">Heap Buffer Overflow → RCE</td>
+      <td style="padding:9px 12px;text-align:center;color:#ea580c;font-weight:700;">7.3</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Cisco FMC: CVSS 10.0 — Mükemmel Skor, Maksimum Risk</h2>
+<p><strong>CVE-2026-20079</strong>, Cisco Secure Firewall Management Center'da (FMC) tespit edilen ve CVSS skorlamasının mümkün en yüksek değeri olan <strong>10.0</strong>'ı alan bir güvenlik açığıdır. Kimliği doğrulanmamış uzak bir saldırgan, ağ üzerinden özel hazırlanmış istekler göndererek script dosyaları çalıştırabilir ve <strong>root erişimi</strong> elde edebilir.</p>
+<ul>
+  <li>Kullanıcı etkileşimi gerektirmiyor</li>
+  <li>Kimlik bilgisi gerektirmiyor</li>
+  <li>Ağ üzerinden uzaktan istismar edilebilir</li>
+  <li>Aktif saldırılarda kullanıldığı belgelenmiş durumda</li>
+</ul>
+<p><strong>Etkilenen sürümler:</strong> Cisco FMC 7.4.x, 7.2.x, 7.0.x ve öncesi. Yamalar Cisco Security Advisory'de yayımlandı.</p>
+
+<h2>Citrix NetScaler: AAA ve Gateway Yapılandırmalarında Atlama</h2>
+<p><strong>CVE-2026-19490</strong>, Citrix NetScaler ADC ve NetScaler Gateway'de, cihaz AAA sanal sunucu veya Gateway olarak yapılandırıldığında kimlik doğrulama mekanizmasının atlatılmasına olanak tanıyan bir açıktır. Saldırganlar bu açığı kullanarak yetkisiz oturum oluşturabilir ve ağ içine erişim sağlayabilir.</p>
+<p>Citrix, etkilenen sürümler için acil güvenlik güncellemesi yayımladı. NetScaler ortamlarında özellikle internet erişimine açık Gateway yapılandırmalarının öncelikli olarak güncellenmesi öneriliyor.</p>
+
+<h2>Fortinet CVE-2025-25249: PivotC2 RAT ile 178 Cihaz Ele Geçirildi</h2>
+<p><strong>CVE-2025-25249</strong>, FortiOS, FortiSwitchManager ve FortiSASE'yi etkileyen bir heap tabanlı buffer overflow açığıdır. Bu açığın istismarında özellikle dikkat çeken nokta, saldırganların açığı <strong>PivotC2</strong> adını verdikleri özel bir Node.js uzaktan erişim trojanı (RAT) dağıtmak için kullandığıdır.</p>
+
+<p>Güvenlik araştırmacılarının tespitleri şunları ortaya koydu:</p>
+<ul>
+  <li><strong>3.000+</strong> IP adresi hedeflendi</li>
+  <li><strong>178 cihaz</strong> PivotC2 ile enfekte edildi</li>
+  <li>Saldırı Rusça konuşan finansal motivasyonlu bir tehdit aktörüne atfediliyor</li>
+  <li>PivotC2, ağ içinde komuta-kontrol tüneli oluşturuyor ve tespit edilmesi güç</li>
+</ul>
+
+<h2>Öncelik Sırasına Göre Yapılması Gerekenler</h2>
+
+<h3>Cisco FMC Kullananlar (En Yüksek Öncelik)</h3>
+<ul>
+  <li>CVSS 10.0 skoru nedeniyle tüm diğer işlemlerden önce ele alın</li>
+  <li>Cisco'nun yayımladığı yamaları derhal uygulayın</li>
+  <li>FMC arayüzüne ağ erişimini güvenilen IP'lerle kısıtlayın</li>
+  <li>Yönetim trafiğini ayrı bir VLAN/yönetim ağında izole edin</li>
+</ul>
+
+<h3>Citrix NetScaler Kullananlar</h3>
+<ul>
+  <li>AAA veya Gateway modunda çalışan cihazları öncelikle güncelleyin</li>
+  <li>Güncelleme öncesinde IDS/WAF kurallarıyla geçici koruma katmanı ekleyin</li>
+  <li>Aktif oturumları ve erişim loglarını inceleyin</li>
+</ul>
+
+<h3>Fortinet FortiOS / FortiSASE Kullananlar</h3>
+<ul>
+  <li>CVE-2025-25249 için Fortinet'in yayımladığı yamaları uygulayın</li>
+  <li>Ağ trafiğinde olağandışı Node.js prosesleri veya dışa bağlantıları araştırın</li>
+  <li>FortiGuard Labs'ın PivotC2 IoC (Tehlike Göstergesi) listesini SIEM'e ekleyin</li>
+</ul>
+
+<h2>Lider Network Desteği</h2>
+<p>Cisco FMC, Citrix NetScaler veya Fortinet cihazlarınızı yönetiyor veya planlıyorsanız, Lider Network olarak güvenlik değerlendirmesi, acil yama yönetimi ve izleme hizmetleri sunuyoruz. Bu üç kritik açığın kuruluşunuzdaki etkisini değerlendirmek için bugün iletişime geçin.</p>
+
+<h2>Sonuç</h2>
+<p>Tek bir CISA KEV bülteninde CVSS 10.0 bir Cisco açığı, kritik bir Citrix açığı ve aktif trojan dağıtımıyla ilişkilendirilen bir Fortinet açığı — bu üçlü, Eylül 2026'yı kurumsal ağ güvenliği açısından son derece kritik bir dönem haline getiriyor. 12 Eylül son tarihi geçti; eğer henüz yama uygulamadıysanız, bunu en öncelikli göreviniz yapın.</p>
+    `,
+  },
+  {
+    slug: "microsoft-eylul-2026-patch-tuesday-964-acik-2-zero-day",
+    title: "Microsoft Eylül 2026 Patch Tuesday: Rekor 964 Açık ve 2 Aktif Sömürülen Zero-Day",
+    excerpt: "Microsoft'un Eylül 2026 Salı Yaması, şirket tarihinin en büyük tek aylık güvenlik güncellemesi. 964 CVE arasında Windows Update Stack ve Windows ALPC'yi etkileyen 2 zero-day aktif saldırılarda kullanılıyor.",
+    category: "microsoft",
+    categoryColor: "#00a4ef",
+    tags: ["Microsoft", "Patch Tuesday", "Zero-Day", "Windows", "CVE-2026-81963", "CVE-2026-85880", "Güvenlik Yaması"],
+    publishedAt: "2026-09-08",
+    readTime: 7,
+    content: `
+<h2>Rekor Kıran Patch Tuesday: 964 CVE, 104 Kritik</h2>
+<p>Microsoft, 8 Eylül 2026 tarihinde Salı Yaması güvenlik güncellemelerini yayımladı. Bu güncelleme, şirketin Patch Tuesday geçmişindeki <strong>en büyük tek aylık yama paketi</strong> olma unvanını aldı. Toplam <strong>964 CVE</strong> adreslendi; bunlardan <strong>104'ü Kritik</strong>, 860'ı Önemli olarak sınıflandırıldı.</p>
+
+<p>Daha da kritik olan nokta şu: Bu 964 açığın 2'si, güncelleme yayımlanmadan önce gerçek saldırılarda aktif olarak istismar ediliyordu. Her ikisi de saldırganlara SYSTEM düzeyinde ayrıcalık kazandıran yetki yükseltme (Elevation of Privilege) açıklarıdır.</p>
+
+<h2>Zero-Day 1: CVE-2026-81963 — Windows Update Stack EoP</h2>
+<p>Windows Update Stack bileşeninde tespit edilen bu açık, yerel bir saldırganın <strong>SYSTEM ayrıcalıkları</strong> kazanmasına olanak tanıyan bir yetki yükseltme güvenlik açığıdır.</p>
+<ul>
+  <li><strong>Etkilenen bileşen:</strong> Windows Update Stack</li>
+  <li><strong>Saldırı türü:</strong> Yerel yetki yükseltme (Elevation of Privilege)</li>
+  <li><strong>Gereken erişim:</strong> Standart kullanıcı hesabı yeterli</li>
+  <li><strong>Önem:</strong> Beş yılda Windows Update Stack'te yamalan yedinci açık; ancak zero-day olarak işaretlenen ilki</li>
+</ul>
+<p>Bu açık genellikle kimlik avı veya kötü amaçlı yazılım ile ilk erişim sağlanan sistemlerde SYSTEM ayrıcalığına yükselmek için zincirleme kullanılıyor. Fidye yazılımı gruplarının özellikle tercih ettiği bir yetki yükseltme vektörü haline geldi.</p>
+
+<h2>Zero-Day 2: CVE-2026-85880 — Windows ALPC Heap Buffer Overflow</h2>
+<p>Windows Advanced Local Procedure Call (ALPC) bileşenindeki heap buffer overflow açığı da aktif saldırılarda kullanılmaktadır.</p>
+<ul>
+  <li><strong>Etkilenen bileşen:</strong> Windows ALPC (Gelişmiş Yerel Prosedür Çağrısı)</li>
+  <li><strong>Saldırı türü:</strong> Heap buffer overflow → SYSTEM ayrıcalığı</li>
+  <li><strong>Tarihsel bağlam:</strong> ALPC bileşeninin zero-day olarak istismar edilmesi Nisan 2023'ten bu yana ilk kez</li>
+  <li><strong>Risk düzeyi:</strong> Saldırganın hedef sistemde yerel kod çalıştırma ayrıcalığı gerekiyor</li>
+</ul>
+
+<h2>İki Zero-Day Neden Bu Kadar Tehlikeli?</h2>
+<p>Her iki açık da doğrudan uzak erişim sağlamıyor — bunun için saldırganın önce bir sisteme ayak basması gerekiyor (kimlik avı, çalıntı kimlik bilgileri vb.). Ancak şu anlama geliyor: Bir saldırgan sisteme standart kullanıcı hakları ile girdikten sonra, bu iki açıktan birini kullanarak <strong>tüm sistem üzerinde tam kontrol</strong> elde edebilir.</p>
+<p>Bu kombinasyon fidye yazılımı saldırılarının kritik aşamasını oluşturuyor:</p>
+<ol>
+  <li>Kimlik avı ile standart kullanıcı hesabına erişim</li>
+  <li>CVE-2026-81963 veya CVE-2026-85880 ile SYSTEM ayrıcalığına yükselme</li>
+  <li>EDR devre dışı bırakma, veri sızdırma, fidye yazılımı yükleme</li>
+</ol>
+
+<h2>Diğer Öne Çıkan Kritik Yamalar</h2>
+<p>964 açık arasında kurumlar için özellikle dikkat edilmesi gereken diğer kritik yamalar:</p>
+<ul>
+  <li><strong>Windows Remote Desktop Services:</strong> Uzaktan kod çalıştırma açıkları — RDP kullanan tüm ortamlar için acil</li>
+  <li><strong>Microsoft SharePoint Server:</strong> Kimlik doğrulamasız RCE potansiyeli taşıyan kritik açık</li>
+  <li><strong>Azure Stack Hub:</strong> Yetkisiz erişim ve ayrıcalık yükseltme</li>
+  <li><strong>Windows Hyper-V:</strong> Sanal makine kaçış senaryolarına yol açabilecek açıklar</li>
+  <li><strong>Microsoft Office / Excel:</strong> Özel hazırlanmış dosya açıldığında kod çalıştırma</li>
+</ul>
+
+<h2>Güncelleme Önceliklendirmesi</h2>
+<p>964 güncellemenin tamamını aynı anda uygulamak operasyonel açıdan karmaşık olabilir. Aşağıdaki öncelik sırasını öneririz:</p>
+<ol>
+  <li><strong>Hemen (bu hafta):</strong> İki zero-day yaması — tüm Windows uç noktaları ve sunucular</li>
+  <li><strong>Bu ay içinde:</strong> Remote Desktop Services, SharePoint, Hyper-V yamaları</li>
+  <li><strong>Rutin döngüde:</strong> Kalan Önemli ve Düşük seviye yamalar</li>
+</ol>
+<p>Yama testini atlamadan hızlı dağıtım için temsili bir test ortamında doğrulama yapın, ardından aşamalı rollout uygulayın.</p>
+
+<h2>Kuruluşunuz Ne Yapmalı?</h2>
+<ul>
+  <li><strong>WSUS / SCCM / Intune:</strong> İki zero-day yamasını acil dağıtım politikasına ekleyin</li>
+  <li><strong>Uç nokta koruması:</strong> Yama öncesinde EDR kurallarını güncellenen tehdit imzalarıyla yenileyin</li>
+  <li><strong>İzleme:</strong> Windows Update Stack ve ALPC bileşenlerinde anormal davranış alarmları kurun</li>
+  <li><strong>Sanallaştırma ortamları:</strong> Hyper-V yamalarını sunucu yamalarıyla birlikte uygulayın</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Eylül 2026 Patch Tuesday, Microsoft'un tarihindeki en kapsamlı aylık yama paketi olmakla birlikte, asıl aciliyeti iki aktif zero-day'den kaynaklanıyor. Fidye yazılımı gruplarının bu tür yetki yükseltme açıklarını ne kadar hızlı araçlaştırdığı düşünüldüğünde, iki zero-day yamasını olabildiğince çabuk uygulamak kritik önem taşıyor.</p>
+    `,
+  },
+  {
+    slug: "fortinet-eylul-2026-fortimonitor-chrome-eklentisi-kritik-yama",
+    title: "Fortinet Eylül 2026: FortiMonitor ve Chrome Eklentisinde CVSS 9.6 ve 9.1 Kritik Yamalar",
+    excerpt: "Fortinet, Eylül 2026'da FortiMonitorOnSight web portalında JWT atlama (CVSS 9.6) ve Fortinet Chrome eklentisinde kimlik doğrulamasız proxy açığı (CVSS 9.1) dahil 10 güvenlik açığı için yama yayımladı.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["Fortinet", "FortiMonitor", "FortiOS", "ZTNA", "CVE", "JWT", "Chrome Eklentisi", "Yama"],
+    publishedAt: "2026-09-05",
+    readTime: 6,
+    content: `
+<h2>Fortinet Eylül 2026 Güvenlik Bülteni</h2>
+<p>Fortinet, Eylül 2026 güvenlik bülteninde ürün portföyünü etkileyen <strong>10 güvenlik açığı</strong> için yamalar yayımladı. Bu bültende en kritik açıklar FortiMonitorOnSight, Fortinet'in Privileged Access Agent Chrome eklentisi ve FortiOS ZTNA portalını etkiliyor.</p>
+
+<p>Önemli not: Fortinet, bu bültendeki açıkların hiçbirinin henüz gerçek saldırılarda istismar edilmediğini belirtiyor. Ancak yüksek CVSS skorları ve kimlik doğrulamasız istismar potansiyeli, vakit kaybetmeksizin yama yapılmasını zorunlu kılıyor.</p>
+
+<h2>En Kritik Açık: CVE-2026-84390 — FortiMonitorOnSight JWT Atlama (CVSS 9.6)</h2>
+<p>FortiMonitorOnSight web portalında tespit edilen bu açık, JWT (JSON Web Token) mekanizmasının atlatılmasına izin vermektedir.</p>
+<ul>
+  <li><strong>Açık türü:</strong> Kimlik doğrulamasız erişim — sahte veya yeniden kullanılmış JWT ile portalda oturum açılabiliyor</li>
+  <li><strong>Saldırı profili:</strong> Uzak, kimliği doğrulanmamış saldırgan — özel yetki veya sosyal mühendislik gerektirmiyor</li>
+  <li><strong>Etki:</strong> Saldırgan, FortiMonitorOnSight yönetim arayüzüne tam erişim kazanabiliyor; izleme altyapısını manipüle edebilir veya devre dışı bırakabilir</li>
+  <li><strong>CVSS Skoru:</strong> 9.6 (Kritik)</li>
+</ul>
+<p>FortiMonitorOnSight, ağ cihazlarının sağlık durumunu ve performansını izlemek için kullanılan bir Fortinet çözümüdür. Bu sisteme yetkisiz erişim, bir saldırgana ağınızın tamamının "körleştirilmesi" için kapı aralar — saldırı tespit edilmeden sürdürülebilir.</p>
+
+<h2>İkinci Kritik Açık: CVE-2026-84388 — Fortinet Chrome Eklentisi (CVSS 9.1)</h2>
+<p>Fortinet'in Privileged Access Agent Chrome eklentisinde tespit edilen bu açık, farklı ve dikkat çekici bir risk profili sunmaktadır.</p>
+<ul>
+  <li><strong>Açık türü:</strong> Kimlik doğrulamasız proxy — saldırgan, kullanıcının tarayıcı trafiğini yönlendirebiliyor</li>
+  <li><strong>Risk senaryosu:</strong> Uzak saldırgan, eklentiyi kullanan çalışanın tüm web trafiğini kendi altyapısından geçirerek man-in-the-middle (MitM) konumuna geçiyor</li>
+  <li><strong>CVSS Skoru:</strong> 9.1 (Kritik)</li>
+  <li><strong>Yüksek risk grubu:</strong> Ayrıcalıklı erişim yönetimi (PAM) çözümü olarak bu eklentiyi kullanan sistem yöneticileri ve BT ekipleri</li>
+</ul>
+<p>Bu açık özellikle tehlikelidir çünkü hedefte oturum açma kimlik bilgileri, dahili sistem adresleri ve kurumsal yazışmaların tamamı saldırganın eline geçebilir — kullanıcı hiçbir şeyin farkında olmadan.</p>
+
+<h2>Üçüncü Açık: CVE-2026-84393 — FortiOS ZTNA Portal MitM (Yüksek)</h2>
+<p>FortiOS ve FortiProxy'nin Agentless ZTNA (Sıfır Güven Ağ Erişimi) portalında bulunan bu açık, saldırganların portal ile istemci arasındaki iletişimi kesmesine olanak tanıyor.</p>
+<ul>
+  <li><strong>Açık türü:</strong> Man-in-the-Middle (MitM) saldırısı</li>
+  <li><strong>Risk:</strong> ZTNA üzerinden yapılan güvenli bağlantıların içeriği okunabilir veya değiştirilebilir</li>
+  <li><strong>Etkilenen yapılandırma:</strong> Agentless ZTNA portal modunu kullanan FortiOS ve FortiProxy cihazları</li>
+</ul>
+
+<h2>Güncelleme Tablosu</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 12px;text-align:left;">CVE</th>
+      <th style="padding:10px 12px;text-align:left;">Ürün</th>
+      <th style="padding:10px 12px;text-align:center;">CVSS</th>
+      <th style="padding:10px 12px;text-align:left;">Yama Sürümü</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-84390</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">FortiMonitorOnSight</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">9.6</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Fortinet Güvenlik Bülteni</td>
+    </tr>
+    <tr style="background:#fef2f2;">
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;font-family:monospace;font-weight:700;">CVE-2026-84388</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Fortinet Chrome Eklentisi</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;text-align:center;color:#dc2626;font-weight:700;">9.1</td>
+      <td style="padding:9px 12px;border-bottom:1px solid #fee2e2;">Eklenti güncellemesi</td>
+    </tr>
+    <tr style="background:#fff7ed;">
+      <td style="padding:9px 12px;font-family:monospace;">CVE-2026-84393</td>
+      <td style="padding:9px 12px;">FortiOS / FortiProxy ZTNA</td>
+      <td style="padding:9px 12px;text-align:center;color:#ea580c;font-weight:700;">8.1</td>
+      <td style="padding:9px 12px;">FortiOS 7.4.6 / 7.2.11</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2>Yapılması Gerekenler</h2>
+<ul>
+  <li><strong>FortiMonitorOnSight kullanıyorsanız:</strong> Portalı yalnızca güvenilen IP'lerden erişilebilir hale getirin ve Fortinet'in yama notlarındaki güncellemeleri derhal uygulayın</li>
+  <li><strong>Chrome eklentisini kullanan ekipler için:</strong> Eklentiyi güncelleyin; güncelleme tamamlanana kadar eklentinin kullanımını mümkünse askıya alın</li>
+  <li><strong>ZTNA portalı için:</strong> FortiOS 7.4.6 veya 7.2.11'e yükseltin; agentless ZTNA modunu kullanan tüm cihazları öncelikli olarak güncelleyin</li>
+  <li><strong>Genel:</strong> Fortinet Support portalı üzerinden tüm ürünler için Eylül 2026 bültenini gözden geçirin; etki alanınızdaki diğer 7 açığı da değerlendirin</li>
+</ul>
+
+<h2>Sonuç</h2>
+<p>Bu bültende aktif istismar olmasa da FortiMonitorOnSight'ın JWT atlama açığı (CVSS 9.6) ve Chrome eklentisinin proxy açığı (CVSS 9.1), saldırganlar için son derece cazip hedefler. İzleme altyapısına yetkisiz erişim ve ayrıcalıklı kullanıcıların tarayıcı trafiğinin çalınması — ikisi de kurumsal güvenlik için yüksek etkili senaryolar. Yama uygulamayı ertelemeyin.</p>
+    `,
+  },
+  {
+    slug: "agustos-2026-siber-olaylar-ai-ajanlar-papercut-veri-ihlalleri",
+    title: "Ağustos 2026 Siber Güvenlik Özeti: AI Ajanlarla PaperCut Saldırısı, Uber Freight ve Büyük Veri İhlalleri",
+    excerpt: "Ağustos 2026'da Rusça konuşan bir tehdit aktörü yüzlerce AI ajanı kullanarak 48 ülkede 440 sistem ele geçirdi. Uber Freight, Microsoft Azure ve Apollo Global aynı ay büyük veri ihlali yaşadı. Aylık siber güvenlik özeti.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Veri İhlali", "PaperCut", "AI Ajanı", "Uber Freight", "Fidye Yazılımı", "2026", "Siber Saldırı"],
+    publishedAt: "2026-08-28",
+    readTime: 8,
+    content: `
+<h2>Ağustos 2026'nın En Dikkat Çekici Siber Güvenlik Olayları</h2>
+<p>Ağustos 2026, küresel siber güvenlik gündemini meşgul eden birden fazla büyük olayla kapandı. Yüzlerce AI ajanı kullanan otomatik saldırılardan büyük şirketleri etkileyen veri ihlallerine, kritik altyapı saldırılarından tedarik zinciri ihlallerine kadar geniş bir tehdit yelpazesi bu ayın tablosunu oluşturdu.</p>
+
+<h2>En Dikkat Çekici Olay: AI Ajanlarıyla PaperCut Saldırısı</h2>
+<p>Ağustos 2026'nın sonunda belgelenen bu saldırı, siber tehdit dünyasında yeni bir boyutun kapısını araladı. Rusça konuşan bir tehdit aktörü, <strong>yüzlerce yapay zeka ajanını</strong> koordineli biçimde kullanarak PaperCut baskı yönetimi sistemlerini hedef aldı.</p>
+
+<h3>Saldırının Boyutu</h3>
+<ul>
+  <li><strong>48 ülkede</strong> PaperCut kullanan organizasyonlar hedef alındı</li>
+  <li><strong>395 organizasyonda</strong> en az <strong>440 sistem</strong> başarıyla ele geçirildi</li>
+  <li>Saldırı motivasyonu: Finansal kazanç (fidye yazılımı ve veri sızdırma)</li>
+  <li>AI ajanları, manuel saldırıların ulaşamayacağı hızda tarama, istismar ve yanal hareket gerçekleştirdi</li>
+</ul>
+
+<h3>Neden Önemli?</h3>
+<p>Bu saldırı, daha önce teorik olarak tartışılan "AI destekli otonom saldırı" senaryosunun sahaya döküldüğünü gösteren ilk belgelenmiş büyük ölçekli örneklerden biri. Saldırganlar, her hedef sistem için ayrı ayrı yapılandırılmış AI ajanları dağıtarak insan operatörün gerektiği adımları otomatikleştirdi. Bu, geleneksel güvenlik operasyonlarının hızını geçen bir tehdit temposu anlamına geliyor.</p>
+
+<h2>Büyük Veri İhlalleri</h2>
+
+<h3>Uber Freight — 1 Milyon Dosya Çalındı</h3>
+<p>Bir hacker grubu, Uber Freight'in sistem ve kod depolarına sızdığını açıkladı. Saldırganların iddiasına göre çalınan veriler arasında yaklaşık <strong>1 milyon dosya</strong> yer alıyor. Uber Freight, olayı doğrulayarak yetkisiz erişimi tespit ettiklerini ve soruşturma başlattıklarını açıkladı.</p>
+
+<h3>Microsoft Azure — 3 Milyon Kurumsal Kayıt</h3>
+<p>Bir tehdit aktörü, Microsoft Azure altyapısı üzerinde barındırılan kurumsal veritabanlarından McDonald's dahil tanınmış şirketlere ait <strong>3 milyonun üzerinde kayıt</strong> çaldığını ileri sürdü. Microsoft, olayla ilgili soruşturmanın sürdüğünü bildirdi. Bu olay, paylaşımlı bulut altyapısında kiracı izolasyonunun önemini bir kez daha gündeme taşıdı.</p>
+
+<h3>Apollo Global Management — Sosyal Mühendislik ile İhlal</h3>
+<p>Küresel ölçekli finans kuruluşu Apollo Global Management, sosyal mühendislik saldırısı sonucu veri ihlali yaşadığını açıkladı. İhlal kapsamında <strong>Sosyal Güvenlik Numaraları dahil kişisel ve kurumsal hassas bilgiler</strong> ele geçirildi. Şirket etkilenen tarafları bilgilendirerek düzenleyici otoritelere gerekli bildirimleri yaptı.</p>
+
+<h3>Pokémon Center — Tedarik Zinciri Saldırısı</h3>
+<p>Pokémon Center, üçüncü taraf bir tedarikçi üzerinden gerçekleştirilen tedarik zinciri saldırısı nedeniyle müşteri verilerinin (isim ve e-posta adresleri) açığa çıktığını duyurdu. Bu olay, doğrudan saldırıların yanı sıra <strong>tedarik zinciri güvenliğinin</strong> ihmal edilmesinin nasıl büyük şirketlerin güvenliğini tehlikeye atabileceğini somutlaştırdı.</p>
+
+<h2>Kritik Altyapı Saldırıları</h2>
+<p>Ağustos 2026'da iki kritik altyapı hedefine yönelik saldırı da gündemdeki yerini aldı:</p>
+<ul>
+  <li><strong>Birleşik Krallık Enerji Altyapısı:</strong> İngiltere'nin elektrik dağıtım ağında birden fazla noktayı hedef alan bir siber saldırı girişimi tespit edildi. Operasyonel etkisi sınırlı tutuldu ancak sistem güvenlik açıkları kamuoyunda tartışma yarattı.</li>
+  <li><strong>Minnesota Su Sistemi:</strong> ABD'nin Minnesota eyaletinde bir belediyenin su sistemi kontrol ağı saldırıya uğradı. Su güvenliği etkilenmedi; ancak olay, OT/ICS güvenliğinin ihmalinin doğurduğu riski bir kez daha gözler önüne serdi.</li>
+</ul>
+
+<h2>Kuruluşlar İçin Alınacak Dersler</h2>
+
+<h3>AI Destekli Saldırılara Karşı</h3>
+<ul>
+  <li>Geleneksel imza tabanlı güvenlik araçları AI hızındaki saldırıları durdurmakta yetersiz kalıyor — davranış analizi tabanlı çözümlere geçiş şart</li>
+  <li>PaperCut gibi yaygın kullanılan kurumsal yazılımlar öncelikli hedef haline geldi; yama yönetimini SLA'lara bağlayın</li>
+  <li>Ağ segmentasyonu, AI ajanlarının lateral movement hızını sınırlayan kritik bir kontrol</li>
+</ul>
+
+<h3>Tedarik Zinciri Güvenliği</h3>
+<ul>
+  <li>Kritik sistemlere erişimi olan üçüncü tarafların güvenlik olgunluğunu değerlendirin</li>
+  <li>Tedarikçi erişimini en az ayrıcalık (least privilege) ilkesiyle sınırlayın</li>
+  <li>Tedarikçi erişimlerini izleyin ve anomalileri kayıt altına alın</li>
+</ul>
+
+<h3>Sosyal Mühendislik</h3>
+<ul>
+  <li>Apollo örneği, teknik savunmaları aşmanın en etkili yolunun hâlâ insan faktörünü hedef almak olduğunu gösteriyor</li>
+  <li>Kimlik doğrulama adımlarını çok faktörlü yapın; kritik işlemlerde bant dışı doğrulama uygulayın</li>
+  <li>Sosyal mühendislik simülasyonlarını düzenli eğitim programına dahil edin</li>
+</ul>
+
+<h2>Lider Network Güvenlik Hizmetleri</h2>
+<p>Bu tür olayların kuruluşunuzu etkilememesi için Lider Network olarak proaktif güvenlik hizmetleri sunuyoruz: güvenlik açığı yönetimi, tedarik zinciri risk değerlendirmesi, sosyal mühendislik simülasyonları ve 7/24 izleme çözümleri. Güvenlik durumunuzu değerlendirmek için iletişime geçin.</p>
+
+<h2>Sonuç</h2>
+<p>Ağustos 2026, siber tehdit ortamının hem boyutu hem de sofistike düzeyi açısından endişe verici bir ay oldu. AI ajanlarıyla gerçekleştirilen otonom PaperCut saldırısı, tehdit aktörlerinin artık insan operatör ihtiyacını minimize eden ölçeklenebilir saldırı altyapılarına sahip olduğunu gösteriyor. Bu yeni gerçekliğe karşı kuruluşların da savunma yaklaşımlarını güncelleme vakti geldi.</p>
+    `,
+  },
+  {
     slug: "fortios-cve-2025-68686-cisa-kev-acil-yama",
     title: "CISA Uyardı: FortiOS Güvenlik Açığı (CVE-2025-68686) 10 Ağustos'a Kadar Yamalanmalı",
     excerpt: "CISA, CVE-2025-68686 açığını 'Bilinen İstismar Edilen Güvenlik Açıkları' kataloğuna ekledi. Federal kurumlar için son tarih 10 Ağustos 2026. Aktif istismar devam ederken kuruluşların derhal harekete geçmesi gerekiyor.",
