@@ -55,6 +55,19 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
   const [mainTab, setMainTab] = useState<"quotes" | "products">("quotes");
   const [companyFilter, setCompanyFilter] = useState<string>(initialCompanyId);
   useEffect(() => { setCompanyFilter(initialCompanyId); setPage(1); }, [initialCompanyId]);
+  const [followupRunning, setFollowupRunning] = useState(false);
+
+  async function runFollowup() {
+    if (!confirm("Uygun tekliflere (gönderilmiş, takip gönderilmemiş, 3+ gün geçmiş) otomatik takip e-postası gönderilecek. Devam edilsin mi?")) return;
+    setFollowupRunning(true);
+    try {
+      const r = await fetch("/api/cron/quote-followup");
+      const d = await r.json();
+      if (r.ok) showToast(`Takip tamamlandı: ${d.sent} gönderildi${d.failed ? `, ${d.failed} hata` : ""}`);
+      else showToast("Hata: " + (d.error || "bilinmeyen"), "error");
+    } catch { showToast("Bağlantı hatası", "error"); }
+    finally { setFollowupRunning(false); }
+  }
 
   // form
   const [companyId, setCompanyId] = useState("");
@@ -605,9 +618,14 @@ export default function Teklifler({ companies = [], initialCompanyId = "", staff
             <h2 style={{ margin: "0 0 3px", fontSize: "20px", fontWeight: 800, color: "#1a1d2e" }}>📄 Teklifler</h2>
             <p style={{ margin: 0, fontSize: "13px", color: "#64748b" }}>Fiyat teklifleri oluştur, PDF indir, e-posta gönder</p>
           </div>
-          <button onClick={openNew} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,82,255,.25)" }}>
-            <Plus size={16} /> Yeni Teklif
-          </button>
+          <div style={{ display: "flex", gap: "8px" }}>
+            <button onClick={runFollowup} disabled={followupRunning} title="Gönderilmiş ve takip bekleyen tekliflere toplu takip e-postası gönder" style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 16px", borderRadius: "10px", border: "1.5px solid #cbd5e1", background: followupRunning ? "#f1f5f9" : "#fff", color: followupRunning ? "#94a3b8" : "#475569", fontSize: "13px", fontWeight: 600, cursor: followupRunning ? "not-allowed" : "pointer" }}>
+              <Mail size={15} /> {followupRunning ? "Gönderiliyor…" : "Takip Gönder"}
+            </button>
+            <button onClick={openNew} style={{ display: "flex", alignItems: "center", gap: "7px", padding: "10px 18px", borderRadius: "10px", border: "none", background: "linear-gradient(135deg,#0038c7,#0052ff)", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer", boxShadow: "0 4px 12px rgba(0,82,255,.25)" }}>
+              <Plus size={16} /> Yeni Teklif
+            </button>
+          </div>
         </div>
 
         {/* Özet kartları */}
