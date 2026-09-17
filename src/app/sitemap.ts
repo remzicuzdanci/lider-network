@@ -1,5 +1,7 @@
 import { MetadataRoute } from "next";
 import { posts } from "@/data/blog";
+import { brands } from "@/data/products";
+import { sectors } from "@/data/sectors";
 
 const baseUrl = "https://www.lidernetwork.com.tr";
 
@@ -30,6 +32,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { path: "/blog", priority: 0.9, changeFrequency: "weekly" as const },
     { path: "/iletisim", priority: 0.8, changeFrequency: "yearly" as const },
     { path: "/kvkk", priority: 0.3, changeFrequency: "yearly" as const },
+    // Eksik sayfalar eklendi
+    { path: "/ankara-fortinet-partner", priority: 0.8, changeFrequency: "monthly" as const },
+    { path: "/lisans-yenileme", priority: 0.7, changeFrequency: "monthly" as const },
+    { path: "/urunler", priority: 0.8, changeFrequency: "weekly" as const },
+    { path: "/sektorler", priority: 0.75, changeFrequency: "monthly" as const },
   ];
 
   const entries: MetadataRoute.Sitemap = [];
@@ -49,6 +56,56 @@ export default function sitemap(): MetadataRoute.Sitemap {
           },
         },
       });
+    }
+  }
+
+  // Sektör sayfaları — dinamik
+  for (const sector of sectors) {
+    for (const locale of locales) {
+      entries.push({
+        url: `${baseUrl}/${locale}/sektorler/${sector.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "monthly" as const,
+        priority: 0.7,
+        alternates: {
+          languages: {
+            tr: `${baseUrl}/tr/sektorler/${sector.slug}`,
+            en: `${baseUrl}/en/sektorler/${sector.slug}`,
+          },
+        },
+      });
+    }
+  }
+
+  // Ürün kataloğu — marka ve kategori sayfaları
+  for (const brand of brands) {
+    for (const locale of locales) {
+      entries.push({
+        url: `${baseUrl}/${locale}/urunler/${brand.slug}`,
+        lastModified: new Date(),
+        changeFrequency: "weekly" as const,
+        priority: 0.75,
+        alternates: {
+          languages: {
+            tr: `${baseUrl}/tr/urunler/${brand.slug}`,
+            en: `${baseUrl}/en/urunler/${brand.slug}`,
+          },
+        },
+      });
+      for (const cat of brand.categories) {
+        entries.push({
+          url: `${baseUrl}/${locale}/urunler/${brand.slug}/${cat.slug}`,
+          lastModified: new Date(),
+          changeFrequency: "weekly" as const,
+          priority: 0.7,
+          alternates: {
+            languages: {
+              tr: `${baseUrl}/tr/urunler/${brand.slug}/${cat.slug}`,
+              en: `${baseUrl}/en/urunler/${brand.slug}/${cat.slug}`,
+            },
+          },
+        });
+      }
     }
   }
 
