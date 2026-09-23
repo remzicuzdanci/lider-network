@@ -137,9 +137,12 @@ const DOMAIN_WHITELIST = new Set([
   "battle.net", "blizzard.com",
   // Türkiye e-devlet & kamu
   "turkiye.gov.tr", "e-devlet.com",
-  "sgk.gov.tr", "gib.gov.tr", "gib.gov.tr",
+  "sgk.gov.tr", "gib.gov.tr",
   "nvi.gov.tr", "meb.gov.tr", "saglik.gov.tr",
   "btk.gov.tr", "icisleri.gov.tr",
+  // Türk perakende & tedarik zinciri sistemleri
+  "bim.com.tr", "migros.com.tr", "a101.com.tr", "sok.com.tr",
+  "carrefoursa.com", "metro.com.tr",
   // Uzak masaüstü & destek araçları
   "anydesk.com", "anydesk.net",
   "teamviewer.com", "teamviewer.net",
