@@ -56,6 +56,148 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "oracle-eylul-2026-cspu-800-acik-104-kritik",
+    title: "Oracle Eylül 2026 Güvenlik Güncellemesi: 800+ Açık, 104 Kritik — E-Business Suite ve Fusion Middleware Öncelikli",
+    excerpt: "Oracle'ın Eylül 2026 Critical Security Patch Update'i 17 ürün ailesinde 800'den fazla açığı kapatıyor. 104 kritik önem dereceli açıktan 240'ı kimlik doğrulaması olmaksızın uzaktan istismar edilebilir. E-Business Suite ve Fusion Middleware öne çıkıyor.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Oracle", "CVE", "Güvenlik Güncellemesi", "CSPU", "E-Business Suite", "Fusion Middleware", "Kritik Yama"],
+    publishedAt: "2026-09-24",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>Oracle'dan Rekor Yama Paketi: 800+ Açık Tek Seferde</h2>
+<p>Oracle, Eylül 2026 Critical Security Patch Update (CSPU) ile 17 ürün ailesinde <strong>800'den fazla güvenlik açığını</strong> kapattı. Yayımlanan 673 yeni güvenlik yaması, 672 benzersiz CVE'yi kapsıyor; ancak diğer yamalarla birlikte kapatılan 130'dan fazla ek CVE de bulunuyor.</p>
+
+<h2>Sayılarla Eylül 2026 CSPU</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ürün Ailesi</th>
+      <th style="padding:10px 14px;text-align:left;">Yama Sayısı</th>
+      <th style="padding:10px 14px;text-align:left;">Öne Çıkan Risk</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Oracle E-Business Suite</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">159</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">En büyük paket</td></tr>
+    <tr><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Fusion Middleware</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">153</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">78 uzaktan istismar edilebilir açık</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Toplam Kritik</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">104+</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">Kimlik doğrulamasız uzaktan erişim</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;color:#dc2626;">Aktif İstismar</td><td style="padding:9px 14px;color:#dc2626;">1 doğrulandı</td><td style="padding:9px 14px;color:#dc2626;">Hong Kong siber güvenlik kurumu uyarısı</td></tr>
+  </tbody>
+</table>
+
+<h2>En Kritik Bulgu: 240 Açık Kimlik Doğrulaması Gerektirmiyor</h2>
+<p>Bu güncellemenin en dikkat çekici boyutu, <strong>240'tan fazla açığın uzaktan ve kimlik doğrulaması olmaksızın istismar edilebilir</strong> olmasıdır. Saldırgan bir ağ bağlantısıyla sisteme erişim sağlayabiliyor; bu durum kurumsal Oracle altyapılarını özellikle internete açık bileşenler üzerinden riske giriyor.</p>
+
+<p>Ayrıca araştırmacılar yedi açık için kamuya açık kavram kanıtı (PoC) kodu yayımladığını bildirdi. PoC kodu bulunan açıklar, istismar araçlarına çok daha hızlı dahil ediliyor.</p>
+
+<h2>Öncelikli Güncelleme Gerektiren Ürünler</h2>
+<ul>
+  <li><strong>Oracle E-Business Suite</strong> — 159 yama, geniş kurumsal kullanım tabanı nedeniyle öncelikli</li>
+  <li><strong>Oracle Fusion Middleware</strong> — 153 yama, 78 uzaktan istismar edilebilir açık içeriyor</li>
+  <li><strong>Oracle Database Server</strong> — kritik RCE açıkları dahil</li>
+  <li><strong>Oracle MySQL</strong> — yaygın kullanım nedeniyle geniş saldırı yüzeyi</li>
+  <li><strong>Oracle WebLogic Server</strong> — üretim ortamlarında sıklıkla hedef alınıyor</li>
+</ul>
+
+<h2>Yama Öncelik Kılavuzu</h2>
+<p>Oracle, internete açık sistemlerin <strong>24 saat içinde</strong> güncellenmesini öneriyor. İç ağda izole çalışan sistemler için de en geç bir hafta içinde yama uygulanması tavsiye ediliyor. PoC kodu yayımlanmış açıklar için bu pencere çok daha kısa.</p>
+
+<p>Yamadan önce:</p>
+<ul>
+  <li>Etkilenen sistemlerin tam envanterini çıkarın</li>
+  <li>Test ortamında yama doğrulaması yapın</li>
+  <li>Kritik sistemler için bakım penceresi planlayın</li>
+  <li>Yama sonrası erişim ve uygulama davranışını izleyin</li>
+</ul>
+
+<h2>Özet</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead><tr style="background:#0f172a;color:#fff;"><th style="padding:10px 14px;text-align:left;">Konu</th><th style="padding:10px 14px;text-align:left;">Detay</th></tr></thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Toplam yama</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">673 yeni yama, 800+ CVE</td></tr>
+    <tr><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Kritik açık</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">104+</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Uzaktan/kimliksiz istismar</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">240+</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;color:#15803d;">Öneri</td><td style="padding:9px 14px;color:#15803d;">İnternete açık sistemleri 24 saat içinde güncelleyin</td></tr>
+  </tbody>
+</table>
+    `,
+  },
+  {
+    slug: "forticlient-ems-cve-2026-35616-sahte-yama-ekz-infostealer",
+    title: "FortiClient EMS CVE-2026-35616: Sahte Fortinet Yaması Kılığındaki EKZ Infostealer Kampanyası",
+    excerpt: "CVE-2026-35616, FortiClient EMS'te kimliksiz API bypass açığı. Tehdit aktörleri bu açığı sahte Fortinet yama güncellemesi görünümünde EKZ infostealer dağıtmak için kullanıyor. Kimlik bilgisi, tarayıcı verisi ve VPN oturumu çalınıyor.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["FortiClient", "EMS", "CVE-2026-35616", "Infostealer", "EKZ", "Sahte Yama", "Kimlik Bilgisi Hırsızlığı"],
+    publishedAt: "2026-09-22",
+    readTime: 6,
+    featured: false,
+    content: `
+<h2>Saldırı Zinciri: Güvendiğiniz Fortinet Yaması Aslında Zararlı Yazılım</h2>
+<p>Arctic Wolf araştırmacıları, aktif olarak istismar edilen <strong>CVE-2026-35616</strong>'yı kullanan sofistike bir kampanya tespit etti. Saldırganlar bu açığı, meşru bir Fortinet yama güncellemesi görünümü altında <strong>EKZ infostealer</strong> dağıtmak için kullanıyor.</p>
+
+<p>Kampanyanın taktiksel zekası şurada: Kullanıcılar bir güvenlik açığı haberi görüyor, yamalamak istiyor ve tam bu anda sunulan sahte güncellemeyi indiriyor. Güvenlik farkındalığı tersine silah olarak kullanılıyor.</p>
+
+<h2>CVE-2026-35616 Nedir?</h2>
+<p><strong>FortiClient EMS (Endpoint Management Server)</strong>'ta tespit edilen bu açık, kimliği doğrulanmamış tehdit aktörlerinin API kimlik doğrulamasını atlayarak ayrıcalıklı istekler göndermesine olanak tanıyor.</p>
+
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead><tr style="background:#0f172a;color:#fff;"><th style="padding:10px 14px;text-align:left;">Özellik</th><th style="padding:10px 14px;text-align:left;">Detay</th></tr></thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">CVE</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">CVE-2026-35616</td></tr>
+    <tr><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Etkilenen ürün</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">FortiClient EMS (tüm sürümler — yamadan önceki)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Açık türü</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">Improper Access Control — API auth bypass</td></tr>
+    <tr><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Kimlik doğrulama</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">Gerekmiyor (unauthenticated)</td></tr>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;color:#dc2626;">Aktif istismar</td><td style="padding:9px 14px;color:#dc2626;">Evet — vahşi ortamda</td></tr>
+  </tbody>
+</table>
+
+<h2>EKZ Infostealer Ne Çalıyor?</h2>
+<p>Sahte yama dosyası yüklendiğinde EKZ infostealer arka planda aşağıdakileri topluyor ve komuta-kontrol sunucusuna sızdırıyor:</p>
+<ul>
+  <li><strong>Tarayıcı kimlik bilgileri</strong> — Chrome, Edge, Firefox kayıtlı şifreler</li>
+  <li><strong>VPN oturum token'ları</strong> — FortiClient VPN dahil</li>
+  <li><strong>Tarayıcı çerezleri</strong> — aktif oturumları ele geçirir</li>
+  <li><strong>Kripto cüzdan verileri</strong> — extension ve dosya taraması</li>
+  <li><strong>Sistem bilgisi ve ekran görüntüsü</strong> — hedef profili oluşturma</li>
+</ul>
+
+<h2>Kampanyanın Dağıtım Vektörü</h2>
+<p>Saldırganlar sahte yamayı birkaç yolla sunuyor:</p>
+<ol>
+  <li><strong>SEO zehirleme:</strong> "FortiClient EMS update CVE-2026-35616" gibi aramalar için zararlı sayfalar sıralamaya sokuluyor</li>
+  <li><strong>Phishing e-postası:</strong> Fortinet görsel kimliğini kullanan sahte "Güvenlik Güncellemesi Zorunlu" bildirimleri</li>
+  <li><strong>Sosyal mühendislik:</strong> LinkedIn ve forum mesajları üzerinden IT yöneticilerine doğrudan ulaşım</li>
+</ol>
+
+<h2>Korunma Adımları</h2>
+<p><strong>1. Resmi kanaldan yama yapın:</strong></p>
+<pre style="background:#0f172a;color:#86efac;padding:16px 20px;border-radius:10px;font-size:13px;overflow-x:auto;line-height:1.7;">Fortinet yamaları yalnızca support.fortinet.com adresinden indirin.
+E-posta, forum veya arama sonucu bağlantısından indirilen
+hiçbir Fortinet dosyasını çalıştırmayın.</pre>
+
+<p><strong>2. FortiClient EMS'i güncelleyin:</strong> Fortinet'in yayımladığı resmi yamaları uygulayın.</p>
+
+<p><strong>3. EMS erişimini kısıtlayın:</strong> FortiClient EMS management arayüzü internete doğrudan açık olmamalı, VPN veya güvenli ağ üzerinden erişilmeli.</p>
+
+<p><strong>4. Kimlik bilgilerini sıfırlayın:</strong> Şüpheli yükleme olduysa — VPN, e-posta, domain hesapları başta — tüm kimlik bilgilerini sıfırlayın.</p>
+
+<p><strong>5. EDR loglarını inceleyin:</strong> EKZ infostealer'ın başlangıç davranış imzaları — process injection, anormal ağ bağlantıları, credential store erişimi — EDR çözümlerinde aranabilir.</p>
+
+<h2>Özet</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead><tr style="background:#0f172a;color:#fff;"><th style="padding:10px 14px;text-align:left;">Konu</th><th style="padding:10px 14px;text-align:left;">Detay</th></tr></thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">CVE</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">CVE-2026-35616 — FortiClient EMS API bypass</td></tr>
+    <tr><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Zararlı yazılım</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">EKZ Infostealer — kimlik bilgisi, VPN token, çerez çalıyor</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;font-weight:600;">Dağıtım yöntemi</td><td style="padding:9px 14px;border-bottom:1px solid #e2e8f0;">Sahte Fortinet yama dosyası</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;color:#15803d;">Önlem</td><td style="padding:9px 14px;color:#15803d;">Resmi yama + EMS erişim kısıtlaması + kimlik bilgisi sıfırlama</td></tr>
+  </tbody>
+</table>
+    `,
+  },
+  {
     slug: "fortiguard-baglanamama-sorunu-digicert-crl-anycast-cozumu",
     title: "FortiGuard 10 Eylül'den Bu Yana Bağlanamıyor mu? DigiCert CRL Değişikliği ve Kalıcı Çözüm",
     excerpt: "9 Eylül 2026'da DigiCert'in CRL dosyasına IDP eklenmesi bazı FortiGate'lerde 'different CRL scope' hatasına yol açtı. AV/IPS paketleri indirilemiyor, FortiGuard bağlantısı kesildi. Anycast kapat/aç yöntemiyle 2 dakikada çözüm.",
