@@ -19,14 +19,23 @@ export async function generateMetadata({
       "Lider Network, Ankara'nın önde gelen Fortinet Yetkili Partner'ıdır. 2006'dan bu yana kamu kurumları, finans, sağlık ve üretim sektörlerine kurumsal siber güvenlik, FortiGate ve Synology çözümleri sunuyoruz.",
     keywords: [
       "Ankara Fortinet yetkili partner",
+      "Ankara Fortinet bayi",
+      "Ankara FortiGate satış",
+      "FortiGate Ankara kurulum",
+      "Fortinet firewall Ankara",
+      "Ankara FortiGate destek",
+      "Ankara Fortinet lisans yenileme",
       "Ankara siber güvenlik firması",
       "Ankara BT altyapı şirketi",
       "Ankara FortiGate satış destek",
       "Ankara Synology partner",
       "Ankara ağ güvenliği",
-      "Ankara NGFW",
+      "Ankara NGFW firewall",
       "Ankara IT çözümleri",
       "Çankaya BT firması",
+      "Ankara FortiSwitch FortiAP",
+      "Ankara kamu siber güvenlik",
+      "Lider Network Ankara",
     ],
     alternates: {
       canonical: `${baseUrl}/${locale}/ankara-fortinet-partner`,
@@ -108,6 +117,45 @@ export default async function AnkaraPage({
     },
   };
 
+  const faqLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "Ankara'da Fortinet yetkili partner kimdir?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Lider Network, 2006'dan bu yana Ankara merkezli faaliyet gösteren Fortinet Yetkili Partner'dır. FortiGate, FortiSwitch, FortiAP ve FortiAnalyzer ürünlerinin satış, kurulum ve destek hizmetlerini Ankara genelinde sunmaktadır.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Ankara'da FortiGate satın almak ve kurulum yaptırmak için kime başvurmalıyım?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Lider Network olarak Ankara'da FortiGate satış, kurulum, konfigürasyon ve devreye alma hizmetleri sunuyoruz. +90 312 232 02 88 numaralı hattımızdan veya info@lidernetwork.com.tr adresinden bize ulaşabilirsiniz.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Fortinet lisans yenileme Ankara'da nasıl yapılır?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "FortiCare ve FortiGuard lisans yenilemelerini Lider Network olarak Ankara'dan yönetiyoruz. Mevcut lisanslarınızın takibini yaparak zamanında yenileme ve fatura işlemlerini ekibimiz üstleniyor.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Ankara kamu kurumlarına siber güvenlik çözümü sunuyor musunuz?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Evet. Ankara merkezimiz sayesinde kamu kurumlarının BTK ve USOM gereksinimlerine uygun siber güvenlik çözümleri, FortiGate NGFW kurulumu ve yerinde teknik destek hizmetleri sunuyoruz. Kamu alımı süreçlerinde deneyimliyiz.",
+        },
+      },
+    ],
+  };
+
   const sectors = [
     { icon: Landmark, label: "Kamu & E-Devlet", href: `/${locale}/sektorler/kamu` },
     { icon: Heart, label: "Sağlık & Hastane", href: `/${locale}/sektorler/saglik` },
@@ -121,6 +169,10 @@ export default async function AnkaraPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqLd) }}
       />
 
       <main className="pt-20">
