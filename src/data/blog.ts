@@ -198,6 +198,242 @@ hiçbir Fortinet dosyasını çalıştırmayın.</pre>
     `,
   },
   {
+    slug: "google-workspace-microsoft-365-karsilastirma-2026",
+    title: "Google Workspace mı, Microsoft 365 mü? 2026 Kurumsal Karşılaştırma Rehberi",
+    excerpt: "Hangi platform işletmenize daha uygun? Fiyat, masaüstü uygulama, güvenlik, Active Directory entegrasyonu ve Türkiye'deki kullanım senaryoları üzerinden Google Workspace ile Microsoft 365'i karşılaştırdık.",
+    category: "google-workspace",
+    categoryColor: "#4285F4",
+    tags: ["Google Workspace", "Microsoft 365", "Bulut Ofis", "Gmail", "Outlook", "Google Drive", "OneDrive", "Karşılaştırma"],
+    publishedAt: "2026-09-19",
+    readTime: 7,
+    featured: false,
+    content: `
+<h2>İki Platform, Farklı Felsefer</h2>
+<p>Google Workspace ve Microsoft 365, kurumsal üretkenlik pazarında birbirinin doğrudan rakibi. Ancak ikisi arasındaki fark sadece fiyat veya uygulama listesi değil — temel mimari felsefe farklı. Google her şeyi web üzerine inşa etti; Microsoft ise güçlü masaüstü uygulamalarını buluta taşıdı.</p>
+<p>Hangisini seçeceğiniz, ekibinizin çalışma biçimine, mevcut altyapınıza ve bütçenize göre değişir. Bu rehber, kurumsal karar vericiler için tarafsız bir karşılaştırma sunuyor.</p>
+
+<h2>Temel Farklar: Bir Bakışta</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Kriter</th>
+      <th style="padding:10px 14px;text-align:left;">Google Workspace</th>
+      <th style="padding:10px 14px;text-align:left;">Microsoft 365</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Masaüstü Uygulamalar</td><td style="padding:9px 14px;">Yok (sadece web)</td><td style="padding:9px 14px;">Word, Excel, PowerPoint dahil</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Gerçek Zamanlı İşbirliği</td><td style="padding:9px 14px;">Üstün — çatışma yok</td><td style="padding:9px 14px;">İyi, ancak çakışmalar yaşanabilir</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">E-posta</td><td style="padding:9px 14px;">Gmail</td><td style="padding:9px 14px;">Exchange Online / Outlook</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Video Konferans</td><td style="padding:9px 14px;">Google Meet</td><td style="padding:9px 14px;">Microsoft Teams</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Dosya Depolama</td><td style="padding:9px 14px;">Google Drive</td><td style="padding:9px 14px;">OneDrive + SharePoint</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Active Directory Entegrasyonu</td><td style="padding:9px 14px;">Google Cloud Directory (sınırlı)</td><td style="padding:9px 14px;">Entra ID — yerel, derin entegrasyon</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Yönetim Kolaylığı</td><td style="padding:9px 14px;">Admin Console — sade ve hızlı</td><td style="padding:9px 14px;">Microsoft 365 Admin — güçlü ama karmaşık</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">AI Entegrasyonu</td><td style="padding:9px 14px;">Gemini (Business Standard ve üzeri)</td><td style="padding:9px 14px;">Microsoft 365 Copilot (ayrı lisans)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Mobil Deneyim</td><td style="padding:9px 14px;">Çok güçlü</td><td style="padding:9px 14px;">İyi, ancak daha ağır</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Çevrimdışı Çalışma</td><td style="padding:9px 14px;">Kısıtlı (Chrome gerekli)</td><td style="padding:9px 14px;">Tam destek (masaüstü uygulamalar)</td></tr>
+  </tbody>
+</table>
+
+<h2>Fiyat Karşılaştırması (2026)</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Plan</th>
+      <th style="padding:10px 14px;text-align:left;">Aylık (kullanıcı başı)</th>
+      <th style="padding:10px 14px;text-align:left;">Öne Çıkan Özellik</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">GW Business Starter</td><td style="padding:9px 14px;">~$6</td><td style="padding:9px 14px;">30 GB Drive, temel araçlar</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">GW Business Standard</td><td style="padding:9px 14px;">~$12</td><td style="padding:9px 14px;">2 TB Drive, Gemini AI dahil, Meet kayıt</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">GW Business Plus</td><td style="padding:9px 14px;">~$18</td><td style="padding:9px 14px;">5 TB Drive, eDiscovery, denetim logları</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">M365 Business Basic</td><td style="padding:9px 14px;">~$6</td><td style="padding:9px 14px;">1 TB OneDrive, web Office uygulamaları</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">M365 Business Standard</td><td style="padding:9px 14px;">~$12.50</td><td style="padding:9px 14px;">Masaüstü Office, Teams, Bookings</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">M365 Business Premium</td><td style="padding:9px 14px;">~$22</td><td style="padding:9px 14px;">Intune, Defender, Azure AD P1</td></tr>
+  </tbody>
+</table>
+
+<h2>Google Workspace Öne Çıktığı Durumlar</h2>
+<ul>
+  <li><strong>Başlangıç ve büyüme aşamasındaki şirketler:</strong> Daha düşük maliyetle hızlı kurulum, sıfır donanım yatırımı.</li>
+  <li><strong>Yoğun işbirliği yapan ekipler:</strong> Docs, Sheets ve Slides'ta birden fazla kişi aynı anda çalışabilir, sürüm çatışması olmaz.</li>
+  <li><strong>Mobil öncelikli iş modelleri:</strong> Saha ekipleri, satış temsilcileri, her yerden çalışma kültürü.</li>
+  <li><strong>Basit yönetim isteyen BT ekipleri:</strong> Google Admin Console, Microsoft 365 admin merkezine kıyasla çok daha az karmaşık.</li>
+  <li><strong>Mevcut altyapısı az olan şirketler:</strong> Windows Server, Exchange veya Active Directory olmayan yeni kurulumlar.</li>
+</ul>
+
+<h2>Microsoft 365 Öne Çıktığı Durumlar</h2>
+<ul>
+  <li><strong>Ağır Excel/Word kullanıcıları:</strong> Karmaşık makrolar, özel şablonlar, muhasebe dosyaları için masaüstü uygulamalar şart.</li>
+  <li><strong>Active Directory tabanlı altyapılar:</strong> Microsoft Entra ID ve on-premise AD entegrasyonu rakipsiz.</li>
+  <li><strong>Güçlü güvenlik gereksinimleri:</strong> Business Premium; Intune, Defender for Business ve koşullu erişim politikalarını tek pakette sunar.</li>
+  <li><strong>Kamu ve finans sektörü:</strong> Mevzuat uyumluluk araçları (eDiscovery, retention policy, DLP) çok daha olgun.</li>
+  <li><strong>Teams ağırlıklı iletişim:</strong> Ekibiniz Teams'e alışkınsa, chat + video + dosya paylaşımı entegrasyonu güçlü.</li>
+</ul>
+
+<h2>Türkiye'deki Gerçek Tablo</h2>
+<p>Türkiye'de kurumsal pazar hâlâ <strong>Microsoft 365 ağırlıklı</strong>. Bunun iki temel nedeni var: muhasebe ve finans departmanlarının Excel bağımlılığı, ve on-premise Active Directory altyapısına sahip köklü şirketlerin çokluğu. Google Workspace ise özellikle <strong>startup ekosistemi, eğitim sektörü ve ajanslar</strong> arasında güçlü.</p>
+<p>Son iki yılda Google'ın Gemini AI entegrasyonu, özellikle iletişim ve içerik üretim ağırlıklı ekipler için dengeleri değiştirmeye başladı.</p>
+
+<h2>Hangisini Seçmelisiniz?</h2>
+<p>Kısa cevap: <strong>Office uygulamalarını yoğun kullanıyorsanız ve Active Directory'niz varsa Microsoft 365</strong>. Yeni kuruyorsanız, mobiliteyi ön planda tutuyorsanız ve basit yönetim istiyorsanız Google Workspace daha avantajlı başlangıç noktası.</p>
+<p>Hibrit seçenek de mümkün: bazı departmanlar (satış, operasyon) Google Workspace kullanırken, finans ve muhasebe Microsoft 365 ile devam edebilir. Ancak iki sistemin paralel yönetimi BT yükünü artırır.</p>
+<p>Her iki platform için de lisans, kurulum ve geçiş desteği sağlıyoruz. Ekibiniz için hangi platformun daha uygun olduğunu değerlendirmek için <a href="/iletisim">bizimle iletişime geçin</a>.</p>
+    `,
+  },
+  {
+    slug: "google-workspace-gemini-ai-kurumsal-verimlilik",
+    title: "Google Workspace'e Gemini Geldi: Kurumsal Verimliliği Nasıl Değiştiriyor?",
+    excerpt: "Gmail'de e-posta özeti, Docs'ta yapay zeka yazım asistanı, Meet'te otomatik toplantı notları... Google Workspace'in Gemini AI entegrasyonu kurumsal üretkenliği kökten değiştiriyor. Hangi plan hangi özellikleri içeriyor?",
+    category: "google-workspace",
+    categoryColor: "#4285F4",
+    tags: ["Google Workspace", "Gemini AI", "Yapay Zeka", "Gmail", "Google Docs", "Google Meet", "Üretkenlik"],
+    publishedAt: "2026-09-16",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>Yapay Zeka Artık Ofis Aracınızın İçinde</h2>
+<p>Google, 2024'ten itibaren Gemini AI'yi Google Workspace uygulamalarına entegre etmeye başladı. 2026 itibarıyla bu entegrasyon olgunlaştı: Gmail, Docs, Sheets, Slides ve Meet artık günlük iş akışlarını otomatikleştirebilecek düzeyde yapay zeka yeteneklerine sahip.</p>
+<p>Bu yazıda hangi uygulamada ne yapabildiğinizi ve hangi Workspace planının Gemini'ı içerdiğini aktarıyoruz.</p>
+
+<h2>Uygulama Bazında Gemini Özellikleri</h2>
+
+<h3>Gmail</h3>
+<ul>
+  <li><strong>Yazım asistanı (Help me write):</strong> Kısa bir not yazıp "geliştir" deyin — Gemini profesyonel bir e-posta taslağı oluşturur.</li>
+  <li><strong>E-posta özeti:</strong> Uzun e-posta zincirlerini tek tıkla özetler. Sabah gelen kutusunu açtığınızda okunmamış e-postalar için anında bağlam sağlar.</li>
+  <li><strong>Akıllı yanıt önerileri:</strong> E-postanın içeriğine göre kısa yanıt seçenekleri sunar.</li>
+</ul>
+
+<h3>Google Docs</h3>
+<ul>
+  <li><strong>Belge oluşturma:</strong> "Müşteri teklifi yaz: [konu]" gibi bir prompt ile iskelet taslak oluşturulur.</li>
+  <li><strong>Metin geliştirme:</strong> Seçili paragrafı daha resmi, daha kısa veya farklı bir tonda yeniden yazar.</li>
+  <li><strong>Belge özeti:</strong> Uzun raporları birkaç cümleyle özetler.</li>
+  <li><strong>Sorgu modu:</strong> "Bu belgede ödeme koşulları ne zaman geçiyor?" gibi sorular sorabilirsiniz.</li>
+</ul>
+
+<h3>Google Sheets</h3>
+<ul>
+  <li><strong>Formül oluşturma:</strong> "Aylık büyüme oranını hesapla" yazın, Gemini uygun formülü önerir ve açıklar.</li>
+  <li><strong>Veri analizi:</strong> Tablo üzerinde doğal dil sorgusu — "en yüksek 5 satış temsilcisini listele" gibi.</li>
+  <li><strong>Sınıflandırma ve etiketleme:</strong> Metin içeren sütunları kategorilere otomatik ayırır.</li>
+</ul>
+
+<h3>Google Meet</h3>
+<ul>
+  <li><strong>Otomatik toplantı notları:</strong> Görüşme sırasında Gemini arka planda dinler, sonunda aksiyon maddeleri içeren özet sunar.</li>
+  <li><strong>Transkript:</strong> Türkçe dahil birçok dilde konuşmayı metne döker.</li>
+  <li><strong>Studio ses iyileştirme:</strong> Gürültülü ortamlarda sesi temizler.</li>
+</ul>
+
+<h3>Google Slides</h3>
+<ul>
+  <li><strong>Sunum oluşturma:</strong> Konu ve hedef kitle girerek otomatik slayt iskeleti üretir.</li>
+  <li><strong>Görsel önerisi:</strong> İçeriğe uygun görsel stil ve düzen önerir.</li>
+</ul>
+
+<h2>Hangi Plan Gemini'ı İçeriyor?</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Plan</th>
+      <th style="padding:10px 14px;text-align:left;">Gemini Dahil mi?</th>
+      <th style="padding:10px 14px;text-align:left;">Not</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">Business Starter</td><td style="padding:9px 14px;">Hayır</td><td style="padding:9px 14px;">Temel araçlar, AI yok</td></tr>
+    <tr><td style="padding:9px 14px;">Business Standard</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">Evet</td><td style="padding:9px 14px;">Gemini 1.5 Pro dahil, Meet notları dahil</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">Business Plus</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">Evet</td><td style="padding:9px 14px;">Gelişmiş denetim + Gemini</td></tr>
+    <tr><td style="padding:9px 14px;">Enterprise</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">Evet</td><td style="padding:9px 14px;">Gemini Advanced + Data Loss Prevention entegrasyonu</td></tr>
+  </tbody>
+</table>
+
+<h2>Kurumsal Güvenlik ve Gizlilik</h2>
+<p>Google Workspace'te Gemini'a girilen veriler <strong>AI model eğitiminde kullanılmaz</strong>. İşletme verileri Google'ın kendi güvenlik politikaları kapsamında kalır ve Workspace'in mevcut DLP, eDiscovery ve audit log altyapısıyla uyumludur.</p>
+<p>Admin Console üzerinden yöneticiler, hangi kullanıcı gruplarının Gemini özelliklerine erişeceğini granüler düzeyde kontrol edebilir.</p>
+
+<h2>Gerçekçi Değerlendirme</h2>
+<p>Gemini'ın en güçlü olduğu alan <strong>metin tabanlı görevler</strong>: e-posta yazımı, belge özeti, toplantı notları. Karmaşık veri analizi veya özel iş süreçleri için hâlâ insan denetimi gerekiyor. Ama rutin tekrarlı yazım işlerinde saatte 30-45 dakika tasarruf sağlanabildiğini kullanıcı deneyimleri ortaya koyuyor.</p>
+<p>Google Workspace Business Standard veya üzeri plan kullanıyorsanız Gemini'ı etkinleştirmek için ek maliyet yok — Admin Console'dan açmanız yeterli.</p>
+    `,
+  },
+  {
+    slug: "synology-hybrid-share-kurumsal-bulut-depolama-entegrasyonu",
+    title: "Synology Hybrid Share: Şube Ofisler için Kesintisiz Bulut-NAS Entegrasyonu",
+    excerpt: "Synology Hybrid Share, yerel NAS'ınızı Synology C2 bulutu ile şeffaf biçimde birleştirir. Şube ofisler aynı klasör yapısına erişir, veriler merkezi olarak yönetilir. Kurulum, kullanım senaryoları ve dikkat edilmesi gerekenler.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "Hybrid Share", "NAS", "Bulut Depolama", "C2 Storage", "Şube Ofis", "DSM 7"],
+    publishedAt: "2026-09-13",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>Hybrid Share Nedir?</h2>
+<p>Synology Hybrid Share, DSM 7.0 ile birlikte gelen ve yerel NAS depolamanızı Synology C2 Storage bulutu ile birleştiren bir özellik. Geleneksel NAS'ta veriler fiziksel disklerde tutulur; Hybrid Share'de ise veriler C2'de depolanır, sık erişilen dosyalar yerel NAS'ta önbelleğe alınır.</p>
+<p>Kullanıcı açısından fark yok: aynı ağ klasörüne bağlanıyorlar. Arka planda hangi verinin nerede tutulduğunu DSM otomatik yönetiyor.</p>
+
+<h2>Nasıl Çalışır?</h2>
+<p>Hybrid Share üç katmanlı mimaride çalışır:</p>
+<ol>
+  <li><strong>C2 Storage (birincil depolama):</strong> Tüm veriler burada saklanır. Kapasite sınırı C2 planınıza bağlı.</li>
+  <li><strong>Yerel önbellek (NAS diski):</strong> Son erişilen dosyalar SSD veya HDD'de önbelleğe alınır. Boyutu siz belirlersiniz.</li>
+  <li><strong>DSM önbellek yöneticisi:</strong> Hangi dosyaların önbellekte tutulacağına kullanım sıklığına göre karar verir.</li>
+</ol>
+<p>İnternet bağlantısı kesildiğinde önbelleğe alınmış dosyalara erişim devam eder. Önbellekte olmayan dosyalara erişim bağlantı geri gelince sağlanır.</p>
+
+<h2>Kullanım Senaryoları</h2>
+<h3>Şube Ofis Merkezi Yönetim</h3>
+<p>Her şube ofise küçük bir Synology NAS koyun (DS423+ gibi), hepsini aynı Hybrid Share paylaşımına bağlayın. Tüm dosyalar C2'de merkezi olarak depolanır; şubeler yerel hız alır, BT tüm veriyi tek noktadan yönetir.</p>
+
+<h3>Felaketten Kurtarma (DR)</h3>
+<p>Yerel NAS tamamen arızalansa bile veriler C2'de sağlam kalır. Yeni bir NAS alıp Hybrid Share'i tanımladığınızda dosyalar önbelleğe akmaya başlar — sıfır veri kaybı.</p>
+
+<h3>Büyüyen Depolama Kapasitesi</h3>
+<p>Fiziksel NAS'a disk eklemek yerine C2 planınızı büyütün. Yerel önbellek sabit kalır, ancak erişebileceğiniz toplam veri miktarı sınırsız biçimde artabilir.</p>
+
+<h2>Gereksinimler</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Bileşen</th>
+      <th style="padding:10px 14px;text-align:left;">Gereksinim</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">DSM Versiyonu</td><td style="padding:9px 14px;">DSM 7.0 veya üzeri</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Synology Hesabı</td><td style="padding:9px 14px;">C2 Storage aboneliği gerekli</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Ağ Bağlantısı</td><td style="padding:9px 14px;">Stabil internet (yükleme hızı kritik)</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Desteklenen Modeller</td><td style="padding:9px 14px;">DS, RS ve FS serisi (Plus ve üzeri önerilir)</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">Depolama Havuzu</td><td style="padding:9px 14px;">Btrfs dosya sistemi zorunlu</td></tr>
+  </tbody>
+</table>
+
+<h2>Kurulum Adımları</h2>
+<ol>
+  <li>DSM → <strong>Denetim Masası → Harici Erişim → Synology Hesabı</strong> ile C2'ye bağlanın.</li>
+  <li><strong>Paket Merkezi'nden Hybrid Share</strong> paketini yükleyin.</li>
+  <li>Hybrid Share → Oluştur → C2 Storage bölgesini seçin (Frankfurt önerilir, Türkiye'ye en yakın).</li>
+  <li>Yerel önbellek boyutunu belirleyin: sık erişilen veri miktarının en az 2 katı önerilir.</li>
+  <li>Paylaşım klasörünü SMB/AFP ile yayınlayın — kullanıcılar normal ağ sürücüsü olarak bağlanır.</li>
+</ol>
+
+<h2>Dikkat Edilmesi Gerekenler</h2>
+<ul>
+  <li><strong>İlk senkronizasyon süresi:</strong> Mevcut verileri C2'ye yüklemek ağ hızınıza göre saatler/günler alabilir. İlk kurulumu mesai dışında başlatın.</li>
+  <li><strong>İnternet bant genişliği:</strong> Önbellekte olmayan büyük dosyalara erişim, internet hızınızla sınırlı. Düşük bant genişliğinde performans sorunu yaşanabilir.</li>
+  <li><strong>C2 maliyeti:</strong> C2 Storage GB başı ücretlidir. Hybrid Share için ayrı bir plan gerekebilir; depolama büyüklüğüne göre maliyet analizi yapın.</li>
+  <li><strong>Btrfs zorunluluğu:</strong> Ext4 üzerinde çalışan mevcut paylaşımlar Hybrid Share ile uyumlu değil. Geçiş planlıyorsanız bölüm dönüşümü gerekebilir.</li>
+</ul>
+
+<h2>C2 Storage Fiyatlandırma</h2>
+<p>Synology C2 Storage, Hybrid Share için Frankfurt veri merkezinde €0,005/GB/ay seviyesinde başlıyor (2026 itibarıyla). 10 TB depolama için aylık yaklaşık €50. Tek bir fiziksel NAS bölümünü C2'ye yansıtmak için ek Hybrid Share lisans ücreti yoktur.</p>
+<p>Kurumsal ortamınız için Hybrid Share planlaması, C2 kapasitesi boyutlandırması veya çok şubeli kurulum konusunda destek almak için <a href="/iletisim">bizimle iletişime geçin</a>.</p>
+    `,
+  },
+  {
     slug: "fortiguard-baglanamama-sorunu-digicert-crl-anycast-cozumu",
     title: "FortiGuard 10 Eylül'den Bu Yana Bağlanamıyor mu? DigiCert CRL Değişikliği ve Kalıcı Çözüm",
     excerpt: "9 Eylül 2026'da DigiCert'in CRL dosyasına IDP eklenmesi bazı FortiGate'lerde 'different CRL scope' hatasına yol açtı. AV/IPS paketleri indirilemiyor, FortiGuard bağlantısı kesildi. Anycast kapat/aç yöntemiyle 2 dakikada çözüm.",
