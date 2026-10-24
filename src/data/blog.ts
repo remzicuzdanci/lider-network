@@ -112,6 +112,171 @@ export const posts: BlogPost[] = [
     `,
   },
   {
+    slug: "php2shell-cve-2026-109618-109619-kritik-rce",
+    title: "PHP2Shell: CVE-2026-109618 ve CVE-2026-109619 — Yama Çıkmadan 4 Gün Önce İstismar Başladı",
+    excerpt: "PHP'nin çekirdeğindeki iki kritik RCE açığı (CVSS 9.8) yama yayımlanmadan önce aktif istismara uğradı. WordPress, Laravel, Symfony dahil PHP kullanan neredeyse tüm web uygulamaları risk altında. 21 Ekim'de acil yamalar yayımlandı.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["PHP", "CVE-2026-109618", "CVE-2026-109619", "RCE", "php2shell", "WordPress", "Web Güvenliği", "Zero-Day"],
+    publishedAt: "2026-10-21",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>PHP'nin Kalbinde İki Kritik Delik</h2>
+<p>21 Ekim 2026'da PHP ekibi, çekirdek PHP yorumlayıcısında iki kritik uzaktan kod çalıştırma açığı için acil yamalar yayımladı. "php2shell" olarak anılan bu çift açık — <strong>CVE-2026-109618</strong> ve <strong>CVE-2026-109619</strong> — CVSS v4.0 ile 9.2 (bazı kaynaklarda 9.8) olarak puanlandı.</p>
+<p>Asıl endişe verici olan, Amazon Threat Intelligence'ın açıklarla ilgili ilk istismar girişimini <strong>17 Ekim'de</strong>, yani yamadan 4 gün önce tespit etmiş olması. Detaylar kamuoyuna sızdı, saldırganlar hazır bekliyordu.</p>
+
+<h2>Neden Bu Kadar Kritik?</h2>
+<p>PHP, web sunucularının yaklaşık %77'sinde çalışıyor. Bu açıklar soyut tehditler değil — doğrudan WordPress, Laravel, Symfony, Drupal, Joomla ve bunların üzerine kurulu her uygulama etkileniyor. Başarılı bir istismar web shell yerleştirmeye, veri çalmaya veya sunucu tam kontrolünü ele geçirmeye olanak tanıyor.</p>
+<ul>
+  <li><strong>CVE-2026-109618:</strong> PHP'nin dahili stream wrapper işlemesinde heap buffer overflow → RCE</li>
+  <li><strong>CVE-2026-109619:</strong> CGI/FastCGI modunda özel hazırlanmış HTTP isteğiyle argüman enjeksiyonu → RCE</li>
+</ul>
+
+<h2>Etkilenen Ortamlar</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ortam</th>
+      <th style="padding:10px 14px;text-align:left;">Risk</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">Apache + mod_php</td><td style="padding:9px 14px;">CVE-2026-109618 risk altında</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Nginx + PHP-FPM</td><td style="padding:9px 14px;">CVE-2026-109618 risk altında</td></tr>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">Apache CGI modu</td><td style="padding:9px 14px;">Her iki açık da geçerli — en yüksek risk</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Windows IIS + PHP</td><td style="padding:9px 14px;">CVE-2026-109619 risk altında</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">PHP CLI (komut satırı)</td><td style="padding:9px 14px;">Düşük risk (yerel erişim gerekir)</td></tr>
+  </tbody>
+</table>
+
+<h2>Sabit Sürümler</h2>
+<ul>
+  <li><strong>PHP 8.3.14</strong> ve üzeri</li>
+  <li><strong>PHP 8.2.26</strong> ve üzeri</li>
+  <li><strong>PHP 8.1.31</strong> ve üzeri (8.1 artık resmi destek dışı — mümkünse 8.2/8.3'e geçin)</li>
+  <li>PHP 8.0 ve altı: resmi yama yok, geçiş zorunlu</li>
+</ul>
+
+<h2>Hemen Yapılması Gerekenler</h2>
+<ol>
+  <li><code>php -v</code> ile mevcut sürümü kontrol edin.</li>
+  <li>Paket yöneticiniz üzerinden (apt/yum/brew) PHP'yi güncelleyin.</li>
+  <li>Apache CGI modunu kullanıyorsanız ve hemen yükseltme mümkün değilse, CGI'yi devre dışı bırakıp PHP-FPM'e geçin — bu CVE-2026-109619 riskini ortadan kaldırır.</li>
+  <li>WAF kullananlar: Cloudflare, AWS WAF ve Palo Alto'nun FortiGuard Labs yeni imzaları yayımladı; güncel olduğunu doğrulayın.</li>
+  <li>WordPress siteleri: PHP güncellemesinin yanı sıra sunucu katmanında değişiklik gerekiyor — sadece WordPress güncellemesi yetmez.</li>
+</ol>
+    `,
+  },
+  {
+    slug: "gitlab-cve-2026-110264-cvss10-kimlik-dogrulamasiz-rce",
+    title: "GitLab CVE-2026-110264: CVSS 10.0 Tam Puan — 12 Yıllık Sürümlerde Kimlik Doğrulamasız RCE",
+    excerpt: "GitLab'ın self-managed kurulumlarını etkileyen CVE-2026-110264, CVSS 10.0 tam puan aldı. Kimlik doğrulaması olmadan uzaktan kod çalıştırma (RCE) mümkün. 12 yıllık sürümler etkileniyor; 21 Ekim'de yama yayımlandı. Henüz aktif istismar yok.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["GitLab", "CVE-2026-110264", "RCE", "CVSS 10.0", "Kaynak Kodu Güvenliği", "DevSecOps"],
+    publishedAt: "2026-10-21",
+    readTime: 4,
+    featured: false,
+    content: `
+<h2>CVSS 10.0: Mümkün Olan En Yüksek Puan</h2>
+<p>GitLab, 21 Ekim 2026'da self-managed kurulumları etkileyen kritik bir güvenlik açığını kapatan yamayı yayımladı. <strong>CVE-2026-110264</strong>, CVSS v3.1 üzerinden tam 10.0 puan aldı — bir açığın alabileceği en yüksek skor. Kimlik doğrulaması gerektirmeden uzaktan kod çalıştırmaya (RCE) olanak tanıyor ve 12 yıllık GitLab sürümleri bu açıktan etkileniyor.</p>
+<p>İyi haber: GitLab, yayım tarihi itibarıyla aktif istismar kanıtı olmadığını ve açığın CISA KEV kataloğunda yer almadığını açıkladı. Ancak CVSS 10.0 açıklar saldırganların öncelikli hedefi haline hızla geliyor.</p>
+
+<h2>Neden Önemli?</h2>
+<p>GitLab self-managed, kurumların kendi altyapısında barındırdığı kaynak kodu deposu. Başarılı bir istismar:</p>
+<ul>
+  <li>Tüm kaynak koduna yetkisiz erişim</li>
+  <li>CI/CD pipeline'larına kötü amaçlı kod enjeksiyonu</li>
+  <li>Deployment anahtarları ve secret'ların çalınması</li>
+  <li>Tedarik zinciri saldırısı için sıçrama taşı</li>
+</ul>
+<p>Kaynak kodu deposunu ele geçirmek, tek bir sunucuyu ele geçirmekten çok daha büyük hasar potansiyeli taşıyor.</p>
+
+<h2>Etkilenen Sürümler</h2>
+<p>GitLab CE ve EE'nin 12 yılı kapsayan geniş bir sürüm aralığı etkileniyor. GitLab resmi tavsiyesinde etkilenen tüm dallar için sabit sürümleri listeledi; <strong>en kısa yoldan son kararlı sürüme yükseltme</strong> önerisi yapılıyor.</p>
+<p>GitLab.com (bulut sürümü) kullanıcıları: platform tarafından otomatik yamalandı, işlem gerektirmiyor.</p>
+
+<h2>Yükseltme Adımları (Linux paket kurulumu)</h2>
+<pre style="background:#0f172a;color:#e2e8f0;padding:16px;border-radius:6px;overflow-x:auto;font-size:13px;"><code># Paket listesini güncelle
+sudo apt-get update
+
+# GitLab'ı son sürüme yükselt
+sudo apt-get install --only-upgrade gitlab-ee   # EE için
+# veya
+sudo apt-get install --only-upgrade gitlab-ce   # CE için
+
+# Yükseltme sonrası sürümü doğrula
+sudo gitlab-rake gitlab:env:info | grep "GitLab"</code></pre>
+
+<h2>Hemen Yapılması Gerekenler</h2>
+<ol>
+  <li>Self-managed GitLab sürümünüzü kontrol edin: Admin Area → Help.</li>
+  <li>Etkilenen aralıktaysa bu hafta içinde yamayı uygulayın.</li>
+  <li>Yükseltme mümkün değilse GitLab'ın yönetim arayüzünü (port 80/443) internetten izole edin; VPN arkasına alın.</li>
+  <li>CI/CD pipeline log'larını anormal deployment veya script eklemelerine karşı inceleyin.</li>
+  <li>GitLab.com kullanıyorsanız: yapmanız gereken bir şey yok.</li>
+</ol>
+    `,
+  },
+  {
+    slug: "microsoft-ekim-2026-patch-tuesday-1411-cve-3-zero-day",
+    title: "Microsoft Ekim 2026 Patch Tuesday: 1.411 CVE — Yeni Rekor, 3 Zero-Day, Aktif İstismar Edilen Windows Shell Açığı",
+    excerpt: "Microsoft, Ekim 2026 Patch Tuesday ile 1.411 CVE'yi kapattı — bir önceki ayın 974 CVE rekorunu geçti. Üç zero-day arasında aktif istismar edilen CVE-2026-96951 (Windows Shell MOTW bypass, CVSS 8.8) ve kritik Outlook RCE (CVSS 9.8) öne çıkıyor.",
+    category: "microsoft",
+    categoryColor: "#00a4ef",
+    tags: ["Microsoft", "Patch Tuesday", "Zero-Day", "Windows", "CVE-2026-96951", "Outlook", "MOTW"],
+    publishedAt: "2026-10-14",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>Aylık Rekor Kırıldı: 1.411 CVE</h2>
+<p>Microsoft'un Ekim 2026 Patch Tuesday'i, tarihte en kalabalık aylık yama günü olma özelliği taşıyor. Eylül 2026'daki 974 CVE rekorunu geçen bu yayım <strong>1.411 güvenlik açığını</strong> tek seferde kapattı. Kamuoyuna açıklanan veya aktif istismar edilen <strong>3 zero-day</strong> bu pakette öne çıkıyor.</p>
+
+<h2>Aktif İstismar Edilen Zero-Day</h2>
+<h3>CVE-2026-96951 — Windows Shell MOTW Bypass (CVSS 8.8)</h3>
+<p>Bu ayın en kritik açığı. Windows Shell'in <strong>Mark of the Web (MOTW)</strong> korumasını atlatmasına olanak tanıyan bir komut enjeksiyonu zafiyeti. MOTW, internetten indirilen dosyaları işaretleyip kullanıcıyı uyaran Windows güvenlik mekanizması; bu atlatılınca saldırgan zararlı dosyayı sanki yerel kaynaktan geliyormuş gibi çalıştırabiliyor.</p>
+<ul>
+  <li><strong>İstismar yöntemi:</strong> Özel hazırlanmış bir dosya indirme + çalıştırma senaryosu</li>
+  <li><strong>Yaygın kullanım:</strong> Phishing e-postalardaki ekler bu vektörle dağıtılıyor</li>
+  <li><strong>Öncelik:</strong> Acil — aktif istismar kanıtlandı, CISA KEV'e eklendi</li>
+</ul>
+
+<h2>Diğer Önemli Zero-Day'ler</h2>
+<h3>CVE-2026-70242 — Microsoft Outlook RCE (CVSS 9.8)</h3>
+<p>Outlook'un okuma bölmesindeki (Reading Pane) kritik uzaktan kod çalıştırma açığı. E-postayı <strong>açmak bile gerekmeyebilir</strong> — okuma bölmesinde görüntülenmesi yeterli olabilir. Henüz aktif istismar raporlanmadı ancak CVSS 9.8 ve Outlook'un kurumsal yaygınlığı bu açığı ikinci öncelik yapıyor.</p>
+
+<h3>CVE-2026-108398 — .NET Framework WDAC Bypass</h3>
+<p>Windows Defender Application Control (WDAC) politikalarını atlatan bu açık, yetkisiz uygulamaların çalıştırılmasına imkân veriyor. Microsoft "istismar ihtimali düşük" olarak değerlendiriyor; kamuya açıklandı ancak aktif istismar yok.</p>
+
+<h2>Ürün Bazında Öne Çıkan Yamalar</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ürün / Bileşen</th>
+      <th style="padding:10px 14px;text-align:left;">CVE</th>
+      <th style="padding:10px 14px;text-align:left;">Önem</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">Windows Shell</td><td style="padding:9px 14px;">CVE-2026-96951</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">Aktif İstismar — CVSS 8.8</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Microsoft Outlook</td><td style="padding:9px 14px;">CVE-2026-70242</td><td style="padding:9px 14px;color:#dc2626;">Kritik — CVSS 9.8</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">.NET Framework</td><td style="padding:9px 14px;">CVE-2026-108398</td><td style="padding:9px 14px;">Yüksek — WDAC bypass</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">Windows, Office, Azure</td><td style="padding:9px 14px;">1.408 diğer CVE</td><td style="padding:9px 14px;">Çeşitli önem seviyeleri</td></tr>
+  </tbody>
+</table>
+
+<h2>Öncelik Sırası</h2>
+<ol>
+  <li><strong>CVE-2026-96951 (Windows Shell):</strong> Bu hafta içinde Windows Update çalıştırın — aktif istismar devam ediyor.</li>
+  <li><strong>CVE-2026-70242 (Outlook):</strong> CVSS 9.8, Outlook kullanan tüm kurumlarda öncelikli.</li>
+  <li><strong>Microsoft 365 uygulamaları:</strong> Otomatik güncelleme açıksa zaten yapılmış olabilir; doğrulayın.</li>
+  <li>.NET Framework güncellemesi: Uygulama uyumluluk testinden geçirdikten sonra uygulayın.</li>
+</ol>
+<p>Yama yönetimi veya güvenlik açığı tarama desteği için <a href="/iletisim">bizimle iletişime geçin</a>.</p>
+    `,
+  },
+  {
     slug: "fortinet-ekim-2026-fortisandbox-fortisiem-kritik-yamalar",
     title: "Fortinet 13 Ekim 2026: FortiSandbox Auth Bypass (CVSS 9.6) ve FortiSIEM RCE (CVSS 9.4) — 8 Ürün Etkilendi",
     excerpt: "Fortinet, 13 Ekim 2026'da 8 ürün ailesini kapsayan 10 güvenlik tavsiyesi yayımladı. Öne çıkan açıklar: FortiSandbox kimlik doğrulama bypass (CVSS 9.6) ve FortiSIEM uzaktan kod çalıştırma (CVSS 9.4). Aktif istismar henüz raporlanmadı.",
