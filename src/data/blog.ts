@@ -56,6 +56,174 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "fortios-fortimanager-hardening-release-ekim-2026",
+    title: "Fortinet Ekim 2026 Hardening Release: FortiOS 7.6.8 / 7.4.13 — CVE Detayları 10 Kasım'da Açıklanacak",
+    excerpt: "Fortinet, FortiOS, FortiManager ve FortiAnalyzer için 'öncelikli değişiklik' olarak nitelendirilen kritik güvenlik sürümlerini yayımladı. CVE numaraları henüz açıklanmadı; 10 Kasım'da tam advisory gelecek. Şimdiden yükseltme öneriliyor.",
+    category: "fortigate-ngfw",
+    categoryColor: "#EE3124",
+    tags: ["Fortinet", "FortiOS", "FortiManager", "FortiAnalyzer", "Güvenlik Güncellemesi", "Hardening", "Yama"],
+    publishedAt: "2026-10-22",
+    readTime: 4,
+    featured: false,
+    content: `
+<h2>Fortinet'ten Alışılmadık Bir Uyarı</h2>
+<p>Fortinet, 22 Ekim 2026'da FortiOS, FortiManager ve FortiAnalyzer için yeni sürümler yayımladı. Normal bakım güncellemelerinden farklı olarak şirket bu yayını açıkça <strong>"rutin bakım değil, öncelikli değişiklik"</strong> olarak nitelendirdi. CVE numaraları ve teknik detaylar kasıtlı olarak 10 Kasım 2026'ya ertelendi — ancak yükseltme şimdiden yapılması gerekiyor.</p>
+<p>Bu yaklaşım Fortinet'in daha önce de kullandığı bir model: kritik açıkları önce kapatıp detayları sonra açıklamak, saldırganlara yama öncesi pencere vermemek için. Geçmişte bu yöntemin uygulandığı yamalar çoğunlukla CVSS 9.0+ puanlı açıkları kapatmıştı.</p>
+
+<h2>Güncellenen Sürümler</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ürün</th>
+      <th style="padding:10px 14px;text-align:left;">Yeni Sürüm</th>
+      <th style="padding:10px 14px;text-align:left;">Önceki Stable</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiOS</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">8.0.2</td><td style="padding:9px 14px;">8.0.1</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiOS</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">7.6.8</td><td style="padding:9px 14px;">7.6.7</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiOS</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">7.4.13</td><td style="padding:9px 14px;">7.4.12</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiOS</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">7.2.14</td><td style="padding:9px 14px;">7.2.13</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiManager</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">Yeni sürüm</td><td style="padding:9px 14px;">—</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiAnalyzer</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">Yeni sürüm</td><td style="padding:9px 14px;">—</td></tr>
+  </tbody>
+</table>
+
+<h2>Ne Yapmalısınız?</h2>
+<p>Fortinet, tüm müşterileri <strong>10 Kasım'ı beklemeden şimdiden yükseltme yapmaya</strong> çağırıyor. Gerekçe açık: CVE detayları açıklandığında saldırganlar hızla PoC geliştiriyor, yükseltme yapmayanlar dar bir pencerede risk altına giriyor.</p>
+
+<h3>Yükseltme Öncesi Kontrol Listesi</h3>
+<ul>
+  <li>Yükseltme öncesi mevcut konfigürasyonun tam yedeğini alın (<code>execute backup config sftp</code>).</li>
+  <li>FortiOS 7.4 → 7.6 geçişi planlıyorsanız 7.4.13'ü atlayıp doğrudan 7.6.8'e geçiş mümkün; ancak öncesinde release notlarını ve desteklenen model listesini kontrol edin.</li>
+  <li>FortiManager veya FortiAnalyzer kullanıyorsanız bunları FortiOS'tan <strong>önce</strong> güncelleyin.</li>
+  <li>HA (High Availability) ortamında pasif üniteden başlayın; tam failover testi yapın.</li>
+</ul>
+
+<h2>10 Kasım'a Kadar Ek Önlemler</h2>
+<p>Yükseltme şu an mümkün değilse (bakım penceresi, onay süreci vb.) aşağıdaki azaltıcı önlemler alınmalı:</p>
+<ul>
+  <li>FortiGate yönetim arayüzü (HTTPS/SSH) erişimini güvenilir IP adresleriyle kısıtlayın.</li>
+  <li>FortiManager'da "Trusted Hosts" politikasını aktif edin.</li>
+  <li>Internet erişimi olan hiçbir yönetim arayüzünü açık bırakmayın.</li>
+  <li>FortiGuard'ın IPS imza güncellemelerinin çalıştığından emin olun.</li>
+</ul>
+<p>10 Kasım'da tam advisory yayımlandıktan sonra bu sayfayı CVE detaylarıyla güncelleyeceğiz.</p>
+    `,
+  },
+  {
+    slug: "fortinet-ekim-2026-fortisandbox-fortisiem-kritik-yamalar",
+    title: "Fortinet 13 Ekim 2026: FortiSandbox Auth Bypass (CVSS 9.6) ve FortiSIEM RCE (CVSS 9.4) — 8 Ürün Etkilendi",
+    excerpt: "Fortinet, 13 Ekim 2026'da 8 ürün ailesini kapsayan 10 güvenlik tavsiyesi yayımladı. Öne çıkan açıklar: FortiSandbox kimlik doğrulama bypass (CVSS 9.6) ve FortiSIEM uzaktan kod çalıştırma (CVSS 9.4). Aktif istismar henüz raporlanmadı.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Fortinet", "FortiSandbox", "FortiSIEM", "CVE", "Güvenlik Yamasi", "Authentication Bypass", "RCE"],
+    publishedAt: "2026-10-13",
+    readTime: 5,
+    featured: false,
+    content: `
+<h2>Fortinet'in Ekim Ortası Yama Paketi</h2>
+<p>Fortinet, 13 Ekim 2026'da tek seferde <strong>10 güvenlik tavsiyesi</strong> yayımlayarak 8 farklı ürün ailesindeki 13 açığı kapattı. Toplu yama günleri artık Fortinet'in standart pratiği haline geliyor; bu yöntem saldırı penceresini daraltsa da savunma ekiplerinin aynı anda birden fazla ürünü güncellemesi gerekiyor.</p>
+<p>Henüz aktif istismar raporlanmamış olsa da CVSS puanları yükseltmeyi acil yapıyor.</p>
+
+<h2>Kritik Açıklar</h2>
+
+<h3>FortiSandbox — Kimlik Doğrulama Bypass (CVSS 9.6)</h3>
+<p>FortiSandbox'ın API katmanında keşfedilen bu açık, saldırganın kimlik doğrulaması yapmadan yönetimsel işlemler gerçekleştirmesine olanak tanıyor. Kötüye kullanıldığında sandbox analiz sonuçlarını manipüle etmek veya sistemde kalıcı erişim sağlamak mümkün olabilir.</p>
+<ul>
+  <li><strong>Etkilenen sürümler:</strong> FortiSandbox PaaS dahil tüm on-premise versiyonlar</li>
+  <li><strong>Öneri:</strong> Güncellenmiş sürüme yükseltme, mümkün değilse API erişimini güvenilir IP ile kısıtlama</li>
+</ul>
+
+<h3>FortiSIEM — Uzaktan Kod Çalıştırma (CVSS 9.4)</h3>
+<p>FortiSIEM'de bulunan bu güvenlik açığı, özel hazırlanmış bir istek aracılığıyla uzaktan kod çalıştırmaya (RCE) imkân veriyor. FortiSIEM birçok kurumda merkezi log ve olay yönetimi altyapısını oluşturduğundan bu açığın başarılı bir şekilde istismar edilmesi ciddi sonuçlar doğurabilir.</p>
+<ul>
+  <li><strong>Risk:</strong> SOC altyapısının ele geçirilmesi → tüm güvenlik log'larının manipülasyonu</li>
+  <li><strong>Öneri:</strong> FortiSIEM internet erişiminden izole olduğunu doğrulayın, yönetim arayüzünü kısıtlayın</li>
+</ul>
+
+<h2>Etkilenen Ürünler</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ürün</th>
+      <th style="padding:10px 14px;text-align:left;">En Yüksek CVSS</th>
+      <th style="padding:10px 14px;text-align:left;">Aktif İstismar</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">FortiSandbox / PaaS</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">9.6</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiSIEM</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">9.4</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiAnalyzer</td><td style="padding:9px 14px;">7.x</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiAnalyzer Cloud</td><td style="padding:9px 14px;">7.x</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiManager</td><td style="padding:9px 14px;">7.x</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiManager Cloud</td><td style="padding:9px 14px;">7.x</td><td style="padding:9px 14px;">Hayır</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">FortiMail</td><td style="padding:9px 14px;">Orta</td><td style="padding:9px 14px;">Ayrı advisory (CVE-2026-104286)</td></tr>
+  </tbody>
+</table>
+
+<h2>Öncelik Sıralaması</h2>
+<p>Bu yamayı uygulama sırası önerileri:</p>
+<ol>
+  <li><strong>FortiSIEM</strong> — SOC merkezi olduğu için öncelikli; internet erişimi varsa acil</li>
+  <li><strong>FortiSandbox</strong> — API kimlik doğrulama bypass kritik</li>
+  <li><strong>FortiManager / FortiAnalyzer</strong> — Yönetim altyapısı olarak ikincil öncelik</li>
+</ol>
+<p>Güncel advisory listesi için <a href="https://www.fortiguard.com/psirt" target="_blank" rel="noopener noreferrer">FortiGuard PSIRT sayfasını</a> takip edin.</p>
+    `,
+  },
+  {
+    slug: "fortimail-cve-2026-104286-kritik-zero-day-cisa-kev",
+    title: "FortiMail CVE-2026-104286 (CVSS 9.8): Kimlik Doğrulamasız Dosya Yazma — CISA KEV'e Eklendi",
+    excerpt: "Fortinet, FortiMail'de kritik bir sıfırıncı gün açığı açıkladı: CVE-2026-104286, CVSS 9.8 ile ağ üzerinden kimlik doğrulaması olmadan keyfi dosya yazılabilmesine izin veriyor. CISA anında KEV kataloğuna ekledi, son tarih 4 Ekim. Yama yoksa IBE devre dışı bırakın.",
+    category: "siber-guvenlik",
+    categoryColor: "#EE3124",
+    tags: ["Fortinet", "FortiMail", "CVE-2026-104286", "Zero-Day", "CISA KEV", "Kritik Açık", "Patch"],
+    publishedAt: "2026-10-01",
+    readTime: 4,
+    featured: false,
+    content: `
+<h2>FortiMail'de Kritik Sıfırıncı Gün</h2>
+<p>Fortinet, 1 Ekim 2026'da FortiMail için acil güvenlik tavsiyesi yayımladı. <strong>CVE-2026-104286</strong>, CVSS v3 puanı 9.8 ile "kritik" seviyesinde sınıflandırılan bir path traversal açığı. Kimlik doğrulaması olmaksızın uzaktan istismar edilerek saldırganın sistem üzerinde keyfi dosya yazmasına olanak tanıyor.</p>
+<p>Açığı Fortinet'in kendi Product Security ekibinden Gwendal Guégniaud keşfetti. Yayımlandığı gün CISA, açığı <strong>Known Exploited Vulnerabilities (KEV)</strong> kataloğuna ekledi ve federal kurumlar için düzeltme son tarihi olarak <strong>4 Ekim 2026</strong>'yı belirledi.</p>
+
+<h2>Etkilenen Sürümler</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Versiyon Dalı</th>
+      <th style="padding:10px 14px;text-align:left;">Etkilenen Aralık</th>
+      <th style="padding:10px 14px;text-align:left;">Sabit Sürüm</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">FortiMail 8.0</td><td style="padding:9px 14px;">8.0.0 – 8.0.1</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">8.0.2</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiMail 7.6</td><td style="padding:9px 14px;">7.6.0 – 7.6.6</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">7.6.7</td></tr>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">FortiMail 7.4</td><td style="padding:9px 14px;">7.4.0 – 7.4.8</td><td style="padding:9px 14px;color:#15803d;font-weight:600;">7.4.9</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">FortiMail 7.2</td><td style="padding:9px 14px;">Tüm 7.2.x</td><td style="padding:9px 14px;color:#dc2626;">7.4 veya üzerine yükseltin</td></tr>
+  </tbody>
+</table>
+
+<h2>Teknik Detay</h2>
+<p>Açık, FortiMail'in dosya işleme mekanizmasındaki <strong>path traversal</strong> (dizin geçişi) hatasından kaynaklanıyor. Saldırgan özel hazırlanmış bir HTTP isteğiyle kimlik doğrulamasını atlayıp sistemde istediği konuma dosya yazabiliyor. Bu yetki; web shell yerleştirme, servis hesabı ele geçirme ve sistemde kalıcı arka kapı oluşturma için doğrudan kötüye kullanılabilir.</p>
+<p>FortiMail genellikle DMZ'de çalıştırıldığından internet erişimine doğrudan açık olma ihtimali yüksek. Bu da aktif istismarın yaygınlaşma riskini artırıyor.</p>
+
+<h2>Acil Azaltıcı Önlemler (Yama Mümkün Değilse)</h2>
+<p>Fortinet'in önerdiği geçici çözümler:</p>
+<ul>
+  <li><strong>IBE (Identity-Based Encryption) devre dışı bırakma:</strong> FortiMail GUI → System → Advanced → IBE bölümünden devre dışı bırakın. Bu özelliği kullanmıyorsanız zaten kapalı olması gerekir.</li>
+  <li><strong>Yönetim arayüzü erişimini kısıtlama:</strong> FortiMail yönetim portu için kaynak IP kısıtlaması uygulayın; yalnızca güvenilen yönetim ağı erişsin.</li>
+  <li><strong>İnternete açık yönetim arayüzü varsa hemen kapatın.</strong></li>
+</ul>
+
+<h2>Neden Bu Kadar Acil?</h2>
+<p>CISA'nın KEV kataloğu, "aktif istismar kanıtı olan" açıklar için kullanılıyor. 1 Ekim'de yayımlanmasıyla eş zamanlı KEV'e girmesi, açığın yayımlanmadan önce de kullanılmış olduğuna işaret ediyor. Bu pattern — yayım günü KEV — geçmişte FortiOS, Citrix ve Exchange açıklarında da görüldü ve her seferinde hızlı vahşi istismara dönüştü.</p>
+
+<h2>Önerimiz</h2>
+<p>FortiMail kullanan tüm kurumların 8.0.2 / 7.6.7 / 7.4.9 sürümlerine <strong>bu hafta içinde</strong> yükseltmesini öneriyoruz. 7.2.x dalında kalıyorsanız artık güvenlik yamalarından yararlanamıyorsunuz; 7.4.9'a geçiş planı yapılmalı. Yükseltme veya güvenlik açığı değerlendirmesi için <a href="/iletisim">destek alabilirsiniz</a>.</p>
+    `,
+  },
+  {
     slug: "oracle-eylul-2026-cspu-800-acik-104-kritik",
     title: "Oracle Eylül 2026 Güvenlik Güncellemesi: 800+ Açık, 104 Kritik — E-Business Suite ve Fusion Middleware Öncelikli",
     excerpt: "Oracle'ın Eylül 2026 Critical Security Patch Update'i 17 ürün ailesinde 800'den fazla açığı kapatıyor. 104 kritik önem dereceli açıktan 240'ı kimlik doğrulaması olmaksızın uzaktan istismar edilebilir. E-Business Suite ve Fusion Middleware öne çıkıyor.",
