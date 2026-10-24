@@ -41,6 +41,7 @@ export interface Ticket {
   company_contact_email: string | null;
   satisfaction_rating: number | null;
   user_id: string | null;
+  attachment_urls: string[] | null;
 }
 
 export interface Company {

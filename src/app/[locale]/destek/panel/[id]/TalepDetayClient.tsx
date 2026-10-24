@@ -171,6 +171,27 @@ export default function TalepDetayClient({
               isAdmin={false}
             />
 
+            {/* Attachments */}
+            {ticket.attachment_urls && ticket.attachment_urls.length > 0 && (
+              <div style={{ marginLeft: "44px", display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                {ticket.attachment_urls.map((url, i) => {
+                  const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+                  return isImage ? (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "block", borderRadius: "8px", overflow: "hidden", border: "1.5px solid #e5e7ef" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={url} alt={`Ek ${i + 1}`} style={{ width: 160, height: 120, objectFit: "cover", display: "block" }} />
+                    </a>
+                  ) : (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "8px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", textDecoration: "none", color: "#374151", fontSize: "13px", background: "#f8f9fb" }}>
+                      📎 Ek {i + 1}
+                    </a>
+                  );
+                })}
+              </div>
+            )}
+
             {/* Replies */}
             {messages.map((msg) => (
               <MessageBubble

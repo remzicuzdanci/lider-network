@@ -187,6 +187,28 @@ export default function TicketDetailClient({ ticketId }: { ticketId: string }) {
               <p style={{ margin: 0, fontSize: "14px", color: "#0f172a", lineHeight: 1.65, whiteSpace: "pre-wrap" }}>
                 {ticket.description}
               </p>
+              {ticket.attachment_urls && ticket.attachment_urls.length > 0 && (
+                <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #f0f2f8" }}>
+                  <p style={{ margin: "0 0 8px", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px" }}>Ekler ({ticket.attachment_urls.length})</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+                    {ticket.attachment_urls.map((url, i) => {
+                      const isImage = /\.(jpe?g|png|gif|webp)$/i.test(url);
+                      return isImage ? (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                          style={{ display: "block", borderRadius: "8px", overflow: "hidden", border: "1.5px solid #e5e7ef", flexShrink: 0 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={url} alt={`Ek ${i + 1}`} style={{ width: 140, height: 100, objectFit: "cover", display: "block" }} />
+                        </a>
+                      ) : (
+                        <a key={i} href={url} target="_blank" rel="noopener noreferrer"
+                          style={{ display: "inline-flex", alignItems: "center", gap: "6px", padding: "7px 12px", border: "1.5px solid #e5e7ef", borderRadius: "8px", textDecoration: "none", color: "#374151", fontSize: "12px", background: "#f8f9fb" }}>
+                          📎 Ek dosya {i + 1}
+                        </a>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

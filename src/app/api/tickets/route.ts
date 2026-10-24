@@ -23,6 +23,7 @@ const createSchema = z.object({
     .enum(["technical", "billing", "general", "feature_request"])
     .default("technical"),
   priority: z.enum(["low", "medium", "high", "urgent"]).default("medium"),
+  attachment_urls: z.array(z.string().url()).max(5).optional(),
   // Honeypot — bot'lar bu alanı doldurur, gerçek kullanıcılar doldurmaz
   _hp: z.string().max(0).optional(),
 });

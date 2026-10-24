@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -8,8 +8,19 @@ import { useLocale } from "next-intl";
 import { useDestekPaths } from "@/lib/destek-path";
 import {
   ArrowLeft, Send, CheckCircle, Plus,
-  LayoutDashboard, AlertCircle,
+  LayoutDashboard, AlertCircle, Paperclip, X, ImageIcon, FileText, Upload,
 } from "lucide-react";
+
+interface AttachmentFile {
+  id: string;
+  name: string;
+  size: number;
+  type: string;
+  preview?: string;   // data URL for images
+  status: "uploading" | "done" | "error";
+  url?: string;       // public URL after upload
+  errorMsg?: string;
+}
 
 type Category = "technical" | "billing" | "general" | "feature_request";
 type Priority  = "low" | "medium" | "high" | "urgent";
@@ -39,18 +50,64 @@ export default function YeniTalepClient({
   const [priority, setPriority] = useState<Priority>("medium");
   const [subject, setSubject]   = useState("");
   const [desc, setDesc]         = useState("");
-  const [loading, setLoading]   = useState(false);
-  const [error, setError]       = useState("");
-  const [done, setDone]         = useState<number | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState("");
+  const [done, setDone]           = useState<number | null>(null);
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [dragOver, setDragOver]   = useState(false);
+  const fileInputRef              = useRef<HTMLInputElement>(null);
 
   const initials = fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  const uploadFile = useCallback(async (file: File) => {
+    const id = Math.random().toString(36).slice(2);
+    const isImage = file.type.startsWith("image/");
+    let preview: string | undefined;
+    if (isImage) {
+      preview = await new Promise<string>((res) => {
+        const reader = new FileReader();
+        reader.onload = (e) => res(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+    }
+    setAttachments((prev) => [...prev, { id, name: file.name, size: file.size, type: file.type, preview, status: "uploading" }]);
+
+    const fd = new FormData();
+    fd.append("file", file);
+    try {
+      const res = await fetch("/api/tickets/attachments", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok) {
+        setAttachments((prev) => prev.map((a) => a.id === id ? { ...a, status: "done", url: data.url } : a));
+      } else {
+        setAttachments((prev) => prev.map((a) => a.id === id ? { ...a, status: "error", errorMsg: data.error || "Yükleme hatası" } : a));
+      }
+    } catch {
+      setAttachments((prev) => prev.map((a) => a.id === id ? { ...a, status: "error", errorMsg: "Bağlantı hatası" } : a));
+    }
+  }, []);
+
+  const handleFiles = useCallback((files: FileList | File[]) => {
+    const arr = Array.from(files);
+    const remaining = 5 - attachments.filter((a) => a.status !== "error").length;
+    arr.slice(0, remaining).forEach(uploadFile);
+  }, [attachments, uploadFile]);
+
+  function removeAttachment(id: string) {
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (subject.length < 5) { setError("Konu en az 5 karakter olmalıdır."); return; }
     if (desc.length < 20)   { setError("Açıklama en az 20 karakter olmalıdır."); return; }
+    if (attachments.some((a) => a.status === "uploading")) {
+      setError("Dosyalar henüz yükleniyor, lütfen bekleyin."); return;
+    }
 
     setLoading(true); setError("");
+
+    const attachment_urls = attachments.filter((a) => a.status === "done" && a.url).map((a) => a.url!);
 
     const res = await fetch("/api/tickets", {
       method: "POST",
@@ -60,6 +117,7 @@ export default function YeniTalepClient({
         company: company || "", phone: phone || "",
         subject, description: desc, category, priority,
         user_id: userId,
+        ...(attachment_urls.length > 0 && { attachment_urls }),
       }),
     });
 
@@ -208,6 +266,88 @@ export default function YeniTalepClient({
                 <p style={{ textAlign: "right", fontSize: "12px", color: "#9ca3af", marginTop: "4px" }}>
                   {desc.length} / 5000
                 </p>
+              </div>
+
+              {/* Attachments */}
+              <div style={{ marginBottom: "24px" }}>
+                <label style={{ display: "block", fontSize: "13px", fontWeight: 600, color: "#374151", marginBottom: "7px" }}>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}><Paperclip size={13} /> Ekran Görüntüsü / Ek Dosya</span>
+                  <span style={{ fontWeight: 400, color: "#9ca3af", marginLeft: "6px" }}>İsteğe bağlı — maks. 5 dosya, 10 MB</span>
+                </label>
+
+                {/* Drop zone */}
+                {attachments.filter((a) => a.status !== "error").length < 5 && (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                    onDragLeave={() => setDragOver(false)}
+                    onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
+                    style={{
+                      border: `2px dashed ${dragOver ? "#0052ff" : "#d1d5db"}`,
+                      borderRadius: "12px",
+                      padding: "22px 16px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      background: dragOver ? "#eff6ff" : "#fafafa",
+                      transition: "all .15s",
+                      marginBottom: attachments.length > 0 ? "12px" : 0,
+                    }}
+                  >
+                    <Upload size={22} color={dragOver ? "#0052ff" : "#9ca3af"} style={{ margin: "0 auto 8px" }} />
+                    <p style={{ margin: 0, fontSize: "13px", color: dragOver ? "#0052ff" : "#6b7280", fontWeight: 500 }}>
+                      Sürükleyip bırakın veya <span style={{ color: "#0052ff", fontWeight: 700 }}>dosya seçin</span>
+                    </p>
+                    <p style={{ margin: "4px 0 0", fontSize: "11px", color: "#9ca3af" }}>JPG, PNG, GIF, WebP, PDF</p>
+                  </div>
+                )}
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/gif,image/webp,application/pdf"
+                  style={{ display: "none" }}
+                  onChange={(e) => { if (e.target.files) handleFiles(e.target.files); e.target.value = ""; }}
+                />
+
+                {/* File list */}
+                {attachments.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                    {attachments.map((att) => (
+                      <div key={att.id} style={{
+                        display: "flex", alignItems: "center", gap: "10px",
+                        padding: "8px 10px",
+                        border: `1.5px solid ${att.status === "error" ? "#fca5a5" : att.status === "done" ? "#bbf7d0" : "#e5e7ef"}`,
+                        borderRadius: "8px",
+                        background: att.status === "error" ? "#fef2f2" : att.status === "done" ? "#f0fdf4" : "#f8f9fb",
+                      }}>
+                        {/* Thumbnail / icon */}
+                        {att.preview ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={att.preview} alt={att.name} style={{ width: 40, height: 40, objectFit: "cover", borderRadius: "6px", flexShrink: 0 }} />
+                        ) : (
+                          <div style={{ width: 40, height: 40, borderRadius: "6px", background: "#e5e7ef", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            {att.type === "application/pdf" ? <FileText size={18} color="#6b7280" /> : <ImageIcon size={18} color="#6b7280" />}
+                          </div>
+                        )}
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ margin: 0, fontSize: "13px", fontWeight: 600, color: "#1a1d2e", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{att.name}</p>
+                          <p style={{ margin: 0, fontSize: "11px", color: att.status === "error" ? "#dc2626" : att.status === "uploading" ? "#d97706" : "#6b7280" }}>
+                            {att.status === "uploading" && "Yükleniyor..."}
+                            {att.status === "done" && `${(att.size / 1024).toFixed(0)} KB — Yüklendi`}
+                            {att.status === "error" && (att.errorMsg || "Hata")}
+                          </p>
+                        </div>
+
+                        <button type="button" onClick={() => removeAttachment(att.id)}
+                          style={{ padding: "4px", background: "none", border: "none", cursor: "pointer", color: "#9ca3af", borderRadius: "4px", flexShrink: 0 }}>
+                          <X size={15} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div style={{ display: "flex", gap: "12px" }}>
