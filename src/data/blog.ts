@@ -56,6 +56,208 @@ export const categoryColorMap: Record<string, string> = {
 
 export const posts: BlogPost[] = [
   {
+    slug: "google-workspace-ekim-2026-yenilikleri-studio-vids-gemini-skills",
+    title: "Google Workspace Ekim 2026 Yenilikleri: Workspace Studio Otomasyonu, AI Seslendirme ve Gemini Skills",
+    excerpt: "Ekim 2026'da Google Workspace'e gelen başlıca yenilikler: Workspace Studio'ya iç içe koşullar ve arama adımları, Google Vids'e yapay zeka seslendirme, Gemini Skills ile özelleştirilebilir AI asistanlar ve yöneticiler için kolaylaştırılmış şifreleme kurulumu.",
+    category: "google-workspace",
+    categoryColor: "#4285F4",
+    tags: ["Google Workspace", "Workspace Studio", "Google Vids", "Gemini", "Gemini Skills", "Otomasyon", "Yenilikler"],
+    publishedAt: "2026-10-09",
+    readTime: 4,
+    featured: false,
+    content: `
+<h2>Ekim 2026: Otomasyon ve AI Ön Planda</h2>
+<p>Google, Ekim 2026 Workspace güncellemelerini iki odak noktası etrafında topladı: <strong>Workspace Studio ile iş akışı otomasyonu</strong> ve <strong>Gemini tabanlı AI özellikleri</strong>. Özellikle Workspace Studio'nun yeni mantık adımları, tekrarlayan süreçleri kod yazmadan otomatikleştirmeyi kolaylaştırıyor.</p>
+
+<h2>Workspace Studio: Akıllı Otomasyon Adımları</h2>
+<p>Workspace Studio, Google'ın Workspace uygulamaları arasında iş akışı otomasyonu kurmaya yarayan düşük-kod aracı. Ekim güncellemesiyle üç önemli yetenek eklendi:</p>
+<ul>
+  <li><strong>İç içe koşullar (Nested conditionals):</strong> Otomasyon akışlarına "eğer A ise → eğer B ise → yap C" şeklinde çok katmanlı mantık kuralları eklenebiliyor. Önceden yalnızca tek seviyeli if/else destekleniyordu.</li>
+  <li><strong>Arama adımı (Search step):</strong> Drive, Gmail veya Calendar'da arama yapıp sonuçları sonraki adımlara besleme artık doğrudan Studio içinde mümkün.</li>
+  <li><strong>Gmail takip atlama:</strong> Otomatik e-posta görevlerinde, zaten yanıtlanmış konulara tekrar takip gönderilmesini engelleyen akıllı atlama seçeneği geldi.</li>
+  <li><strong>Meet çıktısı + Takvim:</strong> Toplantı sonrası oluşturulan özetler artık Takvim etkinliğinin metadata'sını da içeriyor; hangi toplantıya ait olduğu bağlamıyla kaydediliyor.</li>
+</ul>
+
+<h2>Google Vids: Yapay Zeka ile Profesyonel Seslendirme</h2>
+<p>Google Vids, sunum ve eğitim videoları oluşturmaya yönelik Workspace uygulaması. Ekim güncellemesiyle:</p>
+<ul>
+  <li><strong>Yeni metin-konuşma motoru:</strong> AI seslendirme kalitesi belirgin biçimde iyileştirildi. Türkçe dahil çok dilde daha doğal tonlama.</li>
+  <li><strong>Özelleştirilebilir altyazılar:</strong> Yazı tipi, renk, boyut ve konum artık tam kontrol altında.</li>
+</ul>
+
+<h2>Gemini Skills: Gems'in Yerini Alıyor</h2>
+<p>Google, Gemini uygulamasında "Gems" olarak bilinen özelleştirilmiş AI asistanların yerini <strong>Gemini Skills</strong>'e bırakacağını duyurdu. Skills, belirli görevler için Gemini'a özel talimatlar tanımlamayı sağlıyor — örneğin "müşteri e-postalarını her zaman bu formatta özetle" gibi kalıcı davranış kuralları. Workspace Business Standard ve üzeri planlara kademeli olarak dağıtılıyor.</p>
+
+<h2>Yöneticiler için: İstemci Taraflı Şifreleme Kurulumu Kolaylaştı</h2>
+<p>Admin Console'da istemci taraflı şifreleme (Client-Side Encryption / CSE) yapılandırması yeniden tasarlandı. Anahtar yönetim servisini bağlama ve şifreleme politikalarını etkinleştirme adımları tek bir kurulum akışında birleştirildi. Özellikle finans ve kamu sektöründe veri egemenliği gereksinimi olan kurumlar için pratik bir iyileştirme.</p>
+
+<h2>Özetle: Bu Ay Ne Yapmalısınız?</h2>
+<ul>
+  <li>Workspace Studio kullanan ekipler için: iç içe koşul ve arama adımı yeteneklerini test edin, mevcut akışlarınızı sadeleştirme fırsatı var.</li>
+  <li>Gemini kullananlar: Skills'in hesabınıza geldiğini düzenli olarak Admin Console'dan kontrol edin.</li>
+  <li>CSE kurulumu yapmak isteyen yöneticiler: yeniden tasarlanan akış eskisine göre çok daha kısa.</li>
+</ul>
+    `,
+  },
+  {
+    slug: "dahua-hikvision-ip-kamera-guvenligi-cameraswarm-cve-2026",
+    title: "IP Kamera Güvenliği: 14.500 Dahua Ele Geçirildi, Hikvision'da 3 Yeni CVE — Kurumsal Kameraları Korumanın Yolu",
+    excerpt: "CameraSwarm operasyonu 35 günde 14.500+ Dahua kamerayı ele geçirdi; eski CVE'ler ve varsayılan şifreler ana vektör. Hikvision'da ise kimlik doğrulamasız heap buffer overflow dahil 3 yeni açık kapatıldı. Kurumsal kamera güvenliği için pratik kontrol listesi.",
+    category: "guvenlik-kamera",
+    categoryColor: "#374151",
+    tags: ["Dahua", "Hikvision", "IP Kamera", "CameraSwarm", "CVE", "IoT Güvenliği", "Firmware"],
+    publishedAt: "2026-10-06",
+    readTime: 6,
+    featured: false,
+    content: `
+<h2>CameraSwarm: 35 Günde 14.500 Kamera</h2>
+<p>Hunt.io'nun Ağustos 2026'da yayımladığı araştırma, IP kamera güvenliğindeki çarpıcı tabloyu gözler önüne serdi. <strong>CameraSwarm</strong> adı verilen saldırı kampanyası, 17 Haziran – 22 Temmuz 2026 tarihleri arasında yalnızca 35 günde <strong>14.500'den fazla Dahua kamerayı</strong> ele geçirdi.</p>
+<p>Saldırganların kullandığı yöntemler teknik açıdan yeni değil — ancak etkisi çok büyük:</p>
+<ul>
+  <li><strong>CVE-2021-33044 ve CVE-2021-33045:</strong> Beş yıllık Dahua güvenlik açıkları. Firmware güncellemesi yapılmamış binlerce kamera hâlâ savunmasız.</li>
+  <li><strong>Varsayılan ve zayıf şifreler:</strong> Fabrika çıkışı şifreler değiştirilmemiş cihazlara kaba kuvvet saldırısı.</li>
+  <li><strong>Seri numarasından şifre türetme:</strong> Bazı Dahua modellerinde çevrimdışı kurtarma kodları cihaz seri numarasından hesaplanabiliyor; bu yöntemle de erişim sağlandı.</li>
+</ul>
+<p>Ele geçirilen kameralara <strong>"p2pwn"</strong> adlı arka kapı hesabı eklendi. Cihazlar botnet'e dahil edilerek DDoS saldırısı ve gözetleme amacıyla kullanıldı.</p>
+
+<h2>Etkilenip Etkilenmediğinizi Nasıl Anlarsınız?</h2>
+<ul>
+  <li>Dahua kamera yönetim arayüzüne girin → Sistem → Hesap Yönetimi → Bilinmeyen "p2pwn" hesabı var mı kontrol edin.</li>
+  <li>Son oturum açma loglarını inceleyin; yabancı IP adresleri var mı bakın.</li>
+  <li>Kamera firmware sürümünü üretici sitesiyle karşılaştırın.</li>
+</ul>
+
+<h2>Hikvision: Temmuz 2026'da 3 Yeni CVE</h2>
+<p>PT Security araştırmacıları Temmuz 2026'da Hikvision DS-2CD serisi kameralarda dört güvenlik açığı keşfetti. Üçü yüksek önem taşıyor:</p>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">CVE</th>
+      <th style="padding:10px 14px;text-align:left;">Tür</th>
+      <th style="padding:10px 14px;text-align:left;">CVSS</th>
+      <th style="padding:10px 14px;text-align:left;">Auth Gerekli?</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#fef2f2;"><td style="padding:9px 14px;font-weight:600;">CVE-2026-61390</td><td style="padding:9px 14px;">Heap buffer overflow → çökme</td><td style="padding:9px 14px;color:#dc2626;font-weight:600;">7.7</td><td style="padding:9px 14px;">Hayır — uzaktan</td></tr>
+    <tr><td style="padding:9px 14px;font-weight:600;">CVE-2026-61391</td><td style="padding:9px 14px;">Stack buffer overflow</td><td style="padding:9px 14px;">7.2</td><td style="padding:9px 14px;">Evet</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;font-weight:600;">CVE-2026-57600</td><td style="padding:9px 14px;">Giriş doğrulama hatası → bilgi sızıntısı</td><td style="padding:9px 14px;">7.5</td><td style="padding:9px 14px;">Hayır — uzaktan</td></tr>
+  </tbody>
+</table>
+<p>CVE-2026-61390 özellikle dikkat istiyor: kimlik doğrulaması gerektirmeden paket göndererek kamerayı çökertmek ve hizmet dışı bırakmak mümkün. Güvenlik kamerası tam da en çok ihtiyaç duyulan anda çalışmıyor olabilir.</p>
+
+<h2>Kurumsal Kamera Güvenliği: Yapılması Gerekenler</h2>
+<h3>Temel Önlemler</h3>
+<ol>
+  <li><strong>Firmware güncelleyin:</strong> Hem Dahua hem Hikvision için üretici sitesinden mevcut en güncel firmware'i indirin ve uygulayın. CameraSwarm'ın istismar ettiği CVE'lerin ikisi de 2021 tarihli — yani 5 yıldır yamasız kalan cihazlar saldırıya uğradı.</li>
+  <li><strong>Fabrika şifrelerini değiştirin:</strong> Kurulum sırasında admin şifresini en az 12 karakter, harf-sayı-sembol karışımı olacak şekilde belirleyin.</li>
+  <li><strong>Varsayılan portları kapatın:</strong> HTTP 80 ve RTSP 554 portlarını internete açık bırakmayın. Uzak erişim için VPN kullanın.</li>
+  <li><strong>Ayrı VLAN'a alın:</strong> Kameraları kurumsal ağdan izole bir VLAN'da tutun. Ele geçirilmiş bir kamera iç ağa sıçrama taşı olmamalı.</li>
+  <li><strong>P2P özelliğini devre dışı bırakın:</strong> Kullanmıyorsanız Dahua ve Hikvision cihazlarındaki P2P uzak erişim özelliğini kapatın — CameraSwarm'ın birincil giriş noktası buydu.</li>
+  <li><strong>Otomatik güncellemeyi etkinleştirin:</strong> Destekleyen modellerde otomatik firmware güncellemesini açık tutun.</li>
+</ol>
+
+<h3>İleri Seviye</h3>
+<ul>
+  <li>Güvenlik duvarında kamera IP'lerinden giden trafiği kısıtlayın: yalnızca NVR/VMS sunucusuna izin verin.</li>
+  <li>FortiGate kullanıyorsanız Application Control politikasında kamera yönetim protokollerini segmente edin.</li>
+  <li>Periyodik port taraması yapın: kamera VLAN'ında beklenmedik açık port var mı denetleyin.</li>
+</ul>
+    `,
+  },
+  {
+    slug: "synology-nas-guvenlik-sertlestirme-rehberi-2026",
+    title: "Synology NAS Güvenlik Sertleştirme Rehberi 2026: DSM'de 15 Kritik Ayar",
+    excerpt: "Kurumsal Synology NAS'ınız ne kadar güvenli? Varsayılan ayarlarla çalışan DSM, fidye yazılımı ve uzaktan erişim saldırılarına karşı savunmasız kalabiliyor. DSM 7.x için 15 kritik güvenlik ayarı, snapshot koruması ve ağ segmentasyon önerileri.",
+    category: "synology",
+    categoryColor: "#B5121B",
+    tags: ["Synology", "DSM", "NAS Güvenliği", "Ransomware", "Güvenlik Sertleştirme", "Snapshot", "2FA"],
+    publishedAt: "2026-10-03",
+    readTime: 7,
+    featured: false,
+    content: `
+<h2>Neden Bu Rehberi Okumalisınız?</h2>
+<p>Synology NAS cihazları, kurumsal yedekleme ve dosya paylaşım altyapısının merkezinde. Tam da bu yüzden fidye yazılımı gruplarının öncelikli hedefi. 2026'da gözlemlenen saldırıların büyük çoğunluğu teknik açık değil — <strong>varsayılan bırakılan ayarlar</strong> üzerinden gerçekleşti.</p>
+<p>Bu rehber, DSM 7.x çalıştıran kurumsal Synology NAS'lar için uygulanabilecek 15 kritik güvenlik ayarını adım adım açıklıyor.</p>
+
+<h2>1. Yönetim Erişimi</h2>
+<h3>Varsayılan admin hesabını devre dışı bırakın</h3>
+<p>DSM → Denetim Masası → Kullanıcı ve Grup → "admin" hesabını düzenle → Hesabı devre dışı bırak. Bunun yerine farklı isimde yeni bir yönetici hesabı oluşturun.</p>
+
+<h3>Varsayılan portları değiştirin</h3>
+<p>HTTP 5000 ve HTTPS 5001 portları saldırganların taradığı ilk portlar. DSM → Denetim Masası → Ağ → DSM Ayarları → portları 50000+ gibi alışılmadık bir değere taşıyın.</p>
+
+<h3>İki faktörlü doğrulamayı zorunlu kılın</h3>
+<p>DSM → Denetim Masası → Kullanıcı ve Grup → Gelişmiş → Tüm kullanıcılar için 2FA'yı zorunlu hale getirin. TOTP uygulaması (Google Authenticator, Synology Secure SignIn) destekleniyor.</p>
+
+<h2>2. Ağ Güvenliği</h2>
+<h3>Otomatik engellemeyi etkinleştirin</h3>
+<p>DSM → Denetim Masası → Güvenlik → Hesap → Otomatik Engelleme: 5 başarısız girişimden sonra IP'yi otomatik engelle. Engelleme süresini en az 30 dakika olarak ayarlayın.</p>
+
+<h3>İnternet erişimini sınırlandırın</h3>
+<p>NAS'ın yönetim arayüzü internete doğrudan açık olmamalı. Uzak erişim için Synology VPN Server veya Tailscale kullanın. QuickConnect sadece Synology Drive ve Photos gibi servisler için kullanın — yönetim için değil.</p>
+
+<h3>Güvenlik Duvarı kurallarını etkinleştirin</h3>
+<p>DSM → Denetim Masası → Güvenlik → Güvenlik Duvarı: Yalnızca gerekli servislere ve güvenilen IP aralıklarına izin verin. Yönetim portuna erişimi yönetim subnet'iyle kısıtlayın.</p>
+
+<h2>3. Ransomware Koruması</h2>
+<h3>Snapshot Replication'ı etkinleştirin</h3>
+<p>Snapshot Replication paketi, paylaşımlı klasörlerin düzenli anlık görüntüsünü alır. Fidye yazılımı verilerinizi şifrelese bile snapshot'a geri dönebilirsiniz. Önerilen ayar:</p>
+<ul>
+  <li>Saatlik snapshot, 24 saat tutma</li>
+  <li>Günlük snapshot, 30 gün tutma</li>
+  <li>Snapshot'ları kilitle (immutable): DSM 7.2+ destekliyor</li>
+</ul>
+
+<h3>Paylaşım izinlerini en az yetki ilkesiyle ayarlayın</h3>
+<p>Kullanıcılar yalnızca ihtiyaç duydukları klasörlere erişebilmeli. SMB üzerinden tüm NAS'a yazma yetkisi olan hesaplar fidye yazılımının en hızlı yayıldığı senaryo.</p>
+
+<h3>Ransomware koruma modülünü etkinleştirin</h3>
+<p>DSM 7.2+ → Storage Manager → Depolama Havuzu → Ransomware Koruması: Toplu dosya değişikliklerini (birden fazla dosyanın kısa sürede şifrelenmesi) tespit edip uyarı gönderir.</p>
+
+<h2>4. Güncellemeler ve İzleme</h2>
+<h3>DSM otomatik güncellemesini açın</h3>
+<p>DSM → Denetim Masası → Güncelleme ve Geri Yükleme → Güncelleme Ayarları: Önemli güvenlik güncellemelerini otomatik yükle seçeneğini etkinleştirin.</p>
+
+<h3>Güvenlik Danışmanı'nı düzenli çalıştırın</h3>
+<p>Security Advisor paketi, DSM ayarlarınızı tarayıp güvenlik açıklarını raporlar. Ayda bir çalıştırmanızı öneririz.</p>
+
+<h3>SIEM entegrasyonu</h3>
+<p>DSM → Log Center → Log Gönderme: Syslog formatında log'ları merkezi SIEM'e yönlendirin. FortiAnalyzer veya herhangi bir Syslog sunucusuyla uyumlu.</p>
+
+<h2>5. Fiziksel ve Bulut Yedekleme</h2>
+<h3>3-2-1-1 kuralı</h3>
+<p>Kurumsal veri için minimum standart: 3 kopya, 2 farklı medya, 1 farklı lokasyonda, 1 kopya değiştirilemez (immutable). Synology Hyper Backup ile yerel + Synology C2 kombinasyonu bu standardı karşılıyor.</p>
+
+<h3>Yedek erişim izinlerini ayırın</h3>
+<p>Yedekleme hesabı yalnızca yedekleme hedef klasörüne yazma yetkisine sahip olmalı. Üretim verilerine erişimi olmamalı. Böylece fidye yazılımı üretim verisini şifrelese bile yedek hesabı üzerinden yedeği bozamaz.</p>
+
+<h2>Kontrol Listesi Özeti</h2>
+<table style="width:100%;border-collapse:collapse;font-size:13px;margin:14px 0;">
+  <thead>
+    <tr style="background:#0f172a;color:#fff;">
+      <th style="padding:10px 14px;text-align:left;">Ayar</th>
+      <th style="padding:10px 14px;text-align:left;">Durum</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">Varsayılan admin devre dışı</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr><td style="padding:9px 14px;">Varsayılan port değiştirildi</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">2FA zorunlu</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr><td style="padding:9px 14px;">Otomatik engelleme aktif</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">Yönetim internete açık değil</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr><td style="padding:9px 14px;">Güvenlik Duvarı kuralları aktif</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">Snapshot Replication + kilit</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr><td style="padding:9px 14px;">En az yetki izin modeli</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">DSM otomatik güncelleme</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr><td style="padding:9px 14px;">Security Advisor aylık çalışıyor</td><td style="padding:9px 14px;">☐</td></tr>
+    <tr style="background:#f8fafc;"><td style="padding:9px 14px;">3-2-1-1 yedekleme kurulu</td><td style="padding:9px 14px;">☐</td></tr>
+  </tbody>
+</table>
+<p>Synology güvenlik denetimi veya DSM sertleştirme için destek almak isterseniz <a href="/iletisim">bizimle iletişime geçin</a>.</p>
+    `,
+  },
+  {
     slug: "fortios-fortimanager-hardening-release-ekim-2026",
     title: "Fortinet Ekim 2026 Hardening Release: FortiOS 7.6.8 / 7.4.13 — CVE Detayları 10 Kasım'da Açıklanacak",
     excerpt: "Fortinet, FortiOS, FortiManager ve FortiAnalyzer için 'öncelikli değişiklik' olarak nitelendirilen kritik güvenlik sürümlerini yayımladı. CVE numaraları henüz açıklanmadı; 10 Kasım'da tam advisory gelecek. Şimdiden yükseltme öneriliyor.",
