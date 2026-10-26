@@ -1,0 +1,5 @@
+bin/
+obj/
+publish_test/
+*.user
+.vs/
