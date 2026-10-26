@@ -136,6 +136,12 @@ public sealed class ApiClient : IDisposable
     {
         if (_http != null) return _http;
 
+        if (_config.DisableCrlCheck)
+            _log.LogWarning(
+                "DisableCrlCheck=true: online CRL fetch is skipped for this collector. " +
+                "Certificate chain validation still enforces trust. " +
+                "Only use this in private networks without a CRL distribution point.");
+
         var handler = new HttpClientHandler
         {
             // SSL validation is ALWAYS on.  Custom CA is additive, never a bypass.
