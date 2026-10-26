@@ -1,0 +1,5 @@
+requests>=2.31.0
+urllib3>=2.0.0
+# Windows-only (yükleyin ama import hatalarını görmezden gelin)
+wmi>=1.5.1 ; sys_platform == "win32"
+pywin32>=306 ; sys_platform == "win32"

@@ -1,0 +1,31 @@
+[platform]
+# Platform URL — HTTPS önerilir
+url = http://192.168.20.61
+verify_ssl = false
+
+[collector]
+# Platform'dan aldığınız tek seferlik enroll token:
+enroll_token = BURAYA_ENROLL_TOKEN_YAPISTIRINIZ
+# Enrollment sonrası otomatik doldurulur (silmeyin):
+api_key =
+# Platform'da oluşturduğunuz site ID (isteğe bağlı):
+site_id =
+# Collector görünen adı (boş bırakılırsa bilgisayar adı kullanılır):
+name =
+
+[schedule]
+checkin_interval = 60
+inventory_interval = 900
+event_poll_interval = 30
+
+[modules]
+wmi_inventory = true
+ad_discovery = false
+snmp_scan = false
+hyperv = false
+event_monitor = true
+
+[logging]
+level = INFO
+# Log dosyası (boş = ekrana yaz)
+file = C:\ProgramData\LiderCollector\collector.log
