@@ -96,15 +96,22 @@ class PlatformApiClient:
 
     # ── Inventory ──────────────────────────────────────────────
 
-    def send_inventory(self, batch_id: str, collected_at: str, inventory: dict) -> dict:
-        """Envanter değişikliklerini gönder."""
+    def send_inventory(self, hostname: str, collected_at: str, modules: dict) -> dict:
+        """
+        Modül bazlı envanter gönder.
+
+        Args:
+            hostname:     Cihazın FQDN veya kısa adı (zorunlu).
+            collected_at: ISO-8601 zaman damgası.
+            modules:      Discovery Engine modülleri — system, network, disks, software vb.
+        """
         resp = self._session.post(
             f"{self._base}/inventory",
             headers=self._auth_headers(),
             json={
-                "batch_id": batch_id,
+                "hostname":     hostname,
                 "collected_at": collected_at,
-                "inventory": inventory,
+                "modules":      modules,
             },
             verify=self._verify,
             timeout=60,

@@ -101,38 +101,56 @@ class CollectorLoop:
             return False
 
     def run_once_inventory(self) -> None:
-        """Tek bir envanter döngüsü çalıştır."""
+        """Tek bir envanter döngüsü çalıştır — Discovery Engine formatında."""
         from modules import wmi_inventory
+        import socket as _socket
 
-        inventory: dict = {}
+        # ── Collect modules
+        sys_data = wmi_inventory.collect_system_module()
+        net_data = wmi_inventory.collect_network_module()
+        dsk_data = wmi_inventory.collect_disks_module()
 
-        # Devices
-        devices, d_changed = _diff_upsert("devices", wmi_inventory.collect_devices())
-        if d_changed:
-            inventory["devices"] = {"upserted": devices}
-            logger.info("Cihaz verisi değişti, %d kayıt gönderiliyor.", len(devices))
+        hostname     = sys_data.get("fqdn") or _socket.getfqdn()
+        collected_at = datetime.now(timezone.utc).isoformat()
 
-        # Software (daha nadir değiştiği için sadece 1/4 envanter çevriminde gönder)
+        modules: dict = {
+            "system":  sys_data,
+            "network": net_data,
+            "disks":   dsk_data,
+        }
+
+        # ── System hash for change detection
+        sys_hash = _hash([sys_data, net_data])
+        sys_changed = _last_inventory_hash.get("system") != sys_hash
+        if sys_changed:
+            _last_inventory_hash["system"] = sys_hash
+            logger.info("Sistem verisi değişti, gönderiliyor.")
+        else:
+            logger.debug("Sistem verisi değişmedi, atlandı.")
+
+        # ── Software (every 4th cycle)
         sw_cycle = getattr(self, "_sw_cycle", 0) + 1
         self._sw_cycle = sw_cycle
         if sw_cycle % 4 == 1:
-            sw, sw_changed = _diff_upsert("software", wmi_inventory.collect_software())
+            sw_data = wmi_inventory.collect_software_module()
+            sw_count = len(sw_data.get("items", []))
+            sw_hash = _hash(sw_data.get("items", []))
+            sw_changed = _last_inventory_hash.get("software") != sw_hash
             if sw_changed:
-                inventory["software"] = {"upserted": sw}
-                logger.info("Yazılım listesi değişti, %d kayıt gönderiliyor.", len(sw))
+                _last_inventory_hash["software"] = sw_hash
+                modules["software"] = sw_data
+                logger.info("Yazılım listesi değişti, %d kayıt gönderiliyor.", sw_count)
+            else:
+                logger.debug("Yazılım listesi değişmedi, atlandı.")
 
-        if not inventory:
+        if not sys_changed and "software" not in modules:
             logger.debug("Envanter değişikliği yok, gönderim atlandı.")
             return
 
-        batch_id = str(uuid.uuid4())
-        collected_at = datetime.now(timezone.utc).isoformat()
         try:
-            result = self.api.send_inventory(batch_id, collected_at, inventory)
-            logger.info(
-                "Envanter gönderildi. İşlenen: %d kayıt.",
-                result.get("processed", 0)
-            )
+            result = self.api.send_inventory(hostname, collected_at, modules)
+            run_id = result.get("run_id")
+            logger.info("Envanter gönderildi. run_id=%s", run_id)
         except ApiError as e:
             logger.error("Envanter gönderilemedi: %s", e)
 
