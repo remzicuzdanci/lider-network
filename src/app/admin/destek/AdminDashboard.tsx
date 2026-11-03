@@ -223,6 +223,18 @@ export default function AdminDashboard() {
   const [pwError, setPwError]           = useState("");
   const [pwSuccess, setPwSuccess]       = useState("");
 
+  // User password change modal (admin sets web user password)
+  const [custPwModal, setCustPwModal]   = useState<{ id: string; name: string } | null>(null);
+  const [custPwValue, setCustPwValue]   = useState("");
+  const [custPwSaving, setCustPwSaving] = useState(false);
+  const [custPwError, setCustPwError]   = useState("");
+
+  // Staff password change modal (admin sets staff password)
+  const [staffPwModal, setStaffPwModal]   = useState<{ id: string; name: string } | null>(null);
+  const [staffPwValue, setStaffPwValue]   = useState("");
+  const [staffPwSaving, setStaffPwSaving] = useState(false);
+  const [staffPwError, setStaffPwError]   = useState("");
+
   // SLA toast
   const [slaToast, setSlaToast]         = useState("");
   const [slaChecking, setSlaChecking]   = useState(false);
@@ -380,6 +392,40 @@ export default function AdminDashboard() {
   async function handleCustomerAction(id: string, action: "approve" | "reject") {
     const r = await fetch("/api/admin/customers", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action }) });
     if (r.ok) fetchCustomers();
+  }
+
+  async function handleUserPasswordChange() {
+    if (!custPwModal) return;
+    if (custPwValue.length < 8) { setCustPwError("Şifre en az 8 karakter olmalıdır."); return; }
+    setCustPwSaving(true);
+    setCustPwError("");
+    const r = await fetch("/api/admin/customers", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: custPwModal.id, action: "change-password", password: custPwValue }) });
+    setCustPwSaving(false);
+    if (r.ok) {
+      setCustPwModal(null);
+      setCustPwValue("");
+      showToast("Şifre başarıyla değiştirildi.", "success");
+    } else {
+      const j = await r.json().catch(() => ({}));
+      setCustPwError(j.error || "Şifre değiştirilemedi.");
+    }
+  }
+
+  async function handleStaffPasswordChange() {
+    if (!staffPwModal) return;
+    if (staffPwValue.length < 8) { setStaffPwError("Şifre en az 8 karakter olmalıdır."); return; }
+    setStaffPwSaving(true);
+    setStaffPwError("");
+    const r = await fetch("/api/admin/staff", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: staffPwModal.id, password: staffPwValue }) });
+    setStaffPwSaving(false);
+    if (r.ok) {
+      setStaffPwModal(null);
+      setStaffPwValue("");
+      showToast(`${staffPwModal.name} şifresi güncellendi.`, "success");
+    } else {
+      const j = await r.json().catch(() => ({}));
+      setStaffPwError(j.error || "Şifre güncellenemedi.");
+    }
   }
 
   // ── Company CRUD ───────────────────────────────────────────────────────────
@@ -1594,14 +1640,17 @@ export default function AdminDashboard() {
                         </td>
                         <td style={{ padding: "14px 16px", fontSize: "12px", color: "#9ca3af" }}>{new Date(c.created_at).toLocaleDateString("tr-TR")}</td>
                         <td style={{ padding: "14px 16px" }}>
-                          {!c.approved ? (
-                            <div style={{ display: "flex", gap: "6px" }}>
-                              <button onClick={() => handleCustomerAction(c.id,"approve")} style={{ padding: "5px 12px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "7px", color: "#15803d", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Onayla</button>
-                              <button onClick={() => { if(confirm(`${c.full_name} reddet?`)) handleCustomerAction(c.id,"reject"); }} style={{ padding: "5px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "7px", color: "#dc2626", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Reddet</button>
-                            </div>
-                          ) : (
-                            <button onClick={() => { if(confirm(`${c.full_name} hesabını sil?`)) handleCustomerAction(c.id,"reject"); }} style={{ padding: "5px 12px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "7px", color: "#6b7280", fontSize: "12px", cursor: "pointer" }}>Kaldır</button>
-                          )}
+                          <div style={{ display: "flex", gap: "6px", flexWrap: "wrap" }}>
+                            {!c.approved ? (
+                              <>
+                                <button onClick={() => handleCustomerAction(c.id,"approve")} style={{ padding: "5px 12px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "7px", color: "#15803d", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Onayla</button>
+                                <button onClick={() => { if(confirm(`${c.full_name} reddet?`)) handleCustomerAction(c.id,"reject"); }} style={{ padding: "5px 12px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "7px", color: "#dc2626", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>Reddet</button>
+                              </>
+                            ) : (
+                              <button onClick={() => { if(confirm(`${c.full_name} hesabını sil?`)) handleCustomerAction(c.id,"reject"); }} style={{ padding: "5px 12px", background: "#fff", border: "1px solid #e5e7ef", borderRadius: "7px", color: "#6b7280", fontSize: "12px", cursor: "pointer" }}>Kaldır</button>
+                            )}
+                            <button onClick={() => { setCustPwModal({ id: c.id, name: c.full_name }); setCustPwValue(""); setCustPwError(""); }} style={{ padding: "5px 12px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "7px", color: "#0052ff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>🔑 Şifre</button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1729,7 +1778,7 @@ export default function AdminDashboard() {
                           <p style={{ margin: 0, fontSize: "11px", color: "#9ca3af" }}>{s.email}</p>
                         </div>
                       </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "12px" }}>
                         <span style={{ padding: "4px 12px", borderRadius: "20px", fontSize: "11px", fontWeight: 700, background: s.role==="super_admin" ? "#eff6ff" : "#f5f3ff", color: s.role==="super_admin" ? "#1d4ed8" : "#7c3aed", border: `1px solid ${s.role==="super_admin" ? "#bfdbfe" : "#ddd6fe"}` }}>
                           {s.role==="super_admin" ? "🛡 Yönetici" : "👤 Personel"}
                         </span>
@@ -1738,16 +1787,12 @@ export default function AdminDashboard() {
                           {s.active ? "Aktif" : "Pasif"}
                         </span>
                       </div>
+                      <button onClick={() => { setStaffPwModal({ id: s.id, name: s.name }); setStaffPwValue(""); setStaffPwError(""); }}
+                        style={{ width: "100%", padding: "7px 0", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "8px", color: "#0052ff", fontSize: "12px", fontWeight: 700, cursor: "pointer" }}>
+                        🔑 Şifre Değiştir
+                      </button>
                     </div>
                   ))}
-                </div>
-
-                <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "12px", padding: "16px 20px" }}>
-                  <p style={{ margin: "0 0 4px", fontWeight: 700, fontSize: "13px", color: "#92400e" }}>📌 Şifre Değişikliği</p>
-                  <p style={{ margin: 0, fontSize: "13px", color: "#b45309", lineHeight: 1.6 }}>
-                    Personel şifrelerini değiştirmek için Supabase veya API üzerinden işlem yapın.
-                    İlk oturum şifreleri: Yöneticiler → <code>LiderNetwork2024!</code>, Personel → <code>Lider2024!</code>
-                  </p>
                 </div>
               </>
             )}
@@ -2455,6 +2500,80 @@ export default function AdminDashboard() {
         </div>
       )}
       <AdminToast />
+
+      {/* ══ KULLANICI ŞİFRE DEĞİŞTİR MODALİ ════════════════════════════ */}
+      {custPwModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 600, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setCustPwModal(null)}>
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "28px 32px", width: "100%", maxWidth: "420px", boxShadow: "0 20px 60px rgba(0,0,0,.18)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 800, color: "#1a1d2e" }}>Şifre Değiştir</div>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>{custPwModal.name}</div>
+              </div>
+              <button onClick={() => setCustPwModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }}><X size={20} /></button>
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>Yeni Şifre</label>
+              <input
+                type="password"
+                value={custPwValue}
+                onChange={e => { setCustPwValue(e.target.value); setCustPwError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleUserPasswordChange(); }}
+                placeholder="En az 8 karakter"
+                autoFocus
+                style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${custPwError ? "#fca5a5" : "#e5e7ef"}`, borderRadius: "10px", fontSize: "14px", outline: "none", boxSizing: "border-box" }}
+              />
+              {custPwError && <div style={{ fontSize: "12px", color: "#dc2626", marginTop: "6px" }}>{custPwError}</div>}
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setCustPwModal(null)} style={{ flex: 1, padding: "10px", background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
+              <button onClick={handleUserPasswordChange} disabled={custPwSaving || custPwValue.length < 8}
+                style={{ flex: 1, padding: "10px", background: custPwSaving || custPwValue.length < 8 ? "#bfdbfe" : "#0052ff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, color: "#fff", cursor: custPwSaving || custPwValue.length < 8 ? "default" : "pointer" }}>
+                {custPwSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══ PERSONEL ŞİFRE DEĞİŞTİR MODALİ ════════════════════════════ */}
+      {staffPwModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 600, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => setStaffPwModal(null)}>
+          <div style={{ background: "#fff", borderRadius: "16px", padding: "28px 32px", width: "100%", maxWidth: "420px", boxShadow: "0 20px 60px rgba(0,0,0,.18)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px" }}>
+              <div>
+                <div style={{ fontSize: "16px", fontWeight: 800, color: "#1a1d2e" }}>Personel Şifresini Değiştir</div>
+                <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>{staffPwModal.name}</div>
+              </div>
+              <button onClick={() => setStaffPwModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }}><X size={20} /></button>
+            </div>
+            <div style={{ marginBottom: "16px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>Yeni Şifre</label>
+              <input
+                type="password"
+                value={staffPwValue}
+                onChange={e => { setStaffPwValue(e.target.value); setStaffPwError(""); }}
+                onKeyDown={e => { if (e.key === "Enter") handleStaffPasswordChange(); }}
+                placeholder="En az 8 karakter"
+                autoFocus
+                style={{ width: "100%", padding: "10px 14px", border: `1.5px solid ${staffPwError ? "#fca5a5" : "#e5e7ef"}`, borderRadius: "10px", fontSize: "14px", outline: "none", boxSizing: "border-box" }}
+              />
+              {staffPwError && <div style={{ fontSize: "12px", color: "#dc2626", marginTop: "6px" }}>{staffPwError}</div>}
+            </div>
+            <div style={{ display: "flex", gap: "10px" }}>
+              <button onClick={() => setStaffPwModal(null)} style={{ flex: 1, padding: "10px", background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
+              <button onClick={handleStaffPasswordChange} disabled={staffPwSaving || staffPwValue.length < 8}
+                style={{ flex: 1, padding: "10px", background: staffPwSaving || staffPwValue.length < 8 ? "#bfdbfe" : "#0052ff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, color: "#fff", cursor: staffPwSaving || staffPwValue.length < 8 ? "default" : "pointer" }}>
+                {staffPwSaving ? "Kaydediliyor..." : "Kaydet"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ══ MÜŞTERİ GEÇMİŞİ PANELİ ══════════════════════════════════════ */}
       {historyCompany && (

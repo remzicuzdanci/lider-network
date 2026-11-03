@@ -40,12 +40,13 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({ customers });
 }
 
-// PATCH — approve or reject a customer
+// PATCH — approve, reject, or change password for a customer
 export async function PATCH(request: NextRequest) {
   if (!(await getAdminSession()))
     return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
 
-  const { id, action } = await request.json();
+  const body = await request.json();
+  const { id, action } = body;
   if (!id || !action)
     return NextResponse.json({ error: "Eksik parametre" }, { status: 400 });
 
@@ -80,6 +81,15 @@ export async function PATCH(request: NextRequest) {
     await supabase.from("customer_profiles").delete().eq("id", id);
     const { error } = await supabase.auth.admin.deleteUser(id);
     if (error) return NextResponse.json({ error: "Silme hatası" }, { status: 500 });
+    return NextResponse.json({ success: true });
+  }
+
+  if (action === "change-password") {
+    const { password } = body;
+    if (!password || typeof password !== "string" || password.length < 8)
+      return NextResponse.json({ error: "Şifre en az 8 karakter olmalıdır." }, { status: 400 });
+    const { error } = await supabase.auth.admin.updateUserById(id, { password });
+    if (error) return NextResponse.json({ error: "Şifre değiştirilemedi." }, { status: 500 });
     return NextResponse.json({ success: true });
   }
 
