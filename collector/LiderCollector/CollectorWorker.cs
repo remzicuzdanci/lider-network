@@ -58,6 +58,8 @@ public sealed class CollectorWorker : BackgroundService
             new NetworkModule(loggerFactory.CreateLogger<NetworkModule>()),
             new SoftwareModule(loggerFactory.CreateLogger<SoftwareModule>()),
             new PerformanceModule(loggerFactory.CreateLogger<PerformanceModule>()),
+            new WindowsUpdateModule(loggerFactory.CreateLogger<WindowsUpdateModule>()),
+            new EventLogModule(loggerFactory.CreateLogger<EventLogModule>()),
         };
     }
 
@@ -360,12 +362,14 @@ public sealed class CollectorWorker : BackgroundService
     {
         return name switch
         {
-            "system" => _config.Modules.System,
-            "network" => true, // always on — needed for identity
-            "software" => _config.Modules.Software,
-            "performance" => _config.Modules.Performance,
-            "hyperv" => _config.Modules.HyperV,
-            "vmware" => _config.Modules.Vmware,
+            "system"         => _config.Modules.System,
+            "network"        => true, // always on — needed for identity
+            "software"       => _config.Modules.Software,
+            "performance"    => _config.Modules.Performance,
+            "windows_update" => _config.Modules.WindowsUpdate,
+            "event_log"      => _config.Modules.EventLog,
+            "hyperv"         => _config.Modules.HyperV,
+            "vmware"         => _config.Modules.Vmware,
             _ => false,
         };
     }

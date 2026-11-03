@@ -192,6 +192,17 @@ public sealed class SystemInfoModule : ICollectorModule
         [JsonPropertyName("ram_slots")] public List<RamSlot> RamSlots { get; set; } = new();
         [JsonPropertyName("disks")] public List<DiskInfo> Disks { get; set; } = new();
         [JsonPropertyName("volumes")] public List<VolumeInfo> Volumes { get; set; } = new();
+
+        // ── Backward-compat aliases expected by WindowsInventoryProcessor ──────
+        // These derived properties emit the field names the PHP server consumes
+        // without removing the original rich fields above.
+        [JsonPropertyName("serial_number")]  public string? SerialNumber  => BiosSerial;
+        [JsonPropertyName("ram_gb")]         public double? RamGb         => TotalRamBytes > 0 ? Math.Round(TotalRamBytes / 1_073_741_824.0, 2) : null;
+        [JsonPropertyName("cpu_model")]      public string? CpuModel      => Processors.FirstOrDefault()?.Name;
+        [JsonPropertyName("cpu_cores")]      public int?    CpuCores      => Processors.Count > 0 ? Processors.Sum(p => p.Cores) : null;
+        [JsonPropertyName("last_boot_at")]   public string? LastBootAt    => LastBootTime?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+        [JsonPropertyName("fqdn")]           public string? Fqdn          => (!string.IsNullOrEmpty(Domain) && Domain != "WORKGROUP" && Hostname != null) ? $"{Hostname}.{Domain}" : null;
+        [JsonPropertyName("uptime_seconds")] public long?   UptimeSec     => LastBootTime.HasValue ? (long)(DateTime.UtcNow - LastBootTime.Value.ToUniversalTime()).TotalSeconds : null;
     }
 
     public sealed class CpuInfo
