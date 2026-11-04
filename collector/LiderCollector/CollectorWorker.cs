@@ -279,15 +279,18 @@ public sealed class CollectorWorker : BackgroundService
                 {
                     _log.LogWarning("Inventory send failed — queuing for later.");
                     _queue.Enqueue("inventory", payload);
+                    _state.Save(); // cursor committed when queued (at-least-once; server deduplicates)
                 }
                 else
                 {
+                    _state.Save(); // cursor committed after confirmed delivery
                     _log.LogInformation("Inventory sync sent ({ModuleCount} modules).", data.Count);
                 }
             }
             else
             {
                 _queue.Enqueue("inventory", payload);
+                _state.Save(); // cursor committed when queued
                 _log.LogInformation("Offline — inventory queued ({Count} in queue).", _queue.Count());
             }
         }

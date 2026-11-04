@@ -25,12 +25,9 @@ public sealed class EventLogModule : ICollectorModule
 
     public string Name => "event_log";
 
-    private const int MaxEvents      = 50;
-    private const int MessageMaxLen  = 500;
+    private const int MaxEvents       = 50;
+    private const int MessageMaxLen   = 500;
     private const int MaxLookbackDays = 7; // safety net for first run / very long offline
-
-    private static readonly string[] SensitivePatterns =
-        ["password", "passwd", "token", "secret", " key=", "credential", "pwd=", "apikey"];
 
     public EventLogModule(ILogger<EventLogModule> log, CollectorState state)
     {
@@ -51,8 +48,8 @@ public sealed class EventLogModule : ICollectorModule
                 CollectFromLog(logName, cutoff, events);
             }
 
-            // Persist updated cursors so next cycle is truly incremental
-            _state.Save();
+            // State is NOT saved here — CollectorWorker saves it after confirmed delivery
+            // (at-least-once: cursor advances on queue-or-send; server deduplicates by RecordId)
 
             return Task.FromResult<object?>(new EventLogPayload
             {
@@ -119,16 +116,7 @@ public sealed class EventLogModule : ICollectorModule
         }
     }
 
-    private static string? MaskSensitive(string? msg)
-    {
-        if (string.IsNullOrEmpty(msg)) return msg;
-        foreach (string pattern in SensitivePatterns)
-        {
-            if (msg.Contains(pattern, StringComparison.OrdinalIgnoreCase))
-                return "[REDACTED]";
-        }
-        return msg;
-    }
+    private static string? MaskSensitive(string? msg) => SensitiveFilter.Mask(msg);
 
     // ── Payload DTOs ──────────────────────────────────────────────────────────
 

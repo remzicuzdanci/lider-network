@@ -86,13 +86,23 @@ public sealed class WindowsUpdateModule : ICollectorModule
 
     // ── Pending updates (WUA COM API — cached only) ───────────────────────────
 
+    /// <summary>
+    /// Query WUA for not-yet-installed updates.
+    /// Sets PendingQueryStatus to "ok", "unavailable", or "error".
+    /// PendingCount is only set when status is "ok"; null otherwise (TD-1).
+    /// </summary>
     private void CollectPendingUpdates(WindowsUpdatePayload p)
     {
+        p.PendingQueriedAt = DateTime.UtcNow.ToString("o");
         try
         {
             // Late-bind to avoid compile-time dependency on WUA COM registration
             var type = Type.GetTypeFromProgID("Microsoft.Update.Session");
-            if (type == null) return;
+            if (type == null)
+            {
+                p.PendingQueryStatus = "unavailable";
+                return;
+            }
 
             dynamic session  = Activator.CreateInstance(type)!;
             dynamic searcher = session.CreateUpdateSearcher();
@@ -101,8 +111,9 @@ public sealed class WindowsUpdateModule : ICollectorModule
             dynamic result = searcher.Search("IsInstalled=0 and IsHidden=0");
             int total      = (int)result.Updates.Count;
 
-            p.PendingCount   = total;
-            p.PendingUpdates = new List<PendingUpdate>();
+            p.PendingQueryStatus = "ok";
+            p.PendingCount       = total;
+            p.PendingUpdates     = new List<PendingUpdate>();
 
             for (int i = 0; i < Math.Min(total, MaxPending); i++)
             {
@@ -117,8 +128,12 @@ public sealed class WindowsUpdateModule : ICollectorModule
         }
         catch (Exception ex)
         {
-            // WUA unavailable (disabled service, restricted environment) — not fatal
-            _log.LogDebug(ex, "WUA COM unavailable; pending_count will be 0");
+            // WUA unavailable (disabled service, restricted environment, Server Core) — not fatal
+            // pending_count left as null (unknown), status distinguishes from "0 pending"
+            _log.LogDebug(ex, "WUA COM query failed; pending_count unknown");
+            p.PendingQueryStatus = ex.HResult == unchecked((int)0x80070422)
+                ? "unavailable"  // ERROR_SERVICE_DISABLED
+                : "error";
         }
     }
 
@@ -160,12 +175,15 @@ public sealed class WindowsUpdateModule : ICollectorModule
 
     public sealed class WindowsUpdatePayload
     {
-        [JsonPropertyName("installed_updates")]   public List<InstalledUpdate> InstalledUpdates { get; set; } = new();
-        [JsonPropertyName("pending_count")]       public int?                  PendingCount     { get; set; }
-        [JsonPropertyName("pending_updates")]     public List<PendingUpdate>?  PendingUpdates   { get; set; }
-        [JsonPropertyName("reboot_required")]     public bool                  RebootRequired   { get; set; }
-        [JsonPropertyName("last_scan_at")]        public string?               LastScanAt       { get; set; }
-        [JsonPropertyName("last_install_result")] public int?                  LastInstallResult { get; set; }
+        [JsonPropertyName("installed_updates")]    public List<InstalledUpdate> InstalledUpdates  { get; set; } = new();
+        // WUA query fields (TD-1): pending_count is null when query failed (not 0)
+        [JsonPropertyName("pending_query_status")] public string?               PendingQueryStatus { get; set; }
+        [JsonPropertyName("pending_queried_at")]   public string?               PendingQueriedAt   { get; set; }
+        [JsonPropertyName("pending_count")]        public int?                  PendingCount       { get; set; }
+        [JsonPropertyName("pending_updates")]      public List<PendingUpdate>?  PendingUpdates     { get; set; }
+        [JsonPropertyName("reboot_required")]      public bool                  RebootRequired     { get; set; }
+        [JsonPropertyName("last_scan_at")]         public string?               LastScanAt         { get; set; }
+        [JsonPropertyName("last_install_result")]  public int?                  LastInstallResult  { get; set; }
     }
 
     public sealed class InstalledUpdate
