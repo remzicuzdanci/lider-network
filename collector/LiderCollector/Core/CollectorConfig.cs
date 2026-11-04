@@ -25,6 +25,12 @@ public sealed class CollectorConfig
     public string? CustomCaCertPath { get; set; }
 
     /// <summary>
+    /// Allow plain HTTP connections to ServerUrl.  Default false (production safe).
+    /// Set true only in development environments.  NEVER set in a production deployment.
+    /// </summary>
+    public bool AllowHttp { get; set; } = false;
+
+    /// <summary>
     /// Set true for private networks where the CA does not publish a CRL endpoint.
     /// Certificate chain validation still runs; only the online CRL fetch is skipped.
     /// </summary>
@@ -40,9 +46,10 @@ public sealed class CollectorConfig
     public string? EnrolledBiosUuid { get; set; }
 
     // ── Intervals (seconds) ─────────────────────────────────────────────────
-    public int HeartbeatIntervalSeconds { get; set; } = 60;
-    public int InventorySyncIntervalSeconds { get; set; } = 900;
-    public int PerformanceIntervalSeconds { get; set; } = 120;
+    public int HeartbeatIntervalSeconds { get; set; } = 300;       // 5 min
+    public int InventorySyncIntervalSeconds { get; set; } = 14400; // 4 hr
+    public int PerformanceIntervalSeconds { get; set; } = 300;     // 5 min
+    public int EventLogIntervalSeconds { get; set; } = 60;         // 1 min
 
     /// <summary>Consecutive missed heartbeats before offline alarm is raised.</summary>
     public int OfflineThresholdMissedHeartbeats { get; set; } = 3;

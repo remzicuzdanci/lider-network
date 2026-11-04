@@ -77,6 +77,20 @@ public sealed class CollectorWorker : BackgroundService
     {
         _log.LogInformation("CollectorWorker starting. Server={Server}", _config.ServerUrl);
 
+        // ── HTTPS enforcement ─────────────────────────────────────────────────
+        // Allow HTTP only when explicitly opt-in (development environments).
+        // Production deployments must use HTTPS; a plain-HTTP ServerUrl is a
+        // critical misconfiguration that sends API keys and inventory data in clear.
+        if (!_config.AllowHttp &&
+            _config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+        {
+            _log.LogCritical(
+                "ServerUrl uses plain HTTP but AllowHttp=false (production default). " +
+                "Update collector.json with an HTTPS URL, or set allow_http=true for development only. " +
+                "ServerUrl={Url}", _config.ServerUrl);
+            return; // stop the worker; SCM will not auto-restart
+        }
+
         // ── Enrollment ─────────────────────────────────────────────────────────
         // Runs on first start and after server-driven re-enrollment (HeartbeatAsync 401).
         if (!_config.IsEnrolled || !_secure.Has("api_key"))
@@ -101,7 +115,8 @@ public sealed class CollectorWorker : BackgroundService
         }
 
         DateTime nextInventory = DateTime.UtcNow; // Run immediately on first start
-        DateTime nextPerf = DateTime.UtcNow;
+        DateTime nextPerf     = DateTime.UtcNow;
+        DateTime nextEventLog = DateTime.UtcNow;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -165,6 +180,13 @@ public sealed class CollectorWorker : BackgroundService
                     await RunPerformanceAsync(identity, stoppingToken);
                     nextPerf = DateTime.UtcNow.AddSeconds(_config.PerformanceIntervalSeconds);
                 }
+
+                // ── Event log (fast, incremental cycle) ───────────────────────
+                if (DateTime.UtcNow >= nextEventLog)
+                {
+                    await RunEventLogAsync(identity, stoppingToken);
+                    nextEventLog = DateTime.UtcNow.AddSeconds(_config.EventLogIntervalSeconds);
+                }
             }
             catch (OperationCanceledException) { break; }
             catch (Exception ex)
@@ -172,8 +194,12 @@ public sealed class CollectorWorker : BackgroundService
                 _log.LogError(ex, "CollectorWorker unhandled error in main loop");
             }
 
+            // Tick at the finest-grained interval so no schedule is missed.
+            int tickSeconds = Math.Min(
+                _config.HeartbeatIntervalSeconds,
+                _config.EventLogIntervalSeconds);
             await Task.Delay(
-                TimeSpan.FromSeconds(_config.HeartbeatIntervalSeconds),
+                TimeSpan.FromSeconds(tickSeconds),
                 stoppingToken);
         }
 
@@ -376,6 +402,9 @@ public sealed class CollectorWorker : BackgroundService
             foreach (var module in _modules)
             {
                 if (!IsModuleEnabled(module.Name)) continue;
+                // Event log runs on its own faster schedule (RunEventLogAsync).
+                // Skip it here to avoid double-delivery during inventory.
+                if (module.Name == "event_log") continue;
                 try
                 {
                     var result = await module.RunAsync(ct);
@@ -446,6 +475,52 @@ public sealed class CollectorWorker : BackgroundService
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex) { _log.LogWarning(ex, "Performance collection error"); }
+    }
+
+    // ── Event log (fast, incremental) ────────────────────────────────────────
+
+    private async Task RunEventLogAsync(DeviceIdentity.IdentityPayload identity, CancellationToken ct)
+    {
+        try
+        {
+            var elModule = _modules.OfType<EventLogModule>().FirstOrDefault();
+            if (elModule == null || !IsModuleEnabled("event_log")) return;
+
+            var result = await elModule.RunAsync(ct);
+            if (result == null) return;
+
+            // Send as a minimal inventory payload carrying only the event_log module.
+            // The server's CollectorInventoryController handles any subset of modules.
+            var payload = new InventoryPayload
+            {
+                CollectorId = _config.CollectorId,
+                Hostname    = identity.Hostname,
+                Identifiers = BuildIdentifiersList(identity),
+                CollectedAt = DateTime.UtcNow,
+                Modules     = new Dictionary<string, object?> { ["event_log"] = result },
+            };
+
+            if (_lastOnline)
+            {
+                bool ok = await _api.SendInventoryAsync(payload, ct);
+                if (!ok)
+                {
+                    _queue.Enqueue("inventory", payload);
+                    _state.Save();
+                }
+                else
+                {
+                    _state.Save(); // cursor committed after confirmed delivery
+                }
+            }
+            else
+            {
+                _queue.Enqueue("inventory", payload);
+                _state.Save(); // cursor committed when queued (at-least-once)
+            }
+        }
+        catch (OperationCanceledException) { throw; }
+        catch (Exception ex) { _log.LogWarning(ex, "Event log collection error"); }
     }
 
     // ── Offline queue flush ───────────────────────────────────────────────────
