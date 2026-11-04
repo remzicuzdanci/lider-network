@@ -25,6 +25,7 @@ public sealed class CollectorWorker : BackgroundService
     private readonly ILogger<CollectorWorker> _log;
 
     private readonly IReadOnlyList<ICollectorModule> _modules;
+    private readonly CollectorState _state;
 
     // Connectivity state tracking for offline queue management
     private bool _lastOnline = true;
@@ -52,6 +53,8 @@ public sealed class CollectorWorker : BackgroundService
         _api = api;
         _log = log;
 
+        _state = CollectorState.Load();
+
         _modules = new List<ICollectorModule>
         {
             new SystemInfoModule(loggerFactory.CreateLogger<SystemInfoModule>()),
@@ -59,7 +62,7 @@ public sealed class CollectorWorker : BackgroundService
             new SoftwareModule(loggerFactory.CreateLogger<SoftwareModule>()),
             new PerformanceModule(loggerFactory.CreateLogger<PerformanceModule>()),
             new WindowsUpdateModule(loggerFactory.CreateLogger<WindowsUpdateModule>()),
-            new EventLogModule(loggerFactory.CreateLogger<EventLogModule>()),
+            new EventLogModule(loggerFactory.CreateLogger<EventLogModule>(), _state),
         };
     }
 

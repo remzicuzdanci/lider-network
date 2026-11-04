@@ -6,42 +6,57 @@ namespace LiderCollector.Modules;
 
 /// <summary>
 /// Collects recent Error and Warning events from System and Application logs.
-/// Limits: last 24 hours, max 50 events total, message truncated to 500 chars.
-/// Sensitive data masking: any event whose message contains a sensitive keyword
-/// has its message replaced with [REDACTED] before transmission.
-/// Reads backwards from the newest entry for efficiency — avoids scanning
-/// tens of thousands of older entries.
+///
+/// Incremental collection via RecordId bookmark (TD-2):
+///   - EventLogEntry.Index is the Windows EventLog RecordId (monotonically increasing).
+///   - CollectorState.EventLogCursors stores the last seen RecordId per log.
+///   - Only events with RecordId > cursor are returned, so no duplicates even after
+///     an offline period of arbitrary length.
+///   - Safety net: entries older than MaxLookbackDays (7) are skipped on first run.
+///
+/// Limits: max 50 events total per cycle, message truncated to 500 chars.
+/// Sensitive data masking: messages containing a sensitive keyword are replaced
+/// with [REDACTED] before transmission.
 /// </summary>
 public sealed class EventLogModule : ICollectorModule
 {
     private readonly ILogger<EventLogModule> _log;
+    private readonly CollectorState _state;
+
     public string Name => "event_log";
 
-    private const int MaxEvents     = 50;
-    private const int MessageMaxLen = 500;
-    // Checked case-insensitively; whole message is redacted if any pattern matches
+    private const int MaxEvents      = 50;
+    private const int MessageMaxLen  = 500;
+    private const int MaxLookbackDays = 7; // safety net for first run / very long offline
+
     private static readonly string[] SensitivePatterns =
         ["password", "passwd", "token", "secret", " key=", "credential", "pwd=", "apikey"];
 
-    public EventLogModule(ILogger<EventLogModule> log) => _log = log;
+    public EventLogModule(ILogger<EventLogModule> log, CollectorState state)
+    {
+        _log   = log;
+        _state = state;
+    }
 
     public Task<object?> RunAsync(CancellationToken ct)
     {
         try
         {
-            var since  = DateTime.UtcNow.AddHours(-24);
+            var cutoff = DateTime.UtcNow.AddDays(-MaxLookbackDays);
             var events = new List<EventEntry>();
 
             foreach (string logName in new[] { "System", "Application" })
             {
                 if (events.Count >= MaxEvents) break;
-                CollectFromLog(logName, since, events);
+                CollectFromLog(logName, cutoff, events);
             }
+
+            // Persist updated cursors so next cycle is truly incremental
+            _state.Save();
 
             return Task.FromResult<object?>(new EventLogPayload
             {
                 Events      = events,
-                Since       = since.ToString("o"),
                 CollectedAt = DateTime.UtcNow.ToString("o"),
             });
         }
@@ -52,21 +67,27 @@ public sealed class EventLogModule : ICollectorModule
         }
     }
 
-    private static void CollectFromLog(string logName, DateTime since, List<EventEntry> events)
+    private void CollectFromLog(string logName, DateTime cutoff, List<EventEntry> events)
     {
         try
         {
             using var log = new EventLog(logName);
-            int count = log.Entries.Count;
-            // Scan from newest entry backward; stop at LookbackDays boundary
+            int count          = log.Entries.Count;
+            long cursor        = _state.EventLogCursors.GetValueOrDefault(logName, 0);
+            long maxRecordId   = cursor;
+
+            // Scan newest → oldest; stop when we hit an already-seen entry
             for (int i = count - 1; i >= 0 && events.Count < MaxEvents; i--)
             {
                 EventLogEntry? e = null;
                 try { e = log.Entries[i]; }
                 catch { continue; } // entry may disappear during iteration
 
+                long recordId = e.Index; // Windows EventLog RecordId
+                if (recordId <= cursor) break; // already processed
+
                 var utc = e.TimeGenerated.ToUniversalTime();
-                if (utc < since) break; // older entries won't qualify
+                if (utc < cutoff) break; // safety net for first run
 
                 if (e.EntryType != EventLogEntryType.Error &&
                     e.EntryType != EventLogEntryType.Warning)
@@ -80,11 +101,17 @@ public sealed class EventLogModule : ICollectorModule
                     LogName    = logName,
                     Source     = e.Source,
                     EventId    = (int)(e.InstanceId & 0xFFFF),
+                    RecordId   = recordId,
                     Level      = e.EntryType == EventLogEntryType.Error ? "error" : "warning",
                     Message    = MaskSensitive(msg),
                     OccurredAt = utc.ToString("o"),
                 });
+
+                if (recordId > maxRecordId) maxRecordId = recordId;
             }
+
+            if (maxRecordId > cursor)
+                _state.EventLogCursors[logName] = maxRecordId;
         }
         catch
         {
@@ -108,7 +135,6 @@ public sealed class EventLogModule : ICollectorModule
     public sealed class EventLogPayload
     {
         [JsonPropertyName("events")]       public List<EventEntry> Events      { get; set; } = new();
-        [JsonPropertyName("since")]        public string?          Since       { get; set; }
         [JsonPropertyName("collected_at")] public string?          CollectedAt { get; set; }
     }
 
@@ -117,6 +143,7 @@ public sealed class EventLogModule : ICollectorModule
         [JsonPropertyName("log_name")]    public string? LogName    { get; set; }
         [JsonPropertyName("source")]      public string? Source     { get; set; }
         [JsonPropertyName("event_id")]    public int     EventId    { get; set; }
+        [JsonPropertyName("record_id")]   public long    RecordId   { get; set; }
         [JsonPropertyName("level")]       public string? Level      { get; set; }
         [JsonPropertyName("message")]     public string? Message    { get; set; }
         [JsonPropertyName("occurred_at")] public string? OccurredAt { get; set; }
