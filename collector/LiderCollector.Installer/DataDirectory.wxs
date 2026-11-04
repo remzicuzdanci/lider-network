@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Creates %ProgramData%\LiderCollector\ with restricted ACL.
+
+  ACL:
+    SYSTEM           — Full Control  (service runs as LocalSystem)
+    Administrators   — Full Control  (admin enrollment file deployment)
+    Everyone         — Denied        (no read access to config/keys for regular users)
+
+  enrollment.json is NOT shipped in the MSI.
+  IT deploys it separately via GPO Preferences → File Copy, or SCCM,
+  into %ProgramData%\LiderCollector\ before the first service start.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util">
+  <Fragment>
+    <ComponentGroup Id="DataDirectory" Directory="DATADIR">
+
+      <!-- Create the directory and set ACL -->
+      <Component Id="DataDirComponent" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
+        <CreateFolder Directory="DATADIR">
+          <util:PermissionEx
+            User="SYSTEM"
+            GenericAll="yes" />
+          <util:PermissionEx
+            User="Administrators"
+            GenericAll="yes" />
+          <!-- Deny all access for regular users to protect secure.dat and collector.json -->
+          <util:PermissionEx
+            User="Everyone"
+            GenericRead="no"
+            GenericWrite="no"
+            GenericExecute="no" />
+        </CreateFolder>
+        <KeyPath Yes="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>

@@ -33,6 +33,12 @@ public sealed class CollectorConfig
     /// <summary>Populated during enrollment; not the API key itself (that lives in DPAPI).</summary>
     public int CollectorId { get; set; }
 
+    /// <summary>
+    /// BIOS UUID captured at enrollment time.  Used for clone detection:
+    /// if the current BIOS UUID differs from this value, the agent re-enrolls.
+    /// </summary>
+    public string? EnrolledBiosUuid { get; set; }
+
     // ── Intervals (seconds) ─────────────────────────────────────────────────
     public int HeartbeatIntervalSeconds { get; set; } = 60;
     public int InventorySyncIntervalSeconds { get; set; } = 900;

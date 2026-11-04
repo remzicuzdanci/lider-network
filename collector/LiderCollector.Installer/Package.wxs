@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Lider IT ONE Collector — WiX v4 Package definition.
+
+  UPGRADE SAFETY:
+    MajorUpgrade removes old binaries from ProgramFiles before installing new ones.
+    All mutable state (collector.json, secure.dat, queue.db, logs) lives in
+    %ProgramData%\LiderCollector\ and is NOT touched by upgrade/uninstall.
+
+  TOKEN SECURITY:
+    No enrollment token is embedded in the MSI or passed on the command line.
+    IT deploys enrollment.json to %ProgramData%\LiderCollector\ separately
+    (via GPO Preferences file copy, SCCM, robocopy, etc.) before the first
+    service start.  The agent reads and immediately deletes it.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="Lider IT ONE Collector"
+    Manufacturer="Lider Network"
+    Version="1.0.0"
+    UpgradeCode="B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847"
+    Scope="perMachine"
+    InstallerVersion="500"
+    Compressed="yes"
+    Language="1033">
+
+    <!-- ── Upgrade handling ─────────────────────────────────────────────── -->
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of Lider IT ONE Collector is already installed."
+      AllowSameVersionUpgrades="no"
+      Schedule="afterInstallInitialize" />
+
+    <!-- ── Media ────────────────────────────────────────────────────────── -->
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <!-- ── Feature ──────────────────────────────────────────────────────── -->
+    <Feature Id="ProductFeature" Title="Lider IT ONE Collector" Level="1">
+      <ComponentGroupRef Id="CollectorBinaries" />
+      <ComponentGroupRef Id="DataDirectory" />
+    </Feature>
+
+    <!-- ── UI: silent install only (no dialog sequence) ────────────────── -->
+    <Property Id="ALLUSERS" Value="1" />
+
+    <!-- ── Custom actions: service start/stop handled by ServiceControl ─ -->
+  </Package>
+</Wix>

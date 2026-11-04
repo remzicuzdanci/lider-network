@@ -22,10 +22,10 @@ public sealed class SecureStorage
     private static readonly byte[] _entropy =
         Encoding.UTF8.GetBytes("LiderITONE.Collector.v1");
 
-    public SecureStorage(CollectorConfig config)
+    /// <param name="storePath">Full path to the encrypted storage file (e.g. %ProgramData%\LiderCollector\secure.dat).</param>
+    public SecureStorage(string storePath)
     {
-        _ = config; // DI-resolved; path comes from runtime base dir for service reliability
-        _storePath = Path.Combine(AppContext.BaseDirectory, "secure.dat");
+        _storePath = storePath;
         Load();
     }
 

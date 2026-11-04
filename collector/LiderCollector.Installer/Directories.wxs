@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Directory layout:
+    INSTALLFOLDER  = %ProgramFiles%\LiderNetwork\LiderCollector\   (binaries — wiped on upgrade)
+    DATADIR        = %ProgramData%\LiderCollector\                  (config, keys, queue, logs — preserved)
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="LiderNetworkFolder" Name="LiderNetwork">
+        <Directory Id="INSTALLFOLDER" Name="LiderCollector" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="DATADIR" Name="LiderCollector" />
+    </StandardDirectory>
+  </Fragment>
+</Wix>

@@ -1,0 +1,9 @@
+<Project Sdk="WixToolset.Sdk/4.0.5">
+  <PropertyGroup>
+    <OutputName>LiderITONECollector</OutputName>
+    <Platform>x64</Platform>
+    <Configurations>Release;Debug</Configurations>
+    <!-- The collector binaries are built separately; this project just packages them. -->
+    <CollectorPublishDir>$(MSBuildThisFileDirectory)..\LiderCollector\bin\Release\net8.0\win-x64\publish\</CollectorPublishDir>
+  </PropertyGroup>
+</Project>

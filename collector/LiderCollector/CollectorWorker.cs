@@ -1,4 +1,5 @@
 using LiderCollector.Core;
+using LiderCollector.Enrollment;
 using LiderCollector.Modules;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
@@ -22,6 +23,7 @@ public sealed class CollectorWorker : BackgroundService
     private readonly LocalQueue _queue;
     private readonly DeviceIdentity _identity;
     private readonly ApiClient _api;
+    private readonly BootstrapEnrollment _bootstrap;
     private readonly ILogger<CollectorWorker> _log;
 
     private readonly IReadOnlyList<ICollectorModule> _modules;
@@ -43,6 +45,7 @@ public sealed class CollectorWorker : BackgroundService
         LocalQueue queue,
         DeviceIdentity identity,
         ApiClient api,
+        BootstrapEnrollment bootstrap,
         ILogger<CollectorWorker> log,
         ILoggerFactory loggerFactory)
     {
@@ -51,6 +54,7 @@ public sealed class CollectorWorker : BackgroundService
         _queue = queue;
         _identity = identity;
         _api = api;
+        _bootstrap = bootstrap;
         _log = log;
 
         _state = CollectorState.Load();
@@ -154,39 +158,59 @@ public sealed class CollectorWorker : BackgroundService
 
     private async Task EnrollWithRetryAsync(CancellationToken ct)
     {
-        // Try bootstrap file first (written by installer, read once then deleted)
+        // 1. Try enrollment.json in dataPath (single-use, deleted on read).
+        //    Token is NEVER logged — only server_url is logged by BootstrapEnrollment.
         string? enrollToken = _secure.Get("enroll_token");
+
         if (string.IsNullOrEmpty(enrollToken))
         {
-            string bootstrapPath = Path.Combine(AppContext.BaseDirectory, "enroll_bootstrap.txt");
-            if (File.Exists(bootstrapPath))
+            var bootstrap = _bootstrap.TryRead();
+            if (bootstrap != null)
             {
-                try
+                // Override server URL from bootstrap if provided (supports first-run from GPO)
+                if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&
+                    bootstrap.ServerUrl != _config.ServerUrl)
                 {
-                    string raw = File.ReadAllText(bootstrapPath).Trim();
-                    if (!string.IsNullOrEmpty(raw))
-                    {
-                        _secure.Set("enroll_token", raw);
-                        File.Delete(bootstrapPath);
-                        enrollToken = raw;
-                        _log.LogInformation("Enrollment token loaded from bootstrap file.");
-                    }
+                    _log.LogInformation(
+                        "Server URL updated from bootstrap enrollment. NewUrl={Url}",
+                        bootstrap.ServerUrl);
+                    _config.ServerUrl = bootstrap.ServerUrl;
+                    _config.Save();
                 }
-                catch (Exception ex) when (ex is not OperationCanceledException)
-                {
-                    _log.LogWarning(ex, "Could not read enroll_bootstrap.txt");
-                }
+
+                // Store token encrypted in DPAPI — bootstrap file is already deleted
+                _secure.Set("enroll_token", bootstrap.EnrollmentToken);
+                enrollToken = bootstrap.EnrollmentToken;
             }
         }
 
         if (string.IsNullOrEmpty(enrollToken))
         {
             _log.LogCritical(
-                "No enrollment token found. Place the token in enroll_bootstrap.txt " +
-                "or run the installer with -EnrollToken <token>.");
+                "No enrollment token found. " +
+                "Deploy enrollment.json to %ProgramData%\\LiderCollector\\ " +
+                "or use the IT console to re-issue a bootstrap token.");
             return;
         }
 
+        // 2. Clone / re-image detection: if already enrolled with a different BIOS UUID,
+        //    this device was likely cloned. Log the warning and re-enroll.
+        var currentId = _identity.Collect();
+        if (_config.IsEnrolled && !string.IsNullOrEmpty(_config.EnrolledBiosUuid) &&
+            !string.IsNullOrEmpty(currentId.BiosUuid) &&
+            _config.EnrolledBiosUuid != currentId.BiosUuid)
+        {
+            _log.LogWarning(
+                "Device identity mismatch detected. " +
+                "EnrolledUuid={Enrolled}, CurrentUuid={Current}. " +
+                "This may be a cloned image. Re-enrolling with new identity.",
+                _config.EnrolledBiosUuid, currentId.BiosUuid);
+            // Reset so we can re-enroll
+            _config.CollectorId = 0;
+            _config.Save();
+        }
+
+        // 3. Enroll with retry + exponential back-off
         int attempt = 0;
         while (!ct.IsCancellationRequested)
         {
@@ -198,11 +222,13 @@ public sealed class CollectorWorker : BackgroundService
                 var resp = await _api.EnrollAsync(enrollToken, identity, ct);
                 if (resp?.ApiKey != null)
                 {
-                    _config.CollectorId = resp.CollectorId;
-                    _config.HeartbeatIntervalSeconds = Math.Max(30, resp.SyncInterval > 0 ? 60 : 60);
+                    _config.CollectorId          = resp.CollectorId;
+                    _config.HeartbeatIntervalSeconds   = Math.Max(30, resp.SyncInterval > 0 ? 60 : 60);
                     _config.InventorySyncIntervalSeconds = resp.SyncInterval > 0 ? resp.SyncInterval : 900;
+                    _config.EnrolledBiosUuid     = currentId.BiosUuid; // persist for clone detection
                     _config.Save();
-                    _secure.Delete("enroll_token"); // single-use token — discard after use
+                    _secure.Set("api_key", resp.ApiKey);
+                    _secure.Delete("enroll_token"); // single-use — discard after successful enroll
                     _log.LogInformation("Enrolled successfully. CollectorId={Id}", _config.CollectorId);
                     return;
                 }

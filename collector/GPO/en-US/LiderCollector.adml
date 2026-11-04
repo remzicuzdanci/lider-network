@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  LiderCollector.adml — English language resource file for LiderCollector.admx
+
+  Copy alongside the .admx into the en-US subfolder.
+-->
+<policyDefinitionResources
+  xmlns="http://schemas.microsoft.com/GroupPolicy/2006/07/PolicyDefinitions"
+  revision="1.0"
+  schemaVersion="1.0">
+
+  <displayName>Lider IT ONE Collector Policies</displayName>
+  <description>Administrative Templates for the Lider IT ONE Collector Agent.</description>
+
+  <resources>
+    <stringTable>
+
+      <string id="SUPPORTED_WIN10_AND_LATER">Windows 10 and later</string>
+
+      <string id="CategoryLiderNetwork">Lider Network</string>
+      <string id="CategoryLiderCollector">Lider IT ONE Collector</string>
+
+      <!-- Server URL -->
+      <string id="PolicyServerUrl_Name">Lider IT ONE Server URL</string>
+      <string id="PolicyServerUrl_Explain">
+Specifies the HTTPS base URL of the Lider IT ONE management server.
+
+Example: https://lider.yourdomain.com
+
+If this policy is enabled the collector uses this URL and ignores the
+value stored in collector.json.  If not configured the value in
+collector.json (set during enrollment) is used.
+
+SECURITY NOTE: Do NOT include enrollment tokens in this policy or in any
+Group Policy setting.  Tokens are sensitive credentials and must be
+deployed as the file enrollment.json in %ProgramData%\LiderCollector\
+(for example via GPO Preferences → File Copy).
+      </string>
+
+      <!-- Heartbeat interval -->
+      <string id="PolicyHeartbeat_Name">Heartbeat Interval (seconds)</string>
+      <string id="PolicyHeartbeat_Explain">
+How often the collector sends a heartbeat to the server (default: 60 seconds).
+
+Minimum: 30 seconds.  Maximum: 3600 seconds (1 hour).
+
+If not configured the value received from the server during enrollment or
+the last check-in is used.
+      </string>
+
+      <!-- Inventory sync interval -->
+      <string id="PolicyInventory_Name">Inventory Sync Interval (seconds)</string>
+      <string id="PolicyInventory_Explain">
+How often the collector runs a full inventory sync (default: 900 seconds / 15 minutes).
+
+Minimum: 300 seconds (5 minutes).  Maximum: 86400 seconds (24 hours).
+
+If not configured the value received from the server is used.
+      </string>
+
+      <!-- Log level -->
+      <string id="PolicyLogLevel_Name">Log Level</string>
+      <string id="PolicyLogLevel_Explain">
+Sets the minimum log level written to %ProgramData%\LiderCollector\logs\.
+
+Information — Normal operation messages (recommended for production).
+Warning     — Only warnings and errors.
+Debug       — Verbose operational detail (use for troubleshooting).
+Verbose     — All messages including internal trace.
+
+If not configured the value in collector.json is used (default: Information).
+      </string>
+
+      <string id="LogLevel_Information">Information (recommended)</string>
+      <string id="LogLevel_Warning">Warning</string>
+      <string id="LogLevel_Debug">Debug</string>
+      <string id="LogLevel_Verbose">Verbose</string>
+
+    </stringTable>
+
+    <presentationTable>
+
+      <presentation id="PolicyServerUrl">
+        <textBox refId="ServerUrlText">
+          <label>Server URL:</label>
+          <defaultValue>https://</defaultValue>
+        </textBox>
+      </presentation>
+
+      <presentation id="PolicyHeartbeat">
+        <decimalTextBox refId="HeartbeatDecimal" defaultValue="60">
+          Heartbeat interval (seconds):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="PolicyInventory">
+        <decimalTextBox refId="InventoryDecimal" defaultValue="900">
+          Inventory sync interval (seconds):
+        </decimalTextBox>
+      </presentation>
+
+      <presentation id="PolicyLogLevel">
+        <dropdownList refId="LogLevelEnum" defaultItem="0">Log level:</dropdownList>
+      </presentation>
+
+    </presentationTable>
+  </resources>
+</policyDefinitionResources>

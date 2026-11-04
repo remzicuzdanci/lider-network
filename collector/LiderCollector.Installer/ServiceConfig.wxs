@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Windows Service installation and recovery configuration.
+
+  Service account: LocalSystem (required for DPAPI LocalMachine scope and WMI access)
+  Start type: Automatic (delayed start recommended for boot performance)
+  Recovery:
+    1st failure  → restart after 1 minute
+    2nd failure  → restart after 2 minutes
+    subsequent   → restart after 5 minutes
+    reset counter after 24 hours without failure
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Fragment>
+    <ComponentGroup Id="CollectorBinaries" Directory="INSTALLFOLDER">
+
+      <!-- Main executable (self-contained .NET 8 single-file) -->
+      <Component Id="CollectorExe" Guid="A1B2C3D4-E5F6-7890-ABCD-EF1234567890">
+        <File Id="LiderCollectorExe"
+              Source="$(var.CollectorPublishDir)LiderCollector.exe"
+              KeyPath="yes" />
+
+        <!-- Windows Service registration -->
+        <ServiceInstall
+          Id="LiderITONECollectorSvc"
+          Name="LiderITONECollector"
+          DisplayName="Lider IT ONE Collector"
+          Description="Lider IT ONE — Collects hardware, software and performance inventory."
+          Type="ownProcess"
+          Start="auto"
+          Account="LocalSystem"
+          ErrorControl="normal"
+          Vital="yes" />
+
+        <!-- Service failure recovery actions -->
+        <util:ServiceConfig xmlns:util="http://wixtoolset.org/schemas/v4/wxs/util"
+          ServiceName="LiderITONECollector"
+          FirstFailureActionType="restart"
+          SecondFailureActionType="restart"
+          ThirdFailureActionType="restart"
+          RestartServiceDelayInSeconds="60"
+          ResetPeriodInDays="1" />
+
+        <!-- Stop service before upgrade/uninstall; start after install/upgrade -->
+        <ServiceControl
+          Id="StartLiderCollector"
+          Name="LiderITONECollector"
+          Start="install"
+          Stop="both"
+          Remove="uninstall"
+          Wait="yes" />
+      </Component>
+
+      <!-- appsettings.json (optional — most config is in %ProgramData%) -->
+      <Component Id="AppSettings" Guid="B2C3D4E5-F6A7-8901-BCDE-F12345678901">
+        <File Id="AppSettingsJson"
+              Source="$(var.CollectorPublishDir)appsettings.json"
+              KeyPath="yes" />
+      </Component>
+
+    </ComponentGroup>
+  </Fragment>
+</Wix>
