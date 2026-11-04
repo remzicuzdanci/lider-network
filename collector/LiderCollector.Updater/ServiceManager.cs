@@ -12,8 +12,14 @@ internal static class ServiceManager
     private static readonly TimeSpan StopTimeout  = TimeSpan.FromSeconds(30);
     private static readonly TimeSpan StartTimeout = TimeSpan.FromSeconds(30);
 
+    // Test injection — always null in production; tests must reset to null in finally blocks.
+    internal static Action<string>? _stopOverride;
+    internal static Action<string>? _startOverride;
+    internal static Func<string, bool>? _isRunningOverride;
+
     public static bool IsRunning(string serviceName)
     {
+        if (_isRunningOverride is not null) return _isRunningOverride(serviceName);
         using var sc = new ServiceController(serviceName);
         try
         {
@@ -28,6 +34,7 @@ internal static class ServiceManager
 
     public static void Stop(string serviceName)
     {
+        if (_stopOverride is not null) { _stopOverride(serviceName); return; }
         using var sc = new ServiceController(serviceName);
         sc.Refresh();
         if (sc.Status == ServiceControllerStatus.Stopped) return;
@@ -43,6 +50,7 @@ internal static class ServiceManager
 
     public static void Start(string serviceName)
     {
+        if (_startOverride is not null) { _startOverride(serviceName); return; }
         using var sc = new ServiceController(serviceName);
         sc.Refresh();
         if (sc.Status == ServiceControllerStatus.Running) return;

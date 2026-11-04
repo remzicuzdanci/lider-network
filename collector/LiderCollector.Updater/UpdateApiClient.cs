@@ -30,6 +30,9 @@ internal sealed class UpdateApiClient : IDisposable
             new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", apiKey);
     }
 
+    // Test-only constructor: accepts a pre-configured HttpClient (fake handler injected by tests).
+    internal UpdateApiClient(HttpClient http) { _http = http; }
+
     public async Task<ManifestResponse?> GetManifestAsync(CancellationToken ct = default)
     {
         using var resp = await _http.GetAsync("update/manifest", ct);

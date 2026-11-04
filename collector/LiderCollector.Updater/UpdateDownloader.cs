@@ -17,6 +17,10 @@ internal static class UpdateDownloader
         Timeout = TimeSpan.FromMinutes(10),
     };
 
+    // Test injection — set in tests to control download behaviour without real HTTP.
+    // Always null in production; tests must reset to null in finally blocks.
+    internal static Func<string, CancellationToken, Task<byte[]>>? _downloadOverride;
+
     /// <summary>
     /// Downloads the archive at <paramref name="url"/> and returns its bytes.
     /// Throws <see cref="HttpRequestException"/> on HTTP error.
@@ -24,6 +28,8 @@ internal static class UpdateDownloader
     /// </summary>
     public static async Task<byte[]> DownloadAsync(string url, CancellationToken ct = default)
     {
+        if (_downloadOverride is not null) return await _downloadOverride(url, ct);
+
         if (!url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException($"Update download URL must use HTTPS: {url}");
 

@@ -21,6 +21,16 @@ internal sealed class UpdaterConfig
     public string ServiceName_ => ServiceName;
     public string ApiKey       { get; private set; } = string.Empty;
 
+    private UpdaterConfig() { }
+
+    // Test-only constructor: sets properties directly without reading ProgramData or DPAPI.
+    internal UpdaterConfig(string serverUrl, string dataPath, string installPath)
+    {
+        ServerUrl   = serverUrl;
+        DataPath    = dataPath;
+        InstallPath = installPath;
+    }
+
     public static UpdaterConfig Load()
     {
         var cfg     = new UpdaterConfig();

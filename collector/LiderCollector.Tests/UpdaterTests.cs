@@ -1,7 +1,10 @@
 using LiderCollector.Updater;
+using Microsoft.Extensions.Logging;
 using System.IO.Compression;
+using System.Net;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
+using System.Text;
 using System.Text.Json;
 
 namespace LiderCollector.Tests;
@@ -516,19 +519,108 @@ public class UpdaterTests
         // Expected: RollbackAsync restores backup, service starts from backup, reports rolled_back.
     }
 
-    [Fact(Skip = "PRE-PRODUCTION: requires real Windows environment — run on VM before first production deploy")]
-    public void Vm_ConnectionLoss_During_Download_IsHandled()
+    [Fact]
+    public async Task Vm_ConnectionLoss_During_Download_IsHandled()
     {
-        // Scenario: network drops mid-download (HttpClient throws)
-        // Expected: update aborted, no rollback needed (stopped before backup),
-        //           audit log shows "download failed", no service disruption.
+        // Scenario: network drops mid-download (HttpClient throws HttpRequestException).
+        // Expected: update aborted, no rollback needed (failure is BEFORE backup creation),
+        //           outer catch logs "error/unhandled", server receives "failed" status,
+        //           service Stop is NEVER called.
+        string tempDir = Path.Combine(Path.GetTempPath(), "vm1-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(tempDir);
+        string installDir = Path.Combine(tempDir, "install");
+        Directory.CreateDirectory(installDir);
+        File.WriteAllText(Path.Combine(installDir, "LiderCollector.exe"), "v1.0-binary");
+
+        var reportedStatuses = new List<string>();
+        bool stopWasCalled   = false;
+
+        UpdateDownloader._downloadOverride = (_, _) =>
+            throw new HttpRequestException("simulated connection reset");
+
+        ServiceManager._stopOverride = _ => stopWasCalled = true;
+        ServiceManager._startOverride = _ => { };
+
+        try
+        {
+            var http  = BuildFakeApiClient(tempDir, reportedStatuses, manifestVersion: "2.0.0");
+            var cfg   = new UpdaterConfig("http://test", tempDir, installDir);
+            var audit = new UpdateAuditLogger(tempDir, "vm1-corr");
+            var orch  = new UpdateOrchestrator(cfg, http, audit, "vm1-corr", new NullLogger());
+
+            bool result = await orch.RunAsync(new UpdateTrigger { RequestedAt = "2026-11-04T10:00:00Z", TargetVersion = "2.0.0" });
+
+            Assert.False(result, "Orchestrator must return false on download failure");
+            Assert.False(stopWasCalled, "Service must NOT be stopped before backup is created");
+            Assert.Contains("failed", reportedStatuses);
+
+            // Backup directory must NOT have been created
+            string backupRoot = Path.Combine(tempDir, "update-backup");
+            Assert.False(Directory.Exists(backupRoot), "No backup should be created when download fails");
+
+            // Install dir must be intact (no extraction attempted)
+            Assert.Equal("v1.0-binary", File.ReadAllText(Path.Combine(installDir, "LiderCollector.exe")));
+        }
+        finally
+        {
+            UpdateDownloader._downloadOverride = null;
+            ServiceManager._stopOverride = null;
+            ServiceManager._startOverride = null;
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 
-    [Fact(Skip = "PRE-PRODUCTION: requires real Windows environment — run on VM before first production deploy")]
-    public void Vm_PartialExtraction_Failure_TriggersRollback()
+    [Fact]
+    public async Task Vm_PartialExtraction_Failure_TriggersRollback()
     {
-        // Scenario: zip extraction throws mid-way (disk full, locked file)
-        // Expected: RollbackAsync called, install dir restored from backup.
+        // Scenario: download succeeds but bytes are not a valid zip (simulates disk-full or
+        // locked-file mid-extraction). Expected: RollbackAsync is called, install dir is
+        // restored from the pre-extraction backup, server receives "rolled_back" status.
+        string tempDir    = Path.Combine(Path.GetTempPath(), "vm2-" + Guid.NewGuid().ToString("N"));
+        string installDir = Path.Combine(tempDir, "install");
+        Directory.CreateDirectory(installDir);
+        File.WriteAllText(Path.Combine(installDir, "LiderCollector.exe"), "v1.0-binary");
+
+        const string version = "2.0.0";
+        const string channel = "stable";
+        byte[] corruptBytes  = Encoding.UTF8.GetBytes("not-a-zip-payload");
+        var (sigBase64, certThumbprint, certBytes) = SignBytes(corruptBytes, version, channel);
+        string sha256 = Convert.ToHexString(SHA256.HashData(corruptBytes)).ToLowerInvariant();
+
+        // Place signing cert in dataPath so SignatureVerifier can load it
+        File.WriteAllBytes(Path.Combine(tempDir, "update-signing-cert.cer"), certBytes);
+
+        var reportedStatuses = new List<string>();
+
+        UpdateDownloader._downloadOverride = (_, _) => Task.FromResult(corruptBytes);
+        ServiceManager._stopOverride  = _ => { };
+        ServiceManager._startOverride = _ => { };
+
+        try
+        {
+            var http  = BuildFakeApiClient(tempDir, reportedStatuses, manifestVersion: version,
+                sha256: sha256, sigBase64: sigBase64, certThumbprint: certThumbprint, channel: channel);
+            var cfg   = new UpdaterConfig("http://test", tempDir, installDir);
+            var audit = new UpdateAuditLogger(tempDir, "vm2-corr");
+            var orch  = new UpdateOrchestrator(cfg, http, audit, "vm2-corr", new NullLogger());
+
+            bool result = await orch.RunAsync(new UpdateTrigger { RequestedAt = "2026-11-04T10:00:00Z", TargetVersion = version });
+
+            Assert.False(result, "Orchestrator must return false when extraction fails");
+            Assert.Contains("rolled_back", reportedStatuses);
+
+            // Install dir must be restored to its pre-update content
+            Assert.True(
+                "v1.0-binary" == File.ReadAllText(Path.Combine(installDir, "LiderCollector.exe")),
+                "Install directory must be restored from backup after extraction failure");
+        }
+        finally
+        {
+            UpdateDownloader._downloadOverride = null;
+            ServiceManager._stopOverride  = null;
+            ServiceManager._startOverride = null;
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 
     [Fact(Skip = "PRE-PRODUCTION: requires real Windows service — run on VM before first production deploy")]
@@ -552,14 +644,178 @@ public class UpdaterTests
         // Expected: IsMsiRunning() returns true; orchestrator skips; audit log shows skip.
     }
 
-    [Fact(Skip = "PRE-PRODUCTION: requires Windows DPAPI — run on VM before first production deploy")]
+    [Fact]
     public void Vm_AgentIdentity_Preserved_Across_Update()
     {
-        // After a successful update+rollback cycle:
-        // - collector_id (from config.json) must remain unchanged
-        // - dpapi_api_key.bin must be byte-identical to pre-update value
-        // - offline-queue.json must have all events that were queued before update
-        // - EventLog cursor position must be unchanged
+        // Verifies the ProgramData preservation guarantee: after a full backup+overwrite+restore
+        // cycle (simulating a failed update), identity files in dataPath must be byte-identical
+        // to their pre-update values. These files are NEVER in the install directory, so
+        // RollbackManager's backup/restore must never touch them.
+        string installDir = Path.Combine(Path.GetTempPath(), "vm4-install-" + Guid.NewGuid().ToString("N"));
+        string dataDir    = Path.Combine(Path.GetTempPath(), "vm4-data-"    + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(installDir);
+        Directory.CreateDirectory(dataDir);
+
+        // Install dir: only the executable lives here
+        File.WriteAllText(Path.Combine(installDir, "LiderCollector.exe"), "v1.0-binary");
+
+        // ProgramData identity files
+        string collectorId = Guid.NewGuid().ToString();
+        string configJson  = $$$"""{"collector_id":"{{{collectorId}}}","server_url":"https://liderit.example.com","agent_version":"1.0.0"}""";
+        byte[] dpapiKey    = RandomNumberGenerator.GetBytes(256); // simulated DPAPI-encrypted key
+        byte[] offlineQueue = Encoding.UTF8.GetBytes("""[{"event":"hardware","ts":"2026-11-04T10:00:00Z"}]""");
+        byte[] eventCursor  = Encoding.UTF8.GetBytes("""{"record_id":12345,"source":"System"}""");
+
+        File.WriteAllText(Path.Combine(dataDir, "config.json"),          configJson);
+        File.WriteAllBytes(Path.Combine(dataDir, "dpapi_api_key.bin"),   dpapiKey);
+        File.WriteAllBytes(Path.Combine(dataDir, "offline-queue.db"),    offlineQueue);
+        File.WriteAllText(Path.Combine(dataDir, "eventlog-cursor.json"), Encoding.UTF8.GetString(eventCursor));
+
+        try
+        {
+            var rb = new RollbackManager(installDir, dataDir, "vm4-corr");
+            rb.CreateBackup();
+
+            // Simulate a failed update: overwrite the exe
+            File.WriteAllText(Path.Combine(installDir, "LiderCollector.exe"), "v2.0-broken");
+
+            // Simulate that someone tried to modify identity files (should not happen, but
+            // even if it did, they're not in the backup path — restore only touches installDir)
+            rb.Restore();
+
+            // Install file restored to v1.0
+            Assert.Equal("v1.0-binary", File.ReadAllText(Path.Combine(installDir, "LiderCollector.exe")));
+
+            // All ProgramData identity files must be byte-identical to pre-update values
+            Assert.Equal(configJson, File.ReadAllText(Path.Combine(dataDir, "config.json")));
+            Assert.Equal(dpapiKey,   File.ReadAllBytes(Path.Combine(dataDir, "dpapi_api_key.bin")));
+            Assert.Equal(offlineQueue, File.ReadAllBytes(Path.Combine(dataDir, "offline-queue.db")));
+
+            // Backup must NOT contain any ProgramData files
+            string backupDir = Path.Combine(dataDir, "update-backup", "vm4-corr");
+            Assert.False(File.Exists(Path.Combine(backupDir, "config.json")),
+                "config.json (with collector_id) must not appear in backup");
+            Assert.False(File.Exists(Path.Combine(backupDir, "dpapi_api_key.bin")),
+                "DPAPI API key must not appear in backup");
+            Assert.False(File.Exists(Path.Combine(backupDir, "offline-queue.db")),
+                "Offline queue must not appear in backup");
+        }
+        finally
+        {
+            Directory.Delete(installDir, recursive: true);
+            Directory.Delete(dataDir,    recursive: true);
+        }
+    }
+
+    // ── Helpers shared by Vm_* orchestrator tests ─────────────────────────────
+
+    private static readonly JsonSerializerOptions _vmJsonOpts = new()
+    {
+        PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
+    };
+
+    /// <summary>
+    /// Builds an <see cref="UpdateApiClient"/> backed by a fake HTTP handler.
+    /// The handler returns a manifest for <paramref name="manifestVersion"/> and records
+    /// every status string sent to <c>update/complete</c> into <paramref name="reportedStatuses"/>.
+    /// </summary>
+    private static UpdateApiClient BuildFakeApiClient(
+        string dataDir,
+        List<string> reportedStatuses,
+        string manifestVersion,
+        string sha256          = "fakehash",
+        string sigBase64       = "fakesig",
+        string? certThumbprint = null,
+        string channel         = "stable")
+    {
+        var manifestJson = JsonSerializer.Serialize(new
+        {
+            update_available        = true,
+            version                 = manifestVersion,
+            channel,
+            download_url            = "https://cdn.example.com/pkg.zip",
+            sha256_hash             = sha256,
+            signature_base64        = sigBase64,
+            signing_cert_thumbprint = certThumbprint,
+        });
+
+        var handler = new FakeHttpHandler(req =>
+        {
+            string path = req.RequestUri!.AbsolutePath;
+            if (path.EndsWith("update/manifest"))
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                    { Content = new StringContent(manifestJson, Encoding.UTF8, "application/json") };
+
+            if (path.EndsWith("update/progress"))
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                    { Content = new StringContent("""{"log_id":1}""", Encoding.UTF8, "application/json") };
+
+            if (path.EndsWith("update/complete"))
+            {
+                string body = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+                using var doc = JsonDocument.Parse(body);
+                if (doc.RootElement.TryGetProperty("status", out var s))
+                    reportedStatuses.Add(s.GetString()!);
+                return new HttpResponseMessage(HttpStatusCode.OK)
+                    { Content = new StringContent("""{}""", Encoding.UTF8, "application/json") };
+            }
+
+            return new HttpResponseMessage(HttpStatusCode.NotFound);
+        });
+
+        var http = new HttpClient(handler) { BaseAddress = new Uri("http://test-fake/api/v1/collector/") };
+        return new UpdateApiClient(http);
+    }
+
+    /// <summary>
+    /// Creates a valid RSA signature for <paramref name="data"/> using a fresh key pair,
+    /// places the cert in a temp dir, and returns (sigBase64, thumbprint, certDerBytes).
+    /// </summary>
+    private static (string sigBase64, string thumbprint, byte[] certBytes)
+        SignBytes(byte[] data, string version, string channel)
+    {
+        string hashHex = Convert.ToHexString(SHA256.HashData(data)).ToLowerInvariant();
+        string payload = $"{version}:{channel}:{hashHex}";
+        byte[] payloadBytes = Encoding.UTF8.GetBytes(payload);
+
+        using var rsa = RSA.Create(2048);
+        var req  = new CertificateRequest("CN=TestUpdateSigning", rsa, HashAlgorithmName.SHA256,
+                                          RSASignaturePadding.Pkcs1);
+        var cert = req.CreateSelfSigned(DateTimeOffset.UtcNow, DateTimeOffset.UtcNow.AddYears(1));
+
+        byte[] sig      = rsa.SignData(payloadBytes, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+        byte[] certDer  = cert.Export(X509ContentType.Cert);
+        return (Convert.ToBase64String(sig), cert.Thumbprint, certDer);
+    }
+
+    // ── Minimal fakes used by Vm_* tests ─────────────────────────────────────
+
+    private sealed class FakeHttpHandler : HttpMessageHandler
+    {
+        private readonly Func<HttpRequestMessage, HttpResponseMessage> _fn;
+        public FakeHttpHandler(Func<HttpRequestMessage, HttpResponseMessage> fn) => _fn = fn;
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+            => Task.FromResult(_fn(request));
+    }
+
+    private sealed class NullLogger : ILogger
+    {
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => false;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter) { }
+    }
+
+    private sealed class CapturingLogger : ILogger
+    {
+        public bool HasCritical { get; private set; }
+        public IDisposable? BeginScope<TState>(TState state) where TState : notnull => null;
+        public bool IsEnabled(LogLevel logLevel) => true;
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state,
+            Exception? exception, Func<TState, Exception?, string> formatter)
+        {
+            if (logLevel == LogLevel.Critical) HasCritical = true;
+        }
     }
 
     [Fact(Skip = "PRE-PRODUCTION: requires Windows ACL enforcement — verify after MSI install")]
@@ -571,11 +827,64 @@ public class UpdaterTests
         // - SignatureVerifier.CheckCertFilePermissions must NOT log a warning
     }
 
-    [Fact(Skip = "PRE-PRODUCTION: requires real network connectivity — run on VM before first production deploy")]
-    public void Vm_RollbackFailure_Logs_Critical_And_Reports_Failed()
+    [Fact]
+    public async Task Vm_RollbackFailure_Logs_Critical_And_Reports_Failed()
     {
-        // Scenario: backup was deleted/corrupted before rollback attempt
-        // Expected: RollbackAsync logs CRITICAL, reports "failed" (not "rolled_back"),
-        //           administrator alerted.
+        // Scenario: extraction fails (corrupt zip), but the backup directory is deleted
+        // before RollbackAsync can call rollback.Restore(). Expected: RollbackAsync catches
+        // the InvalidOperationException from Restore(), logs CRITICAL, and reports "failed"
+        // (NOT "rolled_back") to the server.
+        string tempDir    = Path.Combine(Path.GetTempPath(), "vm3-" + Guid.NewGuid().ToString("N"));
+        string installDir = Path.Combine(tempDir, "install");
+        Directory.CreateDirectory(installDir);
+        File.WriteAllText(Path.Combine(installDir, "LiderCollector.exe"), "v1.0-binary");
+
+        const string version = "2.0.0";
+        const string channel = "stable";
+        byte[] corruptBytes  = Encoding.UTF8.GetBytes("not-a-zip-vm3");
+        var (sigBase64, certThumbprint, certBytes) = SignBytes(corruptBytes, version, channel);
+        string sha256 = Convert.ToHexString(SHA256.HashData(corruptBytes)).ToLowerInvariant();
+        File.WriteAllBytes(Path.Combine(tempDir, "update-signing-cert.cer"), certBytes);
+
+        const string corrId = "vm3-corr";
+        string backupPath   = Path.Combine(tempDir, "update-backup", corrId);
+
+        var reportedStatuses = new List<string>();
+        int stopCallCount    = 0;
+
+        UpdateDownloader._downloadOverride = (_, _) => Task.FromResult(corruptBytes);
+        ServiceManager._stopOverride = _ =>
+        {
+            stopCallCount++;
+            // Second Stop call happens inside RollbackAsync — delete backup so Restore() throws
+            if (stopCallCount == 2 && Directory.Exists(backupPath))
+                Directory.Delete(backupPath, recursive: true);
+        };
+        ServiceManager._startOverride = _ => { };
+
+        try
+        {
+            var http  = BuildFakeApiClient(tempDir, reportedStatuses, manifestVersion: version,
+                sha256: sha256, sigBase64: sigBase64, certThumbprint: certThumbprint, channel: channel);
+            var cfg   = new UpdaterConfig("http://test", tempDir, installDir);
+            var audit = new UpdateAuditLogger(tempDir, corrId);
+            var log   = new CapturingLogger();
+            var orch  = new UpdateOrchestrator(cfg, http, audit, corrId, log);
+
+            bool result = await orch.RunAsync(new UpdateTrigger { RequestedAt = "2026-11-04T10:00:00Z", TargetVersion = version });
+
+            Assert.False(result, "Orchestrator must return false when rollback fails");
+            Assert.Contains("failed", reportedStatuses);
+            Assert.True(!reportedStatuses.Contains("rolled_back"),
+                "Status must be 'failed', not 'rolled_back', when rollback itself fails");
+            Assert.True(log.HasCritical, "LogCritical must be called when rollback fails");
+        }
+        finally
+        {
+            UpdateDownloader._downloadOverride = null;
+            ServiceManager._stopOverride  = null;
+            ServiceManager._startOverride = null;
+            Directory.Delete(tempDir, recursive: true);
+        }
     }
 }
