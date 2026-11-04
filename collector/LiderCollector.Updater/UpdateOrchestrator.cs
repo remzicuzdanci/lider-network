@@ -91,7 +91,9 @@ internal sealed class UpdateOrchestrator
                 manifest.Sha256Hash,
                 manifest.SignatureBase64,
                 manifest.SigningCertThumbprint,
-                _cfg.DataPath);
+                _cfg.DataPath,
+                manifest.Version,
+                manifest.Channel);
 
             if (!ok)
             {
