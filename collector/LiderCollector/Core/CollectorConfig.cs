@@ -50,6 +50,17 @@ public sealed class CollectorConfig
     // ── Modules ─────────────────────────────────────────────────────────────
     public ModulesConfig Modules { get; set; } = new();
 
+    // ── Auto-update ─────────────────────────────────────────────────────────
+    /// <summary>Running agent version. Sent in heartbeat so server can target updates.</summary>
+    public string AgentVersion { get; set; } = "1.0.0";
+
+    /// <summary>Update channel this collector is subscribed to: stable, pilot, beta.</summary>
+    public string UpdateChannel { get; set; } = "stable";
+
+    /// <summary>Runtime-only: path to %ProgramData%\LiderCollector\. Set by Program.cs at startup.</summary>
+    [JsonIgnore]
+    public string DataPath { get; set; } = string.Empty;
+
     // ── Logging ─────────────────────────────────────────────────────────────
     public string LogLevel { get; set; } = "Information";
 

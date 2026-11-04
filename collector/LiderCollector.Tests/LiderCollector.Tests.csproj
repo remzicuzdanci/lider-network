@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\LiderCollector\LiderCollector.csproj" />
+    <ProjectReference Include="..\LiderCollector.Updater\LiderCollector.Updater.csproj" />
   </ItemGroup>
 
   <ItemGroup>

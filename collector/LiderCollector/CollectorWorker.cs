@@ -32,6 +32,9 @@ public sealed class CollectorWorker : BackgroundService
     // Connectivity state tracking for offline queue management
     private bool _lastOnline = true;
     private int _consecutiveMissedHeartbeats = 0;
+    // Auth failure tracking — count transient 401s without wiping credentials
+    private int _consecutiveAuthFailures = 0;
+    private const int AuthFailureWarningThreshold = 5;
 
     private static readonly JsonSerializerOptions _jsonOpts = new()
     {
@@ -120,11 +123,12 @@ public sealed class CollectorWorker : BackgroundService
                 }
 
                 // ── Heartbeat ─────────────────────────────────────────────────
-                bool heartbeatOk = await HeartbeatAsync(identity, stoppingToken);
+                var (heartbeatOk, pendingUpdate) = await HeartbeatAsync(identity, stoppingToken);
 
                 if (heartbeatOk)
                 {
                     _consecutiveMissedHeartbeats = 0;
+                    _consecutiveAuthFailures = 0;
                     if (!_lastOnline)
                     {
                         _log.LogInformation("Connectivity restored. Flushing offline queue ({Count} items).",
@@ -132,11 +136,14 @@ public sealed class CollectorWorker : BackgroundService
                         await FlushQueueAsync(stoppingToken);
                     }
                     _lastOnline = true;
+
+                    if (pendingUpdate != null)
+                        TriggerUpdate(pendingUpdate);
                 }
                 else
                 {
-                    // Note: 401 sets IsEnrolled=false in HeartbeatAsync; network errors just miss
-                    if (!_config.IsEnrolled) continue; // 401 path: skip to re-enrollment check
+                    // After explicit revocation, IsEnrolled is now false — go back to re-enrollment check
+                    if (!_config.IsEnrolled) continue;
 
                     _consecutiveMissedHeartbeats++;
                     _lastOnline = false;
@@ -269,45 +276,93 @@ public sealed class CollectorWorker : BackgroundService
     // ── Heartbeat ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Returns true on a successful heartbeat.
-    /// Side-effect: if the server returns 401 the agent's credentials are wiped
-    /// so the next iteration triggers re-enrollment (server-driven re-enrollment).
-    /// This is the primary clone / revocation detection path.
+    /// Sends a heartbeat.
+    /// Returns (true, pendingUpdate?) on success.
+    /// Returns (false, null) on transient failure — credentials are NEVER wiped here.
+    /// Only an explicit server revocation (HTTP 410, or 401+re_enroll_required) wipes
+    /// credentials and sets IsEnrolled=false to trigger re-enrollment.
     /// </summary>
-    private async Task<bool> HeartbeatAsync(DeviceIdentity.IdentityPayload identity, CancellationToken ct)
+    private async Task<(bool Ok, PendingUpdateInfo? PendingUpdate)> HeartbeatAsync(
+        DeviceIdentity.IdentityPayload identity, CancellationToken ct)
     {
         try
         {
-            var (resp, apiKeyRejected) = await _api.CheckinAsync(identity, ct);
+            var (resp, status) = await _api.CheckinAsync(identity, ct);
 
-            if (apiKeyRejected)
+            switch (status)
             {
-                _log.LogWarning(
-                    "Server rejected the API key (HTTP 401). " +
-                    "CollectorId={Id}. Clearing credentials — will re-enroll on next iteration.",
-                    _config.CollectorId);
-                // Wipe stored credentials so EnrollWithRetryAsync runs next loop iteration.
-                _secure.Delete("api_key");
-                _config.CollectorId = 0;
-                _config.EnrolledBiosUuid = null;
-                _config.Save();
-                return false;
-            }
+                case ApiClient.HeartbeatStatus.Ok:
+                    // Server can push interval updates
+                    if (resp!.SyncInterval > 0 && resp.SyncInterval != _config.InventorySyncIntervalSeconds)
+                    {
+                        _config.InventorySyncIntervalSeconds = resp.SyncInterval;
+                        _config.Save();
+                    }
+                    PendingUpdateInfo? update = null;
+                    if (resp.UpdateAvailable && !string.IsNullOrEmpty(resp.ManifestVersion))
+                        update = new PendingUpdateInfo(resp.ManifestVersion);
+                    return (true, update);
 
-            if (resp != null)
-            {
-                // Server can update intervals dynamically
-                if (resp.SyncInterval > 0 && resp.SyncInterval != _config.InventorySyncIntervalSeconds)
-                {
-                    _config.InventorySyncIntervalSeconds = resp.SyncInterval;
+                case ApiClient.HeartbeatStatus.ExplicitRevocation:
+                    // Server has definitively revoked this agent — wipe credentials,
+                    // trigger re-enrollment next iteration.
+                    _log.LogWarning(
+                        "Server has explicitly revoked this agent's API key. " +
+                        "CollectorId={Id}. Clearing credentials — will re-enroll on next loop iteration.",
+                        _config.CollectorId);
+                    _secure.Delete("api_key");
+                    _config.CollectorId = 0;
+                    _config.EnrolledBiosUuid = null;
                     _config.Save();
-                }
-                return true;
+                    _consecutiveAuthFailures = 0;
+                    return (false, null);
+
+                case ApiClient.HeartbeatStatus.TransientFailure:
+                default:
+                    // Credentials are PRESERVED. A transient 401, network error, or 5xx
+                    // must NOT trigger re-enrollment — it would destroy a valid enrollment
+                    // due to a momentary server issue or misconfiguration.
+                    _consecutiveAuthFailures++;
+                    if (_consecutiveAuthFailures >= AuthFailureWarningThreshold)
+                    {
+                        _log.LogWarning(
+                            "Heartbeat failed {Count} consecutive times. " +
+                            "CollectorId={Id}. Credentials preserved — will NOT re-enroll until server confirms revocation.",
+                            _consecutiveAuthFailures, _config.CollectorId);
+                    }
+                    return (false, null);
             }
-            return false;
         }
-        catch { return false; }
+        catch { return (false, null); }
     }
+
+    // ── Update trigger ────────────────────────────────────────────────────────
+
+    private void TriggerUpdate(PendingUpdateInfo info)
+    {
+        try
+        {
+            // Write a trigger file that the separate LiderCollectorUpdater process watches.
+            // The updater handles download, verification, service stop/replace/start, and rollback.
+            // The main service never modifies its own binary files.
+            string triggerPath = Path.Combine(_config.DataPath, "update-trigger.json");
+            string json = System.Text.Json.JsonSerializer.Serialize(new
+            {
+                requested_at = DateTimeOffset.UtcNow.ToString("O"),
+                target_version = info.Version,
+            });
+            File.WriteAllText(triggerPath, json);
+            _log.LogInformation(
+                "Update trigger written for version {Version}. Updater will handle installation.",
+                info.Version);
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Failed to write update trigger file");
+        }
+    }
+
+    private sealed record PendingUpdateInfo(string Version);
 
     // ── Inventory sync ────────────────────────────────────────────────────────
 

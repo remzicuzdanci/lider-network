@@ -52,7 +52,11 @@ try
             // ── Core singletons ──────────────────────────────────────────────
             // All file paths use dataPath so they survive MajorUpgrade
             services.AddSingleton<CollectorConfig>(sp =>
-                CollectorConfig.Load(Path.Combine(dataPath, "collector.json")));
+            {
+                var cfg = CollectorConfig.Load(Path.Combine(dataPath, "collector.json"));
+                cfg.DataPath = dataPath; // runtime-only: for update trigger file path
+                return cfg;
+            });
 
             services.AddSingleton<SecureStorage>(sp =>
                 new SecureStorage(Path.Combine(dataPath, "secure.dat")));

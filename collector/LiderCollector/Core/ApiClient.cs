@@ -61,24 +61,45 @@ public sealed class ApiClient : IDisposable
     // ── Heartbeat ─────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Returns the checkin response, or null on network errors.
-    /// <c>ApiKeyRejected</c> is true when the server returned 401 — the API key
-    /// has been revoked or the collector record was removed.  The agent should
-    /// clear its credentials and re-enroll.
+    /// Sends a heartbeat and returns the status.
+    ///
+    /// <list type="table">
+    /// <item><term>Ok</term><description>Heartbeat accepted; response payload included.</description></item>
+    /// <item><term>TransientFailure</term><description>Network error, server error, or a 401 with no explicit revocation
+    ///   signal. Credentials are preserved; the caller should retry with backoff.</description></item>
+    /// <item><term>ExplicitRevocation</term><description>Server confirmed this API key is revoked (401 with
+    ///   <c>re_enroll_required:true</c>, or HTTP 410). The caller must wipe credentials and re-enroll.</description></item>
+    /// </list>
     /// </summary>
-    public async Task<(CheckinResponse? Response, bool ApiKeyRejected)> CheckinAsync(
+    public async Task<(CheckinResponse? Response, HeartbeatStatus Status)> CheckinAsync(
         DeviceIdentity.IdentityPayload identity, CancellationToken ct = default)
     {
         var body = new
         {
             hostname = identity.Hostname,
-            version = "0.1.0",
+            version = _config.AgentVersion,
+            update_channel = _config.UpdateChannel,
             status = "online",
             timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
         };
-        var (resp, status) = await PostAsyncWithStatus<CheckinResponse>("checkin", body, authorized: true, ct);
-        bool apiKeyRejected = status == System.Net.HttpStatusCode.Unauthorized;
-        return (resp, apiKeyRejected);
+        var (resp, httpStatus) = await PostAsyncWithStatus<CheckinResponse>("checkin", body, authorized: true, ct);
+
+        if (httpStatus == System.Net.HttpStatusCode.OK)
+            return (resp, HeartbeatStatus.Ok);
+
+        // HTTP 410 Gone = unconditional revocation (server explicitly decommissioned the collector)
+        if (httpStatus == System.Net.HttpStatusCode.Gone)
+            return (null, HeartbeatStatus.ExplicitRevocation);
+
+        // HTTP 401 = need to inspect body: re_enroll_required distinguishes revocation from transient auth failure
+        if (httpStatus == System.Net.HttpStatusCode.Unauthorized)
+        {
+            if (resp?.ReEnrollRequired == true)
+                return (null, HeartbeatStatus.ExplicitRevocation);
+            return (null, HeartbeatStatus.TransientFailure);
+        }
+
+        return (null, HeartbeatStatus.TransientFailure);
     }
 
     // ── Inventory ─────────────────────────────────────────────────────────────
@@ -227,11 +248,28 @@ public sealed class ApiClient : IDisposable
         [JsonPropertyName("modules_enabled")] public List<string> ModulesEnabled { get; set; } = new();
     }
 
+    /// <summary>Heartbeat status returned by <see cref="CheckinAsync"/>.</summary>
+    public enum HeartbeatStatus
+    {
+        Ok,
+
+        /// <summary>Network error, server error, or transient 401. Preserve credentials, retry with backoff.</summary>
+        TransientFailure,
+
+        /// <summary>Server explicitly revoked this key (HTTP 410, or 401 + <c>re_enroll_required:true</c>).</summary>
+        ExplicitRevocation,
+    }
+
     public sealed class CheckinResponse
     {
         [JsonPropertyName("sync_interval")] public int SyncInterval { get; set; }
         [JsonPropertyName("modules_enabled")] public List<string> ModulesEnabled { get; set; } = new();
         [JsonPropertyName("config_updated")] public bool ConfigUpdated { get; set; }
+        // Update availability — set by server when a newer agent version is available for this collector's channel
+        [JsonPropertyName("update_available")] public bool UpdateAvailable { get; set; }
+        [JsonPropertyName("manifest_version")] public string? ManifestVersion { get; set; }
+        // Revocation signal — set when the server has explicitly revoked this API key
+        [JsonPropertyName("re_enroll_required")] public bool ReEnrollRequired { get; set; }
     }
 
     public sealed class ApiResult
