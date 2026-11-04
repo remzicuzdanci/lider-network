@@ -42,7 +42,7 @@ public sealed class SystemInfoModule : ICollectorModule
     {
         using var s = new ManagementObjectSearcher(
             "SELECT Name,Manufacturer,Model,TotalPhysicalMemory,NumberOfLogicalProcessors," +
-            "SystemType,Domain FROM Win32_ComputerSystem");
+            "SystemType,Domain,UUID FROM Win32_ComputerSystem");
         foreach (ManagementObject o in s.Get())
         {
             p.Hostname = o["Name"]?.ToString();
@@ -52,7 +52,20 @@ public sealed class SystemInfoModule : ICollectorModule
             p.LogicalCores = Convert.ToInt32(o["NumberOfLogicalProcessors"] ?? 0);
             p.SystemType = o["SystemType"]?.ToString();
             p.Domain = o["Domain"]?.ToString();
+            p.BiosUuid = NormalizeUuid(o["UUID"]?.ToString());
         }
+    }
+
+    private static string? NormalizeUuid(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw)) return null;
+        var upper = raw.Trim().ToUpperInvariant();
+        // Filter known-fake/default GUIDs reported by some firmware/hypervisors
+        if (upper == "00000000-0000-0000-0000-000000000000") return null;
+        if (upper == "FFFFFFFF-FFFF-FFFF-FFFF-FFFFFFFFFFFF") return null;
+        if (upper == "03000200-0400-0500-0006-000700080009") return null; // VMware default
+        if (upper.StartsWith("00000000-0000-0000-")) return null;
+        return upper;
     }
 
     private static void CollectOs(SystemPayload p)
@@ -116,7 +129,7 @@ public sealed class SystemInfoModule : ICollectorModule
     {
         var slots = new List<RamSlot>();
         using var s = new ManagementObjectSearcher(
-            "SELECT BankLabel,Capacity,Speed,Manufacturer FROM Win32_PhysicalMemory");
+            "SELECT BankLabel,Capacity,Speed,Manufacturer,PartNumber FROM Win32_PhysicalMemory");
         foreach (ManagementObject o in s.Get())
             slots.Add(new RamSlot
             {
@@ -124,6 +137,7 @@ public sealed class SystemInfoModule : ICollectorModule
                 CapacityBytes = Convert.ToInt64(o["Capacity"] ?? 0),
                 SpeedMhz = Convert.ToInt32(o["Speed"] ?? 0),
                 Manufacturer = o["Manufacturer"]?.ToString(),
+                PartNumber = o["PartNumber"]?.ToString(),
             });
         p.RamSlots = slots;
     }
@@ -175,6 +189,7 @@ public sealed class SystemInfoModule : ICollectorModule
         [JsonPropertyName("manufacturer")] public string? Manufacturer { get; set; }
         [JsonPropertyName("model")] public string? Model { get; set; }
         [JsonPropertyName("chassis_type")] public string? ChassisType { get; set; }
+        [JsonPropertyName("bios_uuid")] public string? BiosUuid { get; set; }
         [JsonPropertyName("bios_serial")] public string? BiosSerial { get; set; }
         [JsonPropertyName("bios_version")] public string? BiosVersion { get; set; }
         [JsonPropertyName("bios_manufacturer")] public string? BiosManufacturer { get; set; }
@@ -219,6 +234,7 @@ public sealed class SystemInfoModule : ICollectorModule
         [JsonPropertyName("capacity_bytes")] public long CapacityBytes { get; set; }
         [JsonPropertyName("speed_mhz")] public int SpeedMhz { get; set; }
         [JsonPropertyName("manufacturer")] public string? Manufacturer { get; set; }
+        [JsonPropertyName("part_number")] public string? PartNumber { get; set; }
     }
 
     public sealed class DiskInfo
