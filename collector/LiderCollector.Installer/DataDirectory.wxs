@@ -17,6 +17,7 @@
     <ComponentGroup Id="DataDirectory" Directory="DATADIR">
 
       <!-- Create the directory and set ACL -->
+      <!-- KeyPath is implicit for CreateFolder-only components in WiX v4 -->
       <Component Id="DataDirComponent" Guid="C3D4E5F6-A7B8-9012-CDEF-123456789012">
         <CreateFolder Directory="DATADIR">
           <util:PermissionEx
@@ -32,7 +33,6 @@
             GenericWrite="no"
             GenericExecute="no" />
         </CreateFolder>
-        <KeyPath Yes="yes" />
       </Component>
 
     </ComponentGroup>

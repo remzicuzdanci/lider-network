@@ -40,7 +40,7 @@
     </Feature>
 
     <!-- ── UI: silent install only (no dialog sequence) ────────────────── -->
-    <Property Id="ALLUSERS" Value="1" />
+    <!-- ALLUSERS=1 is set implicitly by Scope="perMachine" above -->
 
     <!-- ── Custom actions: service start/stop handled by ServiceControl ─ -->
   </Package>

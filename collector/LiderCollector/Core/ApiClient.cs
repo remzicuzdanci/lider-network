@@ -60,8 +60,14 @@ public sealed class ApiClient : IDisposable
 
     // ── Heartbeat ─────────────────────────────────────────────────────────────
 
-    public async Task<CheckinResponse?> CheckinAsync(DeviceIdentity.IdentityPayload identity,
-        CancellationToken ct = default)
+    /// <summary>
+    /// Returns the checkin response, or null on network errors.
+    /// <c>ApiKeyRejected</c> is true when the server returned 401 — the API key
+    /// has been revoked or the collector record was removed.  The agent should
+    /// clear its credentials and re-enroll.
+    /// </summary>
+    public async Task<(CheckinResponse? Response, bool ApiKeyRejected)> CheckinAsync(
+        DeviceIdentity.IdentityPayload identity, CancellationToken ct = default)
     {
         var body = new
         {
@@ -70,7 +76,9 @@ public sealed class ApiClient : IDisposable
             status = "online",
             timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
         };
-        return await PostAsync<CheckinResponse>("checkin", body, authorized: true, ct);
+        var (resp, status) = await PostAsyncWithStatus<CheckinResponse>("checkin", body, authorized: true, ct);
+        bool apiKeyRejected = status == System.Net.HttpStatusCode.Unauthorized;
+        return (resp, apiKeyRejected);
     }
 
     // ── Inventory ─────────────────────────────────────────────────────────────
@@ -94,6 +102,13 @@ public sealed class ApiClient : IDisposable
     private async Task<T?> PostAsync<T>(string endpoint, object body,
         bool authorized, CancellationToken ct)
     {
+        var (result, _) = await PostAsyncWithStatus<T>(endpoint, body, authorized, ct);
+        return result;
+    }
+
+    private async Task<(T? Result, System.Net.HttpStatusCode Status)> PostAsyncWithStatus<T>(
+        string endpoint, object body, bool authorized, CancellationToken ct)
+    {
         try
         {
             var http = GetOrCreateClient();
@@ -115,20 +130,21 @@ public sealed class ApiClient : IDisposable
 
             if (!response.IsSuccessStatusCode)
             {
-                string body2 = await response.Content.ReadAsStringAsync(ct);
+                string respBody = await response.Content.ReadAsStringAsync(ct);
                 _log.LogWarning("POST {Endpoint} → HTTP {Status}: {Body}",
-                    endpoint, (int)response.StatusCode, body2.Length > 200 ? body2[..200] : body2);
-                return default;
+                    endpoint, (int)response.StatusCode,
+                    respBody.Length > 200 ? respBody[..200] : respBody);
+                return (default, response.StatusCode);
             }
 
             string respJson = await response.Content.ReadAsStringAsync(ct);
-            return JsonSerializer.Deserialize<T>(respJson, _jsonOpts);
+            return (JsonSerializer.Deserialize<T>(respJson, _jsonOpts), response.StatusCode);
         }
         catch (OperationCanceledException) { throw; }
         catch (Exception ex)
         {
             _log.LogWarning(ex, "POST {Endpoint} failed", endpoint);
-            return default;
+            return (default, System.Net.HttpStatusCode.ServiceUnavailable);
         }
     }
 

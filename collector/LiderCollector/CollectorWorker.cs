@@ -74,7 +74,8 @@ public sealed class CollectorWorker : BackgroundService
     {
         _log.LogInformation("CollectorWorker starting. Server={Server}", _config.ServerUrl);
 
-        // ── Enrollment ────────────────────────────────────────────────────────
+        // ── Enrollment ─────────────────────────────────────────────────────────
+        // Runs on first start and after server-driven re-enrollment (HeartbeatAsync 401).
         if (!_config.IsEnrolled || !_secure.Has("api_key"))
         {
             await EnrollWithRetryAsync(stoppingToken);
@@ -103,6 +104,21 @@ public sealed class CollectorWorker : BackgroundService
         {
             try
             {
+                // ── Re-enrollment check (after server-driven revocation) ──────
+                if (!_config.IsEnrolled || !_secure.Has("api_key"))
+                {
+                    _log.LogInformation("Agent is not enrolled — running enrollment.");
+                    await EnrollWithRetryAsync(stoppingToken);
+                    if (!_config.IsEnrolled)
+                    {
+                        _log.LogWarning("Re-enrollment failed. Waiting before retry.");
+                        await Task.Delay(TimeSpan.FromSeconds(_config.HeartbeatIntervalSeconds), stoppingToken);
+                        continue;
+                    }
+                    // Update identity after re-enrollment
+                    identity = _identity.Collect();
+                }
+
                 // ── Heartbeat ─────────────────────────────────────────────────
                 bool heartbeatOk = await HeartbeatAsync(identity, stoppingToken);
 
@@ -119,6 +135,9 @@ public sealed class CollectorWorker : BackgroundService
                 }
                 else
                 {
+                    // Note: 401 sets IsEnrolled=false in HeartbeatAsync; network errors just miss
+                    if (!_config.IsEnrolled) continue; // 401 path: skip to re-enrollment check
+
                     _consecutiveMissedHeartbeats++;
                     _lastOnline = false;
                     _log.LogWarning("Heartbeat missed. Consecutive misses: {Count}/{Threshold}",
@@ -158,31 +177,31 @@ public sealed class CollectorWorker : BackgroundService
 
     private async Task EnrollWithRetryAsync(CancellationToken ct)
     {
-        // 1. Try enrollment.json in dataPath (single-use, deleted on read).
+        // 1. enrollment.json takes priority over any DPAPI-cached token.
+        //    Rationale: if a previous enrollment attempt failed and the server rejected
+        //    the token, the admin may have deployed a fresh enrollment.json.  Keeping the
+        //    stale DPAPI token would prevent re-enrollment indefinitely.
         //    Token is NEVER logged — only server_url is logged by BootstrapEnrollment.
-        string? enrollToken = _secure.Get("enroll_token");
-
-        if (string.IsNullOrEmpty(enrollToken))
+        var bootstrap = _bootstrap.TryRead();
+        if (bootstrap != null)
         {
-            var bootstrap = _bootstrap.TryRead();
-            if (bootstrap != null)
+            // Override server URL from bootstrap if it differs (supports first-run from GPO)
+            if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&
+                bootstrap.ServerUrl != _config.ServerUrl)
             {
-                // Override server URL from bootstrap if provided (supports first-run from GPO)
-                if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&
-                    bootstrap.ServerUrl != _config.ServerUrl)
-                {
-                    _log.LogInformation(
-                        "Server URL updated from bootstrap enrollment. NewUrl={Url}",
-                        bootstrap.ServerUrl);
-                    _config.ServerUrl = bootstrap.ServerUrl;
-                    _config.Save();
-                }
-
-                // Store token encrypted in DPAPI — bootstrap file is already deleted
-                _secure.Set("enroll_token", bootstrap.EnrollmentToken);
-                enrollToken = bootstrap.EnrollmentToken;
+                _log.LogInformation(
+                    "Server URL updated from bootstrap enrollment. NewUrl={Url}",
+                    bootstrap.ServerUrl);
+                _config.ServerUrl = bootstrap.ServerUrl;
+                _config.Save();
             }
+
+            // Store new token in DPAPI, overwriting any stale previous token.
+            // The bootstrap file is already deleted by TryRead().
+            _secure.Set("enroll_token", bootstrap.EnrollmentToken);
         }
+
+        string? enrollToken = _secure.Get("enroll_token");
 
         if (string.IsNullOrEmpty(enrollToken))
         {
@@ -193,20 +212,23 @@ public sealed class CollectorWorker : BackgroundService
             return;
         }
 
-        // 2. Clone / re-image detection: if already enrolled with a different BIOS UUID,
-        //    this device was likely cloned. Log the warning and re-enroll.
+        // 2. Clone / re-image detection (heuristic only — BIOS UUID alone is insufficient).
+        //    Primary re-enrollment trigger is a 401 from the server (see HeartbeatAsync).
+        //    Here we only log a warning; we do NOT auto-wipe CollectorId based on BIOS UUID
+        //    because UUIDs can be non-unique across VMs, and a physical machine replacement
+        //    intentionally reuses the same collector slot.
         var currentId = _identity.Collect();
         if (_config.IsEnrolled && !string.IsNullOrEmpty(_config.EnrolledBiosUuid) &&
             !string.IsNullOrEmpty(currentId.BiosUuid) &&
             _config.EnrolledBiosUuid != currentId.BiosUuid)
         {
             _log.LogWarning(
-                "Device identity mismatch detected. " +
-                "EnrolledUuid={Enrolled}, CurrentUuid={Current}. " +
-                "This may be a cloned image. Re-enrolling with new identity.",
+                "BIOS UUID mismatch: enrolled={Enrolled}, current={Current}. " +
+                "This may indicate a cloned image, re-imaged machine, or VM UUID change. " +
+                "If the server rejects this agent (401), re-enroll with a new enrollment.json.",
                 _config.EnrolledBiosUuid, currentId.BiosUuid);
-            // Reset so we can re-enroll
-            _config.CollectorId = 0;
+            // Update the stored UUID so we don't log this every startup.
+            _config.EnrolledBiosUuid = currentId.BiosUuid;
             _config.Save();
         }
 
@@ -246,11 +268,32 @@ public sealed class CollectorWorker : BackgroundService
 
     // ── Heartbeat ─────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Returns true on a successful heartbeat.
+    /// Side-effect: if the server returns 401 the agent's credentials are wiped
+    /// so the next iteration triggers re-enrollment (server-driven re-enrollment).
+    /// This is the primary clone / revocation detection path.
+    /// </summary>
     private async Task<bool> HeartbeatAsync(DeviceIdentity.IdentityPayload identity, CancellationToken ct)
     {
         try
         {
-            var resp = await _api.CheckinAsync(identity, ct);
+            var (resp, apiKeyRejected) = await _api.CheckinAsync(identity, ct);
+
+            if (apiKeyRejected)
+            {
+                _log.LogWarning(
+                    "Server rejected the API key (HTTP 401). " +
+                    "CollectorId={Id}. Clearing credentials — will re-enroll on next iteration.",
+                    _config.CollectorId);
+                // Wipe stored credentials so EnrollWithRetryAsync runs next loop iteration.
+                _secure.Delete("api_key");
+                _config.CollectorId = 0;
+                _config.EnrolledBiosUuid = null;
+                _config.Save();
+                return false;
+            }
+
             if (resp != null)
             {
                 // Server can update intervals dynamically

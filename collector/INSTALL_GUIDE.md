@@ -109,9 +109,15 @@ Deploy as a standard `.msi` application.  No special parameters required.
 
 ### Re-enrollment (replace a machine, re-image, clone detection)
 
-The agent detects cloned images by comparing the BIOS UUID recorded at enrollment
-with the current BIOS UUID.  If they differ, the agent clears its CollectorId and
-re-enrolls automatically when a new `enrollment.json` is present.
+Re-enrollment is triggered by one of two signals:
+
+| Trigger | Behaviour |
+|---------|-----------|
+| **Server returns HTTP 401** (API key revoked or collector record removed) | Agent wipes `api_key` from DPAPI and clears `CollectorId`. On the next start, it checks for a new `enrollment.json` and re-enrolls. This is the **primary** and **definitive** trigger. |
+| **BIOS UUID mismatch** (enrolled UUID ≠ current UUID) | Agent logs a **warning only** and updates the stored UUID to avoid repeat warnings. It does NOT auto-wipe credentials. This may indicate a cloned image, re-imaged machine, or VM UUID change — the server 401 path handles the definitive action. |
+
+To re-enroll a machine: revoke its collector record in the Lider IT ONE console
+(which causes the next heartbeat to return 401), then deploy a fresh `enrollment.json`.
 
 ---
 
@@ -145,11 +151,31 @@ Registry location: `HKLM\SOFTWARE\Policies\LiderNetwork\LiderCollector\`
 
 ## 5. Upgrade
 
-The MSI uses WiX `MajorUpgrade`.  Deploy the new MSI version via GPO or SCCM.
+The MSI uses WiX `MajorUpgrade` (`Schedule="afterInstallInitialize"`).  Deploy the
+new MSI via GPO Software Installation (Assigned), SCCM, or Intune — same as the
+initial deployment.
 
-- Old binaries in `%ProgramFiles%\LiderNetwork\LiderCollector\` are removed.
-- Data in `%ProgramData%\LiderCollector\` (config, keys, queue, logs) is **preserved**.
-- The service stops before upgrade and starts after — no manual intervention needed.
+```cmd
+msiexec /i LiderITONECollector-1.1.0.msi /qn /norestart
+```
+
+### What happens during upgrade
+
+| Path | On Upgrade |
+|------|-----------|
+| `%ProgramFiles%\LiderNetwork\LiderCollector\` | **Replaced** — old binaries removed, new binaries installed |
+| `%ProgramData%\LiderCollector\collector.json` | **Preserved** — CollectorId, server URL, intervals retained |
+| `%ProgramData%\LiderCollector\secure.dat` | **Preserved** — DPAPI-encrypted API key survives upgrade |
+| `%ProgramData%\LiderCollector\queue.db` | **Preserved** — offline queue survives; pending events flushed on next start |
+| `%ProgramData%\LiderCollector\logs\` | **Preserved** — historical logs kept |
+| `%ProgramData%\LiderCollector\enrollment.json` | **Consumed on next start** — if placed before upgrade completes, the agent reads and deletes it on first start after upgrade |
+
+The service is stopped automatically before binaries are replaced and started again
+after installation completes — no manual intervention required.
+
+> **Note:** The `%ProgramData%\LiderCollector\` directory is managed by the MSI only
+> for its **creation** (first install) and ACL setup.  Upgrade and uninstall never
+> remove it.  This is intentional — data persistence across upgrades is a design goal.
 
 ---
 
@@ -159,9 +185,30 @@ The MSI uses WiX `MajorUpgrade`.  Deploy the new MSI version via GPO or SCCM.
 msiexec /x LiderITONECollector-1.0.0.msi /qn
 ```
 
-Or via Add/Remove Programs.  `%ProgramData%\LiderCollector\` is **not removed** by
-uninstall (contains the encrypted API key and accumulated queue data).  Remove it
-manually if the machine is being decommissioned.
+Or via **Add/Remove Programs** / **Apps & features**.
+
+### What happens during uninstall
+
+| Path | On Uninstall |
+|------|-------------|
+| `%ProgramFiles%\LiderNetwork\LiderCollector\` | **Removed** — service binary and all install-dir files deleted |
+| Windows Service (`LiderITONECollector`) | **Removed** — stopped and unregistered |
+| `%ProgramData%\LiderCollector\` | **NOT removed** — entire directory is preserved |
+| `HKLM\SOFTWARE\Policies\LiderNetwork\` | **NOT removed** — GPO-managed registry is never touched by the MSI |
+
+The ProgramData directory is intentionally left behind.  It contains:
+- The encrypted API key (`secure.dat`) — allows re-install without re-enrollment
+- The offline queue (`queue.db`) — avoids data loss if the service is briefly removed
+- Historical logs
+
+**To fully decommission a machine:**
+1. Revoke the collector record in the Lider IT ONE console.
+2. Uninstall the MSI.
+3. Manually delete `%ProgramData%\LiderCollector\` (requires admin).
+
+**To re-install without re-enrollment** (e.g. repair after corruption):
+Simply re-install the MSI.  The existing `secure.dat` with the API key is reused
+automatically — no `enrollment.json` needed.
 
 ---
 

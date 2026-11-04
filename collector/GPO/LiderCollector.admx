@@ -52,14 +52,18 @@
   <policies>
 
     <!-- ── Server URL ───────────────────────────────────────────────────── -->
+    <!--
+      No policy-level valueName: when <elements> are present the element's own
+      valueName is authoritative.  GPMC infers enabled/configured state from
+      whether the element value exists in the registry.
+    -->
     <policy
       name="ServerUrl"
       class="Machine"
       displayName="$(string.PolicyServerUrl_Name)"
       explainText="$(string.PolicyServerUrl_Explain)"
       presentation="$(presentation.PolicyServerUrl)"
-      key="SOFTWARE\Policies\LiderNetwork\LiderCollector"
-      valueName="ServerUrl">
+      key="SOFTWARE\Policies\LiderNetwork\LiderCollector">
       <parentCategory ref="LiderCollector" />
       <supportedOn ref="SUPPORTED_WIN10_AND_LATER" />
       <elements>
@@ -78,8 +82,7 @@
       displayName="$(string.PolicyHeartbeat_Name)"
       explainText="$(string.PolicyHeartbeat_Explain)"
       presentation="$(presentation.PolicyHeartbeat)"
-      key="SOFTWARE\Policies\LiderNetwork\LiderCollector"
-      valueName="HeartbeatIntervalSeconds">
+      key="SOFTWARE\Policies\LiderNetwork\LiderCollector">
       <parentCategory ref="LiderCollector" />
       <supportedOn ref="SUPPORTED_WIN10_AND_LATER" />
       <elements>
@@ -98,8 +101,7 @@
       displayName="$(string.PolicyInventory_Name)"
       explainText="$(string.PolicyInventory_Explain)"
       presentation="$(presentation.PolicyInventory)"
-      key="SOFTWARE\Policies\LiderNetwork\LiderCollector"
-      valueName="InventorySyncIntervalSeconds">
+      key="SOFTWARE\Policies\LiderNetwork\LiderCollector">
       <parentCategory ref="LiderCollector" />
       <supportedOn ref="SUPPORTED_WIN10_AND_LATER" />
       <elements>
@@ -118,8 +120,7 @@
       displayName="$(string.PolicyLogLevel_Name)"
       explainText="$(string.PolicyLogLevel_Explain)"
       presentation="$(presentation.PolicyLogLevel)"
-      key="SOFTWARE\Policies\LiderNetwork\LiderCollector"
-      valueName="LogLevel">
+      key="SOFTWARE\Policies\LiderNetwork\LiderCollector">
       <parentCategory ref="LiderCollector" />
       <supportedOn ref="SUPPORTED_WIN10_AND_LATER" />
       <elements>
