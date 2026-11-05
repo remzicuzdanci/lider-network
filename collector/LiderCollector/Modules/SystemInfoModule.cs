@@ -19,23 +19,25 @@ public sealed class SystemInfoModule : ICollectorModule
 
     public Task<object?> RunAsync(CancellationToken ct)
     {
-        try
-        {
-            var payload = new SystemPayload();
-            CollectComputerSystem(payload);
-            CollectOs(payload);
-            CollectProcessor(payload);
-            CollectBios(payload);
-            CollectEnclosure(payload);
-            CollectMemory(payload);
-            CollectDisks(payload);
-            return Task.FromResult<object?>(payload);
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "SystemInfoModule failed");
-            return Task.FromResult<object?>(null);
-        }
+        var payload = new SystemPayload();
+
+        // Each WMI source is independent; a failure in one must not suppress the rest.
+        TryCollect("ComputerSystem", () => CollectComputerSystem(payload));
+        TryCollect("OperatingSystem", () => CollectOs(payload));
+        TryCollect("Processor",       () => CollectProcessor(payload));
+        TryCollect("BIOS",            () => CollectBios(payload));
+        TryCollect("Enclosure",       () => CollectEnclosure(payload));
+        TryCollect("Memory",          () => CollectMemory(payload));
+        TryCollect("Disks",           () => CollectDisks(payload));
+
+        // Always return the payload — partial data is far more useful than null.
+        return Task.FromResult<object?>(payload);
+    }
+
+    private void TryCollect(string source, Action action)
+    {
+        try { action(); }
+        catch (Exception ex) { _log.LogWarning(ex, "SystemInfoModule: {Source} WMI query failed", source); }
     }
 
     private static void CollectComputerSystem(SystemPayload p)

@@ -17,9 +17,9 @@ public sealed class NetworkModule : ICollectorModule
 
     public Task<object?> RunAsync(CancellationToken ct)
     {
+        var adapters = new List<AdapterInfo>();
         try
         {
-            var adapters = new List<AdapterInfo>();
             using var s = new ManagementObjectSearcher(
                 "SELECT Description,MACAddress,IPAddress,IPSubnet,DefaultIPGateway," +
                 "DHCPEnabled,DHCPServer,DNSServerSearchOrder,Index,IPEnabled " +
@@ -27,34 +27,41 @@ public sealed class NetworkModule : ICollectorModule
 
             foreach (ManagementObject o in s.Get())
             {
-                string? mac = o["MACAddress"]?.ToString();
-                if (string.IsNullOrEmpty(mac)) continue;
-
-                var ips = (o["IPAddress"] as string[]) ?? Array.Empty<string>();
-                var subnets = (o["IPSubnet"] as string[]) ?? Array.Empty<string>();
-                var gateways = (o["DefaultIPGateway"] as string[]) ?? Array.Empty<string>();
-                var dns = (o["DNSServerSearchOrder"] as string[]) ?? Array.Empty<string>();
-
-                adapters.Add(new AdapterInfo
+                try
                 {
-                    Description = o["Description"]?.ToString(),
-                    MacAddress = mac,
-                    IpAddresses = ips.ToList(),
-                    Subnets = subnets.ToList(),
-                    DefaultGateways = gateways.ToList(),
-                    DnsServers = dns.ToList(),
-                    DhcpEnabled = Convert.ToBoolean(o["DHCPEnabled"] ?? false),
-                    DhcpServer = o["DHCPServer"]?.ToString(),
-                });
-            }
+                    string? mac = o["MACAddress"]?.ToString();
+                    if (string.IsNullOrEmpty(mac)) continue;
 
-            return Task.FromResult<object?>(new NetworkPayload { Adapters = adapters });
+                    var ips = (o["IPAddress"] as string[]) ?? Array.Empty<string>();
+                    var subnets = (o["IPSubnet"] as string[]) ?? Array.Empty<string>();
+                    var gateways = (o["DefaultIPGateway"] as string[]) ?? Array.Empty<string>();
+                    var dns = (o["DNSServerSearchOrder"] as string[]) ?? Array.Empty<string>();
+
+                    adapters.Add(new AdapterInfo
+                    {
+                        Description = o["Description"]?.ToString(),
+                        MacAddress = mac,
+                        IpAddresses = ips.ToList(),
+                        Subnets = subnets.ToList(),
+                        DefaultGateways = gateways.ToList(),
+                        DnsServers = dns.ToList(),
+                        DhcpEnabled = Convert.ToBoolean(o["DHCPEnabled"] ?? false),
+                        DhcpServer = o["DHCPServer"]?.ToString(),
+                    });
+                }
+                catch (Exception ex)
+                {
+                    _log.LogWarning(ex, "NetworkModule: failed to read one adapter, skipping");
+                }
+            }
         }
         catch (Exception ex)
         {
-            _log.LogWarning(ex, "NetworkModule failed");
-            return Task.FromResult<object?>(null);
+            _log.LogWarning(ex, "NetworkModule: WMI query failed");
         }
+
+        // Always return payload — empty adapter list is valid (loopback-only machine).
+        return Task.FromResult<object?>(new NetworkPayload { Adapters = adapters });
     }
 
     public sealed class NetworkPayload
