@@ -10,10 +10,15 @@ namespace LiderCollector.Updater;
 /// </summary>
 internal sealed class UpdaterConfig
 {
-    // Paths are consistent with LiderCollector's DataPath convention
-    private const string DefaultDataPath    = @"C:\ProgramData\LiderNetwork\LiderCollector";
-    private const string DefaultInstallPath = @"C:\Program Files\LiderNetwork\LiderCollector";
-    private const string ServiceName        = "LiderCollector";
+    // DataPath must match Program.cs: Path.Combine(CommonApplicationData, "LiderCollector")
+    // DefaultInstallPath: use the updater binary's own directory — it ships alongside the service.
+    private static readonly string DefaultDataPath    =
+        Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), "LiderCollector");
+    private static readonly string DefaultInstallPath =
+        string.IsNullOrEmpty(AppContext.BaseDirectory)
+        ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "LiderNetwork", "LiderCollector")
+        : AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+    private const string ServiceName = "LiderCollector";
 
     public string ServerUrl    { get; private set; } = string.Empty;
     public string DataPath     { get; private set; } = DefaultDataPath;
