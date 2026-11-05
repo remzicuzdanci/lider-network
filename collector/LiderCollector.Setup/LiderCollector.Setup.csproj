@@ -5,9 +5,9 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
-    <PublishTrimmed>true</PublishTrimmed>
-    <TrimMode>partial</TrimMode>
-    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
+    <PublishTrimmed>false</PublishTrimmed>
+    <EnableCompressionInSingleFile>false</EnableCompressionInSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>false</IncludeNativeLibrariesForSelfExtract>
     <AssemblyName>LiderCollectorSetup</AssemblyName>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Nullable>enable</Nullable>
