@@ -1,13 +1,12 @@
-
 ' LiderCollector enrollment action
-' CustomActionData = full MSI path e.g. C:\Users\...\LiderCollectorSetup-acme-{token}.msi
+' CustomActionData = full MSI path, e.g. C:\...\LiderCollectorSetup-acme-{token}.msi
 Dim msiFull, msiName, i, lastDash, deployToken
 Dim http, resp, Q, searchStr, tokenStart, tokenEnd, enrollToken
 Dim fso, dataDir, enrollJson, f, hostName, body
 
 Q = Chr(34)
 
-' ── 1. Parse deploy token from MSI filename ────────────────────────────────
+' 1. Parse deploy token from MSI filename
 msiFull = Session.Property("CustomActionData")
 
 For i = Len(msiFull) To 1 Step -1
@@ -33,10 +32,10 @@ End If
 
 deployToken = Mid(msiName, lastDash + 1)
 
-' ── 2. Hostname ────────────────────────────────────────────────────────────
+' 2. Hostname
 hostName = CreateObject("WScript.Network").ComputerName
 
-' ── 3. HTTP auto-enroll ────────────────────────────────────────────────────
+' 3. HTTP auto-enroll
 Set http = CreateObject("WinHttp.WinHttpRequest.5.1")
 http.Open "POST", "http://192.168.20.61/api/v1/collector/auto-enroll", False
 http.SetRequestHeader "Content-Type", "application/json"
@@ -56,7 +55,7 @@ If http.Status <> 200 Then
     Err.Raise 1, "LiderSetup", "Enrollment failed (HTTP " & http.Status & "): " & http.ResponseText
 End If
 
-' ── 4. Parse enrollment_token ──────────────────────────────────────────────
+' 4. Parse enrollment_token
 resp = http.ResponseText
 searchStr = Q & "enrollment_token" & Q & ":" & Q
 tokenStart = InStr(resp, searchStr)
@@ -71,7 +70,7 @@ If Len(enrollToken) < 10 Then
     Err.Raise 1, "LiderSetup", "Invalid enrollment_token received"
 End If
 
-' ── 5. Write enrollment.json ───────────────────────────────────────────────
+' 5. Write enrollment.json
 Set fso = CreateObject("Scripting.FileSystemObject")
 dataDir = "C:\ProgramData\LiderCollector"
 If Not fso.FolderExists(dataDir) Then fso.CreateFolder dataDir
@@ -85,7 +84,7 @@ Set f = fso.CreateTextFile(dataDir & "\enrollment.json", True, False)
 f.Write enrollJson
 f.Close
 
-' ── 6. Setup log ───────────────────────────────────────────────────────────
+' 6. Setup log
 Set f = fso.OpenTextFile(dataDir & "\setup.log", 8, True)
 f.WriteLine Now() & " [EnrollCA] OK host=" & hostName & " token=" & Left(enrollToken, 8) & "..."
 f.Close

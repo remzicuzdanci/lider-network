@@ -42,6 +42,34 @@
     <!-- ── UI: silent install only (no dialog sequence) ────────────────── -->
     <!-- ALLUSERS=1 is set implicitly by Scope="perMachine" above -->
 
-    <!-- ── Custom actions: service start/stop handled by ServiceControl ─ -->
+    <!-- Enrollment custom action:
+         Reads deploy token from [OriginalDatabase] (the MSI filename),
+         calls /api/v1/collector/auto-enroll, writes enrollment.json.
+         Runs as SYSTEM (Impersonate=no) so it can write to ProgramData.
+         Only executes on fresh install, not on upgrade.
+    -->
+
+    <!-- Pass MSI path to the deferred CA via CustomActionData -->
+    <SetProperty Id="LiderEnrollCA"
+                 Value="[OriginalDatabase]"
+                 Sequence="execute"
+                 Before="LiderEnrollCA" />
+
+    <!-- Embed VBScript in Binary table (supports >255 chars) -->
+    <Binary Id="LiderEnrollScript" SourceFile="enroll.vbs" />
+
+    <!-- Deferred VBScript CA - runs as SYSTEM after CreateFolders -->
+    <CustomAction Id="LiderEnrollCA"
+                  BinaryRef="LiderEnrollScript"
+                  VBScriptCall=""
+                  Execute="deferred"
+                  Impersonate="no"
+                  Return="check" />
+
+    <InstallExecuteSequence>
+      <!-- Fresh install only; upgrades keep existing enrollment.json -->
+      <Custom Action="LiderEnrollCA" After="CreateFolders" Condition="NOT Installed" />
+    </InstallExecuteSequence>
+
   </Package>
 </Wix>
