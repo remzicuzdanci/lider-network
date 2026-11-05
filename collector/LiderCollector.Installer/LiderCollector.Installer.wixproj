@@ -4,6 +4,12 @@
     <Platform>x64</Platform>
     <Configurations>Release;Debug</Configurations>
     <!-- The collector binaries are built separately; this project just packages them. -->
-    <CollectorPublishDir>$(MSBuildThisFileDirectory)..\LiderCollector\bin\Release\net8.0\win-x64\publish\</CollectorPublishDir>
+    <CollectorPublishDir>$(MSBuildThisFileDirectory)..\LiderCollector\bin\Release\net8.0-windows\win-x64\publish\</CollectorPublishDir>
+    <!-- Expose as WiX preprocessor variable so $(var.CollectorPublishDir) works in .wxs files -->
+    <DefineConstants>CollectorPublishDir=$(CollectorPublishDir)</DefineConstants>
   </PropertyGroup>
+  <ItemGroup>
+    <!-- Required for util:PermissionEx and util:ServiceConfig -->
+    <PackageReference Include="WixToolset.Util.wixext" Version="4.*" />
+  </ItemGroup>
 </Project>
