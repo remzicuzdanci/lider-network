@@ -56,9 +56,14 @@ public static class ServiceInstaller
         RunSc($"failure \"{ServiceName}\" reset= 86400 " +
               $"actions= restart/60000/restart/60000/restart/60000");
 
-        // Harden NTFS permissions: only SYSTEM and Administrators may access sensitive files
-        string installDir = Path.GetDirectoryName(exePath) ?? AppContext.BaseDirectory;
-        HardenDataFilePermissions(installDir);
+        // Harden NTFS permissions on the DATA directory (%ProgramData%\LiderCollector\),
+        // NOT installDir. Sensitive files (secure.dat, queue.db) live in dataPath.
+        string dataPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData),
+            "LiderCollector");
+        Directory.CreateDirectory(dataPath);
+        HardenDataDirectory(dataPath);
+        HardenDataFilePermissions(dataPath);
 
         Console.WriteLine("Service installed. Starting...");
         RunSc($"start \"{ServiceName}\"");
@@ -72,6 +77,41 @@ public static class ServiceInstaller
         System.Threading.Thread.Sleep(2000);
         RunSc($"delete \"{ServiceName}\"");
         Console.WriteLine("Service removed.");
+    }
+
+    /// <summary>
+    /// Restricts NTFS ACL on the data directory itself so that files created later
+    /// (e.g. secure.dat, queue.db) inherit SYSTEM+Administrators-only access.
+    /// </summary>
+    private static void HardenDataDirectory(string directory)
+    {
+        if (!Directory.Exists(directory)) return;
+        try
+        {
+            // (OI)(CI)(F) = object-inherit, container-inherit, full control
+            // so new files and subdirectories created under dataPath inherit the ACE
+            string args = $"\"{directory}\" /inheritance:r " +
+                          "/grant:r \"NT AUTHORITY\\SYSTEM:(OI)(CI)(F)\" " +
+                          "/grant:r \"BUILTIN\\Administrators:(OI)(CI)(F)\"";
+            var psi = new ProcessStartInfo("icacls.exe", args)
+            {
+                UseShellExecute        = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError  = true,
+                CreateNoWindow         = true,
+            };
+            using var proc = Process.Start(psi)!;
+            string output = proc.StandardOutput.ReadToEnd().Trim();
+            proc.WaitForExit();
+            if (proc.ExitCode == 0)
+                Console.WriteLine($"  Data directory ACL hardened: {directory}");
+            else
+                Console.Error.WriteLine($"  Directory ACL hardening failed: {output}");
+        }
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine($"  Could not harden directory {directory}: {ex.Message}");
+        }
     }
 
     /// <summary>
