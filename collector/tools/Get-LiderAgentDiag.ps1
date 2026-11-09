@@ -11,14 +11,14 @@ $ErrorActionPreference = 'Continue'
 $out = Join-Path ([Environment]::GetFolderPath('Desktop')) ("LiderAgentDiag_{0}_{1}.txt" -f $env:COMPUTERNAME, (Get-Date -Format 'yyyyMMdd_HHmmss'))
 $sb = New-Object System.Text.StringBuilder
 function W($t) { [void]$sb.AppendLine([string]$t) }
-function H($t) { W ''; W ('=' * 8 + ' ' + $t) }
+function Section($t) { W ''; W ('=' * 8 + ' ' + $t) }
 function Mask($s) { ($s -replace 'ldt_[0-9a-f]{16,}', 'ldt_<masked>') -replace '(?i)("?(api_key|enrollment_token|enroll_token|token)"?\s*[:=]\s*")[^"]+', '$1<masked>' }
 
-H 'Machine'
+Section 'Machine'
 W "Computer: $env:COMPUTERNAME   Time: $(Get-Date -Format o)   Admin: $(([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole('Administrators'))"
 W ("OS: " + (Get-CimInstance Win32_OperatingSystem).Caption + " " + (Get-CimInstance Win32_OperatingSystem).BuildNumber)
 
-H 'Windows service(s) named like Lider*'
+Section 'Windows service(s) named like Lider*'
 $svcs = Get-CimInstance Win32_Service | Where-Object { $_.Name -like '*Lider*' -or $_.DisplayName -like '*Lider*' -or $_.PathName -like '*LiderCollector*' }
 if (-not $svcs) { W 'NO Lider service is registered.' }
 foreach ($s in $svcs) {
@@ -28,7 +28,7 @@ foreach ($s in $svcs) {
     if (Test-Path $exe) { $fi = Get-Item $exe; W ("  exe: {0} bytes, FileVersion={1}, ProductVersion={2}, Modified={3}" -f $fi.Length, $fi.VersionInfo.FileVersion, $fi.VersionInfo.ProductVersion, $fi.LastWriteTime) } else { W "  exe NOT FOUND at that path" }
 }
 
-H 'Every LiderCollector.exe on the disk (Program Files / ProgramData)'
+Section 'Every LiderCollector.exe on the disk (Program Files / ProgramData)'
 foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramData)) {
     if ($root -and (Test-Path $root)) {
         Get-ChildItem $root -Recurse -Filter 'LiderCollector*.exe' -ErrorAction SilentlyContinue | ForEach-Object {
@@ -37,10 +37,10 @@ foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)}, $env:ProgramDat
     }
 }
 
-H 'Running processes'
+Section 'Running processes'
 Get-Process | Where-Object { $_.ProcessName -like 'LiderCollector*' } | ForEach-Object { W ("{0} pid={1} start={2} path={3}" -f $_.ProcessName, $_.Id, $_.StartTime, $_.Path) }
 
-H 'Windows Installer products (UpgradeCode B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847, and any named Lider)'
+Section 'Windows Installer products (UpgradeCode B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847, and any named Lider)'
 try {
     $wi = New-Object -ComObject WindowsInstaller.Installer
     foreach ($code in $wi.RelatedProducts('{B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847}')) {
@@ -54,7 +54,7 @@ try {
 $uninst = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*', 'HKLM:\SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall\*' -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like '*Lider*' }
 foreach ($u in $uninst) { W ("Uninstall entry: {0} {1} ({2}) {3}" -f $u.DisplayName, $u.DisplayVersion, $u.PSChildName, $u.InstallLocation) }
 
-H 'Data directory %ProgramData%\LiderCollector'
+Section 'Data directory %ProgramData%\LiderCollector'
 $dd = Join-Path $env:ProgramData 'LiderCollector'
 if (Test-Path $dd) {
     Get-ChildItem $dd -Force | ForEach-Object { W ("{0,-28} {1,10} bytes  {2}" -f $_.Name, $_.Length, $_.LastWriteTime) }
@@ -67,27 +67,27 @@ if (Test-Path $dd) {
     foreach ($l in $logs) { W ''; W ("--- {0} (last 80 lines)" -f $l.FullName); Get-Content $l.FullName -Tail 80 -ErrorAction SilentlyContinue | ForEach-Object { W (Mask $_) } }
 } else { W "$dd does not exist" }
 
-H 'Windows Installer events (Application log, last 24 h, source MsiInstaller)'
+Section 'Windows Installer events (Application log, last 24 h, source MsiInstaller)'
 try {
     Get-WinEvent -FilterHashtable @{ LogName = 'Application'; ProviderName = 'MsiInstaller'; StartTime = (Get-Date).AddHours(-24) } -ErrorAction Stop |
         Select-Object -First 25 | ForEach-Object { W ("{0}  id={1}  {2}" -f $_.TimeCreated, $_.Id, (Mask (($_.Message -split "`r?`n")[0]))) }
 } catch { W "none / $($_.Exception.Message)" }
 
-H 'Service Control Manager events for the Lider service (System log, last 24 h)'
+Section 'Service Control Manager events for the Lider service (System log, last 24 h)'
 try {
     Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Service Control Manager'; StartTime = (Get-Date).AddHours(-24) } -ErrorAction Stop |
         Where-Object { $_.Message -like '*Lider*' } | Select-Object -First 20 |
         ForEach-Object { W ("{0}  id={1}  {2}" -f $_.TimeCreated, $_.Id, ($_.Message -split "`r?`n")[0]) }
 } catch { W "none / $($_.Exception.Message)" }
 
-H 'Application crash / .NET runtime events mentioning LiderCollector (last 24 h)'
+Section 'Application crash / .NET runtime events mentioning LiderCollector (last 24 h)'
 try {
     Get-WinEvent -FilterHashtable @{ LogName = 'Application'; StartTime = (Get-Date).AddHours(-24) } -ErrorAction Stop |
         Where-Object { $_.Message -like '*LiderCollector*' -and $_.ProviderName -ne 'MsiInstaller' } | Select-Object -First 10 |
         ForEach-Object { W ("{0}  {1} id={2}  {3}" -f $_.TimeCreated, $_.ProviderName, $_.Id, (($_.Message -split "`r?`n")[0..2] -join ' | ')) }
 } catch { W "none" }
 
-H 'Reachability of the server from this machine'
+Section 'Reachability of the server from this machine'
 try { $r = Invoke-WebRequest -Uri 'http://192.168.20.61/' -UseBasicParsing -TimeoutSec 8; W "GET http://192.168.20.61/ -> $($r.StatusCode)" } catch { W "GET http://192.168.20.61/ failed: $($_.Exception.Message)" }
 
 [IO.File]::WriteAllText($out, $sb.ToString(), (New-Object Text.UTF8Encoding($true)))
