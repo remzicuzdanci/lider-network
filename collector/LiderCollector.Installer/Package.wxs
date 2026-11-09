@@ -2,73 +2,73 @@
 <!--
   Lider IT ONE Collector — WiX v4 Package definition.
 
-  UPGRADE SAFETY:
-    MajorUpgrade removes old binaries from ProgramFiles before installing new ones.
-    All mutable state (collector.json, secure.dat, queue.db, logs) lives in
-    %ProgramData%\LiderCollector\ and is NOT touched by upgrade/uninstall.
+  ONE-CLICK, CUSTOMER-BOUND INSTALL
+    Lider IT ONE stamps a short-lived, single-use enrollment token and the server address INTO this file when an
+    administrator downloads it for a specific customer (see MsiStamper on the server). The token is a Property value
+    of the MSI database, not part of the file name and not a command-line argument:
+        ENROLLTOKEN / SERVERURL  (placeholders below; replaced in place with same-length values)
+    The installer only writes %ProgramData%\LiderCollector\enrollment.json (no network access). The Windows service
+    enrolls itself on first start, stores its API key with DPAPI (machine scope) and deletes the file.
+    An unstamped copy of this MSI installs the service but cannot enroll (used for upgrades: identity is preserved).
 
-  TOKEN SECURITY:
-    No enrollment token is embedded in the MSI or passed on the command line.
-    IT deploys enrollment.json to %ProgramData%\LiderCollector\ separately
-    (via GPO Preferences file copy, SCCM, robocopy, etc.) before the first
-    service start.  The agent reads and immediately deletes it.
+  UPGRADE SAFETY
+    MajorUpgrade removes old binaries from ProgramFiles before installing the new ones. All mutable state
+    (collector.json, secure.dat, queue.db, logs) lives in %ProgramData%\LiderCollector\ and is NOT touched.
 -->
 <Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
   <Package
     Name="Lider IT ONE Collector"
     Manufacturer="Lider Network"
-    Version="1.0.0"
+    Version="$(var.ProductVersion)"
     UpgradeCode="B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847"
     Scope="perMachine"
     InstallerVersion="500"
     Compressed="yes"
     Language="1033">
 
-    <!-- ── Upgrade handling ─────────────────────────────────────────────── -->
     <MajorUpgrade
       DowngradeErrorMessage="A newer version of Lider IT ONE Collector is already installed."
       AllowSameVersionUpgrades="no"
       Schedule="afterInstallInitialize" />
 
-    <!-- ── Media ────────────────────────────────────────────────────────── -->
     <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
 
-    <!-- ── Feature ──────────────────────────────────────────────────────── -->
+    <!-- Windows 10/11 and Windows Server 2012 R2 or later, 64-bit (the self-contained .NET 8 runtime needs this). -->
+    <Launch Condition="VersionNT64 AND VersionNT &gt;= 603"
+            Message="Lider IT ONE Collector requires a 64-bit edition of Windows 10, Windows 11 or Windows Server 2012 R2 or later." />
+
     <Feature Id="ProductFeature" Title="Lider IT ONE Collector" Level="1">
       <ComponentGroupRef Id="CollectorBinaries" />
       <ComponentGroupRef Id="DataDirectory" />
     </Feature>
 
-    <!-- ── UI: silent install only (no dialog sequence) ────────────────── -->
-    <!-- ALLUSERS=1 is set implicitly by Scope="perMachine" above -->
+    <!-- ── Stamped values (same-length in-place replacement; keep the lengths: token 100, url 160) ─────────── -->
+    <Property Id="ENROLLTOKEN" Secure="yes" Hidden="yes"
+              Value="@@LIDER_ENROLL_TOKEN@@##############################################################################" />
+    <Property Id="SERVERURL" Secure="yes"
+              Value="@@LIDER_SERVER_URL@@############################################################################################################################################" />
+    <!-- Keep the token and the CustomActionData that carries it out of the MSI log. -->
+    <Property Id="LiderBootstrapCA" Hidden="yes" Value="-" />
 
-    <!-- Enrollment custom action:
-         Reads deploy token from [OriginalDatabase] (the MSI filename),
-         calls /api/v1/collector/auto-enroll, writes enrollment.json.
-         Runs as SYSTEM (Impersonate=no) so it can write to ProgramData.
-         Only executes on fresh install, not on upgrade.
-    -->
+    <Binary Id="LiderInstallerScript" SourceFile="$(var.InstallerDir)bootstrap.vbs" />
 
-    <!-- Pass MSI path to the deferred CA via CustomActionData -->
-    <SetProperty Id="LiderEnrollCA"
-                 Value="[OriginalDatabase]"
-                 Sequence="execute"
-                 Before="LiderEnrollCA" />
+    <SetProperty Id="LiderBootstrapCA" Value="[ENROLLTOKEN]|[SERVERURL]" Sequence="execute" Before="LiderBootstrapCA" />
+    <SetProperty Id="LiderRollbackLogCA" Value="[ProductVersion]" Sequence="execute" Before="LiderRollbackLogCA" />
+    <SetProperty Id="LiderCommitLogCA" Value="[ProductVersion]" Sequence="execute" Before="LiderCommitLogCA" />
 
-    <!-- Embed VBScript in Binary table (supports >255 chars) -->
-    <Binary Id="LiderEnrollScript" SourceFile="enroll.vbs" />
-
-    <!-- Deferred VBScript CA - runs as SYSTEM after CreateFolders -->
-    <CustomAction Id="LiderEnrollCA"
-                  BinaryRef="LiderEnrollScript"
-                  VBScriptCall=""
-                  Execute="deferred"
-                  Impersonate="no"
-                  Return="check" />
+    <CustomAction Id="LiderBootstrapCA" BinaryRef="LiderInstallerScript" VBScriptCall="WriteBootstrap"
+                  Execute="deferred" Impersonate="no" Return="check" />
+    <CustomAction Id="LiderRollbackLogCA" BinaryRef="LiderInstallerScript" VBScriptCall="LogRolledBack"
+                  Execute="rollback" Impersonate="no" Return="ignore" />
+    <CustomAction Id="LiderCommitLogCA" BinaryRef="LiderInstallerScript" VBScriptCall="LogCommitted"
+                  Execute="commit" Impersonate="no" Return="ignore" />
 
     <InstallExecuteSequence>
-      <!-- Fresh install only; upgrades keep existing enrollment.json -->
-      <Custom Action="LiderEnrollCA" After="CreateFolders" Condition="NOT Installed" />
+      <!-- The rollback action must be scheduled BEFORE the action it protects. -->
+      <Custom Action="LiderRollbackLogCA" Before="LiderBootstrapCA" Condition="NOT Installed" />
+      <!-- After the data folder exists, before the service starts. Upgrades: the script keeps the existing identity. -->
+      <Custom Action="LiderBootstrapCA" After="CreateFolders" Condition="NOT Installed" />
+      <Custom Action="LiderCommitLogCA" Before="InstallFinalize" Condition="NOT Installed" />
     </InstallExecuteSequence>
 
   </Package>

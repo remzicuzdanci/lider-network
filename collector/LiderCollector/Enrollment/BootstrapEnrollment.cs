@@ -25,7 +25,7 @@ public sealed class BootstrapEnrollment
     private readonly string _dataDir;
     private readonly ILogger<BootstrapEnrollment> _log;
 
-    public sealed record Config(string ServerUrl, string EnrollmentToken);
+    public sealed record Config(string ServerUrl, string EnrollmentToken, bool AllowHttp = false);
 
     public BootstrapEnrollment(string dataDir, ILogger<BootstrapEnrollment> log)
     {
@@ -55,6 +55,8 @@ public sealed class BootstrapEnrollment
             string? token = root.TryGetProperty("enrollment_token", out var tokElem)
                 ? tokElem.GetString() : null;
 
+            bool allowHttp = root.TryGetProperty("allow_http", out var ahElem) && ahElem.ValueKind == JsonValueKind.True;
+
             if (string.IsNullOrWhiteSpace(serverUrl))
             {
                 _log.LogWarning("enrollment.json: missing or empty server_url — ignoring file.");
@@ -72,7 +74,7 @@ public sealed class BootstrapEnrollment
 
             // Log server URL only; never log the token value.
             _log.LogInformation("Bootstrap enrollment loaded. ServerUrl={Url}", serverUrl);
-            return new Config(serverUrl, token);
+            return new Config(serverUrl, token, allowHttp);
         }
         catch (JsonException ex)
         {

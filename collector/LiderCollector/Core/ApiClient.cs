@@ -45,7 +45,7 @@ public sealed class ApiClient : IDisposable
         {
             enroll_token = enrollToken,
             hostname = identity.Hostname,
-            version = "0.1.0",
+            version = AppVersion.Current,
             identifiers = BuildIdentifiers(identity),
         };
 

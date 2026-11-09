@@ -59,7 +59,7 @@ public sealed class CollectorConfig
 
     // ── Auto-update ─────────────────────────────────────────────────────────
     /// <summary>Running agent version. Sent in heartbeat so server can target updates.</summary>
-    public string AgentVersion { get; set; } = "1.0.0";
+    public string AgentVersion { get; set; } = AppVersion.Current;
 
     /// <summary>Update channel this collector is subscribed to: stable, pilot, beta.</summary>
     public string UpdateChannel { get; set; } = "stable";

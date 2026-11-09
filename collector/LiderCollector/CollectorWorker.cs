@@ -28,6 +28,7 @@ public sealed class CollectorWorker : BackgroundService
 
     private readonly IReadOnlyList<ICollectorModule> _modules;
     private readonly CollectorState _state;
+    private const int ModuleTimeoutSeconds = 180;
 
     // Connectivity state tracking for offline queue management
     private bool _lastOnline = true;
@@ -77,19 +78,7 @@ public sealed class CollectorWorker : BackgroundService
     {
         _log.LogInformation("CollectorWorker starting. Server={Server}", _config.ServerUrl);
 
-        // ── HTTPS enforcement ─────────────────────────────────────────────────
-        // Allow HTTP only when explicitly opt-in (development environments).
-        // Production deployments must use HTTPS; a plain-HTTP ServerUrl is a
-        // critical misconfiguration that sends API keys and inventory data in clear.
-        if (!_config.AllowHttp &&
-            _config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-        {
-            _log.LogCritical(
-                "ServerUrl uses plain HTTP but AllowHttp=false (production default). " +
-                "Update collector.json with an HTTPS URL, or set allow_http=true for development only. " +
-                "ServerUrl={Url}", _config.ServerUrl);
-            return; // stop the worker; SCM will not auto-restart
-        }
+        if (!TransportAllowed()) return;
 
         // ── Enrollment ─────────────────────────────────────────────────────────
         // Runs on first start and after server-driven re-enrollment (HeartbeatAsync 401).
@@ -103,6 +92,9 @@ public sealed class CollectorWorker : BackgroundService
             _log.LogCritical("Enrollment failed. Cannot continue without a valid API key.");
             return;
         }
+
+        // The server URL may have just been supplied by the bootstrap file: re-check transport security.
+        if (!TransportAllowed()) return;
 
         var identity = _identity.Collect();
 
@@ -206,6 +198,26 @@ public sealed class CollectorWorker : BackgroundService
         _log.LogInformation("CollectorWorker stopped.");
     }
 
+    /// <summary>
+    /// Plain HTTP is allowed only when AllowHttp is set (test environments; the server only stamps allow_http
+    /// into an installer when it is itself configured for HTTP). Production installers are issued over HTTPS only.
+    /// Checked at start AND after bootstrap enrollment, so a URL delivered by enrollment.json cannot bypass it.
+    /// </summary>
+    private bool TransportAllowed()
+    {
+        if (string.IsNullOrWhiteSpace(_config.ServerUrl)) return true; // not configured yet (fresh install)
+        if (_config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !_config.AllowHttp)
+        {
+            _log.LogCritical(
+                "ServerUrl uses plain HTTP but AllowHttp=false (production default). Refusing to send credentials or inventory. ServerUrl={Url}",
+                _config.ServerUrl);
+            return false;
+        }
+        if (_config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
+            _log.LogWarning("Running over plain HTTP (allow_http=true). Use HTTPS before any customer deployment.");
+        return true;
+    }
+
     // ── Enrollment ────────────────────────────────────────────────────────────
 
     private async Task EnrollWithRetryAsync(CancellationToken ct)
@@ -218,14 +230,19 @@ public sealed class CollectorWorker : BackgroundService
         var bootstrap = _bootstrap.TryRead();
         if (bootstrap != null)
         {
-            // Override server URL from bootstrap if it differs (supports first-run from GPO)
-            if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&
-                bootstrap.ServerUrl != _config.ServerUrl)
+            // Override server URL from bootstrap if it differs (supports first-run from MSI / GPO)
+            bool bootstrapIsHttp = bootstrap.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
+            if (bootstrapIsHttp && !bootstrap.AllowHttp && !_config.AllowHttp)
             {
-                _log.LogInformation(
-                    "Server URL updated from bootstrap enrollment. NewUrl={Url}",
-                    bootstrap.ServerUrl);
+                _log.LogCritical("Bootstrap enrollment points to plain HTTP without allow_http. Refusing to enroll. Url={Url}", bootstrap.ServerUrl);
+                return;
+            }
+            if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&
+                (bootstrap.ServerUrl != _config.ServerUrl || (bootstrapIsHttp && !_config.AllowHttp)))
+            {
+                _log.LogInformation("Server URL updated from bootstrap enrollment. NewUrl={Url}", bootstrap.ServerUrl);
                 _config.ServerUrl = bootstrap.ServerUrl;
+                if (bootstrapIsHttp) _config.AllowHttp = true; // persisted, so the service also starts after a reboot
                 _config.Save();
             }
 
@@ -398,6 +415,7 @@ public sealed class CollectorWorker : BackgroundService
         try
         {
             var data = new Dictionary<string, object?>();
+            var status = new Dictionary<string, ModuleReport>();
 
             foreach (var module in _modules)
             {
@@ -405,15 +423,30 @@ public sealed class CollectorWorker : BackgroundService
                 // Event log runs on its own faster schedule (RunEventLogAsync).
                 // Skip it here to avoid double-delivery during inventory.
                 if (module.Name == "event_log") continue;
+                var report = new ModuleReport();
+                var sw = System.Diagnostics.Stopwatch.StartNew();
                 try
                 {
-                    var result = await module.RunAsync(ct);
+                    // WMI calls are synchronous: run on the pool and bound the wait so one hung provider cannot stall the cycle.
+                    var result = await Task.Run(() => module.RunAsync(ct), ct)
+                                           .WaitAsync(TimeSpan.FromSeconds(ModuleTimeoutSeconds), ct);
                     if (result != null) data[module.Name] = result;
+
+                    if (module is IReportingModule rm && rm.LastReport != null) report = rm.LastReport;
+                    else if (result == null) { report.Status = ModuleReport.Failed; report.Error = "module returned no data"; }
+                }
+                catch (TimeoutException)
+                {
+                    report.Status = ModuleReport.Failed; report.Error = $"timed out after {ModuleTimeoutSeconds}s";
+                    _log.LogWarning("Module {Name} timed out after {Sec}s", module.Name, ModuleTimeoutSeconds);
                 }
                 catch (Exception ex) when (ex is not OperationCanceledException)
                 {
+                    report.Status = ModuleReport.Failed; report.Error = $"{ex.GetType().Name}: {ex.Message}";
                     _log.LogWarning(ex, "Module {Name} error", module.Name);
                 }
+                if (report.DurationMs == 0) report.DurationMs = (int)sw.ElapsedMilliseconds;
+                status[module.Name] = report;
             }
 
             var payload = new InventoryPayload
@@ -423,6 +456,9 @@ public sealed class CollectorWorker : BackgroundService
                 Identifiers = BuildIdentifiersList(identity),
                 CollectedAt = DateTime.UtcNow,
                 Modules = data,
+                ModuleStatus = status,
+                AgentVersion = AppVersion.Current,
+                PayloadVersion = 2,
             };
 
             if (_lastOnline)
@@ -600,5 +636,8 @@ public sealed class CollectorWorker : BackgroundService
         [JsonPropertyName("identifiers")] public List<object> Identifiers { get; set; } = new();
         [JsonPropertyName("collected_at")] public DateTime CollectedAt { get; set; }
         [JsonPropertyName("modules")] public Dictionary<string, object?> Modules { get; set; } = new();
+        [JsonPropertyName("module_status")] public Dictionary<string, ModuleReport>? ModuleStatus { get; set; }
+        [JsonPropertyName("agent_version")] public string? AgentVersion { get; set; }
+        [JsonPropertyName("payload_version")] public int? PayloadVersion { get; set; }
     }
 }

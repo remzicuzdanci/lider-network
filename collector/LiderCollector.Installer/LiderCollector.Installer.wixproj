@@ -3,10 +3,11 @@
     <OutputName>LiderITONECollector</OutputName>
     <Platform>x64</Platform>
     <Configurations>Release;Debug</Configurations>
+    <ProductVersion Condition="'$(ProductVersion)' == ''">1.1.0</ProductVersion>
     <!-- The collector binaries are built separately; this project just packages them. -->
     <CollectorPublishDir>$(MSBuildThisFileDirectory)..\LiderCollector\bin\Release\net8.0-windows\win-x64\publish\</CollectorPublishDir>
-    <!-- Expose as WiX preprocessor variable so $(var.CollectorPublishDir) works in .wxs files -->
-    <DefineConstants>CollectorPublishDir=$(CollectorPublishDir)</DefineConstants>
+    <!-- Expose as WiX preprocessor variables so $(var.X) works in .wxs files -->
+    <DefineConstants>CollectorPublishDir=$(CollectorPublishDir);ProductVersion=$(ProductVersion);InstallerDir=$(MSBuildProjectDirectory)</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <!-- Required for util:PermissionEx and util:ServiceConfig -->

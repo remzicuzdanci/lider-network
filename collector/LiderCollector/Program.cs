@@ -29,7 +29,14 @@ Log.Logger = new LoggerConfiguration()
 
 try
 {
-    Log.Information("Lider IT ONE Collector v{Version} starting...", "1.0.0");
+    Log.Information("Lider IT ONE Collector v{Version} starting...", AppVersion.Current);
+
+    // "diag": inspect this machine's inventory without starting the service or contacting the server
+    if (args.Length > 0 && args[0].Equals("diag", StringComparison.OrdinalIgnoreCase))
+    {
+        Environment.ExitCode = await Diagnostics.RunAsync(args);
+        return;
+    }
 
     IHost host = Host.CreateDefaultBuilder(args)
         .UseWindowsService(options =>
@@ -55,6 +62,7 @@ try
             {
                 var cfg = CollectorConfig.Load(Path.Combine(dataPath, "collector.json"));
                 cfg.DataPath = dataPath; // runtime-only: for update trigger file path
+                cfg.AgentVersion = AppVersion.Current; // never trust the persisted value after an upgrade
                 return cfg;
             });
 
