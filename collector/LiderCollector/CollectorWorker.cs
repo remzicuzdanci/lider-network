@@ -16,6 +16,12 @@ namespace LiderCollector;
 ///   • Performance metrics every PerformanceIntervalSeconds (default 120s)
 ///   • Offline queue flush whenever connectivity is restored
 /// </summary>
+/// <summary>Raised when the transport policy forbids running; ends the Windows service with an error.</summary>
+public sealed class TransportBlockedException : Exception
+{
+    public TransportBlockedException(string message) : base(message) { }
+}
+
 public sealed class CollectorWorker : BackgroundService
 {
     private readonly CollectorConfig _config;
@@ -78,7 +84,10 @@ public sealed class CollectorWorker : BackgroundService
     {
         _log.LogInformation("CollectorWorker starting. Server={Server}", _config.ServerUrl);
 
-        if (!TransportAllowed()) return;
+        // A machine upgraded in place by the MSI may carry a transport-policy.json (see TransportPolicy): consume it first.
+        ApplyUpgradeTransportPolicy();
+
+        if (!TransportAllowed()) { FailLoud(_transportReason); return; }
 
         // ── Enrollment ─────────────────────────────────────────────────────────
         // Runs on first start and after server-driven re-enrollment (HeartbeatAsync 401).
@@ -94,7 +103,8 @@ public sealed class CollectorWorker : BackgroundService
         }
 
         // The server URL may have just been supplied by the bootstrap file: re-check transport security.
-        if (!TransportAllowed()) return;
+        if (!TransportAllowed()) { FailLoud(_transportReason); return; }
+        ClearFault();
 
         var identity = _identity.Collect();
 
@@ -203,19 +213,78 @@ public sealed class CollectorWorker : BackgroundService
     /// into an installer when it is itself configured for HTTP). Production installers are issued over HTTPS only.
     /// Checked at start AND after bootstrap enrollment, so a URL delivered by enrollment.json cannot bypass it.
     /// </summary>
+    public const int TransportBlockedExitCode = 78; // EX_CONFIG
+    private string _transportReason = string.Empty;
+
     private bool TransportAllowed()
     {
-        if (string.IsNullOrWhiteSpace(_config.ServerUrl)) return true; // not configured yet (fresh install)
-        if (_config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !_config.AllowHttp)
+        // HTTPS always passes; plain HTTP needs allow_http=true AND a private-network test server (TransportPolicy).
+        if (!TransportPolicy.IsAllowed(_config.ServerUrl, _config.AllowHttp, out _transportReason))
         {
-            _log.LogCritical(
-                "ServerUrl uses plain HTTP but AllowHttp=false (production default). Refusing to send credentials or inventory. ServerUrl={Url}",
-                _config.ServerUrl);
+            _log.LogCritical("{Reason} Refusing to send credentials or inventory. ServerUrl={Url}", _transportReason, _config.ServerUrl);
             return false;
         }
-        if (_config.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase))
-            _log.LogWarning("Running over plain HTTP (allow_http=true). Use HTTPS before any customer deployment.");
+        if (TransportPolicy.IsHttp(_config.ServerUrl))
+            _log.LogWarning("Running over plain HTTP (allow_http=true, private test server). Use HTTPS before any customer deployment.");
         return true;
+    }
+
+    /// <summary>Consumes transport-policy.json left by an MSI upgrade (strict conditions in TransportPolicy).</summary>
+    private void ApplyUpgradeTransportPolicy()
+    {
+        try
+        {
+            TransportPolicy.TryApplyUpgradePolicy(
+                _config.DataPath, _config, _secure.Has("api_key"), () => _identity.Collect().BiosUuid, _log);
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "Transport policy handling failed; keeping the existing configuration."); }
+    }
+
+    private string FaultFile => Path.Combine(_config.DataPath, "service-fault.json");
+
+    private void ClearFault()
+    {
+        try { if (File.Exists(FaultFile)) File.Delete(FaultFile); } catch { /* informational only */ }
+    }
+
+    /// <summary>
+    /// The agent cannot do its job (transport policy). Make that impossible to miss: log, drop a service-fault.json
+    /// for the diagnostics, write a Windows Application event, and END the service with an error instead of sitting
+    /// in "Running" doing nothing.
+    /// </summary>
+    private void FailLoud(string reason)
+    {
+        string msg = $"Lider IT ONE Collector {AppVersion.Current} cannot start: {reason} ServerUrl={_config.ServerUrl}. " +
+                     "The service is stopping with an error. Fix the server address (use HTTPS) and start the service again.";
+        _log.LogCritical("{Message}", msg);
+        try
+        {
+            File.WriteAllText(FaultFile, JsonSerializer.Serialize(new
+            {
+                at = DateTime.UtcNow, version = AppVersion.Current, reason, server_url = _config.ServerUrl,
+                allow_http = _config.AllowHttp,
+            }));
+        }
+        catch { /* best effort */ }
+        try
+        {
+            if (OperatingSystem.IsWindows())
+            {
+                const string source = "LiderITONECollector";
+                if (!System.Diagnostics.EventLog.SourceExists(source)) System.Diagnostics.EventLog.CreateEventSource(source, "Application");
+                System.Diagnostics.EventLog.WriteEntry(source, msg, System.Diagnostics.EventLogEntryType.Error, 4001);
+            }
+        }
+        catch { /* best effort */ }
+        // As a real Windows service: terminate with a non-zero exit code. The Service Control Manager then records
+        // "terminated unexpectedly" (event 7034), shows the service as Stopped, and applies the recovery policy
+        // (restart after 60 s), instead of leaving a "Running" service that does nothing.
+        if (OperatingSystem.IsWindows() && Microsoft.Extensions.Hosting.WindowsServices.WindowsServiceHelpers.IsWindowsService())
+        {
+            Serilog.Log.CloseAndFlush();
+            Environment.Exit(TransportBlockedExitCode);
+        }
+        throw new TransportBlockedException(msg); // console / tests
     }
 
     // ── Enrollment ────────────────────────────────────────────────────────────
@@ -232,9 +301,9 @@ public sealed class CollectorWorker : BackgroundService
         {
             // Override server URL from bootstrap if it differs (supports first-run from MSI / GPO)
             bool bootstrapIsHttp = bootstrap.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
-            if (bootstrapIsHttp && !bootstrap.AllowHttp && !_config.AllowHttp)
+            if (bootstrapIsHttp && ((!bootstrap.AllowHttp && !_config.AllowHttp) || !TransportPolicy.IsPrivateHost(bootstrap.ServerUrl)))
             {
-                _log.LogCritical("Bootstrap enrollment points to plain HTTP without allow_http. Refusing to enroll. Url={Url}", bootstrap.ServerUrl);
+                _log.LogCritical("Bootstrap enrollment points to plain HTTP that is not an allowed private test server. Refusing to enroll. Url={Url}", bootstrap.ServerUrl);
                 return;
             }
             if (!string.IsNullOrWhiteSpace(bootstrap.ServerUrl) &&

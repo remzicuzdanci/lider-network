@@ -37,6 +37,62 @@ Function Matches(pattern, text)
     Matches = re.Test(text)
 End Function
 
+Function Capture(pattern, text)
+    Dim re, m
+    Set re = CreateObject("VBScript.RegExp")
+    re.Pattern = pattern
+    re.IgnoreCase = False
+    Capture = ""
+    If re.Test(text) Then
+        Set m = re.Execute(text)
+        Capture = m(0).SubMatches(0)
+    End If
+End Function
+
+Function UtcStamp()
+    Dim sh, bias, t
+    Set sh = CreateObject("WScript.Shell")
+    bias = 0
+    On Error Resume Next
+    bias = CLng(sh.RegRead("HKLM\SYSTEM\CurrentControlSet\Control\TimeZoneInformation\ActiveTimeBias"))
+    On Error GoTo 0
+    t = DateAdd("n", bias, Now)
+    UtcStamp = Year(t) & "-" & Right("0" & Month(t), 2) & "-" & Right("0" & Day(t), 2) & "T" & _
+               Right("0" & Hour(t), 2) & ":" & Right("0" & Minute(t), 2) & ":" & Right("0" & Second(t), 2) & "Z"
+End Function
+
+' Upgrade of an ALREADY-ENROLLED agent whose server is plain HTTP (test environment only).
+' Hands the service a one-shot transport-policy.json; the service re-checks everything (same collector_id, same server,
+' private address, same BIOS UUID, fresh timestamp) before it sets allow_http. HTTPS configurations never get this file.
+Sub WriteUpgradePolicy(fso, dir, cfgText, stampedUrl)
+    Dim cfgUrl, cfgId, q, f
+    If LCase(Left(stampedUrl, 7)) <> "http://" Then Exit Sub                  ' https / unknown: nothing to inherit
+    cfgUrl = Capture("""server_url""\s*:\s*""([^""]+)""", cfgText)
+    cfgId = Capture("""collector_id""\s*:\s*([1-9][0-9]*)", cfgText)
+    If cfgId = "" Or cfgUrl = "" Then Exit Sub
+    If LCase(Left(cfgUrl, 7)) <> "http://" Then Exit Sub                     ' the existing configuration is not plain HTTP
+    If LCase(Replace(cfgUrl, "/", "")) <> LCase(Replace(stampedUrl, "/", "")) Then
+        WriteLog "existing server differs from the one in this installer - plain-HTTP policy NOT carried over."
+        Exit Sub
+    End If
+    If Matches("""allow_http""\s*:\s*true", cfgText) Then Exit Sub            ' nothing to change
+    q = Chr(34)
+    On Error Resume Next
+    Set f = fso.CreateTextFile(dir & "\transport-policy.json", True, False)
+    If Err.Number <> 0 Then
+        WriteLog "could not write transport-policy.json: " & Err.Description
+        Exit Sub
+    End If
+    f.Write "{" & q & "server_url" & q & ":" & q & cfgUrl & q & "," & _
+                  q & "collector_id" & q & ":" & cfgId & "," & _
+                  q & "allow_http" & q & ":true," & _
+                  q & "environment" & q & ":" & q & "test" & q & "," & _
+                  q & "issued_at" & q & ":" & q & UtcStamp() & q & "}"
+    f.Close
+    On Error GoTo 0
+    WriteLog "plain-HTTP test server: transport policy handed to the service for collector #" & cfgId & " (service re-validates it)."
+End Sub
+
 Function WriteBootstrap()
     Dim data, p, token, url, fso, dir, q, f, cfg
     data = Session.Property("CustomActionData")
@@ -65,6 +121,7 @@ Function WriteBootstrap()
         Dim txt : txt = t.ReadAll : t.Close
         If Matches("""collector_id""\s*:\s*[1-9]", txt) Then
             WriteLog "this machine is already enrolled - enrollment token ignored, existing identity kept."
+            WriteUpgradePolicy fso, dir, txt, url
             WriteBootstrap = 1 : Exit Function
         End If
     End If

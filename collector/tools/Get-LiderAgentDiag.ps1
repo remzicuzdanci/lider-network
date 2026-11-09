@@ -60,7 +60,9 @@ if (Test-Path $dd) {
     Get-ChildItem $dd -Force | ForEach-Object { W ("{0,-28} {1,10} bytes  {2}" -f $_.Name, $_.Length, $_.LastWriteTime) }
     $cfg = Join-Path $dd 'collector.json'
     if (Test-Path $cfg) { W ''; W '--- collector.json (secrets masked)'; W (Mask (Get-Content $cfg -Raw)) }
-    W ''; W ('enrollment.json present: ' + (Test-Path (Join-Path $dd 'enrollment.json')))
+    W ''; W ('enrollment.json present: ' + (Test-Path (Join-Path $dd 'enrollment.json')) + '   transport-policy.json present: ' + (Test-Path (Join-Path $dd 'transport-policy.json')))
+    $ff = Join-Path $dd 'service-fault.json'
+    if (Test-Path $ff) { W ''; W '--- service-fault.json (the agent stopped itself; reason below)'; W (Mask (Get-Content $ff -Raw)) } else { W 'service-fault.json: none' }
     $sl = Join-Path $dd 'setup.log'
     if (Test-Path $sl) { W ''; W '--- setup.log (last 40 lines)'; Get-Content $sl -Tail 40 | ForEach-Object { W (Mask $_) } }
     $logs = Get-ChildItem $dd -Recurse -Include *.log, *.txt -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'setup.log' } | Sort-Object LastWriteTime -Descending | Select-Object -First 2
@@ -76,7 +78,7 @@ try {
 Section 'Service Control Manager events for the Lider service (System log, last 24 h)'
 try {
     Get-WinEvent -FilterHashtable @{ LogName = 'System'; ProviderName = 'Service Control Manager'; StartTime = (Get-Date).AddHours(-24) } -ErrorAction Stop |
-        Where-Object { $_.Message -like '*Lider*' } | Select-Object -First 20 |
+        Where-Object { $_.Message -like '*Lider*' -or $_.Message -like '*LiderITONE*' } | Select-Object -First 20 |
         ForEach-Object { W ("{0}  id={1}  {2}" -f $_.TimeCreated, $_.Id, ($_.Message -split "`r?`n")[0]) }
 } catch { W "none / $($_.Exception.Message)" }
 

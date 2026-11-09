@@ -11,11 +11,11 @@
        (offsets, lengths, sha256, size) used by the server to stamp a per-customer copy, and
     5. reads the finished MSI back through the Windows Installer API (read-only; nothing is installed).
 
-.PARAMETER Version   MSI / agent version, e.g. 1.1.0 (default: 1.1.0)
+.PARAMETER Version   MSI / agent version, e.g. 1.1.1 (default: 1.1.1)
 .PARAMETER SkipTests Skip unit tests
 #>
 param(
-    [string]$Version = "1.1.0",
+    [string]$Version = "1.1.1",
     [switch]$SkipTests
 )
 
@@ -83,7 +83,7 @@ $manifest = [ordered]@{
     token          = $tok
     server_url     = $url
 }
-$manifest | ConvertTo-Json -Depth 4 | Set-Content -Encoding UTF8 (Join-Path $OutputDir "LiderITONECollector-$Version.manifest.json")
+[IO.File]::WriteAllText((Join-Path $OutputDir "LiderITONECollector-$Version.manifest.json"), ($manifest | ConvertTo-Json -Depth 4), (New-Object Text.UTF8Encoding($false)))   # no BOM: PHP json_decode rejects one
 Write-Host ("  token placeholder @ {0} ({1} bytes), server_url placeholder @ {2} ({3} bytes)" -f $tok.offset, $tok.length, $url.offset, $url.length)
 
 Step "Read-only MSI verification (Windows Installer API; nothing is installed)"
