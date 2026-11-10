@@ -76,6 +76,7 @@ public sealed class CollectorWorker : BackgroundService
             new SoftwareModule(loggerFactory.CreateLogger<SoftwareModule>()),
             new PerformanceModule(loggerFactory.CreateLogger<PerformanceModule>()),
             new WindowsUpdateModule(loggerFactory.CreateLogger<WindowsUpdateModule>()),
+            new ServicesModule(loggerFactory.CreateLogger<ServicesModule>()),
             new EventLogModule(loggerFactory.CreateLogger<EventLogModule>(), _state),
         };
     }
@@ -678,6 +679,7 @@ public sealed class CollectorWorker : BackgroundService
             "performance"    => _config.Modules.Performance,
             "windows_update" => _config.Modules.WindowsUpdate,
             "event_log"      => _config.Modules.EventLog,
+            "services"       => _config.Modules.Services,
             "hyperv"         => _config.Modules.HyperV,
             "vmware"         => _config.Modules.Vmware,
             _ => false,

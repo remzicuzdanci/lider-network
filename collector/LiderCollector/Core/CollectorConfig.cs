@@ -78,6 +78,8 @@ public sealed class CollectorConfig
         public bool Performance { get; set; } = true;
         public bool EventLog { get; set; } = true;
         public bool WindowsUpdate { get; set; } = true;
+        /// <summary>Windows service inventory (added in 1.2.0). On by default: an older collector.json without this key gets it too.</summary>
+        public bool Services { get; set; } = true;
         public bool Ad { get; set; } = false;
         public bool HyperV { get; set; } = false;
         public bool Vmware { get; set; } = false;
