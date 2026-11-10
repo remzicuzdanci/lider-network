@@ -479,7 +479,8 @@ export default function AdminDashboard() {
       setReceipts(prev => prev.map(rc => rc.id === receipt.id ? receipt : rc));
       showToast("Tahsilat güncellendi.", "success");
     } else {
-      showToast("Güncelleme başarısız.", "error");
+      const j = await r.json().catch(() => ({}));
+      showToast("Güncelleme başarısız: " + (j.error || r.status), "error");
     }
   }
 
