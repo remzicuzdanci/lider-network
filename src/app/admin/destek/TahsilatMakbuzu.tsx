@@ -158,11 +158,12 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
               <div className="header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "26px", paddingBottom: "20px", borderBottom: "1.5px solid #e5e7ef" }}>
                 <div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src="/logo.png" alt="Lider Network" style={{ height: "44px", objectFit: "contain", display: "block", marginBottom: "8px" }} />
-                  <div style={{ fontSize: "10px", color: "#6b7280", lineHeight: 1.65 }}>
-                    <div>Bilgi Teknolojileri Çözümleri</div>
-                    <div>www.lidernetwork.com.tr</div>
-                    <div>info@lidernetwork.com.tr</div>
+                  <img src="/logo.png" alt="Lider Network" style={{ height: "60px", objectFit: "contain", display: "block", marginBottom: "10px" }} />
+                  <div style={{ fontSize: "10px", color: "#6b7280", lineHeight: 1.75 }}>
+                    <div style={{ fontWeight: 700, color: "#374151" }}>Lider Network Teknoloji ve Danışmanlık Tic.Ltd.Şti</div>
+                    <div>Birlik Mh. 448. Cd. 119/2 Çankaya / ANKARA</div>
+                    <div>VKN: 608 046 2147 — Cumhuriyet VD</div>
+                    <div>www.lidernetwork.com.tr · info@lidernetwork.com.tr</div>
                   </div>
                 </div>
                 <div style={{ textAlign: "right" }}>
@@ -177,10 +178,11 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
                 {/* Tahsil Eden */}
                 <div style={{ border: "1px solid #e5e7ef", borderRadius: "8px", padding: "14px 16px" }}>
                   <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "8px" }}>Tahsil Eden</div>
-                  <div style={{ fontSize: "13px", fontWeight: 800, color: "#1a1d2e", marginBottom: "5px" }}>Lider Network Bilgi Teknolojileri</div>
-                  <div style={{ fontSize: "11px", color: "#6b7280", lineHeight: 1.65 }}>
-                    <div>VKN: —</div>
-                    <div>Vergi Dairesi: —</div>
+                  <div style={{ fontSize: "12px", fontWeight: 800, color: "#1a1d2e", marginBottom: "5px" }}>Lider Network Teknoloji ve Danışmanlık Tic.Ltd.Şti</div>
+                  <div style={{ fontSize: "11px", color: "#6b7280", lineHeight: 1.75 }}>
+                    <div>VKN: <strong style={{ color: "#1a1d2e" }}>608 046 2147</strong></div>
+                    <div>Vergi Dairesi: <strong style={{ color: "#1a1d2e" }}>Cumhuriyet VD</strong></div>
+                    <div>Birlik Mh. 448. Cd. 119/2 Çankaya / ANKARA</div>
                   </div>
                 </div>
                 {/* Alınan Şirket */}
@@ -248,9 +250,9 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
               {/* Footer */}
               <div style={{ marginTop: "32px", paddingTop: "16px", borderTop: "1.5px solid #e5e7ef", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                 <div style={{ fontSize: "10px", color: "#9ca3af", lineHeight: 1.65 }}>
-                  <div style={{ fontWeight: 600, color: "#6b7280", marginBottom: "3px" }}>Lider Network Bilgi Teknolojileri</div>
-                  <div>info@lidernetwork.com.tr</div>
-                  <div>www.lidernetwork.com.tr</div>
+                  <div style={{ fontWeight: 700, color: "#374151", marginBottom: "2px" }}>Lider Network Teknoloji ve Danışmanlık Tic.Ltd.Şti</div>
+                  <div>VKN: 608 046 2147 — Cumhuriyet VD</div>
+                  <div>info@lidernetwork.com.tr · www.lidernetwork.com.tr</div>
                   <div style={{ marginTop: "6px", fontSize: "9px" }}>Bu makbuz bilgisayar ortamında düzenlenmiştir.</div>
                 </div>
                 <div style={{ textAlign: "center", width: "160px" }}>
