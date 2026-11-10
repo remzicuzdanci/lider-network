@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 
   let query = supabase
     .from("receipts")
-    .select("*, companies(name)")
+    .select("*, companies(name, address, tax_no, tax_office)")
     .order("created_at", { ascending: false });
 
   if (companyId) query = query.eq("company_id", companyId);
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json();
   const { company_id, payment_type, amount, currency = "TRY",
-          receipt_date, due_date, check_no, bank_name, notes } = body;
+          receipt_date, due_date, check_no, bank_name, check_image_url, notes } = body;
 
   if (!company_id || !payment_type || !amount || !receipt_date)
     return NextResponse.json({ error: "Zorunlu alanlar eksik." }, { status: 400 });
@@ -51,8 +51,9 @@ export async function POST(req: NextRequest) {
     .insert({ company_id, payment_type, amount: Number(amount), currency,
               receipt_date, due_date: due_date || null,
               check_no: check_no || null, bank_name: bank_name || null,
+              check_image_url: check_image_url || null,
               notes: notes || null, receipt_no })
-    .select()
+    .select("*, companies(name, address, tax_no, tax_office)")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });

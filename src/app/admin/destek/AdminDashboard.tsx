@@ -221,6 +221,8 @@ export default function AdminDashboard() {
   const [rcptNotes, setRcptNotes]           = useState("");
   const [rcptSaving, setRcptSaving]         = useState(false);
   const [rcptFilter, setRcptFilter]         = useState("all");
+  const [rcptCheckImage, setRcptCheckImage] = useState<string>("");
+  const [rcptImgUploading, setRcptImgUploading] = useState(false);
 
   // Internal ticket modal
   const [newTicketModal, setNewTicketModal]   = useState(false);
@@ -442,13 +444,13 @@ export default function AdminDashboard() {
     if (!rcptCompanyId || !rcptAmount || !rcptDate) return;
     setRcptSaving(true);
     const body: Record<string, unknown> = { company_id: rcptCompanyId, payment_type: rcptType, amount: parseFloat(rcptAmount.replace(",", ".")), currency: "TRY", receipt_date: rcptDate, notes: rcptNotes };
-    if (rcptType === "cek") { body.due_date = rcptDueDate; body.check_no = rcptCheckNo; body.bank_name = rcptBank; }
+    if (rcptType === "cek") { body.due_date = rcptDueDate; body.check_no = rcptCheckNo; body.bank_name = rcptBank; if (rcptCheckImage) body.check_image_url = rcptCheckImage; }
     const r = await fetch("/api/admin/receipts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
     setRcptSaving(false);
     if (r.ok) {
       const { receipt } = await r.json();
       setRcptModal(false);
-      setRcptAmount(""); setRcptCheckNo(""); setRcptBank(""); setRcptDueDate(""); setRcptNotes(""); setRcptCompanyId("");
+      setRcptAmount(""); setRcptCheckNo(""); setRcptBank(""); setRcptDueDate(""); setRcptNotes(""); setRcptCompanyId(""); setRcptCheckImage("");
       fetchReceipts();
       setPrintReceipt({ ...receipt, companies: companies.find(c => c.id === receipt.company_id) ? { name: companies.find(c => c.id === receipt.company_id)!.name } : null });
       showToast("Tahsilat makbuzu oluşturuldu.", "success");
@@ -1970,6 +1972,29 @@ export default function AdminDashboard() {
                       </Field>
                       <Field label="Vade Tarihi">
                         <input type="date" value={rcptDueDate} onChange={e=>setRcptDueDate(e.target.value)} style={inpS} />
+                      </Field>
+                      <Field label="Çek Görseli (opsiyonel)">
+                        {rcptCheckImage ? (
+                          <div style={{ position: "relative" }}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={rcptCheckImage} alt="çek" style={{ width: "100%", maxHeight: "120px", objectFit: "contain", border: "1px solid #e5e7ef", borderRadius: "8px" }} />
+                            <button onClick={() => setRcptCheckImage("")}
+                              style={{ position: "absolute", top: 4, right: 4, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", cursor: "pointer", padding: "2px 6px", fontSize: "11px" }}>✕ Kaldır</button>
+                          </div>
+                        ) : (
+                          <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px", border: "1.5px dashed #e5e7ef", borderRadius: "10px", cursor: rcptImgUploading ? "default" : "pointer", color: "#9ca3af", fontSize: "13px", background: "#fafbff" }}>
+                            {rcptImgUploading ? "Yükleniyor..." : "📷 Çek fotoğrafı ekle"}
+                            <input type="file" accept="image/*" style={{ display: "none" }} disabled={rcptImgUploading} onChange={async e => {
+                              const f = e.target.files?.[0]; if (!f) return;
+                              setRcptImgUploading(true);
+                              const fd = new FormData(); fd.append("file", f);
+                              const r = await fetch("/api/admin/receipts/upload", { method: "POST", body: fd });
+                              setRcptImgUploading(false);
+                              if (r.ok) { const j = await r.json(); setRcptCheckImage(j.url); }
+                              else showToast("Görsel yüklenemedi.", "error");
+                            }} />
+                          </label>
+                        )}
                       </Field>
                     </>
                   )}
