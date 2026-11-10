@@ -77,44 +77,41 @@ export default function TahsilatMakbuzu({ receipt, onClose }: Props) {
 <title>Tahsilat Makbuzu ${receipt.receipt_no}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;background:#fff;padding:0}
-.page{max-width:794px;margin:0 auto;padding:36px 44px;min-height:1050px;position:relative}
-.top-bar{height:6px;background:linear-gradient(90deg,#0052ff,#6366f1);border-radius:0 0 4px 4px;margin-bottom:28px}
-.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;padding-bottom:20px;border-bottom:1.5px solid #e5e7ef}
-.logo-wrap img{height:48px;object-fit:contain}
-.logo-text{font-size:22px;font-weight:800;color:#0052ff;letter-spacing:-.5px}
-.logo-sub{font-size:10px;color:#9ca3af;margin-top:3px}
-.logo-contact{font-size:10px;color:#6b7280;margin-top:8px;line-height:1.6}
-.doc-block{text-align:right}
-.doc-title{font-size:20px;font-weight:800;color:#1a1d2e;text-transform:uppercase;letter-spacing:2px}
-.doc-no{font-size:12px;color:#0052ff;font-weight:700;margin-top:6px}
-.doc-date{font-size:11px;color:#6b7280;margin-top:3px}
-.parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
-.party-box{border:1px solid #e5e7ef;border-radius:8px;padding:14px 16px}
-.party-label{font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
-.party-name{font-size:13px;font-weight:800;color:#1a1d2e;margin-bottom:4px}
-.party-info{font-size:11px;color:#6b7280;line-height:1.65}
-.amount-block{background:linear-gradient(135deg,#0052ff,#6366f1);border-radius:10px;padding:20px 28px;margin-bottom:22px;display:flex;justify-content:space-between;align-items:center}
-.amount-left .label{font-size:10px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
-.amount-left .value{font-size:30px;font-weight:800;color:#fff;margin-top:4px;letter-spacing:-.5px}
-.amount-left .words{font-size:10px;color:rgba(255,255,255,.75);margin-top:5px;font-style:italic}
-.amount-right{text-align:right}
-.amount-right .pt-badge{background:rgba(255,255,255,.2);color:#fff;border-radius:20px;padding:4px 14px;font-size:12px;font-weight:700}
-.details{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:22px}
-.detail-box{border:1px solid #e5e7ef;border-radius:8px;padding:14px 16px}
-.detail-label{font-size:9px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px}
-.detail-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px dashed #f0f2f8;font-size:11px}
+body{font-family:'Segoe UI',Arial,sans-serif;font-size:11px;color:#111;background:#fff}
+.page{width:794px;margin:0 auto;padding:24px 36px;page-break-after:avoid}
+.top-bar{height:5px;background:linear-gradient(90deg,#0052ff,#6366f1);margin-bottom:16px}
+.header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:1.5px solid #e5e7ef}
+.doc-title{font-size:17px;font-weight:800;color:#1a1d2e;text-transform:uppercase;letter-spacing:2px}
+.doc-no{font-size:11px;color:#0052ff;font-weight:700;margin-top:5px}
+.doc-date{font-size:10px;color:#6b7280;margin-top:2px}
+.parties{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.party-box{border:1px solid #e5e7ef;border-radius:6px;padding:10px 12px}
+.party-label{font-size:8px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:5px}
+.party-name{font-size:11px;font-weight:800;color:#1a1d2e;margin-bottom:3px}
+.party-info{font-size:10px;color:#6b7280;line-height:1.6}
+.amount-block{background:linear-gradient(135deg,#0052ff,#6366f1);border-radius:8px;padding:12px 20px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.amount-left .label{font-size:9px;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+.amount-left .value{font-size:24px;font-weight:800;color:#fff;margin-top:3px}
+.amount-left .words{font-size:9px;color:rgba(255,255,255,.7);margin-top:3px;font-style:italic}
+.pt-badge{background:rgba(255,255,255,.2);color:#fff;border-radius:16px;padding:3px 12px;font-size:11px;font-weight:700}
+.details{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.detail-box{border:1px solid #e5e7ef;border-radius:6px;padding:10px 12px}
+.detail-label{font-size:8px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px}
+.detail-row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed #f0f2f8;font-size:10px}
 .detail-row:last-child{border-bottom:none}
-.detail-row .dk{color:#6b7280}
-.detail-row .dv{font-weight:700;color:#1a1d2e}
-.notes-box{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:12px 16px;margin-bottom:22px;font-size:11px;color:#92400e;line-height:1.65}
-.notes-label{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:6px;color:#b45309}
-.footer{margin-top:auto;padding-top:16px;border-top:1.5px solid #e5e7ef;display:flex;justify-content:space-between;align-items:flex-end}
-.footer-info{font-size:10px;color:#9ca3af;line-height:1.65}
-.sign-col{text-align:center;width:160px}
-.sign-line{border-top:1px solid #374151;padding-top:6px;font-size:10px;color:#6b7280;margin-top:40px}
-.bottom-bar{height:4px;background:linear-gradient(90deg,#0052ff,#6366f1);border-radius:4px 4px 0 0;margin-top:24px}
-@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+.dk{color:#6b7280}.dv{font-weight:700;color:#1a1d2e}
+.check-img{width:100%;max-height:160px;object-fit:contain;border:1px solid #e5e7ef;border-radius:6px;background:#f8f9fb;display:block;margin-bottom:12px}
+.notes-box{background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 12px;margin-bottom:12px;font-size:10px;color:#92400e;line-height:1.6}
+.notes-label{font-size:8px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;margin-bottom:4px;color:#b45309}
+.footer{padding-top:12px;border-top:1.5px solid #e5e7ef;display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px}
+.footer-info{font-size:9px;color:#9ca3af;line-height:1.65}
+.sign-line{border-top:1px solid #374151;padding-top:5px;font-size:9px;color:#6b7280;margin-top:30px;text-align:center;width:140px}
+.bottom-bar{height:4px;background:linear-gradient(90deg,#0052ff,#6366f1);margin-top:14px}
+@media print{
+  *{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}
+  body{margin:0}
+  .page{page-break-inside:avoid}
+}
 </style></head><body>
 <div class="page">
   <div class="top-bar"></div>
@@ -174,7 +171,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
               </div>
 
               {/* Parties */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "22px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
                 {/* Tahsil Eden */}
                 <div style={{ border: "1px solid #e5e7ef", borderRadius: "8px", padding: "14px 16px" }}>
                   <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "8px" }}>Tahsil Eden</div>
@@ -198,7 +195,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
               </div>
 
               {/* Amount */}
-              <div style={{ background: "linear-gradient(135deg,#0052ff,#6366f1)", borderRadius: "10px", padding: "18px 24px", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div style={{ background: "linear-gradient(135deg,#0052ff,#6366f1)", borderRadius: "8px", padding: "12px 20px", marginBottom: "12px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                 <div>
                   <div style={{ fontSize: "10px", color: "rgba(255,255,255,.75)", textTransform: "uppercase", letterSpacing: ".6px", fontWeight: 600 }}>Tahsil Edilen Tutar</div>
                   <div style={{ fontSize: "28px", fontWeight: 800, color: "#fff", marginTop: "4px", letterSpacing: "-.5px" }}>{fmt(receipt.amount, receipt.currency)}</div>
@@ -212,7 +209,7 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
               </div>
 
               {/* Details */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px", marginBottom: "20px" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "12px" }}>
                 {/* Ödeme detayı */}
                 <div style={{ border: "1px solid #e5e7ef", borderRadius: "8px", padding: "14px 16px" }}>
                   <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "10px" }}>Ödeme Detayı</div>
@@ -232,23 +229,23 @@ body{font-family:'Segoe UI',Arial,sans-serif;font-size:12px;color:#111;backgroun
 
               {/* Check image */}
               {receipt.payment_type === "cek" && receipt.check_image_url && (
-                <div style={{ marginBottom: "20px" }}>
-                  <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "10px" }}>Çek Görseli</div>
+                <div style={{ marginBottom: "12px" }}>
+                  <div style={{ fontSize: "9px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "7px" }}>Çek Görseli</div>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={receipt.check_image_url} alt="Çek" style={{ width: "100%", maxHeight: "240px", objectFit: "contain", border: "1px solid #e5e7ef", borderRadius: "8px", background: "#f8f9fb" }} />
+                  <img src={receipt.check_image_url} alt="Çek" className="check-img" style={{ width: "100%", maxHeight: "160px", objectFit: "contain", border: "1px solid #e5e7ef", borderRadius: "6px", background: "#f8f9fb", display: "block" }} />
                 </div>
               )}
 
               {/* Notes */}
               {receipt.notes && (
-                <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "8px", padding: "12px 16px", marginBottom: "20px" }}>
+                <div style={{ background: "#fffbeb", border: "1px solid #fde68a", borderRadius: "6px", padding: "8px 12px", marginBottom: "12px" }}>
                   <div style={{ fontSize: "9px", fontWeight: 700, color: "#b45309", textTransform: "uppercase", letterSpacing: ".7px", marginBottom: "6px" }}>Açıklama</div>
                   <div style={{ fontSize: "12px", color: "#92400e", lineHeight: 1.65 }}>{receipt.notes}</div>
                 </div>
               )}
 
               {/* Footer */}
-              <div style={{ marginTop: "32px", paddingTop: "16px", borderTop: "1.5px solid #e5e7ef", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
+              <div style={{ marginTop: "14px", paddingTop: "12px", borderTop: "1.5px solid #e5e7ef", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
                 <div style={{ fontSize: "10px", color: "#9ca3af", lineHeight: 1.65 }}>
                   <div style={{ fontWeight: 700, color: "#374151", marginBottom: "2px" }}>Lider Network Teknoloji ve Danışmanlık Tic.Ltd.Şti</div>
                   <div>VKN: 608 046 2147 — Cumhuriyet VD</div>
