@@ -19,6 +19,7 @@ import Envanter from "./Envanter";
 import { companyLogo, clients as CLIENT_LOGOS } from "@/data/customer-logos";
 import AdminToast from "@/components/ui/AdminToast";
 import { showToast } from "@/lib/admin-toast";
+import TahsilatMakbuzu, { type Receipt } from "./TahsilatMakbuzu";
 
 // Mobile responsive hook
 function useWindowSize() {
@@ -72,7 +73,7 @@ interface Stats { open: number; in_progress: number; resolved_today: number; tot
 interface Customer { id: string; full_name: string; company: string | null; phone: string | null; email: string; approved: boolean; created_at: string; }
 interface StaffMember { id: string; email: string; name: string; role: string; active: boolean; created_at: string; }
 
-type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate" | "assets";
+type Tab = "tickets" | "customers" | "companies" | "prospects" | "staff" | "reports" | "isplan" | "notes" | "quotes" | "fortigate" | "assets" | "receipts";
 
 // ── Small UI helpers ──────────────────────────────────────────────────────────
 function NavItem({ icon, label, active, badge, badgeColor, tag, onClick }: {
@@ -111,6 +112,14 @@ function Fbtn({ val, cur, set, label }: { val: string; cur: string; set: (v: str
     <button onClick={() => set(val)} style={{ padding: "5px 13px", borderRadius: "8px", border: `1.5px solid ${a ? "#0052ff" : "#e5e7ef"}`, background: a ? "#eff6ff" : "transparent", color: a ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: a ? 700 : 400, cursor: "pointer" }}>
       {label}
     </button>
+  );
+}
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div style={{ marginBottom: "14px" }}>
+      <label style={{ display: "block", fontSize: "12px", fontWeight: 700, color: "#374151", marginBottom: "6px" }}>{label}</label>
+      {children}
+    </div>
   );
 }
 function StatCard({ label, value, sub, icon, color, bg, border }: {
@@ -196,6 +205,22 @@ export default function AdminDashboard() {
   const [staff, setStaff]             = useState<StaffMember[]>([]);
   const [staffLoading, setStaffLoading] = useState(false);
   const [staffSetupDone, setStaffSetupDone] = useState(false);
+
+  // Receipts (Tahsilat)
+  const [receipts, setReceipts]             = useState<Receipt[]>([]);
+  const [receiptsLoading, setReceiptsLoading] = useState(false);
+  const [printReceipt, setPrintReceipt]     = useState<Receipt | null>(null);
+  const [rcptModal, setRcptModal]           = useState(false);
+  const [rcptCompanyId, setRcptCompanyId]   = useState("");
+  const [rcptType, setRcptType]             = useState("cek");
+  const [rcptAmount, setRcptAmount]         = useState("");
+  const [rcptDate, setRcptDate]             = useState(new Date().toISOString().slice(0, 10));
+  const [rcptDueDate, setRcptDueDate]       = useState("");
+  const [rcptCheckNo, setRcptCheckNo]       = useState("");
+  const [rcptBank, setRcptBank]             = useState("");
+  const [rcptNotes, setRcptNotes]           = useState("");
+  const [rcptSaving, setRcptSaving]         = useState(false);
+  const [rcptFilter, setRcptFilter]         = useState("all");
 
   // Internal ticket modal
   const [newTicketModal, setNewTicketModal]   = useState(false);
@@ -317,6 +342,7 @@ export default function AdminDashboard() {
   const fetchRptQuotes   = useCallback(async () => { if (rptQuotesLoaded) return; const r = await fetch("/api/admin/quotes?all=1"); if (r.ok) { setRptAllQuotes((await r.json()).quotes || []); setRptQuotesLoaded(true); } }, [rptQuotesLoaded]);
   const fetchRptAssets   = useCallback(async () => { if (rptAssetsLoaded) return; const r = await fetch("/api/admin/assets?all=1"); if (r.ok) { setRptAllAssets((await r.json()).assets || []); setRptAssetsLoaded(true); } }, [rptAssetsLoaded]);
   const fetchCustomers   = useCallback(async () => { setCustLoading(true); const r = await fetch(`/api/admin/customers?filter=${custFilter}`); if (r.ok) setCustomers((await r.json()).customers || []); setCustLoading(false); }, [custFilter]);
+  const fetchReceipts    = useCallback(async () => { setReceiptsLoading(true); const url = rcptFilter !== "all" ? `/api/admin/receipts?company_id=${rcptFilter}` : "/api/admin/receipts"; const r = await fetch(url); if (r.ok) setReceipts((await r.json()).receipts || []); setReceiptsLoading(false); }, [rcptFilter]);
   const fetchCompanies   = useCallback(async () => { setCompLoading(true); const r = await fetch("/api/admin/companies"); if (r.ok) setCompanies((await r.json()).companies || []); setCompLoading(false); }, []);
   const fetchStaff       = useCallback(async () => { setStaffLoading(true); const r = await fetch("/api/admin/staff"); if (r.ok) setStaff((await r.json()).staff || []); setStaffLoading(false); }, []);
 
@@ -358,6 +384,7 @@ export default function AdminDashboard() {
   }, [ntCompanyId]);
 
   useEffect(() => { if (tab === "customers") fetchCustomers(); }, [tab, fetchCustomers]);
+  useEffect(() => { if (tab === "receipts") fetchReceipts(); }, [tab, fetchReceipts, rcptFilter]);
   useEffect(() => { if (tab === "companies" || tab === "prospects") fetchCompanies(); }, [tab, fetchCompanies]);
   // Şirket başına teklif sayısı (Şirketler ve Teklifler sekmesinde gösterilir)
   useEffect(() => {
@@ -408,6 +435,25 @@ export default function AdminDashboard() {
     } else {
       const j = await r.json().catch(() => ({}));
       setCustPwError(j.error || "Şifre değiştirilemedi.");
+    }
+  }
+
+  async function handleSaveReceipt() {
+    if (!rcptCompanyId || !rcptAmount || !rcptDate) return;
+    setRcptSaving(true);
+    const body: Record<string, unknown> = { company_id: rcptCompanyId, payment_type: rcptType, amount: parseFloat(rcptAmount.replace(",", ".")), currency: "TRY", receipt_date: rcptDate, notes: rcptNotes };
+    if (rcptType === "cek") { body.due_date = rcptDueDate; body.check_no = rcptCheckNo; body.bank_name = rcptBank; }
+    const r = await fetch("/api/admin/receipts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+    setRcptSaving(false);
+    if (r.ok) {
+      const { receipt } = await r.json();
+      setRcptModal(false);
+      setRcptAmount(""); setRcptCheckNo(""); setRcptBank(""); setRcptDueDate(""); setRcptNotes(""); setRcptCompanyId("");
+      fetchReceipts();
+      setPrintReceipt({ ...receipt, companies: companies.find(c => c.id === receipt.company_id) ? { name: companies.find(c => c.id === receipt.company_id)!.name } : null });
+      showToast("Tahsilat makbuzu oluşturuldu.", "success");
+    } else {
+      showToast("Hata: tahsilat kaydedilemedi.", "error");
     }
   }
 
@@ -1126,6 +1172,7 @@ export default function AdminDashboard() {
           <SideSection label="Operasyon" />
           <NavItem icon={<Server size={15} />} label="Cihaz Envanteri" active={tab==="assets"} badge={renewalCount || undefined} badgeColor="#ea580c" onClick={() => setTab("assets")} />
           <NavItem icon={<FileText size={15} />} label="Teklifler" active={tab==="quotes"} onClick={() => setTab("quotes")} />
+          <NavItem icon={<CheckCircle size={15} />} label="Tahsilat" active={tab==="receipts"} onClick={() => setTab("receipts")} />
           <NavItem icon={<ListTodo size={15} />} label="İş Planı" active={tab==="isplan"} onClick={() => setTab("isplan")} />
           <NavItem icon={<StickyNote size={15} />} label="Personel Notları" active={tab==="notes"} onClick={() => setTab("notes")} />
 
@@ -1795,6 +1842,152 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               </>
+            )}
+          </>
+        )}
+
+        {/* ══════════════════════════ RECEIPTS TAB */}
+        {tab === "receipts" && (
+          <>
+            {/* Toolbar */}
+            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "16px", flexWrap: "wrap" }}>
+              <select value={rcptFilter} onChange={e => setRcptFilter(e.target.value)}
+                style={{ padding: "8px 12px", border: "1.5px solid #e5e7ef", borderRadius: "10px", fontSize: "13px", color: "#1a1d2e", background: "#fff", minWidth: "180px" }}>
+                <option value="all">Tüm Şirketler</option>
+                {companies.filter(c=>c.active).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+              <div style={{ flex: 1 }} />
+              <button onClick={() => { setRcptModal(true); setRcptType("cek"); setRcptDate(new Date().toISOString().slice(0,10)); }}
+                style={{ display: "flex", alignItems: "center", gap: "6px", padding: "8px 16px", background: "#0052ff", border: "none", borderRadius: "10px", color: "#fff", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                <Plus size={15} /> Yeni Tahsilat
+              </button>
+            </div>
+
+            {/* List */}
+            <div style={{ background: "#fff", borderRadius: "14px", border: "1px solid #e5e7ef", overflow: "hidden" }}>
+              {receiptsLoading ? <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Yükleniyor...</div>
+              : receipts.length === 0 ? <div style={{ padding: "56px", textAlign: "center", color: "#9ca3af" }}>Henüz tahsilat kaydı yok.</div>
+              : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "700px" }}>
+                    <thead>
+                      <tr style={{ background: "#f8f9fb", borderBottom: "1px solid #e5e7ef" }}>
+                        {["Makbuz No","Şirket","Tür","Tutar","Tarih","Vade","İşlem"].map(h => (
+                          <th key={h} style={{ padding: "11px 16px", textAlign: "left", fontSize: "11px", fontWeight: 700, color: "#9ca3af", textTransform: "uppercase", letterSpacing: ".5px" }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {receipts.map(rc => {
+                        const ptColor: Record<string,{bg:string;text:string}> = { cek:{bg:"#eff6ff",text:"#1d4ed8"}, nakit:{bg:"#f0fdf4",text:"#15803d"}, kredi_karti:{bg:"#f5f3ff",text:"#7c3aed"} };
+                        const pc = ptColor[rc.payment_type] ?? {bg:"#f8f9fb",text:"#6b7280"};
+                        const ptLabel: Record<string,string> = { cek:"Çek", nakit:"Nakit", kredi_karti:"Krt" };
+                        return (
+                          <tr key={rc.id} style={{ borderBottom: "1px solid #f0f2f8" }}
+                            onMouseEnter={e=>(e.currentTarget.style.background="#f8f9fb")}
+                            onMouseLeave={e=>(e.currentTarget.style.background="transparent")}>
+                            <td style={{ padding: "13px 16px", fontSize: "13px", fontWeight: 700, color: "#0052ff" }}>{rc.receipt_no}</td>
+                            <td style={{ padding: "13px 16px", fontSize: "13px", color: "#1a1d2e" }}>{(rc as Receipt & {companies?:{name:string}|null}).companies?.name ?? "—"}</td>
+                            <td style={{ padding: "13px 16px" }}>
+                              <span style={{ padding: "3px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: 700, background: pc.bg, color: pc.text }}>{ptLabel[rc.payment_type]}</span>
+                              {rc.check_no && <span style={{ marginLeft: "6px", fontSize: "11px", color: "#9ca3af" }}>#{rc.check_no}</span>}
+                            </td>
+                            <td style={{ padding: "13px 16px", fontSize: "14px", fontWeight: 800, color: "#1a1d2e" }}>
+                              {new Intl.NumberFormat("tr-TR",{style:"currency",currency:rc.currency,minimumFractionDigits:2}).format(rc.amount)}
+                            </td>
+                            <td style={{ padding: "13px 16px", fontSize: "12px", color: "#6b7280" }}>{new Date(rc.receipt_date).toLocaleDateString("tr-TR")}</td>
+                            <td style={{ padding: "13px 16px", fontSize: "12px", color: "#6b7280" }}>{rc.due_date ? new Date(rc.due_date).toLocaleDateString("tr-TR") : "—"}</td>
+                            <td style={{ padding: "13px 16px" }}>
+                              <div style={{ display: "flex", gap: "6px" }}>
+                                <button onClick={() => setPrintReceipt(rc)}
+                                  style={{ padding: "5px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "7px", color: "#0052ff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                                  🖨 Makbuz
+                                </button>
+                                <button onClick={async () => { if (!confirm("Bu tahsilat silinsin mi?")) return; await fetch("/api/admin/receipts",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:rc.id})}); fetchReceipts(); }}
+                                  style={{ padding: "5px 8px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "7px", color: "#dc2626", fontSize: "12px", cursor: "pointer" }}>
+                                  <Trash2 size={12} />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* New receipt modal */}
+            {rcptModal && (
+              <div style={{ position: "fixed", inset: 0, zIndex: 600, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+                onClick={() => setRcptModal(false)}>
+                <div style={{ background: "#fff", borderRadius: "16px", padding: "28px 32px", width: "100%", maxWidth: "520px", maxHeight: "90vh", overflow: "auto", boxShadow: "0 20px 60px rgba(0,0,0,.18)" }}
+                  onClick={e => e.stopPropagation()}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "22px" }}>
+                    <span style={{ fontSize: "16px", fontWeight: 800, color: "#1a1d2e" }}>Yeni Tahsilat Makbuzu</span>
+                    <button onClick={() => setRcptModal(false)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af" }}><X size={20} /></button>
+                  </div>
+
+                  {/* Şirket */}
+                  <Field label="Şirket *">
+                    <select value={rcptCompanyId} onChange={e => setRcptCompanyId(e.target.value)} style={inpS}>
+                      <option value="">Şirket seçin...</option>
+                      {companies.filter(c=>c.active).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                  </Field>
+
+                  {/* Ödeme türü */}
+                  <Field label="Ödeme Türü *">
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      {[["cek","Çek"],["nakit","Nakit"],["kredi_karti","Kredi Kartı"]].map(([v,l]) => (
+                        <button key={v} onClick={() => setRcptType(v)}
+                          style={{ flex: 1, padding: "8px", border: `1.5px solid ${rcptType===v ? "#0052ff" : "#e5e7ef"}`, borderRadius: "8px", background: rcptType===v ? "#eff6ff" : "#fff", color: rcptType===v ? "#0052ff" : "#6b7280", fontSize: "13px", fontWeight: 700, cursor: "pointer" }}>
+                          {l}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
+
+                  {/* Tutar */}
+                  <Field label="Tutar (₺) *">
+                    <input type="number" value={rcptAmount} onChange={e=>setRcptAmount(e.target.value)} placeholder="0.00" step="0.01" style={inpS} />
+                  </Field>
+
+                  {/* Tarih */}
+                  <Field label="Tahsilat Tarihi *">
+                    <input type="date" value={rcptDate} onChange={e=>setRcptDate(e.target.value)} style={inpS} />
+                  </Field>
+
+                  {/* Çek alanları */}
+                  {rcptType === "cek" && (
+                    <>
+                      <Field label="Çek No">
+                        <input type="text" value={rcptCheckNo} onChange={e=>setRcptCheckNo(e.target.value)} placeholder="123456" style={inpS} />
+                      </Field>
+                      <Field label="Banka">
+                        <input type="text" value={rcptBank} onChange={e=>setRcptBank(e.target.value)} placeholder="Ziraat Bankası..." style={inpS} />
+                      </Field>
+                      <Field label="Vade Tarihi">
+                        <input type="date" value={rcptDueDate} onChange={e=>setRcptDueDate(e.target.value)} style={inpS} />
+                      </Field>
+                    </>
+                  )}
+
+                  {/* Notlar */}
+                  <Field label="Açıklama">
+                    <textarea value={rcptNotes} onChange={e=>setRcptNotes(e.target.value)} rows={2} placeholder="İsteğe bağlı not..." style={{ ...inpS, resize: "vertical" }} />
+                  </Field>
+
+                  <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                    <button onClick={() => setRcptModal(false)} style={{ flex: 1, padding: "10px", background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
+                    <button onClick={handleSaveReceipt} disabled={rcptSaving || !rcptCompanyId || !rcptAmount}
+                      style={{ flex: 1, padding: "10px", background: rcptSaving || !rcptCompanyId || !rcptAmount ? "#bfdbfe" : "#0052ff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
+                      {rcptSaving ? "Kaydediliyor..." : "Kaydet & Makbuz"}
+                    </button>
+                  </div>
+                </div>
+              </div>
             )}
           </>
         )}
@@ -2499,6 +2692,8 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+      {printReceipt && <TahsilatMakbuzu receipt={printReceipt} onClose={() => setPrintReceipt(null)} />}
+
       <AdminToast />
 
       {/* ══ KULLANICI ŞİFRE DEĞİŞTİR MODALİ ════════════════════════════ */}
