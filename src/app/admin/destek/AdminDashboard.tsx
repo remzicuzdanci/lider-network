@@ -223,6 +223,10 @@ export default function AdminDashboard() {
   const [rcptFilter, setRcptFilter]         = useState("all");
   const [rcptCheckImage, setRcptCheckImage] = useState<string>("");
   const [rcptImgUploading, setRcptImgUploading] = useState(false);
+  const [rcptEditModal, setRcptEditModal]   = useState<Receipt | null>(null);
+  const [rcptEditImage, setRcptEditImage]   = useState<string>("");
+  const [rcptEditImgUploading, setRcptEditImgUploading] = useState(false);
+  const [rcptEditSaving, setRcptEditSaving] = useState(false);
 
   // Internal ticket modal
   const [newTicketModal, setNewTicketModal]   = useState(false);
@@ -456,6 +460,26 @@ export default function AdminDashboard() {
       showToast("Tahsilat makbuzu oluşturuldu.", "success");
     } else {
       showToast("Hata: tahsilat kaydedilemedi.", "error");
+    }
+  }
+
+  async function handleSaveEditReceipt() {
+    if (!rcptEditModal) return;
+    setRcptEditSaving(true);
+    const r = await fetch("/api/admin/receipts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: rcptEditModal.id, check_image_url: rcptEditImage || null }),
+    });
+    setRcptEditSaving(false);
+    if (r.ok) {
+      const { receipt } = await r.json();
+      setRcptEditModal(null);
+      setRcptEditImage("");
+      setReceipts(prev => prev.map(rc => rc.id === receipt.id ? receipt : rc));
+      showToast("Tahsilat güncellendi.", "success");
+    } else {
+      showToast("Güncelleme başarısız.", "error");
     }
   }
 
@@ -1905,6 +1929,10 @@ export default function AdminDashboard() {
                                   style={{ padding: "5px 10px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "7px", color: "#0052ff", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
                                   🖨 Makbuz
                                 </button>
+                                <button onClick={() => { setRcptEditModal(rc); setRcptEditImage(rc.check_image_url || ""); }}
+                                  style={{ padding: "5px 10px", background: "#f5f3ff", border: "1px solid #ddd6fe", borderRadius: "7px", color: "#7c3aed", fontSize: "12px", fontWeight: 600, cursor: "pointer" }}>
+                                  ✏️ Düzenle
+                                </button>
                                 <button onClick={async () => { if (!confirm("Bu tahsilat silinsin mi?")) return; await fetch("/api/admin/receipts",{method:"DELETE",headers:{"Content-Type":"application/json"},body:JSON.stringify({id:rc.id})}); fetchReceipts(); }}
                                   style={{ padding: "5px 8px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "7px", color: "#dc2626", fontSize: "12px", cursor: "pointer" }}>
                                   <Trash2 size={12} />
@@ -2015,6 +2043,64 @@ export default function AdminDashboard() {
               </div>
             )}
           </>
+        )}
+
+        {/* ══ TAHSİLAT DÜZENLE MODALİ ════════════════════════════════ */}
+        {rcptEditModal && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 650, background: "rgba(0,0,0,.45)", display: "flex", alignItems: "center", justifyContent: "center", padding: "20px" }}
+            onClick={() => setRcptEditModal(null)}>
+            <div style={{ background: "#fff", borderRadius: "16px", padding: "28px 32px", width: "100%", maxWidth: "480px", boxShadow: "0 20px 60px rgba(0,0,0,.2)" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+                <div>
+                  <div style={{ fontSize: "15px", fontWeight: 800, color: "#1a1d2e" }}>Tahsilat Düzenle</div>
+                  <div style={{ fontSize: "12px", color: "#6b7280", marginTop: "2px" }}>{rcptEditModal.receipt_no}</div>
+                </div>
+                <button onClick={() => setRcptEditModal(null)} style={{ background: "none", border: "none", cursor: "pointer", color: "#9ca3af", display: "flex" }}><X size={20} /></button>
+              </div>
+
+              {/* Çek görseli */}
+              {rcptEditModal.payment_type === "cek" && (
+                <Field label="Çek Görseli">
+                  {rcptEditImage ? (
+                    <div style={{ position: "relative" }}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={rcptEditImage} alt="çek" style={{ width: "100%", maxHeight: "200px", objectFit: "contain", border: "1px solid #e5e7ef", borderRadius: "8px", background: "#f8f9fb" }} />
+                      <button onClick={() => setRcptEditImage("")}
+                        style={{ position: "absolute", top: 6, right: 6, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: "6px", color: "#dc2626", cursor: "pointer", padding: "3px 8px", fontSize: "11px", fontWeight: 700 }}>✕ Kaldır</button>
+                    </div>
+                  ) : (
+                    <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "20px", border: "1.5px dashed #e5e7ef", borderRadius: "10px", cursor: rcptEditImgUploading ? "default" : "pointer", color: "#9ca3af", fontSize: "13px", background: "#fafbff" }}>
+                      {rcptEditImgUploading ? "Yükleniyor..." : "📷 Çek fotoğrafı ekle / değiştir"}
+                      <input type="file" accept="image/*" style={{ display: "none" }} disabled={rcptEditImgUploading} onChange={async e => {
+                        const f = e.target.files?.[0]; if (!f) return;
+                        setRcptEditImgUploading(true);
+                        const fd = new FormData(); fd.append("file", f);
+                        const r = await fetch("/api/admin/receipts/upload", { method: "POST", body: fd });
+                        setRcptEditImgUploading(false);
+                        if (r.ok) { const j = await r.json(); setRcptEditImage(j.url); }
+                        else showToast("Görsel yüklenemedi.", "error");
+                      }} />
+                    </label>
+                  )}
+                </Field>
+              )}
+
+              {rcptEditModal.payment_type !== "cek" && (
+                <div style={{ padding: "16px", background: "#f8f9fb", borderRadius: "10px", fontSize: "13px", color: "#6b7280", textAlign: "center", marginBottom: "16px" }}>
+                  Şu an sadece çek tahsilatları için görsel eklenebilir.
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: "10px", marginTop: "8px" }}>
+                <button onClick={() => setRcptEditModal(null)} style={{ flex: 1, padding: "10px", background: "#f8f9fb", border: "1px solid #e5e7ef", borderRadius: "10px", fontSize: "14px", fontWeight: 600, color: "#6b7280", cursor: "pointer" }}>İptal</button>
+                <button onClick={handleSaveEditReceipt} disabled={rcptEditSaving}
+                  style={{ flex: 1, padding: "10px", background: rcptEditSaving ? "#bfdbfe" : "#0052ff", border: "none", borderRadius: "10px", fontSize: "14px", fontWeight: 700, color: "#fff", cursor: "pointer" }}>
+                  {rcptEditSaving ? "Kaydediliyor..." : "Kaydet"}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
 
         {/* ══════════════════════════ REPORTS TAB */}

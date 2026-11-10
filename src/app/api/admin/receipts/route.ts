@@ -60,6 +60,35 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ receipt: data });
 }
 
+/* ── PATCH /api/admin/receipts ───────────────────────────────── */
+export async function PATCH(req: NextRequest) {
+  if (!(await getAdminSession()))
+    return NextResponse.json({ error: "Yetkisiz" }, { status: 401 });
+
+  const body = await req.json();
+  const { id, check_no, bank_name, due_date, check_image_url, notes, amount, receipt_date } = body;
+  if (!id) return NextResponse.json({ error: "ID gerekli." }, { status: 400 });
+
+  const updates: Record<string, unknown> = {};
+  if (check_no       !== undefined) updates.check_no        = check_no || null;
+  if (bank_name      !== undefined) updates.bank_name       = bank_name || null;
+  if (due_date       !== undefined) updates.due_date        = due_date || null;
+  if (check_image_url !== undefined) updates.check_image_url = check_image_url || null;
+  if (notes          !== undefined) updates.notes           = notes || null;
+  if (amount         !== undefined) updates.amount          = Number(amount);
+  if (receipt_date   !== undefined) updates.receipt_date    = receipt_date;
+
+  const { data, error } = await supabase
+    .from("receipts")
+    .update(updates)
+    .eq("id", id)
+    .select("*, companies(name, address, tax_no, tax_office)")
+    .single();
+
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  return NextResponse.json({ receipt: data });
+}
+
 /* ── DELETE /api/admin/receipts ──────────────────────────────── */
 export async function DELETE(req: NextRequest) {
   if (!(await getAdminSession()))
