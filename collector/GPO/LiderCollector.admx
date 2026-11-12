@@ -113,6 +113,25 @@
       </elements>
     </policy>
 
+    <!-- ── Delta synchronisation (Collector 1.3.0+) ───────────────────────── -->
+    <!--
+      Enabled  = DeltaSyncEnabled 1: unchanged inventory modules are not resent.
+      Disabled = DeltaSyncEnabled 0: every inventory cycle sends everything (1.2.0 behaviour).
+      Not configured: collector.json decides (default: enabled). Safe, immediate kill switch for the whole fleet.
+    -->
+    <policy
+      name="DeltaSync"
+      class="Machine"
+      displayName="$(string.PolicyDeltaSync_Name)"
+      explainText="$(string.PolicyDeltaSync_Explain)"
+      key="SOFTWARE\Policies\LiderNetwork\LiderCollector"
+      valueName="DeltaSyncEnabled">
+      <parentCategory ref="LiderCollector" />
+      <supportedOn ref="SUPPORTED_WIN10_AND_LATER" />
+      <enabledValue><decimal value="1" /></enabledValue>
+      <disabledValue><decimal value="0" /></disabledValue>
+    </policy>
+
     <!-- ── Log level ─────────────────────────────────────────────────────── -->
     <policy
       name="LogLevel"

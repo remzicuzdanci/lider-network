@@ -63,6 +63,7 @@ try
                 var cfg = CollectorConfig.Load(Path.Combine(dataPath, "collector.json"));
                 cfg.DataPath = dataPath; // runtime-only: for update trigger file path
                 cfg.AgentVersion = AppVersion.Current; // never trust the persisted value after an upgrade
+                cfg.DeltaSyncPolicy = PolicyOverrides.ReadDeltaSync(); // GPO (ADMX "Delta synchronisation"), runtime-only
                 return cfg;
             });
 

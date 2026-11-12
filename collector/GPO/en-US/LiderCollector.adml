@@ -58,6 +58,20 @@ Minimum: 300 seconds (5 minutes).  Maximum: 86400 seconds (24 hours).
 If not configured the value received from the server is used.
       </string>
 
+      <!-- Delta synchronisation -->
+      <string id="PolicyDeltaSync_Name">Delta inventory synchronisation</string>
+      <string id="PolicyDeltaSync_Explain">
+Collector 1.3.0 and later. When enabled (or not configured) the collector sends only the inventory
+modules that changed since the server last acknowledged them, plus a complete inventory after a
+restart, a connection failure, and at least every 20 hours.
+
+When disabled, every inventory cycle sends the complete inventory (the behaviour of Collector 1.2.0).
+Use "Disabled" as the immediate, fleet-wide way to switch the feature off; no restart of the server is needed.
+
+If not configured the value in collector.json (delta_sync_enabled, default true) is used.
+Older collectors ignore this setting.
+      </string>
+
       <!-- Log level -->
       <string id="PolicyLogLevel_Name">Log Level</string>
       <string id="PolicyLogLevel_Explain">

@@ -110,6 +110,16 @@ public sealed class ApiClient : IDisposable
         return result?.Success == true;
     }
 
+    /// <summary>
+    /// Like <see cref="SendInventoryAsync"/> but returns the server's whole answer, including the delta-sync block
+    /// (null = request failed). <c>Sync</c> is null when the server is older than delta sync.
+    /// </summary>
+    public async Task<ApiResult?> SendInventoryDetailedAsync(object inventoryPayload, CancellationToken ct = default)
+    {
+        var result = await PostAsync<ApiResult>("inventory", inventoryPayload, authorized: true, ct);
+        return result?.Success == true ? result : null;
+    }
+
     // ── Events ────────────────────────────────────────────────────────────────
 
     public async Task<bool> SendEventsAsync(object eventsPayload, CancellationToken ct = default)
@@ -276,5 +286,7 @@ public sealed class ApiClient : IDisposable
     {
         [JsonPropertyName("success")] public bool Success { get; set; }
         [JsonPropertyName("message")] public string? Message { get; set; }
+        /// <summary>Delta-sync acknowledgement (servers with delta support only).</summary>
+        [JsonPropertyName("sync")] public DeltaSync.SyncResponse? Sync { get; set; }
     }
 }

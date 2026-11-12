@@ -114,8 +114,8 @@ public sealed class ServicesModuleTests
     }
 
     [Fact]
-    public void Version_IsTheNewMinorRelease()
+    public void Version_IsTheCurrentRelease()
     {
-        Assert.Equal(new Version(1, 2, 0, 0), typeof(ServicesModule).Assembly.GetName().Version);
+        Assert.Equal(new Version(1, 3, 0, 0), typeof(ServicesModule).Assembly.GetName().Version);
     }
 }

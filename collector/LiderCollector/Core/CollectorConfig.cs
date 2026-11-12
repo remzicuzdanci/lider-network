@@ -51,6 +51,22 @@ public sealed class CollectorConfig
     public int PerformanceIntervalSeconds { get; set; } = 300;     // 5 min
     public int EventLogIntervalSeconds { get; set; } = 60;         // 1 min
 
+    /// <summary>
+    /// Delta synchronisation (1.3.0): send only modules whose content changed since the server last acknowledged them.
+    /// false = every inventory cycle sends everything (the 1.2.0 behaviour). A server without delta support turns it off by itself.
+    /// </summary>
+    public bool DeltaSyncEnabled { get; set; } = true;
+
+    /// <summary>Group Policy override (runtime-only, never saved): wins over <see cref="DeltaSyncEnabled"/> when configured.</summary>
+    [JsonIgnore]
+    public bool? DeltaSyncPolicy { get; set; }
+
+    [JsonIgnore]
+    public bool EffectiveDeltaSync => DeltaSyncPolicy ?? DeltaSyncEnabled;
+
+    /// <summary>A complete inventory is sent at least this often even when nothing changed (20 h: below the server's 24 h trust window).</summary>
+    public int FullSyncIntervalSeconds { get; set; } = 72000;
+
     /// <summary>Consecutive missed heartbeats before offline alarm is raised.</summary>
     public int OfflineThresholdMissedHeartbeats { get; set; } = 3;
 

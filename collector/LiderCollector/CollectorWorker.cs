@@ -34,6 +34,8 @@ public sealed class CollectorWorker : BackgroundService
 
     private readonly IReadOnlyList<ICollectorModule> _modules;
     private readonly CollectorState _state;
+    private readonly DeltaSync _delta = new();          // in-memory only: every service start begins with a complete inventory
+    private InventoryDispatcher _dispatcher = null!;
     private const int ModuleTimeoutSeconds = 180;
 
     // Connectivity state tracking for offline queue management
@@ -79,6 +81,8 @@ public sealed class CollectorWorker : BackgroundService
             new ServicesModule(loggerFactory.CreateLogger<ServicesModule>()),
             new EventLogModule(loggerFactory.CreateLogger<EventLogModule>(), _state),
         };
+
+        _dispatcher = new InventoryDispatcher(_delta, (payload, ct) => _api.SendInventoryDetailedAsync(payload, ct));
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -519,36 +523,41 @@ public sealed class CollectorWorker : BackgroundService
                 status[module.Name] = report;
             }
 
-            var payload = new InventoryPayload
+            var collectedAt = DateTime.UtcNow;
+            InventoryPayload Build(DeltaSync.Plan plan) => new InventoryPayload
             {
                 CollectorId = _config.CollectorId,
                 Hostname = identity.Hostname,
                 Identifiers = BuildIdentifiersList(identity),
-                CollectedAt = DateTime.UtcNow,
-                Modules = data,
+                CollectedAt = collectedAt,
+                Modules = plan.Modules,
                 ModuleStatus = status,
                 AgentVersion = AppVersion.Current,
                 PayloadVersion = 2,
+                Sync = plan.IncludeSync ? plan.SyncBlock : null,
             };
 
             if (_lastOnline)
             {
-                bool ok = await _api.SendInventoryAsync(payload, ct);
-                if (!ok)
+                var outcome = await _dispatcher.RunAsync(data, p => Build(p), _config.EffectiveDeltaSync, _config.FullSyncIntervalSeconds, ct);
+                if (!outcome.Delivered)
                 {
-                    _log.LogWarning("Inventory send failed — queuing for later.");
-                    _queue.Enqueue("inventory", payload);
+                    _log.LogWarning("Inventory send failed — queuing a complete inventory for later.");
+                    _queue.Enqueue("inventory", outcome.ToQueue!);
                     _state.Save(); // cursor committed when queued (at-least-once; server deduplicates)
                 }
                 else
                 {
                     _state.Save(); // cursor committed after confirmed delivery
-                    _log.LogInformation("Inventory sync sent ({ModuleCount} modules).", data.Count);
+                    _log.LogInformation("Inventory sync sent ({Mode}, {Sent}/{Total} modules, {Requests} request(s)).",
+                        outcome.WasDelta ? "delta" : "full", outcome.ModulesSent, data.Count, outcome.Requests);
                 }
             }
             else
             {
-                _queue.Enqueue("inventory", payload);
+                // offline: what is queued is always COMPLETE, and nothing is assumed about what the server holds afterwards
+                _delta.Invalidate();
+                _queue.Enqueue("inventory", Build(_delta.BuildFullPlan(data)));
                 _state.Save(); // cursor committed when queued
                 _log.LogInformation("Offline — inventory queued ({Count} in queue).", _queue.Count());
             }
@@ -710,5 +719,7 @@ public sealed class CollectorWorker : BackgroundService
         [JsonPropertyName("module_status")] public Dictionary<string, ModuleReport>? ModuleStatus { get; set; }
         [JsonPropertyName("agent_version")] public string? AgentVersion { get; set; }
         [JsonPropertyName("payload_version")] public int? PayloadVersion { get; set; }
+        /// <summary>Delta-sync block (1.3.0). Null (omitted) for a plain 1.2.0-style payload.</summary>
+        [JsonPropertyName("sync")] public object? Sync { get; set; }
     }
 }

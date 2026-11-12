@@ -1,0 +1,32 @@
+# build output and local test publishes
+bin/
+obj/
+publish*/
+**/publish_test/
+.vs/
+TestResults/
+# release artefacts (MSIs, pdbs, signed outputs live in dist/ and are produced by build-msi.ps1)
+dist/
+*.msi
+*.wixpdb
+*.cab
+# secrets, keys, certificates and local state: never commit
+*.pfx
+*.p12
+*.key
+*.pem
+*.snk
+*.dat
+*.db
+*.sqlite
+collector.json
+collector_*.json
+enrollment.json
+transport-policy.json
+secure.dat
+*.env
+.env*
+*.log
+logs/
+*_stderr.txt
+*_output.txt
