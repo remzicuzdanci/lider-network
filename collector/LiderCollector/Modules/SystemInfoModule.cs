@@ -40,6 +40,7 @@ public sealed class SystemInfoModule : IReportingModule
         t.Run("Partitions",      () => CollectPartitions(payload),     required: false, _log);
         t.Run("Volumes",         () => CollectVolumes(payload),        required: true,  _log);
         t.Run("Enclosure",       () => CollectEnclosure(payload),      required: false, _log);
+        t.Run("BaseBoard",       () => CollectBaseBoard(payload),      required: false, _log);
         t.Run("PhysicalDisks",   () => EnrichPhysicalDisks(payload),   required: false, _log);
 
         Sanity(payload, t);
@@ -82,7 +83,7 @@ public sealed class SystemInfoModule : IReportingModule
     private static void CollectComputerSystem(SystemPayload p)
     {
         bool any = false;
-        foreach (var o in Query("SELECT Name,Manufacturer,Model,TotalPhysicalMemory,NumberOfLogicalProcessors,SystemType,Domain FROM Win32_ComputerSystem"))
+        foreach (var o in Query("SELECT Name,Manufacturer,Model,TotalPhysicalMemory,NumberOfLogicalProcessors,SystemType,Domain,UserName FROM Win32_ComputerSystem"))
         {
             any = true;
             p.Hostname = S(o, "Name");
@@ -92,6 +93,7 @@ public sealed class SystemInfoModule : IReportingModule
             p.LogicalCores = I(o, "NumberOfLogicalProcessors");
             p.SystemType = S(o, "SystemType");
             p.Domain = S(o, "Domain");
+            p.LoggedOnUser = S(o, "UserName");   // interactive console user (DOMAIN\user); null when nobody is logged on
         }
         if (!any) throw new InvalidOperationException("Win32_ComputerSystem returned no rows");
     }
@@ -149,6 +151,16 @@ public sealed class SystemInfoModule : IReportingModule
             p.BiosSerial = NormalizeSerial(S(o, "SerialNumber"));
             p.BiosVersion = S(o, "SMBIOSBIOSVersion") ?? S(o, "Version");
             p.BiosManufacturer = CleanVendor(S(o, "Manufacturer"));
+        }
+    }
+
+    /// <summary>Motherboard identity (Win32_BaseBoard). Placeholders such as "To be filled by O.E.M." are dropped by NormalizeSerial/CleanVendor.</summary>
+    private static void CollectBaseBoard(SystemPayload p)
+    {
+        foreach (var o in Query("SELECT Manufacturer,Product,SerialNumber FROM Win32_BaseBoard"))
+        {
+            var bb = new BaseBoardInfo { Manufacturer = CleanVendor(S(o, "Manufacturer")), Product = S(o, "Product"), Serial = NormalizeSerial(S(o, "SerialNumber")) };
+            if (bb.Manufacturer != null || bb.Product != null || bb.Serial != null) { p.BaseBoard = bb; break; }
         }
     }
 
@@ -336,6 +348,8 @@ public sealed class SystemInfoModule : IReportingModule
         [JsonPropertyName("logical_cores")] public int LogicalCores { get; set; }
         [JsonPropertyName("system_type")] public string? SystemType { get; set; }
         [JsonPropertyName("domain")] public string? Domain { get; set; }
+        [JsonPropertyName("baseboard")] public BaseBoardInfo? BaseBoard { get; set; }
+        [JsonPropertyName("logged_on_user")] public string? LoggedOnUser { get; set; }
         [JsonPropertyName("processors")] public List<CpuInfo> Processors { get; set; } = new();
         [JsonPropertyName("ram_slots")] public List<RamSlot> RamSlots { get; set; } = new();
         [JsonPropertyName("disks")] public List<DiskInfo> Disks { get; set; } = new();
@@ -350,6 +364,13 @@ public sealed class SystemInfoModule : IReportingModule
         [JsonPropertyName("last_boot_at")]   public string? LastBootAt    => LastBootTime?.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
         [JsonPropertyName("fqdn")]           public string? Fqdn          => (!string.IsNullOrEmpty(Domain) && Domain != "WORKGROUP" && Hostname != null) ? $"{Hostname}.{Domain}" : null;
         [JsonPropertyName("uptime_seconds")] public long?   UptimeSec     => LastBootTime.HasValue ? (long)(DateTime.UtcNow - LastBootTime.Value.ToUniversalTime()).TotalSeconds : null;
+    }
+
+    public sealed class BaseBoardInfo
+    {
+        [JsonPropertyName("manufacturer")] public string? Manufacturer { get; set; }
+        [JsonPropertyName("product")] public string? Product { get; set; }
+        [JsonPropertyName("serial")] public string? Serial { get; set; }
     }
 
     public sealed class CpuInfo
