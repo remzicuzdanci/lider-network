@@ -40,4 +40,18 @@ public sealed class LiveSystemCollectionTests
         File.WriteAllLines(outFile, lines);
         Assert.False(string.IsNullOrEmpty(Get("hostname")));
     }
+
+    /// <summary>Opt-in: LIDER_LIVE_PAYLOAD=&lt;file&gt; writes the real system+network+software modules of THIS machine as the inventory "modules" object
+    /// (exactly what the service would POST), so the server side can be tested with genuine Collector output in an isolated environment.</summary>
+    [Fact]
+    public async Task Dumps_the_real_inventory_modules_of_this_machine()
+    {
+        var outFile = Environment.GetEnvironmentVariable("LIDER_LIVE_PAYLOAD");
+        if (string.IsNullOrEmpty(outFile)) return;
+        var sys = await new SystemInfoModule(NullLogger<SystemInfoModule>.Instance).RunAsync(CancellationToken.None);
+        var net = await new NetworkModule(NullLogger<NetworkModule>.Instance).RunAsync(CancellationToken.None);
+        var sw  = await new SoftwareModule(NullLogger<SoftwareModule>.Instance).RunAsync(CancellationToken.None);
+        File.WriteAllText(outFile, JsonSerializer.Serialize(new { agent_version = "1.3.0", modules = new { system = sys, network = net, software = sw } }));
+        Assert.NotNull(sys);
+    }
 }
