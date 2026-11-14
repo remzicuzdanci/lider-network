@@ -55,7 +55,9 @@ function Backup-State {
         New-Item -ItemType Directory -Force -Path $dest | Out-Null
         icacls $BackupRoot /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F' | Out-Null
         Copy-Item $Data -Destination $dest -Recurse -Force
-        ("version={0}`nproductcode={1}`nservice={2}" -f $cur.Version, $cur.ProductCode, (Get-Service $Service -ErrorAction SilentlyContinue).Status) | Set-Content (Join-Path $dest 'state.txt')
+        $hashes = foreach ($f in 'collector.json', 'secure.dat', 'queue.db') { $p = Join-Path $Data $f; if (Test-Path $p) { '{0}  sha256={1}  bytes={2}' -f $f, (Get-FileHash $p -Algorithm SHA256).Hash, (Get-Item $p).Length } else { "$f  MISSING" } }
+        (@("version=$($cur.Version)", "productcode=$($cur.ProductCode)", "service=$((Get-Service $Service -ErrorAction SilentlyContinue).Status)", 'identity files (hashes only, no content):') + $hashes) | Set-Content (Join-Path $dest 'state.txt')
+        $hashes | ForEach-Object { Info "  $_" }
         Info "state backed up to $dest (restricted to SYSTEM and Administrators)"
     }
     return $dest
