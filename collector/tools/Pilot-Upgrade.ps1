@@ -35,7 +35,7 @@ $Data = Join-Path $env:ProgramData 'LiderCollector'
 function Info($m) { Write-Host "[pilot] $m" }
 function Installed {
     $inst = New-Object -ComObject WindowsInstaller.Installer
-    foreach ($pc in $inst.RelatedProducts($UpgradeCode)) { return [pscustomobject]@{ ProductCode = $pc; Version = $inst.ProductInfo($pc, 'VersionString') } }
+    foreach ($pc in $inst.RelatedProducts($UpgradeCode)) { return [pscustomobject]@{ ProductCode = $pc; Version = $inst.ProductInfo($pc, 'VersionString'); LocalPackage = $inst.ProductInfo($pc, 'LocalPackage') } }
     return $null
 }
 function Test-Msi {
@@ -55,6 +55,9 @@ function Backup-State {
         New-Item -ItemType Directory -Force -Path $dest | Out-Null
         icacls $BackupRoot /inheritance:r /grant:r 'SYSTEM:(OI)(CI)F' 'Administrators:(OI)(CI)F' | Out-Null
         Copy-Item $Data -Destination $dest -Recurse -Force
+        # the MSI that is installed right now (Windows Installer keeps a copy): this is what a rollback reinstalls, so no separate old MSI has to be carried around
+        if ($cur -and $cur.LocalPackage -and (Test-Path $cur.LocalPackage)) { Copy-Item $cur.LocalPackage (Join-Path $dest "previous-$($cur.Version).msi") -Force; Info "saved the installed MSI for rollback: previous-$($cur.Version).msi" }
+        else { Write-Warning 'the installed MSI could not be copied from the Windows Installer cache: a rollback will need -Msi <the old MSI>' }
         $hashes = foreach ($f in 'collector.json', 'secure.dat', 'queue.db') { $p = Join-Path $Data $f; if (Test-Path $p) { '{0}  sha256={1}  bytes={2}' -f $f, (Get-FileHash $p -Algorithm SHA256).Hash, (Get-Item $p).Length } else { "$f  MISSING" } }
         (@("version=$($cur.Version)", "productcode=$($cur.ProductCode)", "service=$((Get-Service $Service -ErrorAction SilentlyContinue).Status)", 'identity files (hashes only, no content):') + $hashes) | Set-Content (Join-Path $dest 'state.txt')
         $hashes | ForEach-Object { Info "  $_" }
@@ -93,6 +96,11 @@ switch ($Mode) {
         if (-not $WhatIfPreference -and -not (Verify-Collector)) { Write-Warning "NOT healthy after the upgrade. Roll back with -Mode Rollback (older MSI). State backup: $bk"; exit 1 }
     }
     'Rollback' {
+        if (-not $Msi) {
+            $saved = Get-ChildItem $BackupRoot -Recurse -Filter 'previous-*.msi' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 1
+            if (-not $saved) { throw 'no -Msi given and no saved previous-*.msi found under the backup folder' }
+            $Msi = $saved.FullName; Info "rolling back to the saved MSI: $Msi"
+        }
         $cur = Installed
         if ($cur -and $PSCmdlet.ShouldProcess("product $($cur.ProductCode) v$($cur.Version)", 'stop service and uninstall')) {
             Stop-Service $Service -ErrorAction SilentlyContinue
