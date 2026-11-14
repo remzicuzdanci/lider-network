@@ -47,6 +47,12 @@ internal sealed class UpdateCoordinator
             if (!Version.TryParse(m.Version, out var target) || !Version.TryParse(AppVersion.Current, out var mine) || target <= mine) return;
             if (m.Size <= 0 || m.Size > MaxPackageBytes) { _log.LogWarning("Update {Ver} ignored: unreasonable size {S}", m.Version, m.Size); return; }
 
+            // a version that just failed is not retried for a while (no 70 MB download every 15 minutes)
+            if (UpdateAttempts.RecentlyFailed(_data, m.Version)) { _log.LogInformation("Update {Ver} was tried recently and did not succeed; waiting before the next attempt", m.Version); return; }
+            // fail closed BEFORE downloading: if the signer's revocation status cannot be established now (CRL unreachable / out of date), postpone
+            var pre = PackageVerifier.Preflight(UpdatePolicy.Create(Path.Combine(_data, "updates", "run")));
+            if (pre is not null) { _log.LogWarning("Update {Ver} postponed: {Why}", m.Version, pre); UpdateAttempts.Record(_data, m.Version, "postponed", pre); return; }
+
             string corr = Guid.NewGuid().ToString("N")[..12];
             string dir = Path.Combine(_data, "updates", corr); Directory.CreateDirectory(dir);
             string pkg = Path.Combine(dir, "package.msi");
@@ -84,6 +90,7 @@ internal sealed class UpdateCoordinator
                 await _api.ReportUpdateCompleteAsync(r.ToVersion ?? "", status, r.FromVersion, r.ToVersion, msg is null ? null : (msg.Length > 900 ? msg[..900] : msg), ct);
             _log.LogInformation("Self-update result reported: {Status} {From}->{To}", r.Status, r.FromVersion, r.ToVersion);
             File.Delete(path);
+            if (r.Status != "success") UpdateAttempts.Record(_data, r.ToVersion ?? "", r.Status, r.Error);
             if (r.Status == "success") TryDeleteDir(Path.Combine(_data, "updates", r.CorrelationId));       // failed runs keep their folder (saved MSI, logs) for the investigation
         }
         catch (OperationCanceledException) { throw; }
@@ -91,6 +98,30 @@ internal sealed class UpdateCoordinator
     }
 
     private static void TryDeleteDir(string d) { try { if (Directory.Exists(d)) Directory.Delete(d, true); } catch { /* cosmetic */ } }
+}
+
+/// <summary>Remembers the last unsuccessful attempt per version so a refused or failed update is retried at most every few hours.</summary>
+internal static class UpdateAttempts
+{
+    public static readonly TimeSpan Backoff = TimeSpan.FromHours(6);
+    private static string File_(string data) => Path.Combine(data, "update-last-attempt.json");
+
+    public static void Record(string data, string version, string status, string? why)
+    {
+        try { UpdateMarkers.WriteAtomic(File_(data), JsonSerializer.Serialize(new { version, status, at = DateTime.UtcNow.ToString("O"), why = why is { Length: > 300 } ? why[..300] : why })); } catch { /* best effort */ }
+    }
+
+    public static bool RecentlyFailed(string data, string version, DateTime? nowUtc = null)
+    {
+        try
+        {
+            using var d = JsonDocument.Parse(File.ReadAllText(File_(data)));
+            var r = d.RootElement;
+            return r.GetProperty("version").GetString() == version && r.GetProperty("status").GetString() != "success"
+                && DateTime.Parse(r.GetProperty("at").GetString()!, null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime() + Backoff > (nowUtc ?? DateTime.UtcNow);
+        }
+        catch { return false; }
+    }
 }
 
 internal static class UpdateLauncher

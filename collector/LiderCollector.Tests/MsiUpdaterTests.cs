@@ -17,15 +17,17 @@ public sealed class MsiUpdaterTests : IDisposable
     private readonly X509Certificate2 _signer;
     private readonly RSA _key;
     private readonly string _pki;
+    private readonly TestPki _tp;
 
     public MsiUpdaterTests()
     {
         Directory.CreateDirectory(_dir);
         _pki = Path.Combine(_dir, "pki"); Directory.CreateDirectory(_pki);
-        (_signer, _key) = NewCert("CN=TEST LIDER Code Signing", new Oid("1.3.6.1.5.5.7.3.3"), DateTimeOffset.UtcNow.AddDays(-1), DateTimeOffset.UtcNow.AddYears(2));
+        _tp = new TestPki(Path.Combine(_dir, "tp"), TestPki.Crl.Valid);          // test root + CDP leaf + local CRL server (in memory, unrelated to LIDER)
+        _signer = _tp.Leaf; _key = _tp.LeafKey;
         File.WriteAllBytes(Path.Combine(_pki, "update-signing-cert.cer"), _signer.Export(X509ContentType.Cert));
     }
-    public void Dispose() { try { Directory.Delete(_dir, true); } catch { } }
+    public void Dispose() { _tp.Dispose(); try { Directory.Delete(_dir, true); } catch { } }
 
     private static (X509Certificate2 cert, RSA key) NewCert(string subject, Oid eku, DateTimeOffset from, DateTimeOffset to)
     {
@@ -89,9 +91,9 @@ public sealed class MsiUpdaterTests : IDisposable
         string sig = Convert.ToBase64String(_key.SignData(Encoding.UTF8.GetBytes($"{target}:stable:{sha}"), HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1));
         if (tamper == "bytes") File.WriteAllText(pkg, File.ReadAllText(pkg).Replace("new-package", "evil-packag"));   // same length: only the hash can catch it
         var plan = new UpdatePlan { CorrelationId = "corr1", Version = target, Channel = "stable", PackagePath = pkg, Sha256Hash = sha, Size = bytes.Length, SignatureBase64 = sig, SigningCertThumbprint = _signer.Thumbprint };
-        var policy = new PackagePolicy(_signer.Thumbprint, UC, null, null, _pki);
+        var policy = new PackagePolicy(_signer.Thumbprint, UC, _tp.RootSha256, _tp.RootPemPath, _pki);
         var env = new FakeEnv { DataPath = data, Installed = new InstalledProduct("{OLD}", installed, local), ExeVersion = installed + ".0" };
-        var auth = new FakeAuth { Hr = 0, Signer = _signer };
+        var auth = new FakeAuth { Hr = 0x800B010A, Signer = _signer };
         var upd = new MsiUpdater(env, policy, auth, new FakeMsi(), new UpdateAuditLogger(data, "corr1")) { HealthTimeout = TimeSpan.FromSeconds(30), PollInterval = TimeSpan.FromSeconds(5) };
         return new Rig { Env = env, Auth = auth, Plan = plan, Policy = policy, Updater = upd, Pkg = pkg, Local = local };
     }

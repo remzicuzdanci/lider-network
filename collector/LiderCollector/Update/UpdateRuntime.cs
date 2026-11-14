@@ -18,12 +18,12 @@ internal static class UpdatePolicy
     public const string RootSha256 = "21E94EC9750C21E2442E0818107BE870BE6C83AD1369D8DAAEACBE6D4EC733E2";
 
     /// <summary>Writes the embedded PUBLIC certificates to a private folder and returns the policy that points at them.</summary>
-    public static PackagePolicy Create(string workDir, bool failOnRevocationUnknown = false)
+    public static PackagePolicy Create(string workDir)
     {
         string pki = Path.Combine(workDir, "pki"); Directory.CreateDirectory(pki);
         string root = Path.Combine(pki, "lider-root-ca.pem"), cert = Path.Combine(pki, "update-signing-cert.cer");
         Extract("pki.lider-root-ca.pem", root); Extract("pki.update-signing-cert.pem", cert);
-        return new PackagePolicy(SignerSha1, UpgradeCode, RootSha256, root, pki, failOnRevocationUnknown);
+        return new PackagePolicy(SignerSha1, UpgradeCode, RootSha256, root, pki);
     }
 
     private static void Extract(string resource, string dest)

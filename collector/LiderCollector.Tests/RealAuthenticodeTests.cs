@@ -67,14 +67,12 @@ public sealed class RealAuthenticodeTests
 
             var info = new WinTrustAuthenticode().Inspect(signed);
             var notes = new List<string>();
-            var m = typeof(PackageVerifier).GetMethod("CheckPinnedChain", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static)!;
-            var fail = (string?)m.Invoke(null, new object[] { info.Signer!, policy, notes });
-            foreach (var n in notes) _out.WriteLine(n);
-            Assert.Null(fail);
-            // fail-closed policy: if the CRL cannot be fetched from this PC the same check must refuse (proves the switch works)
-            var strict = policy with { FailOnRevocationUnknown = true }; var notes2 = new List<string>();
-            var strictFail = (string?)m.Invoke(null, new object[] { info.Signer!, strict, notes2 });
-            _out.WriteLine("strict policy result: " + (strictFail ?? "accepted (CRL was reachable)"));
+            // The real LIDER CRL (http://liderone.uci.local/pki/lider-ca.crl) is reachable only from the UCI network. From anywhere else the update MUST stop (fail-closed),
+            // from inside it the real signer must pass. Both outcomes are legitimate here; what is NOT allowed is a silent pass without a revocation check.
+            var fail = PackageVerifier.CheckPinnedChain(info.Signer!, policy, notes: new List<string>());
+            _out.WriteLine("real signer, revocation check: " + (fail ?? "CLEAN (CRL reachable and current)"));
+            Assert.True(fail is null || fail.Contains("CRL unreachable"), "unexpected failure: " + fail);
+            Assert.Equal(fail is null, PackageVerifier.Preflight(policy) is null);
         }
         finally { try { Directory.Delete(work, true); } catch { } }
     }

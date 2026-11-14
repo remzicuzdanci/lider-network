@@ -39,8 +39,7 @@ internal sealed record PackagePolicy(
     string? PinnedRootSha256,
     string? RootPemPath,
     string ManifestCertDirectory,
-    bool FailOnRevocationUnknown = false,
-    long MaxBytes = 400L * 1024 * 1024);
+    long MaxBytes = 400L * 1024 * 1024);      // there is deliberately NO switch that relaxes revocation checking
 
 internal sealed record VerifyResult(bool Ok, string? Reason, IReadOnlyList<string> Notes)
 {
@@ -91,12 +90,10 @@ internal static class PackageVerifier
         if (!codeSigning) return VerifyResult.Fail("the signing certificate is not a code-signing certificate", notes);
         notes.Add("Authenticode intact, signer = pinned certificate");
 
-        if (untrustedRoot)
-        {
-            var chainFail = CheckPinnedChain(s, policy, notes);
-            if (chainFail is not null) return VerifyResult.Fail(chainFail, notes);
-        }
-        else notes.Add("Windows trusts the chain on this computer");
+        // ALWAYS, whether or not Windows trusts the root: WinVerifyTrust above ran without revocation checks, so the chain to the PINNED root and the
+        // revocation status are decided here, fail-closed (an unreachable, stale or missing CRL stops the update).
+        var chainFail = CheckPinnedChain(s, policy, notes);
+        if (chainFail is not null) return VerifyResult.Fail(chainFail, notes);
 
         string? ver = msi.ReadProperty(msiPath, "ProductVersion"), uc = msi.ReadProperty(msiPath, "UpgradeCode");
         if (!string.Equals(ver, plan.Version, StringComparison.Ordinal)) return VerifyResult.Fail($"the MSI is version '{ver}', the manifest says '{plan.Version}'", notes);
@@ -105,10 +102,13 @@ internal static class PackageVerifier
         return new VerifyResult(true, null, notes);
     }
 
-    private static string? CheckPinnedChain(X509Certificate2 signer, PackagePolicy p, List<string> notes)
+    /// <summary>Chain to the pinned root + revocation. Used by the package check AND by the pre-download preflight (<see cref="Preflight"/>).</summary>
+    internal static string? CheckPinnedChain(X509Certificate2 signer, PackagePolicy p, List<string> notes)
     {
         if (string.IsNullOrEmpty(p.RootPemPath) || string.IsNullOrEmpty(p.PinnedRootSha256) || !File.Exists(p.RootPemPath))
-            return "Windows does not trust the signer's root and no pinned root is configured on this computer";
+            return "no pinned root is configured on this computer";
+        // without a CRL distribution point there is no way to know whether the certificate was revoked
+        if (!signer.Extensions.Cast<X509Extension>().Any(e => e.Oid?.Value == "2.5.29.31")) return "the signing certificate has no CRL distribution point; revocation cannot be checked";
         X509Certificate2 root;
         try { root = new X509Certificate2(p.RootPemPath); } catch { return "the pinned root file is unreadable"; }
         if (!string.Equals(Convert.ToHexString(SHA256.HashData(root.RawData)), p.PinnedRootSha256, StringComparison.OrdinalIgnoreCase))
@@ -121,17 +121,25 @@ internal static class PackageVerifier
         chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(10);
         bool built = chain.Build(signer);
         var statuses = chain.ChainStatus.Select(c => c.Status).ToList();
-        var unknownRevocation = statuses.Where(x => x is X509ChainStatusFlags.RevocationStatusUnknown or X509ChainStatusFlags.OfflineRevocation).ToList();
-        var hard = statuses.Except(unknownRevocation).ToList();
         if (statuses.Contains(X509ChainStatusFlags.Revoked)) return "the signing certificate has been REVOKED";
-        if (hard.Count > 0) return "the signer does not chain to the pinned LIDER root: " + string.Join(",", hard);
-        if (unknownRevocation.Count > 0)
-        {
-            if (p.FailOnRevocationUnknown) return "the revocation list could not be checked and policy is fail-closed";
-            notes.Add("WARNING: revocation status could not be determined (the CRL was unreachable); accepted by policy");
-        }
-        else if (!built) return "the certificate chain could not be built";
-        notes.Add("signer chains to the pinned LIDER root");
+        // revocation status unknown / CRL unreachable or out of date: the update STOPS (nothing is installed, nothing is skipped)
+        if (statuses.Any(x => x is X509ChainStatusFlags.RevocationStatusUnknown or X509ChainStatusFlags.OfflineRevocation))
+            return "update stopped: the revocation list could not be fetched or is not current (CRL unreachable); it is retried later";
+        if (statuses.Count > 0) return "the signer does not chain to the pinned LIDER root: " + string.Join(",", statuses);
+        if (!built) return "the certificate chain could not be built";
+        notes.Add("signer chains to the pinned LIDER root; revocation status checked and clean");
         return null;
+    }
+
+    /// <summary>Run BEFORE the 70 MB download: if the pinned signer's revocation status cannot be established now, the update is postponed instead of downloaded.</summary>
+    internal static string? Preflight(PackagePolicy p)
+    {
+        try
+        {
+            string cert = Path.Combine(p.ManifestCertDirectory, "update-signing-cert.cer");
+            if (!File.Exists(cert)) return "the pinned signing certificate is missing";
+            return CheckPinnedChain(new X509Certificate2(cert), p, new List<string>());
+        }
+        catch (Exception ex) { return "preflight failed: " + ex.Message; }
     }
 }
