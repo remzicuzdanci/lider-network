@@ -11,11 +11,11 @@
        (offsets, lengths, sha256, size) used by the server to stamp a per-customer copy, and
     5. reads the finished MSI back through the Windows Installer API (read-only; nothing is installed).
 
-.PARAMETER Version   MSI / agent version, e.g. 1.3.0 (default: 1.3.0)
+.PARAMETER Version   MSI / agent version, e.g. 1.4.0 (default: 1.4.0)
 .PARAMETER SkipTests Skip unit tests
 #>
 param(
-    [string]$Version = "1.3.0",
+    [string]$Version = "1.4.0",
     [switch]$SkipTests
 )
 
