@@ -2,7 +2,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Security.Cryptography.X509Certificates;
 
-namespace LiderCollector.Updater;
+namespace LiderCollector.Update;
 
 /// <summary>
 /// Cryptographic verification of downloaded update packages.

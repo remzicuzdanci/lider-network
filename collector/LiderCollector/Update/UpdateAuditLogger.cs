@@ -1,7 +1,7 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace LiderCollector.Updater;
+namespace LiderCollector.Update;
 
 /// <summary>
 /// Writes structured JSON audit log entries for each update phase.

@@ -29,6 +29,7 @@ public sealed class CollectorWorker : BackgroundService
     private readonly LocalQueue _queue;
     private readonly DeviceIdentity _identity;
     private readonly ApiClient _api;
+    private readonly LiderCollector.Update.UpdateCoordinator _update;
     private readonly BootstrapEnrollment _bootstrap;
     private readonly ILogger<CollectorWorker> _log;
 
@@ -66,6 +67,7 @@ public sealed class CollectorWorker : BackgroundService
         _queue = queue;
         _identity = identity;
         _api = api;
+        _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
         _bootstrap = bootstrap;
         _log = log;
 
@@ -113,6 +115,9 @@ public sealed class CollectorWorker : BackgroundService
 
         var identity = _identity.Collect();
 
+        // how did the last self-update end? (written by the update worker before this service restarted)
+        await _update.ReportPendingResultAsync(stoppingToken);
+
         // Flush any items queued during a previous offline session before starting the loop.
         long pending = _queue.Count();
         if (pending > 0)
@@ -159,8 +164,9 @@ public sealed class CollectorWorker : BackgroundService
                     }
                     _lastOnline = true;
 
+                    LiderCollector.Update.UpdateMarkers.WriteCheckinOk(_config.DataPath);   // the self-update health check looks for this
                     if (pendingUpdate != null)
-                        TriggerUpdate(pendingUpdate);
+                        _ = Task.Run(() => _update.TryUpdateAsync(stoppingToken), stoppingToken);   // never blocks the heartbeat loop
                 }
                 else
                 {
@@ -453,31 +459,7 @@ public sealed class CollectorWorker : BackgroundService
         catch { return (false, null); }
     }
 
-    // ── Update trigger ────────────────────────────────────────────────────────
-
-    private void TriggerUpdate(PendingUpdateInfo info)
-    {
-        try
-        {
-            // Write a trigger file that the separate LiderCollectorUpdater process watches.
-            // The updater handles download, verification, service stop/replace/start, and rollback.
-            // The main service never modifies its own binary files.
-            string triggerPath = Path.Combine(_config.DataPath, "update-trigger.json");
-            string json = System.Text.Json.JsonSerializer.Serialize(new
-            {
-                requested_at = DateTimeOffset.UtcNow.ToString("O"),
-                target_version = info.Version,
-            });
-            File.WriteAllText(triggerPath, json);
-            _log.LogInformation(
-                "Update trigger written for version {Version}. Updater will handle installation.",
-                info.Version);
-        }
-        catch (Exception ex)
-        {
-            _log.LogWarning(ex, "Failed to write update trigger file");
-        }
-    }
+    // Self-update: see Update/UpdateCoordinator.cs (manifest -> download -> signed-package checks -> updater process -> result report).
 
     private sealed record PendingUpdateInfo(string Version);
 

@@ -1,6 +1,6 @@
 using System.ServiceProcess;
 
-namespace LiderCollector.Updater;
+namespace LiderCollector.Update;
 
 /// <summary>
 /// Stop, start, and query a Windows service by name.

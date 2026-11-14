@@ -130,6 +130,55 @@ public sealed class ApiClient : IDisposable
 
     // ── Low-level helpers ─────────────────────────────────────────────────────
 
+    // ── Self-update (manifest, package, reports) ─────────────────────────────────
+    // The package is fetched ONLY from this server's own endpoint; the manifest's download_url is ignored on purpose.
+
+    private HttpRequestMessage AuthorizedGet(string endpoint)
+    {
+        string? key = _secure.Get("api_key");
+        if (string.IsNullOrEmpty(key)) throw new InvalidOperationException("No API key — collector not enrolled.");
+        var req = new HttpRequestMessage(HttpMethod.Get, $"{_config.ServerUrl.TrimEnd('/')}/api/v1/collector/{endpoint}");
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+        return req;
+    }
+
+    internal async Task<LiderCollector.Update.UpdateManifestDto?> GetUpdateManifestAsync(CancellationToken ct)
+    {
+        using var resp = await GetOrCreateClient().SendAsync(AuthorizedGet("update/manifest"), ct);
+        if (resp.StatusCode == System.Net.HttpStatusCode.NoContent || !resp.IsSuccessStatusCode) return null;
+        string json = await resp.Content.ReadAsStringAsync(ct);
+        return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<LiderCollector.Update.UpdateManifestDto>(json);
+    }
+
+    /// <summary>Streams the package to <paramref name="destPath"/>; refuses anything that is not exactly the announced size.</summary>
+    internal async Task<bool> DownloadUpdatePackageAsync(string destPath, long expectedSize, CancellationToken ct)
+    {
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct); cts.CancelAfter(TimeSpan.FromMinutes(20));
+        using var resp = await GetOrCreateClient().SendAsync(AuthorizedGet("update/package"), HttpCompletionOption.ResponseHeadersRead, cts.Token);
+        if (!resp.IsSuccessStatusCode) { _log.LogWarning("update/package → HTTP {S}", (int)resp.StatusCode); return false; }
+        if (resp.Content.Headers.ContentLength is long cl && cl != expectedSize) return false;
+        long total = 0;
+        await using (var src = await resp.Content.ReadAsStreamAsync(cts.Token))
+        await using (var dst = File.Create(destPath))
+        {
+            var buf = new byte[81920]; int n;
+            while ((n = await src.ReadAsync(buf, cts.Token)) > 0)
+            {
+                total += n; if (total > expectedSize) { return false; }
+                await dst.WriteAsync(buf.AsMemory(0, n), cts.Token);
+            }
+        }
+        if (total == expectedSize) return true;
+        try { File.Delete(destPath); } catch { /* cosmetic */ }
+        return false;
+    }
+
+    internal async Task ReportUpdateProgressAsync(string version, string status, string? fromVersion, CancellationToken ct)
+        => await PostAsync<object>("update/progress", new { manifest_version = version, status, from_version = fromVersion }, authorized: true, ct);
+
+    internal async Task ReportUpdateCompleteAsync(string version, string status, string? fromVersion, string? toVersion, string? error, CancellationToken ct)
+        => await PostAsync<object>("update/complete", new { manifest_version = version, status, from_version = fromVersion, to_version = toVersion, error_message = error }, authorized: true, ct);
+
     private async Task<T?> PostAsync<T>(string endpoint, object body,
         bool authorized, CancellationToken ct)
     {
