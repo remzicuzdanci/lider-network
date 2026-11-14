@@ -42,4 +42,11 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- PUBLIC certificates pinned by the self-update (root CA + code-signing certificate). No private key is ever embedded. -->
+    <EmbeddedResource Include="Update\pki\lider-root-ca.pem" LogicalName="pki.lider-root-ca.pem" />
+    <EmbeddedResource Include="Update\pki\update-signing-cert.pem" LogicalName="pki.update-signing-cert.pem" />
+    <InternalsVisibleTo Include="LiderCollector.Tests" />
+  </ItemGroup>
+
 </Project>

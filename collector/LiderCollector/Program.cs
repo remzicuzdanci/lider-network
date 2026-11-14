@@ -31,6 +31,13 @@ try
 {
     Log.Information("Lider IT ONE Collector v{Version} starting...", AppVersion.Current);
 
+    // "--apply-update <plan>": the self-update worker (a COPY of this exe, started by the service). Offline; never contacts the server.
+    if (args.Length >= 2 && args[0].Equals("--apply-update", StringComparison.OrdinalIgnoreCase))
+    {
+        Environment.ExitCode = await LiderCollector.Update.UpdateRunner.RunAsync(args[1]);
+        return;
+    }
+
     // "diag": inspect this machine's inventory without starting the service or contacting the server
     if (args.Length > 0 && args[0].Equals("diag", StringComparison.OrdinalIgnoreCase))
     {
