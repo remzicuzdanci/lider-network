@@ -24,13 +24,13 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Continue'
 $Service = 'LiderITONECollector'; $UpgradeCode = '{B6A3F291-9D4E-4C7B-8F12-3A5E6D1C0847}'
 $Data = Join-Path $env:ProgramData 'LiderCollector'
-$lines = New-Object System.Collections.Generic.List[string]; $blocks = 0; $warns = 0
+$lines = New-Object System.Collections.Generic.List[string]; $st = @{ blocks = 0; warns = 0; leaf = $null; sslErr = "" }   # a hashtable, not $script: variables, so the script also works when run in memory
 function W([string]$t) { $lines.Add($t); Write-Host $t }
 function Sec([string]$t) { W ''; W ("== $t") }
 function Ok([string]$m) { W "  [ OK ] $m" }
 function Info([string]$m) { W "  [info] $m" }
-function Warn([string]$m) { $script:warns++; W "  [WARN] $m" }
-function Block([string]$m) { $script:blocks++; W "  [BLOCK] $m" }
+function Warn([string]$m) { $st.warns++; W "  [WARN] $m" }
+function Block([string]$m) { $st.blocks++; W "  [BLOCK] $m" }
 function Safe([scriptblock]$b, $default = $null) { try { & $b } catch { $default } }
 function Open-Shared([string]$p) { New-Object IO.FileStream($p, 'Open', 'Read', 'ReadWrite,Delete') }
 
@@ -149,13 +149,13 @@ if (-not $hostName) { Warn 'server host unknown (collector.json not readable)' }
     } catch { Warn "CRL download failed: $($_.Exception.Message)" }
     try {
         $tc = New-Object Net.Sockets.TcpClient; $tc.Connect($hostName, 443)
-        $script:leaf = $null
-        $cb = [Net.Security.RemoteCertificateValidationCallback] { param($s, $c, $ch, $e) $script:leaf = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $c; $script:sslErr = [string]$e; $true }
+        $st.leaf = $null
+        $cb = [Net.Security.RemoteCertificateValidationCallback] { param($s, $c, $ch, $e) $st.leaf = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $c; $st.sslErr = [string]$e; $true }
         $ss = New-Object Net.Security.SslStream($tc.GetStream(), $false, $cb); $ss.AuthenticateAsClient($hostName); $ss.Dispose(); $tc.Close()
-        $c = $script:leaf; $san = ($c.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.17' } | ForEach-Object { $_.Format($false) }) -join ''
+        $c = $st.leaf; $san = ($c.Extensions | Where-Object { $_.Oid.Value -eq '2.5.29.17' } | ForEach-Object { $_.Format($false) }) -join ''
         Info "server certificate: $($c.Subject); issuer $($c.Issuer); valid until $($c.NotAfter.ToString('yyyy-MM-dd')); names: $san"
         if ($san -match [regex]::Escape($hostName)) { Ok "the certificate names $hostName" } else { Warn "the certificate does not name $hostName" }
-        if ($script:sslErr -eq 'None') { Ok 'Windows already trusts this certificate (the LIDER root is distributed here)' } else { Info "Windows trust status: $script:sslErr (expected; the Collector pins the LIDER root itself and nothing is added to the certificate store)" }
+        if ($st.sslErr -eq 'None') { Ok 'Windows already trusts this certificate (the LIDER root is distributed here)' } else { Info "Windows trust status: $($st.sslErr) (expected; the Collector pins the LIDER root itself and nothing is added to the certificate store)" }
     } catch { Warn "TLS handshake to $hostName`:443 failed: $($_.Exception.Message)" }
 }
 $rootHit = Safe { @(Get-ChildItem Cert:\LocalMachine\Root | Where-Object { ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($_.RawData)) -replace '-', '') -eq $PinnedRootSha256 }).Count } 0
@@ -171,8 +171,8 @@ Info "LiderCollector executables found: $(@($others).Count)"
 
 # ───────── verdict ─────────
 Sec 'Verdict'
-if ($blocks -gt 0) { W "  RESULT: BLOCKED - $blocks blocking item(s), $warns warning(s). Do not start the pilot." } elseif ($warns -gt 0) { W "  RESULT: OK WITH WARNINGS - $warns item(s) to read, nothing blocking." } else { W '  RESULT: OK - nothing blocking, no warnings.' }
+if ($st.blocks -gt 0) { W "  RESULT: BLOCKED - $($st.blocks) blocking item(s), $($st.warns) warning(s). Do not start the pilot." } elseif ($st.warns -gt 0) { W "  RESULT: WARNING - $($st.warns) item(s) to read, nothing blocking." } else { W '  RESULT: OK - nothing blocking, no warnings.' }
 W '  Nothing was changed on this computer and nothing was sent to the server.'
 $rep = Join-Path $ReportDir ("pilot-preflight-{0}-{1}.txt" -f $env:COMPUTERNAME, (Get-Date -Format 'yyyyMMdd-HHmmss'))
 try { [IO.File]::WriteAllLines($rep, $lines.ToArray(), (New-Object Text.UTF8Encoding($false))); Write-Host "`nReport written: $rep" } catch { Write-Host "`n(could not write the report file: $($_.Exception.Message); the screen output is complete)" }
-exit $(if ($blocks) { 2 } elseif ($warns) { 1 } else { 0 })
+exit $(if ($st.blocks) { 2 } elseif ($st.warns) { 1 } else { 0 })
