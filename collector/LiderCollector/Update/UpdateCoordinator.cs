@@ -41,6 +41,7 @@ internal sealed class UpdateCoordinator
         try
         {
             if (File.Exists(Path.Combine(_data, UpdateMarkers.PlanFile)) || File.Exists(Path.Combine(_data, UpdateMarkers.ResultFile))) return;   // one update at a time
+            if (!_api.ServerIsHttps) { _log.LogWarning("Self-update is disabled: it is only performed over HTTPS and this Collector talks to its server over plain HTTP (allow_http)"); return; }
             var m = await _api.GetUpdateManifestAsync(ct);
             if (m is null || !m.UpdateAvailable) return;
             if (!string.Equals(m.PackageType, "msi", StringComparison.OrdinalIgnoreCase)) { _log.LogWarning("Update {Ver} ignored: package type '{T}' is not an MSI", m.Version, m.PackageType); return; }
@@ -75,9 +76,29 @@ internal sealed class UpdateCoordinator
         finally { Volatile.Write(ref _busy, 0); }
     }
 
+    /// <summary>At service start: an update journal with no live updater behind it means an update died half-way. Start the watchdog (a separate process - this service may be replaced during the recovery).</summary>
+    public void StartWatchdogIfNeeded()
+    {
+        try
+        {
+            var j = UpdateJournal.Read(_data);
+            if (j is null) return;
+            var env = new WindowsUpdateEnvironment(_data);
+            if (j.UpdaterPid > 0 && env.UpdaterRunning(j.UpdaterPid)) return;
+            string copy = Path.Combine(_data, "updates", "run", "LiderCollectorUpdate.exe");
+            if (!File.Exists(copy)) { Directory.CreateDirectory(Path.GetDirectoryName(copy)!); File.Copy(Environment.ProcessPath!, copy, overwrite: true); }
+            var psi = new ProcessStartInfo(copy) { UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = Path.GetDirectoryName(copy)! };
+            psi.ArgumentList.Add("--update-watchdog"); psi.ArgumentList.Add(_data);
+            using var p = Process.Start(psi);
+            _log.LogWarning("An update did not finish (journal phase '{Phase}', {From} -> {To}); recovery watchdog started (pid {Pid})", j.Phase, j.FromVersion, j.ToVersion, p?.Id);
+        }
+        catch (Exception ex) { _log.LogWarning(ex, "Could not start the update watchdog"); }
+    }
+
     /// <summary>After a restart: tell the server how the last update ended, then clear the markers.</summary>
     public async Task ReportPendingResultAsync(CancellationToken ct)
     {
+        StartWatchdogIfNeeded();
         string path = Path.Combine(_data, UpdateMarkers.ResultFile);
         if (!File.Exists(path)) return;
         try
@@ -122,6 +143,11 @@ internal static class UpdateAttempts
         }
         catch { return false; }
     }
+}
+
+internal static class UpdateTransport
+{
+    public static bool IsHttps(string? serverUrl) => Uri.TryCreate(serverUrl, UriKind.Absolute, out var u) && u.Scheme == Uri.UriSchemeHttps;
 }
 
 internal static class UpdateLauncher

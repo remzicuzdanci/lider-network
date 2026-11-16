@@ -74,6 +74,12 @@ public sealed class MsiUpdaterTests : IDisposable
         public string? InstalledExeVersion() => ExeVersion;
         public DateTime? LastCheckinOkUtc() => Checkin;
         public Task DelayAsync(TimeSpan t, CancellationToken ct) { UtcNow += t; return Task.CompletedTask; }
+        public int Armed, Disarmed; public bool UpdaterAlive; public List<int> Killed = new();
+        public int SelfPid => 4711;
+        public bool UpdaterRunning(int pid) => UpdaterAlive;
+        public void KillUpdater(int pid) { Killed.Add(pid); UpdaterAlive = false; }
+        public void ArmWatchdog(TimeSpan a) => Armed++;
+        public void DisarmWatchdog() => Disarmed++;
     }
 
     private sealed class Rig
@@ -251,6 +257,120 @@ public sealed class MsiUpdaterTests : IDisposable
         var res = await r.Updater.ApplyAsync(r.Plan);
         Assert.Equal("rollback_failed", res.Status);
     }
+
+    // ── watchdog: the updater itself dies ──────────────────────────────────────
+    private static string Journal(Rig r) => UpdateJournal.PathIn(r.Env.DataPath);
+    private static void SwapToNew(Rig r) { r.Env.Installed = new InstalledProduct("{NEW}", "1.4.0", "x"); r.Env.ExeVersion = "1.4.0.0"; }
+    private static void PreviousBack(Rig r, IReadOnlyList<string> a)
+    {
+        if (a[0] == "/x") r.Env.Installed = null;
+        if (a[0] == "/i" && Path.GetFileName(a[1]).StartsWith("previous-")) { r.Env.Installed = new InstalledProduct("{OLD}", "1.3.0", "x"); r.Env.ExeVersion = "1.3.0.0"; }
+    }
+    /// <summary>The updater "dies" inside the msiexec call. The handled exception stands in for the death; then the world is set to what a real death would leave behind.</summary>
+    private static async Task Die(Rig r, Action worldAtDeath)
+    {
+        r.Env.OnMsi = a => { if (a[0] == "/i" && Path.GetFileName(a[1]) == "package.msi") throw new IOException("process killed"); PreviousBack(r, a); return 0; };
+        await r.Updater.ApplyAsync(r.Plan);
+        worldAtDeath(); r.Env.Calls.Clear(); r.Env.Disarmed = 0; r.Env.OnMsi = a => { PreviousBack(r, a); return 0; };
+        Assert.True(File.Exists(Journal(r)), "the journal must survive the death");
+    }
+
+    [Fact] public async Task A_normal_update_arms_the_watchdog_and_leaves_no_journal_behind()
+    {
+        var r = Make(); SuccessfulInstall(r, "1.4.0");
+        Assert.Equal("success", (await r.Updater.ApplyAsync(r.Plan)).Status);
+        Assert.Equal(1, r.Env.Armed); Assert.True(r.Env.Disarmed >= 1); Assert.False(File.Exists(Journal(r)));
+    }
+
+    [Fact] public async Task A_journal_exists_while_the_install_runs()
+    {
+        var r = Make(); string? during = null;
+        r.Env.OnMsi = a => { if (a[0] == "/i") { during = File.ReadAllText(Journal(r)); SwapToNew(r); r.Env.Checkin = r.Env.UtcNow.AddSeconds(5); } return 0; };
+        await r.Updater.ApplyAsync(r.Plan);
+        Assert.Contains("\"phase\":\"installing\"", during); Assert.Contains("\"from_version\":\"1.3.0\"", during); Assert.Contains("previous-1.3.0.msi", during);
+        Assert.DoesNotContain("SECRET", during);
+    }
+
+    [Fact] public async Task Updater_dies_before_the_swap_the_watchdog_keeps_the_old_version_and_starts_the_stopped_service()
+    {
+        var r = Make(); await Die(r, () => r.Env.Svc = SvcState.Stopped);      // the MSI's service control had stopped it
+        Assert.True(File.Exists(Journal(r)));
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("failed", res!.Status); Assert.Contains("ended unexpectedly", res.Error);
+        Assert.Equal("1.3.0", r.Env.Installed!.Version); Assert.Equal(SvcState.Running, r.Env.Svc);
+        Assert.False(File.Exists(Journal(r))); Assert.True(r.Env.Disarmed >= 1); Assert.DoesNotContain(r.Env.Calls, c => c.StartsWith("/x"));
+    }
+
+    [Fact] public async Task Updater_dies_after_the_swap_and_the_new_version_is_healthy_it_is_kept()
+    {
+        var r = Make();
+        await Die(r, () => { SwapToNew(r); r.Env.Checkin = r.Env.UtcNow.AddSeconds(5); });
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("success", res!.Status); Assert.Equal("1.4.0", r.Env.Installed!.Version); Assert.DoesNotContain(r.Env.Calls, c => c.StartsWith("/x"));
+    }
+
+    [Fact] public async Task Updater_dies_after_the_swap_and_the_new_version_never_reports_the_watchdog_rolls_back_and_restores_the_identity()
+    {
+        var r = Make(); string idFile = Path.Combine(r.Env.DataPath, "collector.json");
+        await Die(r, () => { SwapToNew(r); File.WriteAllText(idFile, "{\"collector_id\":0}"); });
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("rolled_back", res!.Status);
+        Assert.Equal("1.3.0", r.Env.Installed!.Version); Assert.Equal(SvcState.Running, r.Env.Svc);
+        Assert.Equal("{\"collector_id\":4}", File.ReadAllText(idFile)); Assert.False(File.Exists(Journal(r)));
+    }
+
+    [Fact] public async Task Updater_dies_with_nothing_installed_the_watchdog_reinstalls_the_saved_msi()
+    {
+        var r = Make();
+        await Die(r, () => { r.Env.Installed = null; r.Env.Svc = SvcState.Missing; });
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("rolled_back", res!.Status); Assert.Equal("1.3.0", r.Env.Installed!.Version); Assert.Equal(SvcState.Running, r.Env.Svc);
+        Assert.Contains(r.Env.Calls, c => c == "/i previous-1.3.0.msi");
+    }
+
+    [Fact] public async Task A_live_updater_within_its_limits_is_left_alone()
+    {
+        var r = Make(); await Die(r, () => { }); r.Env.UpdaterAlive = true;
+        Assert.Null(await r.Updater.RecoverAsync()); Assert.True(File.Exists(Journal(r))); Assert.Empty(r.Env.Killed);
+    }
+
+    [Fact] public async Task A_hung_updater_is_ended_and_the_watchdog_recovers()
+    {
+        var r = Make(); await Die(r, () => r.Env.Svc = SvcState.Stopped); r.Env.UpdaterAlive = true;
+        await r.Env.DelayAsync(TimeSpan.FromMinutes(50), default);                      // the journal has not moved for 50 minutes
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal(new[] { 4711 }, r.Env.Killed); Assert.NotNull(res); Assert.Equal(SvcState.Running, r.Env.Svc);
+    }
+
+    [Fact] public async Task A_busy_windows_installer_defers_the_recovery()
+    {
+        var r = Make(); await Die(r, () => { }); r.Env.MsiBusy = true;
+        Assert.Null(await r.Updater.RecoverAsync()); Assert.True(File.Exists(Journal(r)));
+    }
+
+    [Fact] public async Task Without_a_journal_the_watchdog_does_nothing()
+    {
+        var r = Make(); Assert.Null(await r.Updater.RecoverAsync()); Assert.Empty(r.Env.Calls);
+    }
+
+    [Fact] public async Task An_unreadable_journal_only_makes_sure_the_service_runs()
+    {
+        var r = Make(); File.WriteAllText(Journal(r), "{ not json"); r.Env.Svc = SvcState.Stopped;
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("failed", res!.Status); Assert.Equal(SvcState.Running, r.Env.Svc); Assert.DoesNotContain(r.Env.Calls, c => c.StartsWith("/"));
+    }
+
+    [Fact] public async Task A_missing_saved_msi_is_reported_as_needing_a_person()
+    {
+        var r = Make();
+        await Die(r, () => SwapToNew(r));
+        File.Delete(Path.Combine(r.Env.DataPath, "updates", "corr1", "previous-1.3.0.msi"));
+        var res = await r.Updater.RecoverAsync();
+        Assert.Equal("rollback_failed", res!.Status); Assert.Contains("needs a person", res.Error);
+    }
+
+    [Theory] [InlineData("https://liderone.example/", true)] [InlineData("http://192.168.20.61", false)] [InlineData("", false)] [InlineData("ftp://x", false)]
+    public void Self_update_is_https_only(string url, bool ok) => Assert.Equal(ok, UpdateTransport.IsHttps(url));
 
     [Fact] public void File_version_comparison_ignores_the_fourth_part()
     {

@@ -21,6 +21,17 @@ internal interface IUpdateEnvironment
     string DataPath { get; }
     DateTime UtcNow { get; }
     Task DelayAsync(TimeSpan t, CancellationToken ct);
+
+    // ── watchdog support (defaults keep simple fakes working) ──
+    /// <summary>Process id of the running updater (written to the journal).</summary>
+    int SelfPid => Environment.ProcessId;
+    /// <summary>Is this updater process still alive (and really our updater copy)?</summary>
+    bool UpdaterRunning(int pid) => false;
+    /// <summary>Ends a HUNG updater process (never msiexec).</summary>
+    void KillUpdater(int pid) { }
+    /// <summary>Schedules an independent one-time recovery run (and one at the next boot) in case the updater itself dies. Cleared by <see cref="DisarmWatchdog"/>.</summary>
+    void ArmWatchdog(TimeSpan after) { }
+    void DisarmWatchdog() { }
 }
 
 /// <summary>
@@ -42,6 +53,10 @@ internal sealed class MsiUpdater
     public TimeSpan HealthTimeout { get; init; } = TimeSpan.FromMinutes(3);
     public TimeSpan PollInterval { get; init; } = TimeSpan.FromSeconds(3);
     public bool RequireCheckin { get; init; } = true;
+    /// <summary>If the updater has not finished by then, the scheduled watchdog takes over (must be longer than InstallTimeout + HealthTimeout).</summary>
+    public TimeSpan WatchdogAfter { get; init; } = TimeSpan.FromMinutes(45);
+    /// <summary>A live updater whose journal has not moved for this long is considered hung.</summary>
+    public TimeSpan HungAfter { get; init; } = TimeSpan.FromMinutes(40);
 
     private static readonly string[] IdentityFiles = { "collector.json", "secure.dat" };
 
@@ -51,7 +66,15 @@ internal sealed class MsiUpdater
     public async Task<UpdateResult> ApplyAsync(UpdatePlan plan, CancellationToken ct = default)
     {
         var res = new UpdateResult { CorrelationId = plan.CorrelationId, ToVersion = plan.Version, StartedAt = _env.UtcNow.ToString("O") };
-        UpdateResult Done(string status, string? error = null) { res.Status = status; res.Error = error; res.FinishedAt = _env.UtcNow.ToString("O"); _audit.Log("result", status, error); return res; }
+        UpdateJournal? jr = null;
+        UpdateResult Done(string status, string? error = null)
+        {
+            res.Status = status; res.Error = error; res.FinishedAt = _env.UtcNow.ToString("O"); _audit.Log("result", status, error);
+            try { _env.DisarmWatchdog(); } catch { /* a leftover task only finds an empty journal */ }
+            UpdateJournal.Clear(_env.DataPath);
+            return res;
+        }
+        void Phase(string phase) { if (jr is null) return; jr.Phase = phase; jr.PhaseAt = _env.UtcNow.ToString("O"); jr.Save(_env.DataPath); }
         try
         {
             if (_env.IsMsiBusy()) return Done("skipped", "another Windows Installer operation is running");
@@ -74,6 +97,12 @@ internal sealed class MsiUpdater
             var identity = SnapshotIdentity(runDir);
             _audit.Log("snapshot", "ok", $"previous={Path.GetFileName(prev)} identity files={identity.Count}");
 
+            // the journal + the scheduled watchdog exist from here on: whatever happens to this process, a recovery run will finish the job
+            jr = new UpdateJournal { CorrelationId = plan.CorrelationId, FromVersion = inst.Version, ToVersion = plan.Version, PreviousMsi = prev, StartedAt = _env.UtcNow.ToString("O"), UpdaterPid = _env.SelfPid, Identity = identity };
+            Phase("installing");
+            try { _env.ArmWatchdog(WatchdogAfter); _audit.Log("watchdog", "armed", $"{WatchdogAfter.TotalMinutes:0} min"); }
+            catch (Exception ex) { _audit.Log("watchdog", "arm_failed", ex.Message); }
+
             // 3) install
             DateTime started = _env.UtcNow;
             int rc = _env.RunMsi(new[] { "/i", plan.PackagePath, "/qn", "/norestart", "/l*v", Path.Combine(runDir, "install.log") }, InstallTimeout);
@@ -87,10 +116,12 @@ internal sealed class MsiUpdater
                     if (_env.ServiceState() != SvcState.Running) { try { _env.StartService(); } catch { /* reported below */ } }
                     return Done("failed", $"msiexec exit code {rc}; Windows Installer kept the installed version");
                 }
-                return await RollbackAsync(res, plan, inst, prev, identity, $"msiexec exit code {rc} left an unexpected state", Done);
+                Phase("rolling_back");
+                return await RollbackAsync(res, inst, prev, identity, $"msiexec exit code {rc} left an unexpected state", Done);
             }
 
             // 4) prove health
+            Phase("health");
             bool healthy = await WaitHealthyAsync(plan.Version, started, RequireCheckin, ct);
             _audit.Log("health", healthy ? "passed" : "failed", plan.Version);
             if (healthy)
@@ -98,17 +129,87 @@ internal sealed class MsiUpdater
                 TryDelete(prev);
                 return Done("success");
             }
-            return await RollbackAsync(res, plan, inst, prev, identity, $"{plan.Version} was installed but did not become healthy in {HealthTimeout.TotalSeconds:0}s", Done);
+            Phase("rolling_back");
+            return await RollbackAsync(res, inst, prev, identity, $"{plan.Version} was installed but did not become healthy in {HealthTimeout.TotalSeconds:0}s", Done);
         }
         catch (Exception ex)
         {
             _audit.Log("error", "unhandled", ex.Message);
             try { if (_env.ServiceState() == SvcState.Stopped) _env.StartService(); } catch { /* best effort */ }
+            // an exception AFTER the install started may leave a half-way state: the journal stays so the watchdog (or the next service start) finishes the job
+            if (jr is not null && jr.Phase is "installing" or "health" or "rolling_back")
+            {
+                res.Status = "failed"; res.Error = "unhandled: " + ex.Message; res.FinishedAt = _env.UtcNow.ToString("O");
+                return res;
+            }
             return Done("failed", "unhandled: " + ex.Message);
         }
     }
 
-    private async Task<UpdateResult> RollbackAsync(UpdateResult res, UpdatePlan plan, InstalledProduct old, string prevMsi, Dictionary<string, string> identity, string why, Func<string, string?, UpdateResult> done)
+    /// <summary>
+    /// Watchdog entry: the updater that owned the journal is gone (crash, kill, power loss, hang). Brings the machine to a final, healthy state:
+    /// old version running (failed), new version running and healthy (success), or the saved MSI reinstalled (rolled_back). Returns null when there is nothing to do yet
+    /// (no journal, a live updater within its limits, or Windows Installer still busy). The caller writes the result file.
+    /// </summary>
+    public async Task<UpdateResult?> RecoverAsync(CancellationToken ct = default)
+    {
+        var j = UpdateJournal.Read(_env.DataPath);
+        if (j is null) return null;
+        if (j.UpdaterPid > 0 && _env.UpdaterRunning(j.UpdaterPid))
+        {
+            if (_env.UtcNow - j.PhaseUtc < HungAfter) return null;                    // alive and moving
+            _audit.Log("watchdog", "hung_updater", $"pid {j.UpdaterPid}, phase {j.Phase} since {j.PhaseAt}");
+            try { _env.KillUpdater(j.UpdaterPid); } catch (Exception ex) { _audit.Log("watchdog", "kill_failed", ex.Message); return null; }
+            await _env.DelayAsync(TimeSpan.FromSeconds(2), ct);
+        }
+        else if (j.UpdaterPid <= 0 && _env.UtcNow - j.PhaseUtc < TimeSpan.FromMinutes(5)) return null;   // pid unknown: give a possibly running updater five minutes
+        if (_env.IsMsiBusy()) { _audit.Log("watchdog", "deferred", "Windows Installer is busy"); return null; }
+
+        _audit.Log("watchdog", "recovering", $"phase {j.Phase}, {j.FromVersion} -> {j.ToVersion}");
+        var res = new UpdateResult { CorrelationId = j.CorrelationId, FromVersion = j.FromVersion, ToVersion = j.ToVersion, StartedAt = j.StartedAt };
+        UpdateResult Final(string status, string? error)
+        {
+            res.Status = status; res.Error = error; res.FinishedAt = _env.UtcNow.ToString("O"); _audit.Log("result", status, "watchdog: " + error);
+            try { _env.DisarmWatchdog(); } catch { }
+            UpdateJournal.Clear(_env.DataPath);
+            return res;
+        }
+        string why = $"the updater ended unexpectedly in phase '{j.Phase}'";
+        try
+        {
+            if (j.Phase == UpdateJournal.Unknown || string.IsNullOrEmpty(j.FromVersion))
+            {
+                if (_env.ServiceState() != SvcState.Running) { try { _env.StartService(); } catch { } }
+                return Final("failed", "update journal unreadable; the service was started if it was stopped, nothing else was changed");
+            }
+            var cur = _env.FindInstalled(_policy.UpgradeCode);
+            if (cur is not null && cur.Version == j.FromVersion)
+            {
+                // the old version is installed: just make sure it is up and healthy
+                if (_env.ServiceState() != SvcState.Running) { try { _env.StartService(); } catch { /* health check decides */ } }
+                bool ok = await WaitHealthyAsync(j.FromVersion!, _env.UtcNow, requireCheckin: false, ct);
+                return ok ? Final(j.Phase == "rolling_back" ? "rolled_back" : "failed", why + "; the old version " + j.FromVersion + " is in place and running")
+                          : Final("rollback_failed", why + $"; {j.FromVersion} is installed but not healthy; the saved MSI is {j.PreviousMsi}");
+            }
+            if (cur is not null && cur.Version == j.ToVersion && j.Phase is "installing" or "health")
+            {
+                // the swap finished: the new version may well be fine
+                if (_env.ServiceState() != SvcState.Running) { try { _env.StartService(); } catch { } }
+                if (await WaitHealthyAsync(j.ToVersion!, j.StartedUtc, RequireCheckin, ct)) return Final("success", why + "; the new version " + j.ToVersion + " is installed and healthy");
+            }
+            // anything else (unhealthy new version, nothing installed, half-way rollback): back to the saved MSI
+            if (string.IsNullOrEmpty(j.PreviousMsi) || !File.Exists(j.PreviousMsi)) return Final("rollback_failed", why + "; the saved MSI is missing - needs a person");
+            return await RollbackAsync(res, new InstalledProduct("", j.FromVersion!, null), j.PreviousMsi!, j.Identity, why, (s, e) => Final(s, e));
+        }
+        catch (Exception ex)
+        {
+            _audit.Log("watchdog", "failed", ex.Message);
+            try { if (_env.ServiceState() == SvcState.Stopped) _env.StartService(); } catch { }
+            return Final("failed", why + "; recovery error: " + ex.Message);
+        }
+    }
+
+    private async Task<UpdateResult> RollbackAsync(UpdateResult res, InstalledProduct old, string prevMsi, Dictionary<string, string> identity, string why, Func<string, string?, UpdateResult> done)
     {
         _audit.Log("rollback", "started", why);
         string runDir = Path.GetDirectoryName(prevMsi)!;

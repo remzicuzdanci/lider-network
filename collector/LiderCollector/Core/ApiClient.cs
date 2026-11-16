@@ -142,6 +142,9 @@ public sealed class ApiClient : IDisposable
         return req;
     }
 
+    /// <summary>Self-update is offered over HTTPS only: no allow_http exception exists for it (the package is signed, but the manifest and the channel must not be spoofable either).</summary>
+    internal bool ServerIsHttps => LiderCollector.Update.UpdateTransport.IsHttps(_config.ServerUrl);
+
     internal async Task<LiderCollector.Update.UpdateManifestDto?> GetUpdateManifestAsync(CancellationToken ct)
     {
         using var resp = await GetOrCreateClient().SendAsync(AuthorizedGet("update/manifest"), ct);

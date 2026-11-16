@@ -99,6 +99,46 @@ internal sealed class WindowsUpdateEnvironment : IUpdateEnvironment
         return null;
     }
 
+    public const string WatchdogTaskOnce = "LiderCollectorUpdateWatchdog", WatchdogTaskBoot = "LiderCollectorUpdateWatchdogBoot";
+
+    /// <summary>True only for a live process that really is our updater copy (never trust a recycled pid).</summary>
+    public bool UpdaterRunning(int pid)
+    {
+        try
+        {
+            using var p = Process.GetProcessById(pid);
+            if (p.HasExited) return false;
+            string? path = p.MainModule?.FileName;
+            return path is not null && string.Equals(Path.GetFileName(path), "LiderCollectorUpdate.exe", StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
+    }
+
+    public void KillUpdater(int pid)
+    {
+        if (!UpdaterRunning(pid)) return;
+        using var p = Process.GetProcessById(pid); p.Kill(entireProcessTree: false); p.WaitForExit(10_000);
+    }
+
+    /// <summary>Two SYSTEM tasks that run "LiderCollectorUpdate.exe --update-watchdog": once at now+after, and at every boot. Both delete themselves via DisarmWatchdog.</summary>
+    public void ArmWatchdog(TimeSpan after)
+    {
+        string exe = Path.Combine(DataPath, "updates", "run", "LiderCollectorUpdate.exe");
+        if (!File.Exists(exe)) return;                      // the updater is not running from its copy (tests, manual run): nothing to schedule
+        string cmd = $"\\\"{exe}\\\" --update-watchdog \\\"{DataPath}\\\"";
+        string at = (DateTime.Now + after).ToString("HH:mm");
+        Schtasks($"/Create /TN {WatchdogTaskOnce} /SC ONCE /ST {at} /RU SYSTEM /RL HIGHEST /F /TR \"{cmd}\"");
+        Schtasks($"/Create /TN {WatchdogTaskBoot} /SC ONSTART /RU SYSTEM /RL HIGHEST /F /TR \"{cmd}\"");
+    }
+
+    public void DisarmWatchdog() { Schtasks($"/Delete /TN {WatchdogTaskOnce} /F"); Schtasks($"/Delete /TN {WatchdogTaskBoot} /F"); }
+
+    private static void Schtasks(string args)
+    {
+        try { using var p = Process.Start(new ProcessStartInfo("schtasks.exe", args) { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true, RedirectStandardError = true }); p?.WaitForExit(15_000); }
+        catch { /* the journal + the service's own start-up check still cover a missing task */ }
+    }
+
     public DateTime? LastCheckinOkUtc()
     {
         try { return DateTime.Parse(File.ReadAllText(Path.Combine(DataPath, UpdateMarkers.CheckinFile)).Trim(), null, System.Globalization.DateTimeStyles.RoundtripKind).ToUniversalTime(); }
@@ -124,5 +164,20 @@ internal static class UpdateRunner
         UpdateMarkers.WriteAtomic(Path.Combine(data, UpdateMarkers.ResultFile), JsonSerializer.Serialize(result));
         try { File.Delete(planPath); } catch { /* the result file is what matters */ }
         return result.Status is "success" ? 0 : result.Status is "skipped" ? 1 : 2;
+    }
+
+    /// <summary>"LiderCollectorUpdate.exe --update-watchdog &lt;dataDir&gt;": finishes (or undoes) an update whose updater died. Safe to run at any time: no journal = nothing happens.</summary>
+    public static async Task<int> RunWatchdogAsync(string data)
+    {
+        if (UpdateJournal.Read(data) is null) return 0;
+        var audit = new UpdateAuditLogger(data, "watchdog");
+        using var single = new Mutex(false, @"Global\LiderCollectorUpdate", out _);
+        if (!single.WaitOne(0)) return 1;                                   // an updater (or another watchdog) is working
+        var updater = new MsiUpdater(new WindowsUpdateEnvironment(data), UpdatePolicy.Create(Path.Combine(data, "updates", "run")), new WinTrustAuthenticode(), new MsiNative(), audit);
+        var result = await updater.RecoverAsync();
+        if (result is null) return 1;
+        UpdateMarkers.WriteAtomic(Path.Combine(data, UpdateMarkers.ResultFile), JsonSerializer.Serialize(result));
+        try { File.Delete(Path.Combine(data, UpdateMarkers.PlanFile)); } catch { }
+        return result.Status is "success" or "rolled_back" or "failed" ? 0 : 2;
     }
 }

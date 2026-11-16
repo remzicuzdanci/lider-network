@@ -38,6 +38,13 @@ try
         return;
     }
 
+    // "--update-watchdog <dataDir>": recovery after an update whose updater died (scheduled task, or started by the service at boot)
+    if (args.Length >= 2 && args[0].Equals("--update-watchdog", StringComparison.OrdinalIgnoreCase))
+    {
+        Environment.ExitCode = await LiderCollector.Update.UpdateRunner.RunWatchdogAsync(args[1]);
+        return;
+    }
+
     // "diag": inspect this machine's inventory without starting the service or contacting the server
     if (args.Length > 0 && args[0].Equals("diag", StringComparison.OrdinalIgnoreCase))
     {
