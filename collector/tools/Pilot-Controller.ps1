@@ -31,6 +31,38 @@ function Child([string]$File, [string[]]$ArgList, [string]$Dir, [string]$Out) {
     $p = Start-Process powershell.exe -ArgumentList (@('-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', "`"$File`"") + $ArgList) -WorkingDirectory $Dir -Wait -PassThru -NoNewWindow -RedirectStandardOutput $Out -RedirectStandardError "$Out.err"
     $p.ExitCode
 }
+# Estimated size of the offline queue (rows of table 'queue'): counted on a COPY of the queue files in a temp folder, opened read-only; the live database is never opened. -1 = unknown.
+function Get-QueueEstimate {
+    try {
+        if (-not ('WSqliteCount' -as [type])) {
+            Add-Type -TypeDefinition @"
+using System; using System.Runtime.InteropServices; using System.Text;
+public static class WSqliteCount {
+  const string L = "winsqlite3.dll";
+  [DllImport(L)] static extern int sqlite3_open_v2(byte[] f, out IntPtr db, int flags, IntPtr vfs);
+  [DllImport(L)] static extern int sqlite3_close(IntPtr db);
+  [DllImport(L)] static extern int sqlite3_prepare_v2(IntPtr db, byte[] sql, int n, out IntPtr st, IntPtr tail);
+  [DllImport(L)] static extern int sqlite3_step(IntPtr st);
+  [DllImport(L)] static extern long sqlite3_column_int64(IntPtr st, int i);
+  [DllImport(L)] static extern int sqlite3_finalize(IntPtr st);
+  public static long Count(string path) {
+    IntPtr db; if (sqlite3_open_v2(Encoding.UTF8.GetBytes(path + "\0"), out db, 1, IntPtr.Zero) != 0) { sqlite3_close(db); return -1; }
+    try { IntPtr st; if (sqlite3_prepare_v2(db, Encoding.UTF8.GetBytes("SELECT COUNT(*) FROM queue\0"), -1, out st, IntPtr.Zero) != 0) return -1;
+          try { return sqlite3_step(st) == 100 ? sqlite3_column_int64(st, 0) : -1; } finally { sqlite3_finalize(st); } } finally { sqlite3_close(db); }
+  }
+}
+"@
+        }
+        $tmp = Join-Path ([IO.Path]::GetTempPath()) ('q-est-' + [guid]::NewGuid().ToString('N').Substring(0, 8)); New-Item -ItemType Directory $tmp | Out-Null
+        try {
+            foreach ($n in 'queue.db', 'queue.db-wal', 'queue.db-shm') {
+                $src = Join-Path $Data $n; if (-not (Test-Path $src)) { continue }
+                $in = New-Object IO.FileStream($src, 'Open', 'Read', 'ReadWrite,Delete'); $out = [IO.File]::Create((Join-Path $tmp $n)); try { $in.CopyTo($out) } finally { $in.Dispose(); $out.Dispose() }
+            }
+            return [int][WSqliteCount]::Count((Join-Path $tmp 'queue.db'))
+        } finally { Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue }
+    } catch { return -1 }
+}
 function Show-Tail([string]$f, [int]$n = 60) { if (Test-Path $f) { Get-Content $f -Tail $n | ForEach-Object { W "    $_" } } }
 
 W "LIDER Collector pilot: $($Expect.From)x -> $($Expect.To) on $($env:COMPUTERNAME)   $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')" 'Cyan'
@@ -60,9 +92,16 @@ if ($pending) {
     if ((Read-Host '  Type CONTINUE to proceed (anything else stops, nothing changed)') -cne 'CONTINUE') { Stop-Here 'stopped by the operator: restart the computer first, then run again' 0 }
 }
 
+# 1b offline backlog: a big queue is flushed in one burst when the service starts, and the server allows 60 requests per minute per address (HTTP 429 beyond that)
+$qn = Get-QueueEstimate
+if ($qn -lt 0) { W '  offline queue: size could not be read (continuing; the upgrade itself keeps the queue)' 'Yellow' }
+else {
+    W "  offline queue: about $qn queued item(s)"
+    if ($qn -gt 50) { Stop-Here "the offline queue still holds about $qn items. A restart flushes them in one burst and the server's rate limit (60 requests/minute) answers 429, which makes the health check fail. Nothing was changed: run this file again later (the running Collector drains the queue by itself)." 0 }
+}
 # ── 2 approval gate ──────────────────────────────────────────────────────
 W "`n== 2. Approval" 'Cyan'
-W '  If you continue: the Collector service is stopped for about 1-3 minutes, a VERIFIED backup of its data (collector.json, secure.dat, queue.db + WAL/SHM) is taken,'
+W '  If you continue: the Collector service is stopped for about 1-3 minutes (the whole run takes up to about 25 minutes: after the install it waits for the next scheduled inventory of the Collector), a VERIFIED backup of its data (collector.json, secure.dat, queue.db + WAL/SHM) is taken,'
 W "  the signed $($Expect.To) MSI is installed over $($inst.Version) (identity and data stay), the service is started and checked (collector_id $($Expect.CollectorId), heartbeat, inventory)."
 W '  If anything fails, the saved version is reinstalled automatically. No restart, no GPO/ESET/domain change, no other application is touched.'
 $ok = $false
@@ -73,7 +112,10 @@ if (-not $ok) { Stop-Here 'no valid approval code: nothing was changed' 0 }
 W "`n== 3. Verified backup, upgrade, automatic rollback on failure" 'Cyan'
 $ulog = Join-Path $WorkRoot "upgrade-$stamp.log"
 $t0 = Get-Date
-$rc = Child (Join-Path $Bundle 'Run-PilotUpgrade.ps1') @('-Yes', '-AutoRollback') $Bundle $ulog
+$iv = 900; if ($cfg.PSObject.Properties['inventory_sync_interval_seconds'] -and [int]$cfg.inventory_sync_interval_seconds -gt 0) { $iv = [int]$cfg.inventory_sync_interval_seconds }
+$em = [int][math]::Min(25, [math]::Max(6, [math]::Ceiling($iv / 60) + 4))
+W "  health check waits up to $em min (the Collector's inventory interval is $iv s)"
+$rc = Child (Join-Path $Bundle 'Run-PilotUpgrade.ps1') @('-Yes', '-AutoRollback', '-EvidenceMinutes', "$em") $Bundle $ulog
 Show-Tail $ulog 70
 W "  Run-PilotUpgrade exit code: $rc" $(if ($rc -eq 0) { 'Green' } else { 'Red' })
 $inst2 = Installed

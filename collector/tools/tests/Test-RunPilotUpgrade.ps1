@@ -68,6 +68,8 @@ try {
     T 'an inventory sent by the OLD service while the upgrade was being prepared is not evidence for the new one' { $o = Get-LogEvidence $oldlog $since '1.3.0'; -not $o.Started -and -not $o.InventorySent -and $o.HeartbeatMissed -eq 0 }
     Add-Content (Join-Path $ld 'collector-20261115.log') '2026-11-15 10:02:00.000 +03:00 [WRN] Heartbeat missed. Consecutive misses: 1/3'
     T 'a missed heartbeat after the upgrade is counted' { (Get-LogEvidence $ld $since).HeartbeatMissed -eq 1 }
+    $rl = Join-Path $tmp 'rec'; New-Item -ItemType Directory -Force $rl | Out-Null; $tz = (Get-Date).ToString('zzz'); $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff'); Set-Content (Join-Path $rl 'collector-x.log') ("$ts $tz [INF] Lider IT ONE Collector v1.3.0 starting...`n$ts $tz [WRN] Heartbeat missed. Consecutive misses: 1/3`n$ts $tz [INF] Connectivity restored. Flushing offline queue (3 items).")
+    T 'a restored connection after a miss is recognised' { $r = Get-LogEvidence $rl $since '1.3.0'; $r.HeartbeatMissed -eq 1 -and $r.Recovered }
     Add-Content (Join-Path $ld 'collector-20261115.log') '2026-11-15 10:02:10.000 +03:00 [INF] Agent is not enrolled — running enrollment.'
     T 'a re-enrolment attempt is flagged' { (Get-LogEvidence $ld $since).ReEnrolled }
     T 'a log that is being written (shared read) can be read' { $h = [IO.File]::Open((Join-Path $ld 'collector-20261115.log'), 'Open', 'Write', 'ReadWrite'); try { (Get-LogEvidence $ld $since).Started } finally { $h.Close() } }

@@ -125,7 +125,7 @@ function Compare-Identity($Before, $After) {
 
 function Get-LogEvidence([string]$LogDir, [datetimeoffset]$Since, [string]$Version = '') {
     # With -Version only lines AFTER the "Collector v<Version> starting" line count as evidence: the old service may still log while the upgrade is being prepared.
-    $ev = [ordered]@{ Started = $false; StartedVersion = $null; InventorySent = $false; HeartbeatMissed = 0; ReEnrolled = $false; Lines = 0 }
+    $ev = [ordered]@{ Started = $false; StartedVersion = $null; InventorySent = $false; HeartbeatMissed = 0; ReEnrolled = $false; Recovered = $false; Lines = 0 }
     $armed = ($Version -eq '')
     $files = @(Get-ChildItem $LogDir -Filter 'collector-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 2)
     foreach ($f in $files) {
@@ -143,6 +143,7 @@ function Get-LogEvidence([string]$LogDir, [datetimeoffset]$Since, [string]$Versi
             if (-not $armed) { continue }
             if ($m -match 'Inventory sync sent') { $ev.InventorySent = $true }
             if ($m -match 'Heartbeat missed') { $ev.HeartbeatMissed++ }
+            if ($m -match 'Connectivity restored') { $ev.Recovered = $true }
             if ($m -match 'Agent is not enrolled|Enrolled successfully|Enrollment attempt') { $ev.ReEnrolled = $true }
         } } finally { $sr.Dispose() }
     }
@@ -221,7 +222,9 @@ try {
     Write-Host ''
     if ($ev.Started) { Pass "log: service started (v$($ev.StartedVersion))" } else { Fail 'log: no "Collector vX starting" line since the upgrade'; $verdictOk = $false }
     if ($ev.InventorySent) { Pass 'log: "Inventory sync sent" - the server accepted an inventory after the upgrade' } else { Fail 'log: no accepted inventory within the wait time'; $verdictOk = $false }
-    if ($ev.HeartbeatMissed -gt 0) { Fail "log: $($ev.HeartbeatMissed) missed heartbeat(s) since the upgrade"; $verdictOk = $false } else { Pass 'log: no missed heartbeat since the upgrade' }
+    if ($ev.HeartbeatMissed -eq 0) { Pass 'log: no missed heartbeat since the upgrade' }
+    elseif ($ev.HeartbeatMissed -lt 3 -and $ev.Recovered) { Warn "log: $($ev.HeartbeatMissed) missed heartbeat(s) after the upgrade, then the connection came back by itself (below the Collector's own offline threshold of 3) - usually the server's rate limit while a queued backlog is flushed" }
+    else { Fail "log: $($ev.HeartbeatMissed) missed heartbeat(s) since the upgrade"; $verdictOk = $false }
     if ($ev.ReEnrolled) { Fail 'log: the agent tried to (re-)enrol: the identity may have been lost'; $verdictOk = $false } else { Pass 'log: no enrolment attempt (the existing enrolment was used)' }
 
     if ($verdictOk) { Say "`nVERDICT: PASS - Collector $($Pin.ToVersion) is running with the unchanged identity. Tell the assistant: it now checks the server side (device, collector, inventory, motherboard, last user, duplicates)." 'Green' }
