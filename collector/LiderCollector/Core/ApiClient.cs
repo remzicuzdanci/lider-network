@@ -162,9 +162,13 @@ public sealed class ApiClient : IDisposable
     /// <summary>Self-update is offered over HTTPS only: no allow_http exception exists for it (the package is signed, but the manifest and the channel must not be spoofable either).</summary>
     internal bool ServerIsHttps => LiderCollector.Update.UpdateTransport.IsHttps(_config.ServerUrl);
 
+    /// <summary>HTTP status of the last update/manifest or update/package answer (0 = none yet); lets the coordinator tell a busy server (429/5xx) from "no update".</summary>
+    internal int LastUpdateHttpStatus { get; private set; }
+
     internal async Task<LiderCollector.Update.UpdateManifestDto?> GetUpdateManifestAsync(CancellationToken ct)
     {
         using var resp = await GetOrCreateClient().SendAsync(AuthorizedGet("update/manifest"), ct);
+        LastUpdateHttpStatus = (int)resp.StatusCode; LastRetryAfter = resp.Headers.RetryAfter?.Delta;
         if (resp.StatusCode == System.Net.HttpStatusCode.NoContent || !resp.IsSuccessStatusCode) return null;
         string json = await resp.Content.ReadAsStringAsync(ct);
         return string.IsNullOrWhiteSpace(json) ? null : JsonSerializer.Deserialize<LiderCollector.Update.UpdateManifestDto>(json);
@@ -175,6 +179,7 @@ public sealed class ApiClient : IDisposable
     {
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct); cts.CancelAfter(TimeSpan.FromMinutes(20));
         using var resp = await GetOrCreateClient().SendAsync(AuthorizedGet("update/package"), HttpCompletionOption.ResponseHeadersRead, cts.Token);
+        LastUpdateHttpStatus = (int)resp.StatusCode; LastRetryAfter = resp.Headers.RetryAfter?.Delta;
         if (!resp.IsSuccessStatusCode) { _log.LogWarning("update/package → HTTP {S}", (int)resp.StatusCode); return false; }
         if (resp.Content.Headers.ContentLength is long cl && cl != expectedSize) return false;
         long total = 0;

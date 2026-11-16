@@ -42,7 +42,9 @@ internal sealed class UpdateCoordinator
         {
             if (File.Exists(Path.Combine(_data, UpdateMarkers.PlanFile)) || File.Exists(Path.Combine(_data, UpdateMarkers.ResultFile))) return;   // one update at a time
             if (!_api.ServerIsHttps) { _log.LogWarning("Self-update is disabled: it is only performed over HTTPS and this Collector talks to its server over plain HTTP (allow_http)"); return; }
+            if (TransientBackoff.Active(_data)) return;   // the server / network was unwell a moment ago: wait (2 / 5 / 15 / 30 / 60 min), do not hammer it
             var m = await _api.GetUpdateManifestAsync(ct);
+            if (m is null && _api.LastUpdateHttpStatus is 429 or >= 500) { var w = TransientBackoff.Fail(_data, "manifest HTTP " + _api.LastUpdateHttpStatus, _api.LastRetryAfter); _log.LogInformation("Update check: the server answered HTTP {S}; next try in {W} min", _api.LastUpdateHttpStatus, (int)w.TotalMinutes); return; }
             if (m is null || !m.UpdateAvailable) return;
             if (!string.Equals(m.PackageType, "msi", StringComparison.OrdinalIgnoreCase)) { _log.LogWarning("Update {Ver} ignored: package type '{T}' is not an MSI", m.Version, m.PackageType); return; }
             if (!Version.TryParse(m.Version, out var target) || !Version.TryParse(AppVersion.Current, out var mine) || target <= mine) return;
@@ -58,7 +60,12 @@ internal sealed class UpdateCoordinator
             string dir = Path.Combine(_data, "updates", corr); Directory.CreateDirectory(dir);
             string pkg = Path.Combine(dir, "package.msi");
             await _api.ReportUpdateProgressAsync(m.Version, "downloading", AppVersion.Current, ct);
-            if (!await _api.DownloadUpdatePackageAsync(pkg, m.Size, ct)) { _log.LogWarning("Update {Ver}: download failed", m.Version); TryDeleteDir(dir); return; }
+            if (!await _api.DownloadUpdatePackageAsync(pkg, m.Size, ct))
+            {
+                var w = TransientBackoff.Fail(_data, "download failed (HTTP " + _api.LastUpdateHttpStatus + ")", _api.LastRetryAfter);   // 429 / interrupted / short: a partial file is never used
+                _log.LogWarning("Update {Ver}: download failed; next try in {W} min", m.Version, (int)w.TotalMinutes); TryDeleteDir(dir); return;
+            }
+            TransientBackoff.Clear(_data);
 
             var plan = new UpdatePlan
             {
@@ -72,7 +79,11 @@ internal sealed class UpdateCoordinator
             UpdateLauncher.Start(_data, planPath, _log);
         }
         catch (OperationCanceledException) { throw; }
-        catch (Exception ex) { _log.LogWarning(ex, "Self-update attempt failed (nothing was installed)"); }
+        catch (Exception ex)
+        {   // timeouts / dropped connections are transient too: wait, do not retry on every heartbeat
+            if (ex is HttpRequestException or TaskCanceledException or IOException) { var w = TransientBackoff.Fail(_data, ex.GetType().Name); _log.LogWarning("Self-update attempt interrupted ({E}); nothing was installed; next try in {W} min", ex.GetType().Name, (int)w.TotalMinutes); }
+            else _log.LogWarning(ex, "Self-update attempt failed (nothing was installed)");
+        }
         finally { Volatile.Write(ref _busy, 0); }
     }
 
