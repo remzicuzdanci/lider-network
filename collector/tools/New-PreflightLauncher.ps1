@@ -4,7 +4,7 @@
     Packs Get-PilotPreflight.ps1 into ONE double-click file (.cmd): it checks the SHA-256 of the embedded script itself, runs it IN MEMORY (no script file is written, so the
     execution policy / Mark-of-the-Web do not get in the way and nothing is left behind) and writes the report next to the .cmd. Read-only; changes nothing on the machine.
 #>
-param([string]$Script = (Join-Path $PSScriptRoot 'Get-PilotPreflight.ps1'), [string]$Out = (Join-Path $PSScriptRoot 'ITMANAGAMENT-Preflight.cmd'), [string]$ReportPattern = 'pilot-preflight-*.txt', [string]$Title = 'LIDER Collector pilot pre-flight (read-only)')
+param([string]$Script = (Join-Path $PSScriptRoot 'Get-PilotPreflight.ps1'), [string]$Out = (Join-Path $PSScriptRoot 'ITMANAGAMENT-Preflight.cmd'), [string]$ReportPattern = 'pilot-preflight-*.txt', [string]$Title = 'LIDER Collector pilot pre-flight (read-only)', [switch]$Elevate)
 $ErrorActionPreference = 'Stop'
 $bytes = [IO.File]::ReadAllBytes($Script)
 $sha = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($bytes)) -replace '-', '').ToLower()
@@ -15,10 +15,11 @@ $t=[IO.File]::ReadAllText('%~f0'); $mb='#PAYLOAD'+'-BEGIN'; $me='#PAYLOAD'+'-END
 $boot = ($boot -replace "`r?`n", ' ').Trim()
 $clip = 'powershell -NoProfile -Command "try { $f = Get-ChildItem ''%~dp0PATTERN_PLACEHOLDER'' | Sort-Object LastWriteTime | Select-Object -Last 1; if ($f) { Get-Content -Raw -LiteralPath $f.FullName | Set-Clipboard; Write-Host (''Report copied to the clipboard (and saved: '' + $f.Name + ''). Paste it into the chat.'') -ForegroundColor Cyan } } catch { }"'
 $clip = $clip.Replace('PATTERN_PLACEHOLDER', $ReportPattern)
+$elev = if ($Elevate) { "fltmc >nul 2>&1`r`nif errorlevel 1 (`r`n  echo Administrator rights are needed. Windows will ask for permission...`r`n  powershell -NoProfile -Command `"Start-Process -FilePath '%~f0' -Verb RunAs`"`r`n  exit /b`r`n)`r`n" } else { '' }
 $cmd = @"
 @echo off
 title $Title
-echo ${Title} - READ ONLY. Nothing is installed, changed or sent anywhere.
+${elev}echo ${Title} - READ ONLY. Nothing is installed, changed or sent anywhere.
 echo The report is written next to this file.
 echo.
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$boot"

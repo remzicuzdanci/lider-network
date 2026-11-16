@@ -7,5 +7,5 @@ $t = [IO.File]::ReadAllText((Join-Path $CaScripts 'Get-CaPreflight.ps1'))
 $t = $t.Replace('@@H_LiderCA@@', $h['LiderCA']).Replace('@@H_Monitor@@', $h['Monitor-LiderCa']).Replace('@@H_Publish@@', $h['Publish-Crl'])
 $tmp = Join-Path ([IO.Path]::GetTempPath()) 'Get-CaPreflight.ps1'; [IO.File]::WriteAllText($tmp, $t, (New-Object Text.UTF8Encoding($false)))
 New-Item -ItemType Directory -Force (Split-Path $Out) | Out-Null
-& (Join-Path $PSScriptRoot 'New-PreflightLauncher.ps1') -Script $tmp -Out $Out -ReportPattern 'ca-preflight-*.txt' -Title 'LIDER CA host pre-flight (read-only)'
+& (Join-Path $PSScriptRoot 'New-PreflightLauncher.ps1') -Script $tmp -Out $Out -ReportPattern 'ca-preflight-*.txt' -Title 'LIDER CA host pre-flight (read-only)' -Elevate
 Remove-Item -LiteralPath $tmp -Force
