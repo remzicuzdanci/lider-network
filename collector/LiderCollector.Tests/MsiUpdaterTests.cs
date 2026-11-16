@@ -209,6 +209,28 @@ public sealed class MsiUpdaterTests : IDisposable
         Assert.Equal(SvcState.Running, r.Env.Svc); Assert.DoesNotContain(r.Env.Calls, c => c.StartsWith("/x"));
     }
 
+    [Fact] public async Task The_offline_queue_database_is_never_touched_by_a_successful_failed_or_rolled_back_update()
+    {
+        byte[] queue = Enumerable.Range(0, 5000).Select(i => (byte)(i * 31 % 251)).ToArray();     // stands in for queue.db (+ -wal): the updater must never read, move or rewrite it
+        string Q(Rig r) => Path.Combine(r.Env.DataPath, "queue.db");
+
+        var ok = Make(); File.WriteAllBytes(Q(ok), queue); SuccessfulInstall(ok, "1.4.0"); Assert.Equal("success", (await ok.Updater.ApplyAsync(ok.Plan)).Status);
+        Assert.Equal(queue, File.ReadAllBytes(Q(ok)));
+
+        var bad = Make(); File.WriteAllBytes(Q(bad), queue); bad.Env.OnMsi = a => { bad.Env.Svc = SvcState.Stopped; return 1603; };
+        Assert.Equal("failed", (await bad.Updater.ApplyAsync(bad.Plan)).Status); Assert.Equal(queue, File.ReadAllBytes(Q(bad)));
+
+        var rb = Make(); File.WriteAllBytes(Q(rb), queue); string idFile = Path.Combine(rb.Env.DataPath, "collector.json");
+        rb.Env.OnMsi = a =>
+        {
+            if (a[0] == "/i" && Path.GetFileName(a[1]) == "package.msi") { rb.Env.Installed = new InstalledProduct("{NEW}", "1.4.0", "x"); rb.Env.ExeVersion = "1.4.0.0"; }
+            if (a[0] == "/x") rb.Env.Installed = null;
+            if (a[0] == "/i" && Path.GetFileName(a[1]).StartsWith("previous-")) { rb.Env.Installed = new InstalledProduct("{OLD}", "1.3.0", "x"); rb.Env.ExeVersion = "1.3.0.0"; }
+            return 0;
+        };
+        rb.Env.OnStart = () => { };
+        Assert.Equal("rolled_back", (await rb.Updater.ApplyAsync(rb.Plan)).Status); Assert.Equal(queue, File.ReadAllBytes(Q(rb)));
+    }
     [Fact] public async Task A_new_version_that_never_checks_in_is_rolled_back_to_the_saved_msi_and_identity_is_kept()
     {
         var r = Make(); string idFile = Path.Combine(r.Env.DataPath, "collector.json");
