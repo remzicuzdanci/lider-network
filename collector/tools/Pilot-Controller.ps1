@@ -1,11 +1,11 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    ITMANAGAMENT pilot controller (1.1.1 -> 1.4.0, then HTTPS). Runs INSIDE the single-file launcher. Nothing happens to the Collector until the approval code is typed.
+    ITMANAGAMENT pilot controller (1.1.1 -> 1.4.0 over http; no HTTPS). Runs INSIDE the single-file launcher. Nothing happens to the Collector until the approval code is typed.
     Never restarts the computer; never touches the domain, GPO, ESET, other applications, the certificate store, or the Collector's identity (collector_id, secure.dat, collector.json keys, queue).
 
     Phases:  0 guards (right machine, right state)  ->  1 read-only pre-flight  ->  2 approval gate  ->  3 verified backup + upgrade + automatic rollback on failure (Run-PilotUpgrade)
-             ->  4 HTTPS switch (only if the CRL has >= 10 days left; self-reverting)  ->  5 final check + report (file + clipboard)
+             ->  4 final check + report (file + clipboard). NO HTTPS switch in this pilot.
 #>
 [CmdletBinding()]
 param([Parameter(Mandatory)][string]$PackageDir, [Parameter(Mandatory)][string]$CodeSha256, [string]$WorkRoot = (Join-Path $env:ProgramData 'LiderCollector-pilot'))
@@ -83,33 +83,8 @@ if ($rc -ne 0) {
     Finish 2
 }
 
-# ── 4 HTTPS (conditional, self-reverting) ────────────────────────────────
-W "`n== 4. HTTPS connection" 'Cyan'
-$httpsDone = $false; $httpsNote = ''
-try {
-    $b = (New-Object Net.WebClient).DownloadData("http://$($Expect.Server)/pki/lider-ca.crl")
-    # nextUpdate: the first GeneralizedTime/UTCTime after thisUpdate inside tbsCertList (simple DER walk)
-    $p = 0; function T($b, [ref]$p) { $tag = $b[$p.Value++]; $l = $b[$p.Value++]; if ($l -band 0x80) { $n = $l -band 0x7F; $l = 0; for ($k = 0; $k -lt $n; $k++) { $l = ($l -shl 8) -bor $b[$p.Value++] } }; [pscustomobject]@{ Tag = $tag; Start = $p.Value; Len = $l; End = $p.Value + $l } }
-    $o = T $b ([ref]$p); $p = $o.Start; $tbs = T $b ([ref]$p); $p = $tbs.Start
-    $x = T $b ([ref]$p); if ($x.Tag -eq 2) { $p = $x.End; $x = T $b ([ref]$p) }; $p = $x.End   # version?, algorithm
-    $x = T $b ([ref]$p); $p = $x.End                                                           # issuer
-    $x = T $b ([ref]$p); $p = $x.End                                                           # thisUpdate
-    $x = T $b ([ref]$p); $s = [Text.Encoding]::ASCII.GetString($b, $x.Start, $x.Len)
-    $next = if ($x.Tag -eq 0x17) { [datetime]::ParseExact($s, 'yyMMddHHmmss\Z', $null, 'AssumeUniversal,AdjustToUniversal') } else { [datetime]::ParseExact($s, 'yyyyMMddHHmmss\Z', $null, 'AssumeUniversal,AdjustToUniversal') }
-    $days = [math]::Floor(($next - (Get-Date).ToUniversalTime()).TotalDays)
-    W "  the published revocation list is valid until $($next.ToString('yyyy-MM-dd HH:mm')) UTC ($days days left)"
-    if ($days -lt 10) { $httpsNote = "HTTPS NOT enabled: the server's revocation list expires in $days days; a Collector on HTTPS stops talking to the server when the list lapses (fail closed). It will be enabled after the list is renewed." }
-} catch { $httpsNote = "HTTPS NOT enabled: could not read the revocation list ($($_.Exception.Message))" }
-if ($httpsNote) { W "  $httpsNote" 'Yellow' } else {
-    $hl = Join-Path $WorkRoot "https-$stamp.log"
-    $rc2 = Child (Join-Path $Bundle 'Set-CollectorHttps.ps1') @('-ServerUrl', "https://$($Expect.Server)", '-WaitMinutes', '8') $Bundle $hl
-    Show-Tail $hl 25
-    if ($rc2 -eq 0) { $httpsDone = $true; W '  HTTPS switch OK (the Collector reached the server over HTTPS with the pinned LIDER root and an accepted inventory).' 'Green' }
-    else { W "  HTTPS switch did not complete (exit $rc2); the script put the previous http settings back. 1.4.0 keeps running over http." 'Yellow' }
-}
-
-# ── 5 final check ────────────────────────────────────────────────────────
-W "`n== 5. Final check" 'Cyan'
+# ── 4 final check ────────────────────────────────────────────────────────
+W "`n== 4. Final check (the connection stays on plain http: this pilot does NOT switch to HTTPS)" 'Cyan'
 $cfg2 = Cfg; $svc2 = Get-Service $Expect.Service -ErrorAction SilentlyContinue; $inst3 = Installed
 $allOk = $true
 function Chk([string]$m, [bool]$ok) { if ($ok) { W "  [ OK ] $m" 'Green' } else { $script:allOk = $false; W "  [FAIL] $m" 'Red' } }
@@ -119,7 +94,10 @@ Chk "collector_id is still $($Expect.CollectorId)" ([int]$cfg2.collector_id -eq 
 Chk 'device identity (BIOS UUID) still recorded' ([bool]$cfg2.enrolled_bios_uuid)
 Chk 'secure.dat (protected API key) byte-identical' ((Get-FileHash (Join-Path $Data 'secure.dat') -Algorithm SHA256).Hash -eq $idBefore.secure)
 W "  server address now: $($cfg2.server_url)"
-W "  HTTPS: $(if ($httpsDone) { 'enabled' } else { 'not enabled (see above)' })"
+Chk "server address unchanged ($($cfg.server_url))" ([string]$cfg2.server_url -eq [string]$cfg.server_url)
+$inv = 0; $miss = 0; foreach ($f in @(Get-ChildItem (Join-Path $Data 'logs') -Filter 'collector-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 2)) { $fs = New-Object IO.FileStream($f.FullName, 'Open', 'Read', 'ReadWrite'); $sr = New-Object IO.StreamReader($fs); try { while (-not $sr.EndOfStream) { $l = $sr.ReadLine(); if ($l -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})' -and [datetime]::ParseExact($Matches[1], 'yyyy-MM-dd HH:mm:ss', $null) -ge $t0) { if ($l -match 'Inventory sync sent') { $inv++ }; if ($l -match 'Heartbeat missed') { $miss++ } } } } finally { $sr.Dispose() } }
+Chk "inventory accepted by the server since the upgrade started ($inv time(s))" ($inv -gt 0)
+Chk "no missed heartbeat since the upgrade started ($miss)" ($miss -eq 0)
 W "`nThe server side (one record for collector #14, heartbeat, inventory, software list) is compared with the pre-upgrade baseline by the assistant; send this report." 'Cyan'
 W "RESULT: $(if ($allOk) { 'PASS' } else { 'FAIL - see [FAIL] lines' })" $(if ($allOk) { 'Green' } else { 'Red' })
 Finish $(if ($allOk) { 0 } else { 2 })

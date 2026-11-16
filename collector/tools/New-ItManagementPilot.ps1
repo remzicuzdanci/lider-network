@@ -7,14 +7,14 @@
 param(
     [Parameter(Mandatory)][string]$BundleDir,
     [Parameter(Mandatory)][string]$CodeOut,
-    [string]$Out = (Join-Path $PSScriptRoot '..\dist\itmgmt-pilot\ITMANAGAMENT-Pilot-1.4.0.cmd')
+    [string]$Out = (Join-Path $PSScriptRoot '..\dist\itmgmt-pilot\ITMANAGAMENT-Pilot-1.4.0-http.cmd')
 )
 $ErrorActionPreference = 'Stop'
 $work = Join-Path ([IO.Path]::GetTempPath()) ("itpilot-" + [guid]::NewGuid().ToString('N').Substring(0, 8)); $pkg = Join-Path $work 'pkg'
 New-Item -ItemType Directory -Force (Join-Path $pkg 'bundle') | Out-Null
-foreach ($f in Get-ChildItem $BundleDir -File) { if ($f.Name -notlike '*signed-template*' -and $f.Name -ne 'SHA256SUMS.txt') { Copy-Item $f.FullName (Join-Path $pkg 'bundle') } }   # the cached 1.1.1 MSI of Windows Installer is the rollback source; the template is not needed
+foreach ($f in Get-ChildItem $BundleDir -File) { if ($f.Name -notlike '*signed-template*' -and $f.Name -notin 'SHA256SUMS.txt', 'Set-CollectorHttps.ps1', 'PILOT-RUNBOOK.md') { Copy-Item $f.FullName (Join-Path $pkg 'bundle') } }   # the cached 1.1.1 MSI of Windows Installer is the rollback source; the template is not needed
 Copy-Item (Join-Path $PSScriptRoot 'Get-PilotPreflight.ps1') $pkg; Copy-Item (Join-Path $PSScriptRoot 'Pilot-Controller.ps1') $pkg
-foreach ($f in 'Pilot-Upgrade.ps1', 'Run-PilotUpgrade.ps1', 'Set-CollectorHttps.ps1', 'Check-SigningTrust.ps1') { Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $pkg 'bundle') -Force }
+foreach ($f in 'Pilot-Upgrade.ps1', 'Run-PilotUpgrade.ps1', 'Check-SigningTrust.ps1') { Copy-Item (Join-Path $PSScriptRoot $f) (Join-Path $pkg 'bundle') -Force }
 $sums = Get-ChildItem (Join-Path $pkg 'bundle') -File | Where-Object Name -ne 'SHA256SUMS.txt' | Sort-Object Name | ForEach-Object { '{0}  {1}' -f (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower(), $_.Name }
 [IO.File]::WriteAllLines((Join-Path $pkg 'bundle\SHA256SUMS.txt'), $sums, (New-Object Text.UTF8Encoding($false)))
 if (Get-ChildItem $pkg -Recurse -File | Select-String -Pattern 'BEGIN (RSA |EC |ENCRYPTED )?PRIVATE KEY' -ErrorAction SilentlyContinue | Where-Object { $_.Path -notmatch '\.msi$' }) { throw 'private key text found' }
@@ -32,7 +32,7 @@ $t=[IO.File]::ReadAllText('%~f0'); $mb='#PAYLOAD'+'-BEGIN'; $me='#PAYLOAD'+'-END
 $boot = ($boot -replace "`r?`n", ' ').Trim().Replace('CODEHASH', $codeHash)
 $cmd = @"
 @echo off
-title LIDER Collector pilot - ITMANAGAMENT (1.1.1 to 1.4.0)
+title LIDER Collector pilot - ITMANAGAMENT (1.1.1 to 1.4.0, http)
 fltmc >nul 2>&1
 if errorlevel 1 (
   echo Administrator rights are needed. Windows will ask for permission...
