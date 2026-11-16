@@ -42,10 +42,21 @@
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- TEST-PKI BUILD (tools\vmtest\Build-TestPkiMsi.ps1 passes -p:LiderTestPkiDir=...): pins, embedded PUBLIC certificates and the server allow-list come from the throw-away test PKI. -->
+  <PropertyGroup Condition="'$(LiderTestPkiDir)' != ''">
+    <DefineConstants>$(DefineConstants);LIDER_TESTPKI</DefineConstants>
+    <InformationalVersion>$(Version)+testpki</InformationalVersion>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(LiderTestPkiDir)' != ''">
+    <Compile Include="$(LiderTestPkiDir)\TestBuildPins.g.cs" />
+    <EmbeddedResource Include="$(LiderTestPkiDir)\test-root-ca.pem" LogicalName="pki.lider-root-ca.pem" />
+    <EmbeddedResource Include="$(LiderTestPkiDir)\test-update-signing-cert.pem" LogicalName="pki.update-signing-cert.pem" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- PUBLIC certificates pinned by the self-update (root CA + code-signing certificate). No private key is ever embedded. -->
-    <EmbeddedResource Include="Update\pki\lider-root-ca.pem" LogicalName="pki.lider-root-ca.pem" />
-    <EmbeddedResource Include="Update\pki\update-signing-cert.pem" LogicalName="pki.update-signing-cert.pem" />
+    <EmbeddedResource Condition="'$(LiderTestPkiDir)' == ''" Include="Update\pki\lider-root-ca.pem" LogicalName="pki.lider-root-ca.pem" />
+    <EmbeddedResource Condition="'$(LiderTestPkiDir)' == ''" Include="Update\pki\update-signing-cert.pem" LogicalName="pki.update-signing-cert.pem" />
     <InternalsVisibleTo Include="LiderCollector.Tests" />
   </ItemGroup>
 

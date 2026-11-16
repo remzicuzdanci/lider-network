@@ -90,6 +90,7 @@ public sealed class CollectorWorker : BackgroundService
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         _log.LogInformation("CollectorWorker starting. Server={Server}", _config.ServerUrl);
+        if (LiderCollector.Update.TestBuild.Is) _log.LogWarning("TEST-PKI BUILD: pinned to a throw-away test CA and a test server; not a production build.");
 
         // A machine upgraded in place by the MSI may carry a transport-policy.json (see TransportPolicy): consume it first.
         ApplyUpgradeTransportPolicy();
@@ -229,6 +230,13 @@ public sealed class CollectorWorker : BackgroundService
 
     private bool TransportAllowed()
     {
+        // TEST-PKI build only: it may talk to the test server and nobody else (the production build always passes this check).
+        if (!LiderCollector.Update.TestBuild.ServerAllowed(_config.ServerUrl))
+        {
+            _transportReason = "This is a TEST-PKI build: it only talks to its configured test server, never to any other server.";
+            _log.LogCritical("{Reason} Refusing to send credentials or inventory. ServerUrl={Url}", _transportReason, _config.ServerUrl);
+            return false;
+        }
         // HTTPS always passes; plain HTTP needs allow_http=true AND a private-network test server (TransportPolicy).
         if (!TransportPolicy.IsAllowed(_config.ServerUrl, _config.AllowHttp, out _transportReason))
         {
@@ -312,6 +320,11 @@ public sealed class CollectorWorker : BackgroundService
         {
             // Override server URL from bootstrap if it differs (supports first-run from MSI / GPO)
             bool bootstrapIsHttp = bootstrap.ServerUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
+            if (!LiderCollector.Update.TestBuild.ServerAllowed(bootstrap.ServerUrl))
+            {
+                _log.LogCritical("TEST-PKI build: the enrollment points to a server that is not on the test allow-list. Refusing to enroll. Url={Url}", bootstrap.ServerUrl);
+                return;
+            }
             if (bootstrapIsHttp && ((!bootstrap.AllowHttp && !_config.AllowHttp) || !TransportPolicy.IsPrivateHost(bootstrap.ServerUrl)))
             {
                 _log.LogCritical("Bootstrap enrollment points to plain HTTP that is not an allowed private test server. Refusing to enroll. Url={Url}", bootstrap.ServerUrl);

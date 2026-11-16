@@ -63,12 +63,21 @@
     <CustomAction Id="LiderCommitLogCA" BinaryRef="LiderInstallerScript" VBScriptCall="LogCommitted"
                   Execute="commit" Impersonate="no" Return="ignore" />
 
+    <?ifdef FaultInstall?>
+    <!-- TEST-PKI VM TESTS ONLY (build-msi.ps1 -FaultInstall, refused without -TestPkiDir): a deferred action that fails after the files are in place,
+         so Windows Installer has to roll the whole upgrade back. Never part of a production build. -->
+    <CustomAction Id="LiderFaultCA" Directory="TARGETDIR" ExeCommand="cmd.exe /c exit 7" Execute="deferred" Impersonate="no" Return="check" />
+    <?endif?>
+
     <InstallExecuteSequence>
       <!-- The rollback action must be scheduled BEFORE the action it protects. -->
       <Custom Action="LiderRollbackLogCA" Before="LiderBootstrapCA" Condition="NOT Installed" />
       <!-- After the data folder exists, before the service starts. Upgrades: the script keeps the existing identity. -->
       <Custom Action="LiderBootstrapCA" After="CreateFolders" Condition="NOT Installed" />
       <Custom Action="LiderCommitLogCA" Before="InstallFinalize" Condition="NOT Installed" />
+      <?ifdef FaultInstall?>
+      <Custom Action="LiderFaultCA" Before="InstallFinalize" Condition="NOT Installed" />
+      <?endif?>
     </InstallExecuteSequence>
 
   </Package>
