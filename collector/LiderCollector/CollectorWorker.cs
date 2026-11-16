@@ -27,6 +27,8 @@ public sealed class CollectorWorker : BackgroundService
     private readonly CollectorConfig _config;
     private readonly SecureStorage _secure;
     private readonly LocalQueue _queue;
+    private readonly QueueFlusher _flusher;
+    private bool _serverBusyCycle;
     private readonly DeviceIdentity _identity;
     private readonly ApiClient _api;
     private readonly LiderCollector.Update.UpdateCoordinator _update;
@@ -65,6 +67,7 @@ public sealed class CollectorWorker : BackgroundService
         _config = config;
         _secure = secure;
         _queue = queue;
+        _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
         _identity = identity;
         _api = api;
         _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
@@ -163,6 +166,7 @@ public sealed class CollectorWorker : BackgroundService
                             _queue.Count());
                         await FlushQueueAsync(stoppingToken);
                     }
+                    else if (_queue.Count() > 0) await FlushQueueAsync(stoppingToken);   // steady, paced drain of a backlog (no restart needed)
                     _lastOnline = true;
 
                     LiderCollector.Update.UpdateMarkers.WriteCheckinOk(_config.DataPath);   // the self-update health check looks for this
@@ -174,11 +178,15 @@ public sealed class CollectorWorker : BackgroundService
                     // After explicit revocation, IsEnrolled is now false — go back to re-enrollment check
                     if (!_config.IsEnrolled) continue;
 
-                    _consecutiveMissedHeartbeats++;
-                    _lastOnline = false;
-                    _log.LogWarning("Heartbeat missed. Consecutive misses: {Count}/{Threshold}",
-                        _consecutiveMissedHeartbeats,
-                        _config.OfflineThresholdMissedHeartbeats);
+                    if (_serverBusyCycle) { _serverBusyCycle = false; }   // HTTP 429: neither online nor a miss
+                    else
+                    {
+                        _consecutiveMissedHeartbeats++;
+                        _lastOnline = false;
+                        _log.LogWarning("Heartbeat missed. Consecutive misses: {Count}/{Threshold}",
+                            _consecutiveMissedHeartbeats,
+                            _config.OfflineThresholdMissedHeartbeats);
+                    }
                 }
 
                 // ── Inventory sync ────────────────────────────────────────────
@@ -453,6 +461,12 @@ public sealed class CollectorWorker : BackgroundService
                     _consecutiveAuthFailures = 0;
                     return (false, null);
 
+                case ApiClient.HeartbeatStatus.ServerBusy:
+                    // HTTP 429: the server answered, it is only rate limiting this address. Not an outage and not a missed heartbeat.
+                    _log.LogInformation("Server busy (HTTP 429): the heartbeat is retried next cycle; not counted as missed.");
+                    _serverBusyCycle = true;
+                    return (false, null);
+
                 case ApiClient.HeartbeatStatus.TransientFailure:
                 default:
                     // Credentials are PRESERVED. A transient 401, network error, or 5xx
@@ -638,37 +652,16 @@ public sealed class CollectorWorker : BackgroundService
     private async Task FlushQueueAsync(CancellationToken ct)
     {
         _queue.PurgeExceeded(maxAttempts: 20);
+        var st = await _flusher.FlushAsync(ct);   // paced (<= 30/min, <= 20 per call); HTTP 429 backs off instead of counting as a failure
+        if (st.Delivered > 0) _log.LogInformation("Flushed {Count} queued items ({Left} left).", st.Delivered, _queue.Count());
+        if (st.RateLimited) _log.LogInformation("The server is rate limiting this address; the queue resumes after {Until:HH:mm:ss} UTC.", _flusher.BackoffUntil);
+    }
 
-        int delivered = 0;
-        while (!ct.IsCancellationRequested)
-        {
-            var batch = _queue.Peek(5);
-            if (batch.Count == 0) break;
-
-            bool allOk = true;
-            foreach (var item in batch)
-            {
-                try
-                {
-                    object? parsed = JsonSerializer.Deserialize<object>(item.PayloadJson);
-                    if (parsed == null) { _queue.Acknowledge(item.Id); continue; }
-
-                    bool ok = item.Endpoint == "inventory"
-                        ? await _api.SendInventoryAsync(parsed, ct)
-                        : await _api.SendEventsAsync(parsed, ct);
-
-                    if (ok) { _queue.Acknowledge(item.Id); delivered++; }
-                    else { _queue.IncrementAttempts(item.Id); allOk = false; }
-                }
-                catch (OperationCanceledException) { throw; }
-                catch { _queue.IncrementAttempts(item.Id); allOk = false; }
-            }
-
-            if (!allOk) break; // server still unreachable — stop trying
-        }
-
-        if (delivered > 0)
-            _log.LogInformation("Flushed {Count} queued items.", delivered);
+    private async Task<(SendOutcome, TimeSpan?)> SendQueuedItemAsync(LocalQueue.QueueItem item, CancellationToken ct)
+    {
+        object? parsed = JsonSerializer.Deserialize<object>(item.PayloadJson);
+        if (parsed == null) return (SendOutcome.Ok, null);   // an empty payload is dropped (acknowledged), as before
+        return await _api.SendQueuedAsync(item.Endpoint, parsed, ct);
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────

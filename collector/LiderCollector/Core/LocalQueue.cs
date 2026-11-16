@@ -8,7 +8,7 @@ namespace LiderCollector.Core;
 /// here and replayed in FIFO order once connectivity is restored.
 /// Thread-safe; all operations serialize through a single connection with WAL mode.
 /// </summary>
-public sealed class LocalQueue : IDisposable
+public sealed class LocalQueue : IDisposable, IQueueStore
 {
     private readonly SqliteConnection _conn;
     private readonly object _lock = new();

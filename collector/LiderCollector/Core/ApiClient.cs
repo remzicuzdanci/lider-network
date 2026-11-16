@@ -99,10 +99,12 @@ public sealed class ApiClient : IDisposable
             return (null, HeartbeatStatus.TransientFailure);
         }
 
+        if (httpStatus == System.Net.HttpStatusCode.TooManyRequests) return (null, HeartbeatStatus.ServerBusy);
+
         return (null, HeartbeatStatus.TransientFailure);
     }
 
-    // ── Inventory ─────────────────────────────────────────────────────────────
+    //── Inventory ─────────────────────────────────────────────────────────────
 
     public async Task<bool> SendInventoryAsync(object inventoryPayload, CancellationToken ct = default)
     {
@@ -121,6 +123,17 @@ public sealed class ApiClient : IDisposable
     }
 
     // ── Events ────────────────────────────────────────────────────────────────
+
+    /// <summary>Sends one queued item and tells the flusher WHY it failed (429 is not a failure of the item).</summary>
+    public async Task<(SendOutcome Outcome, TimeSpan? RetryAfter)> SendQueuedAsync(string endpoint, object payload, CancellationToken ct = default)
+    {
+        var (result, status) = await PostAsyncWithStatus<ApiResult>(endpoint == "inventory" ? "inventory" : "events", payload, authorized: true, ct);
+        if (status == System.Net.HttpStatusCode.TooManyRequests) return (SendOutcome.RateLimited, LastRetryAfter);
+        return (result?.Success == true ? SendOutcome.Ok : SendOutcome.Failed, null);
+    }
+
+    /// <summary>Retry-After of the last rate-limited response (seconds form only), else null.</summary>
+    public TimeSpan? LastRetryAfter { get; private set; }
 
     public async Task<bool> SendEventsAsync(object eventsPayload, CancellationToken ct = default)
     {
@@ -214,6 +227,7 @@ public sealed class ApiClient : IDisposable
             if (!response.IsSuccessStatusCode)
             {
                 string respBody = await response.Content.ReadAsStringAsync(ct);
+                LastRetryAfter = response.Headers.RetryAfter?.Delta;
                 _log.LogWarning("POST {Endpoint} → HTTP {Status}: {Body}",
                     endpoint, (int)response.StatusCode,
                     respBody.Length > 200 ? respBody[..200] : respBody);
@@ -330,6 +344,9 @@ public sealed class ApiClient : IDisposable
 
         /// <summary>Server explicitly revoked this key (HTTP 410, or 401 + <c>re_enroll_required:true</c>).</summary>
         ExplicitRevocation,
+
+        /// <summary>HTTP 429: the server is reachable but is rate limiting this address. Not an outage: do not count a missed heartbeat, do not go offline.</summary>
+        ServerBusy,
     }
 
     public sealed class CheckinResponse
