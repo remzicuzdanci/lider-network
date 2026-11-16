@@ -1,0 +1,68 @@
+{
+  "events": [
+    {
+      "uid": "prt-336d64bcc28b4d55064fbfe00026525d73befd56",
+      "type": "print_job",
+      "occurred_at": "2026-11-16T14:20:11.123Z",
+      "host": "PC01",
+      "data": {
+        "printer": "HP LaserJet 400",
+        "port": "IP_10.0.0.9",
+        "user": "uci\\ahmet",
+        "document": "sha256:c2671cae90b14950",
+        "event_id": 307,
+        "record_id": 1234,
+        "computer": "PC01.uci.local",
+        "job_id": 3,
+        "bytes": 63414,
+        "pages": 4
+      }
+    },
+    {
+      "uid": "prt-b575cc40a86c294c8ae8b0025cc9a3111d734839",
+      "type": "print_job",
+      "occurred_at": "2026-11-16T14:20:11.123Z",
+      "host": "PC01",
+      "data": {
+        "printer": "HP LaserJet 400",
+        "port": "IP_10.0.0.9",
+        "user": "uci\\ahmet",
+        "document": "Teklif.pdf",
+        "event_id": 307,
+        "record_id": 1235,
+        "computer": "PC01.uci.local",
+        "job_id": 3,
+        "bytes": 63414,
+        "pages": 2
+      }
+    },
+    {
+      "uid": "usbc-f86ab532b5f8682172ec314b6a4174cc2f7ae31e",
+      "type": "usb_connected",
+      "occurred_at": "2026-11-16T12:00:00.000Z",
+      "host": "PC01",
+      "data": {
+        "drive": "E:",
+        "label": "BACKUP",
+        "vendor": "Kingston",
+        "product": "DataTraveler",
+        "serial_hash": "abc123abc123abc123abc123",
+        "fs": "FAT32",
+        "size_bytes": 16000000000
+      }
+    },
+    {
+      "uid": "usbf-2dc2cb0ba154eee66b981b33ecdc4f9708c84530",
+      "type": "file_copied_to_usb",
+      "occurred_at": "2026-11-16T12:00:00.000Z",
+      "host": "PC01",
+      "data": {
+        "drive": "E:",
+        "name": "sha256:80b2ce22da28c7b1.xlsx",
+        "extension": "xlsx",
+        "size_bytes": 123456,
+        "action": "created"
+      }
+    }
+  ]
+}
