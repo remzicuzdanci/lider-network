@@ -53,7 +53,7 @@
     },
     {
       "uid": "usbf-2dc2cb0ba154eee66b981b33ecdc4f9708c84530",
-      "type": "file_copied_to_usb",
+      "type": "usb_file_event",
       "occurred_at": "2026-11-16T12:00:00.000Z",
       "host": "PC01",
       "data": {

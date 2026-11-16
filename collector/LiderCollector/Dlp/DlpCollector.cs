@@ -37,6 +37,9 @@ public sealed class FileDlpState : IDlpStateStore
 
 public sealed record DlpRunResult(int Read, int Sent, int Queued, int Dropped);
 
+/// <summary>State of one source, reported to the server in the heartbeat (no event data): ok | unavailable | error.</summary>
+public sealed record DlpSourceStatus(string Source, string State, string? Message, DateTime AtUtc);
+
 /// <summary>
 /// Polls the enabled sources, delivers the events in batches (server when online, the offline queue otherwise or when the server says no) and only THEN moves the read position:
 /// at-least-once delivery, the server removes duplicates by event uid. Bounded everywhere: events per poll, events per request, rows of the offline queue.
@@ -46,6 +49,11 @@ public sealed class DlpCollector
     private readonly DlpConfig _cfg; private readonly IReadOnlyList<IDlpSource> _sources; private readonly IDlpStateStore _state;
     private readonly Func<IReadOnlyList<DlpEvent>, CancellationToken, Task<SendOutcome>> _send; private readonly IQueueSink _queue; private readonly ILogger _log;
     private readonly HashSet<string> _reported = new();
+    private readonly Dictionary<string, DlpSourceStatus> _status = new();
+
+    /// <summary>Per enabled source: the latest state. Empty while DLP is off (nothing to report).</summary>
+    public IReadOnlyList<DlpSourceStatus> Status() => !_cfg.Enabled ? Array.Empty<DlpSourceStatus>() : _status.Values.OrderBy(s => s.Source).ToList();
+    private void Set(string source, string state, string? msg) => _status[source] = new DlpSourceStatus(source, state, msg is { Length: > 200 } ? msg[..200] : msg, DateTime.UtcNow);
 
     public DlpCollector(DlpConfig cfg, IEnumerable<IDlpSource> sources, IDlpStateStore state, Func<IReadOnlyList<DlpEvent>, CancellationToken, Task<SendOutcome>> send, IQueueSink queue, ILogger log)
     { _cfg = cfg; _sources = sources.ToList(); _state = state; _send = send; _queue = queue; _log = log; }
@@ -60,12 +68,14 @@ public sealed class DlpCollector
             if (!src.Prepare(_cfg, out var problem))
             {
                 if (_reported.Add(src.Name + problem)) _log.LogWarning("DLP source {Source} is not available: {Problem}", src.Name, problem);
+                Set(src.Name, "unavailable", problem);
                 continue;
             }
             long pos = _state.Get(src.Name);
             IReadOnlyList<(long Position, DlpEvent Event)> items;
             try { items = src.ReadNew(pos, _cfg.EffectiveMaxPerPoll, _cfg); }
-            catch (Exception ex) when (ex is not OperationCanceledException) { _log.LogWarning(ex, "DLP source {Source} could not be read", src.Name); continue; }
+            catch (Exception ex) when (ex is not OperationCanceledException) { _log.LogWarning(ex, "DLP source {Source} could not be read", src.Name); Set(src.Name, "error", ex.GetType().Name + ": " + ex.Message); continue; }
+            Set(src.Name, "ok", null);
             read += items.Count;
 
             for (int i = 0; i < items.Count; i += _cfg.EffectiveMaxBatch)

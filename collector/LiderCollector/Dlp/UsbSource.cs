@@ -51,7 +51,7 @@ public sealed class UsbSource : IDlpSource
                 var data = new Dictionary<string, object?> { ["drive"] = f.Drive, ["name"] = DlpPrivacy.Name(f.Name, "full", 260), ["extension"] = Ext(f.Name), ["size_bytes"] = Math.Max(0, f.SizeBytes), ["action"] = f.Action };
                 if (cfg.Print.DocumentName is "extension" or "hash" or "none") data["name"] = DlpPrivacy.Name(f.Name, cfg.Print.DocumentName, 260);   // the same privacy mode as the print document name
                 string uid = DlpEvent.MakeUid("usbf", _host, f.Drive, f.Name, f.Action, f.AtUtc.Ticks, f.SizeBytes);
-                res.Add((NextSeq(f.AtUtc), new DlpEvent(uid, "file_copied_to_usb", f.AtUtc, _host, data)));
+                res.Add((NextSeq(f.AtUtc), new DlpEvent(uid, "usb_file_event", f.AtUtc, _host, data)));   // created / renamed / deleted ON a removable drive; whether the file came from this computer is not knowable here, so it is never called a copy
             }
         return res.Where(r => r.Item1 > afterPosition).OrderBy(r => r.Item1).Take(max).ToList();
     }
@@ -115,6 +115,7 @@ public sealed class WindowsUsbEnvironment : IUsbEnvironment, IDisposable
             try { var fi = new FileInfo(full); if (!fi.Exists || (fi.Attributes & FileAttributes.Directory) != 0) return; _files.Enqueue(new UsbFile(letter, fi.Name, fi.Length, action, DateTime.UtcNow)); } catch { }
         }
         w.Created += (_, e) => Add("created", e.FullPath); w.Renamed += (_, e) => Add("renamed", e.FullPath);
+        w.Deleted += (_, e) => { if (_files.Count <= 5000) _files.Enqueue(new UsbFile(letter, Path.GetFileName(e.FullPath), 0, "deleted", DateTime.UtcNow)); };   // the file is gone: name only (a deleted folder also arrives here - its name has no extension)
         w.EnableRaisingEvents = true; _watchers[letter] = w;
     }
 

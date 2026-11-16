@@ -71,17 +71,21 @@ public sealed class ApiClient : IDisposable
     ///   <c>re_enroll_required:true</c>, or HTTP 410). The caller must wipe credentials and re-enroll.</description></item>
     /// </list>
     /// </summary>
+    /// <summary>Set by the worker: the DLP source states (no event content) sent with every heartbeat while DLP is on.</summary>
+    public Func<object?>? DlpStatusProvider { get; set; }
+
     public async Task<(CheckinResponse? Response, HeartbeatStatus Status)> CheckinAsync(
         DeviceIdentity.IdentityPayload identity, CancellationToken ct = default)
     {
-        var body = new
+        var body = new Dictionary<string, object?>
         {
-            hostname = identity.Hostname,
-            version = _config.AgentVersion,
-            update_channel = _config.UpdateChannel,
-            status = "online",
-            timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            ["hostname"] = identity.Hostname,
+            ["version"] = _config.AgentVersion,
+            ["update_channel"] = _config.UpdateChannel,
+            ["status"] = "online",
+            ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
         };
+        try { if (DlpStatusProvider?.Invoke() is { } dlp) body["dlp_status"] = dlp; } catch { /* informational only */ }
         var (resp, httpStatus) = await PostAsyncWithStatus<CheckinResponse>("checkin", body, authorized: true, ct);
 
         if (httpStatus == System.Net.HttpStatusCode.OK)

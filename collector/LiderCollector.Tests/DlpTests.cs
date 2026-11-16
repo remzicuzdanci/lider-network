@@ -217,7 +217,7 @@ public class UsbSourceTests
     {
         var e = new Env { Files = { new UsbFile("E:", "Musteri Listesi.XLSX", 123456, "created", new DateTime(2026, 11, 16, 12, 0, 1, DateTimeKind.Utc)) } };
         var s = Make(e); var r = s.ReadNew(0, 100, Cfg()); Assert.Single(r);
-        var ev = r[0].Event; Assert.Equal("file_copied_to_usb", ev.Type); Assert.Equal("Musteri Listesi.XLSX", ev.Data["name"]); Assert.Equal("xlsx", ev.Data["extension"]); Assert.Equal(123456L, ev.Data["size_bytes"]); Assert.Equal("created", ev.Data["action"]);
+        var ev = r[0].Event; Assert.Equal("usb_file_event", ev.Type); Assert.Equal("Musteri Listesi.XLSX", ev.Data["name"]); Assert.Equal("xlsx", ev.Data["extension"]); Assert.Equal(123456L, ev.Data["size_bytes"]); Assert.Equal("created", ev.Data["action"]);
         Assert.DoesNotContain("path", ev.Data.Keys); Assert.DoesNotContain("content", ev.Data.Keys);
     }
 
@@ -299,4 +299,35 @@ public class DlpPolicyTests
         Assert.True(with.Dlp!.Enabled); Assert.Equal("hash", with.Dlp.Print!.DocumentName);
         Assert.Null(JsonSerializer.Deserialize<ApiClient.CheckinResponse>("""{"sync_interval":900}""")!.Dlp);
     }
+}
+
+public class DlpStatusAndDeleteTests
+{
+    private sealed class Src : IDlpSource
+    {
+        public string Name => "print"; public string? Problem; public bool Throw;
+        public bool IsEnabled(DlpConfig c) => true; public bool Prepare(DlpConfig c, out string? p) { p = Problem; return Problem is null; }
+        public IReadOnlyList<(long, DlpEvent)> ReadNew(long after, int max, DlpConfig c) { if (Throw) throw new InvalidOperationException("log corrupt"); return Array.Empty<(long, DlpEvent)>(); }
+    }
+    private sealed class St : IDlpStateStore { public long Get(string s) => 0; public void Set(string s, long p) { } }
+    private sealed class Q : IQueueSink { public void Enqueue(string e, object p) { } public long Count() => 0; }
+    private static DlpCollector Make(Src s, bool on = true) => new(new DlpConfig { Enabled = on, Print = { Enabled = true } }, new[] { s }, new St(), (e, _) => Task.FromResult(SendOutcome.Ok), new Q(), NullLogger.Instance);
+
+    [Fact] public async Task Source_states_are_reported_ok_unavailable_and_error_and_nothing_while_dlp_is_off()
+    {
+        var s = new Src(); var d = Make(s); Assert.Empty(d.Status()); await d.RunAsync(true, default); Assert.Equal("ok", d.Status()[0].State);
+        s.Problem = "log switched off"; await d.RunAsync(true, default); Assert.Equal("unavailable", d.Status()[0].State); Assert.Contains("switched off", d.Status()[0].Message);
+        s.Problem = null; s.Throw = true; await d.RunAsync(true, default); Assert.Equal("error", d.Status()[0].State); Assert.Contains("log corrupt", d.Status()[0].Message);
+        Assert.Empty(Make(new Src(), on: false).Status());
+    }
+
+    [Fact] public void A_deleted_file_is_reported_as_a_file_event_never_as_a_copy()
+    {
+        var files = new List<UsbFile> { new("E:", "old.docx", 0, "deleted", DateTime.UtcNow) };
+        var env = new FakeEnv(files); var s = new UsbSource(env, host: "PC01"); var cfg = new DlpConfig { Enabled = true, Usb = { Enabled = true }, Print = { DocumentName = "full" } };
+        s.ReadNew(0, 10, cfg); env.Files.Add(new("E:", "old.docx", 0, "deleted", DateTime.UtcNow));   // after the baseline snapshot
+        var r = s.ReadNew(0, 10, cfg); Assert.All(r, x => Assert.Equal("usb_file_event", x.Event.Type)); Assert.Contains(r, x => (string?)x.Event.Data["action"] == "deleted");
+        Assert.DoesNotContain(r, x => x.Event.Type.Contains("copied"));
+    }
+    private sealed class FakeEnv : IUsbEnvironment { public List<UsbFile> Files; public FakeEnv(List<UsbFile> f) { Files = new(); } public IReadOnlyList<UsbVolume> Snapshot() => Array.Empty<UsbVolume>(); public IReadOnlyList<UsbFile> DrainFileEvents(int m) { var r = Files.Take(m).ToList(); Files.Clear(); return r; } }
 }

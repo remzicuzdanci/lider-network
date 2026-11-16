@@ -47,7 +47,7 @@ public class DlpWireContractTests
     public void The_sample_has_one_event_of_each_kind_with_the_fields_the_server_whitelists()
     {
         using var d = JsonDocument.Parse(Sample()); var ev = d.RootElement.GetProperty("events").EnumerateArray().ToList();
-        Assert.Equal(new[] { "print_job", "print_job", "usb_connected", "file_copied_to_usb" }, ev.Select(e => e.GetProperty("type").GetString()).ToArray());
+        Assert.Equal(new[] { "print_job", "print_job", "usb_connected", "usb_file_event" }, ev.Select(e => e.GetProperty("type").GetString()).ToArray());
         Assert.All(ev, e => Assert.Matches("^[A-Za-z0-9_:.-]{8,64}$", e.GetProperty("uid").GetString()!));
         var print = ev[0].GetProperty("data"); foreach (var k in new[] { "printer", "port", "computer", "event_id", "record_id", "job_id", "document", "user", "pages", "bytes" }) Assert.True(print.TryGetProperty(k, out _), k);
         Assert.StartsWith("sha256:", print.GetProperty("document").GetString());   // hash is the default mode

@@ -71,6 +71,7 @@ public sealed class CollectorWorker : BackgroundService
         _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
         // the last policy the server sent survives a restart; the DLP collector always exists, it just does nothing while the master switch is off
         LiderCollector.Dlp.DlpPolicy.Apply(config.Dlp, LiderCollector.Dlp.DlpPolicy.Load(config.DataPath));
+        api.DlpStatusProvider = () => _dlp?.Status().Select(s => new { source = s.Source, state = s.State, message = s.Message, at = s.AtUtc.ToString("O") }).ToList() is { Count: > 0 } l ? l : null;
         _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
         _identity = identity;
         _api = api;
