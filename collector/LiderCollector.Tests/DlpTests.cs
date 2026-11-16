@@ -21,7 +21,7 @@ public class PrintJobParserTests
     [Fact]
     public void A_real_shaped_event_307_becomes_a_print_job_with_all_metadata()
     {
-        var e = PrintJobParser.Parse(Xml())!;
+        var e = PrintJobParser.Parse(Xml(), "full")!;
         Assert.Equal("print_job", e.Type); Assert.Equal("PC01", e.Host);
         Assert.Equal(new DateTime(2026, 11, 16, 14, 20, 11, DateTimeKind.Utc).AddTicks(1234567), e.OccurredUtc);
         Assert.Equal("HP LaserJet 400", e.Data["printer"]); Assert.Equal("uci\\ahmet", e.Data["user"]); Assert.Equal("Rapor.docx - Word", e.Data["document"]);
@@ -61,7 +61,7 @@ public class PrintJobParserTests
 
     [Fact] public void Control_characters_are_removed_and_long_names_are_cut()
     {
-        var e = PrintJobParser.Parse(Xml(doc: "a\tb\nc" + new string('x', 1000)))!;   // (characters that XML cannot carry at all never reach the parser)
+        var e = PrintJobParser.Parse(Xml(doc: "a\tb\nc" + new string('x', 1000)), "full")!;   // (characters that XML cannot carry at all never reach the parser)
         string d = (string)e.Data["document"]!; Assert.True(d.Length <= 400); Assert.DoesNotContain("\t", d); Assert.DoesNotContain("\n", d);
     }
 
@@ -93,7 +93,7 @@ public class DlpCollectorTests
     {
         var c = new DlpConfig(); Assert.False(c.Enabled); Assert.False(c.Print.Enabled); Assert.False(c.Usb.Enabled);
         Assert.False(new CollectorConfig().Dlp.Enabled);
-        Assert.Equal("full", c.Print.DocumentName); Assert.True(c.Print.AutoEnableLog);
+        Assert.Equal("hash", c.Print.DocumentName); Assert.True(c.Print.AutoEnableLog);   // the document name is hashed unless the customer policy says otherwise
     }
 
     [Fact] public void The_limits_are_clamped_to_sane_values()
@@ -187,7 +187,7 @@ public class UsbSourceTests
         public IReadOnlyList<UsbFile> DrainFileEvents(int max) { var r = Files.Take(max).ToList(); Files.RemoveRange(0, r.Count); return r; }
     }
     private static readonly UsbVolume Stick = new("E:", "BACKUP", "FAT32", 16_000_000_000, "Kingston", "DataTraveler", "abc123abc123abc123abc123");
-    private static DlpConfig Cfg(Action<DlpConfig>? t = null) { var c = new DlpConfig { Enabled = true, Usb = { Enabled = true } }; t?.Invoke(c); return c; }
+    private static DlpConfig Cfg(Action<DlpConfig>? t = null) { var c = new DlpConfig { Enabled = true, Usb = { Enabled = true }, Print = { DocumentName = "full" } }; t?.Invoke(c); return c; }
     private static UsbSource Make(Env e) => new(e, () => new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc), "PC01");
 
     [Fact] public void Sticks_that_are_already_in_are_only_a_baseline_not_events()
@@ -225,6 +225,13 @@ public class UsbSourceTests
     {
         var e = new Env { Files = { new UsbFile("E:", "plan.docx", 1, "created", DateTime.UtcNow) } };
         var r = Make(e).ReadNew(0, 100, Cfg(c => c.Print.DocumentName = "extension")); Assert.Equal("*.docx", r[0].Event.Data["name"]);
+    }
+
+    [Fact] public void By_default_the_file_name_is_hashed_like_the_print_document_name()
+    {
+        var e = new Env { Files = { new UsbFile("E:", "Gizli Plan.docx", 1, "created", DateTime.UtcNow) } };
+        var r = Make(e).ReadNew(0, 100, new DlpConfig { Enabled = true, Usb = { Enabled = true } });
+        Assert.Matches("^sha256:[0-9a-f]{16}\\.docx$", (string)r[0].Event.Data["name"]!); Assert.DoesNotContain("Gizli", (string)r[0].Event.Data["name"]!);
     }
 
     [Fact] public void File_events_can_be_switched_off_while_plug_events_stay_on()
@@ -269,7 +276,7 @@ public class DlpPolicyTests
     [Fact] public void Unknown_values_are_ignored_and_a_missing_policy_changes_nothing()
     {
         var c = new DlpConfig(); Assert.False(DlpPolicy.Apply(c, null));
-        DlpPolicy.Apply(c, Dto(true, true, "everything-please", false)); Assert.Equal("full", c.Print.DocumentName);
+        DlpPolicy.Apply(c, Dto(true, true, "everything-please", false)); Assert.Equal("hash", c.Print.DocumentName);
         var off = new DlpConfig(); Assert.False(DlpPolicy.Apply(off, new DlpPolicyDto { Enabled = false })); Assert.False(off.Enabled);   // an all-off policy on an all-off config: nothing changed
     }
 

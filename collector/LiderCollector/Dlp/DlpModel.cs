@@ -24,8 +24,8 @@ public sealed class DlpConfig
     public sealed class PrintConfig
     {
         public bool Enabled { get; set; } = false;
-        /// <summary>full | extension | hash | none - what is sent of the DOCUMENT NAME (a title can itself be sensitive).</summary>
-        public string DocumentName { get; set; } = "full";
+        /// <summary>hash (default) | full | extension | none - what is sent of the DOCUMENT NAME (a title can itself be sensitive). hash = a stable token: the same document is recognisable, never readable.</summary>
+        public string DocumentName { get; set; } = "hash";
         /// <summary>The Windows print-service log is off by default. When true the Collector (LocalSystem) switches that one log channel on, once, so no manual set-up is needed.</summary>
         public bool AutoEnableLog { get; set; } = true;
         /// <summary>First start: how far back to read (hours); afterwards the stored position is used.</summary>

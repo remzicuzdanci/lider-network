@@ -12,7 +12,7 @@ public static class PrintJobParser
     public const string Channel = "Microsoft-Windows-PrintService/Operational";
     public const int DocumentPrintedEventId = 307;
 
-    public static DlpEvent? Parse(string xml, string documentNameMode = "full")
+    public static DlpEvent? Parse(string xml, string documentNameMode = "hash")
     {
         try
         {
@@ -34,6 +34,7 @@ public static class PrintJobParser
                 ["printer"] = Trim(printer, 190), ["port"] = Trim(port, 120), ["user"] = Trim(user, 190),
                 ["document"] = DlpPrivacy.Name(docName, documentNameMode),
             };
+            data["event_id"] = (long)DocumentPrintedEventId; if (rec > 0) data["record_id"] = rec; data["computer"] = Trim(computer, 190);   // the Windows event itself (id 307, record number) and the machine as the log names it
             if (long.TryParse(job, out long j)) data["job_id"] = j;
             if (long.TryParse(bytes, out long b)) data["bytes"] = Math.Max(0, b);
             if (long.TryParse(pages, out long pg)) data["pages"] = Math.Max(0, pg);

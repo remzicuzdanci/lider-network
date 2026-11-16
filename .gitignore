@@ -5,3 +5,9 @@ node_modules/
 out/
 dist/
 .vercel
+
+# local build/pilot artefacts that must never be committed
+.wix/
+**/.wix/
+collector/pilot-bundle-*/
+collector/dist/
