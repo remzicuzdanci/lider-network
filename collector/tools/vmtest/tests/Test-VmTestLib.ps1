@@ -53,4 +53,19 @@ if (Test-Path (Join-Path $PkiDir 'test-pins.json')) {
     T 'validity window honours a future "now"' ((Test-CrlFile (Crl 'valid') $root $sign ((Get-Date).ToUniversalTime().AddDays(40))).State -eq 'Expired')
 } else { Write-Host '  (skipped: no test PKI at ' $PkiDir ')' }
 
+
+Write-Host '== suite structure'
+$suite = Join-Path $here 'Run-VmTestSuite.ps1'
+$ast = [Management.Automation.Language.Parser]::ParseFile($suite, [ref]$null, [ref]$null)
+$fns = @($ast.FindAll({ param($n) $n -is [Management.Automation.Language.FunctionDefinitionAst] }, $true) | ForEach-Object { $_.Name })
+$src = Get-Content $suite -Raw
+$cat = [regex]::Matches($src, "Name = '(\w+)';\s*Stage = '(\w+)';\s+Run = \{ (Run-\w+) \}")
+T 'the catalog has 18 scenarios' ($cat.Count -eq 18)
+T 'scenario names are unique' (@($cat | ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique).Count -eq $cat.Count)
+T 'every scenario function exists' (@($cat | Where-Object { $fns -notcontains $_.Groups[3].Value }).Count -eq 0)
+T 'stages are S0 / S1 / S1b / S2' (@($cat | Where-Object { $_.Groups[2].Value -notin 'S0', 'S1', 'S1b', 'S2' }).Count -eq 0)
+T 'every stage that scenarios start from is reachable (S0 -> S1 -> S1b -> S2)' ((@('S0', 'S1', 'S1b', 'S2') | Where-Object { $st = $_; @($cat | Where-Object { $_.Groups[2].Value -eq $st }).Count -gt 0 }).Count -eq 4)
+T 'no production host or port is referenced by the VM scripts' (-not (Select-String -Path $suite, (Join-Path $here 'VmTestLib.ps1') -Pattern 'liderone\.uci\.local|:8081|vmtest\.lidernetwork' -Quiet))
+T 'the suite never touches the Windows certificate store (no Import-Certificate / certutil -addstore)' (-not (Select-String -Path $suite, (Join-Path $here 'VmTestLib.ps1') -Pattern 'Import-Certificate|-addstore|Import-PfxCertificate' -Quiet))
+T 'every fault injection is undone in the finally block (firewall, installer mutex)' ($src -match 'finally \{ try \{ Unblock-Server \} catch \{ \}; Release-MsiMutex \}')
 Write-Host ("`n{0} passed, {1} failed" -f $pass, $fail); exit $(if ($fail) { 1 } else { 0 })

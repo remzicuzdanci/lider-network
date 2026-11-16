@@ -19,7 +19,10 @@ param(
     [Parameter(Mandatory)][string]$PreviousMsi,
     [Parameter(Mandatory)][string]$OutDir,
     [string]$SignerSha1 = '83739ABFDBD3B8654141FE1F2BF1A131F99BA71F',
-    [string]$RootSha256 = '21E94EC9750C21E2442E0818107BE870BE6C83AD1369D8DAAEACBE6D4EC733E2'
+    [string]$RootSha256 = '21E94EC9750C21E2442E0818107BE870BE6C83AD1369D8DAAEACBE6D4EC733E2',
+    # ISOLATED VM TESTS only: the public root to ship (default: the LIDER root next to this script) and a previous MSI that may be unsigned (the 1.3.0 baseline template)
+    [string]$RootPem,
+    [switch]$AllowUnsignedPrevious
 )
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
@@ -36,7 +39,7 @@ function Assert-SignedBy([string]$msi, [string]$label) {
     if ($s.SignerCertificate.Thumbprint -ne $SignerSha1) { throw "$label is signed by $($s.SignerCertificate.Thumbprint), not by the pinned certificate $SignerSha1" }
 }
 
-Assert-SignedBy $SignedMsi 'the new MSI'; Assert-SignedBy $PreviousMsi 'the previous MSI'
+Assert-SignedBy $SignedMsi 'the new MSI'; if (-not $AllowUnsignedPrevious) { Assert-SignedBy $PreviousMsi 'the previous MSI' }
 if ((MsiProp $SignedMsi 'ProductVersion') -ne $Version) { throw "the new MSI has ProductVersion $(MsiProp $SignedMsi 'ProductVersion'), expected $Version" }
 if ((MsiProp $PreviousMsi 'ProductVersion') -notlike "$From*") { throw "the previous MSI has ProductVersion $(MsiProp $PreviousMsi 'ProductVersion'), expected $From" }
 
@@ -46,7 +49,7 @@ New-Item -ItemType Directory -Force $work | Out-Null
 $newName = "LiderITONECollector-$Version-signed.msi"; $prevName = "LiderITONECollector-$From-signed-template.msi"
 Copy-Item $SignedMsi (Join-Path $work $newName); Copy-Item $PreviousMsi (Join-Path $work $prevName)
 foreach ($f in 'Pilot-Upgrade.ps1', 'Run-PilotUpgrade.ps1', 'Set-CollectorHttps.ps1', 'Check-SigningTrust.ps1') { Copy-Item (Join-Path $tools $f) $work }
-Copy-Item (Join-Path $tools 'pki\lider-root-ca.pem') $work
+Copy-Item $(if ($RootPem) { $RootPem } else { Join-Path $tools 'pki\lider-root-ca.pem' }) (Join-Path $work 'lider-root-ca.pem')
 $rc = New-Object Security.Cryptography.X509Certificates.X509Certificate2 (Join-Path $work 'lider-root-ca.pem')
 if (([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($rc.RawData)) -replace '-', '').ToUpper() -ne $RootSha256.ToUpper()) { throw 'tools\pki\lider-root-ca.pem is not the pinned LIDER root' }
 
