@@ -478,13 +478,15 @@ function Run-DlpUsb {
     $c = Initialize-S3Scenario
     $r = Set-GwDlpPolicy $true $false 'hash' $true $true; Check 'server policy: USB + file events on' ([bool]($r -and $r.ok))
     Check 'the Collector applied the policy' (Wait-Until { (Get-LogText ([datetimeoffset]::Now.AddMinutes(-5)) | Where-Object { $_ -match 'DLP policy updated' }).Count -gt 0 } ($HB * 3 + 60) 5)
-    Write-Host "`n>>> MANUAL STEP: in VMware attach a USB stick (or a USB disk) to THIS VM now, wait for the drive letter, then copy any small file onto it. Waiting up to 6 minutes ..." -ForegroundColor Yellow
+    Write-Host "`n>>> MANUAL STEP: in VMware attach a USB stick (or a USB disk) to THIS VM now, wait for the drive letter, then create a small text file on it, rename it, and delete it. Waiting up to 6 minutes ..." -ForegroundColor Yellow
     $ok = Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'usb_connected' }).Count -gt 0) } 360 10
     Check 'a usb_connected event reached the test server' $ok
     $ev = @((Get-GwDlpEvents).events | Where-Object { $_.type -eq 'usb_connected' }) | Select-Object -First 1
     if ($ev) { $d = $ev.data | ConvertFrom-Json; Check 'drive letter and size are present, the serial number is only a hash' (($ev.subject -match '^[A-Z]:$') -and ([int64]$ev.size_bytes -gt 0) -and ([string]$d.serial_hash -notmatch '[^0-9a-f]')) "drive=$($ev.subject) size=$($ev.size_bytes)" }
-    $fok = Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'file_copied_to_usb' }).Count -gt 0) } 180 10
-    Check 'a file_copied_to_usb event (name, extension, size - never content) reached the server' $fok
+    $fok = Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'usb_file_event' }).Count -gt 0) } 180 10
+    Check 'usb_file_event events (name, extension, size - never content) reached the server' $fok
+    $acts = @((Get-GwDlpEvents).events | Where-Object { $_.type -eq 'usb_file_event' } | ForEach-Object { ($_.data | ConvertFrom-Json).action } | Sort-Object -Unique)
+    Check 'create and delete are reported with their real action, never as a copy' (($acts -contains 'created') -and ($acts -contains 'deleted') -and ($acts -notcontains 'copied')) "actions seen: $($acts -join ',')"
     Write-Host '>>> now remove the USB device from the VM (VMware: VM > Removable Devices > Disconnect); waiting up to 3 minutes ...' -ForegroundColor Yellow
     Check 'a usb_disconnected event reached the test server' (Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'usb_disconnected' }).Count -gt 0) } 180 10)
     Test-Identity $c.IdBefore; Test-Markers $c.Marker

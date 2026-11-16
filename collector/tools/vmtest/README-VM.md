@@ -54,7 +54,7 @@ Diğer kullanım: `-List` (senaryolar ve defter), `-Check` (yalnızca ön kontro
 | DlpPrint | S3 | Gerçek yazdırma işleri (olay 307) DLP olayı olarak test sunucusuna gelir: kullanıcı, bilgisayar, yazıcı, sayfa, boyut, iş/kayıt kimliği; yeniden başlatmada çift kayıt yok; servis bellek/CPU ölçümü |
 | DlpPrivacy | S3 | Belge adı gizlilik kipleri (hash varsayılan, extension, none) gerçek işlerde |
 | QueueBacklog | S3 | 150 bekleyen olay: sıralı boşaltma, kaçan heartbeat yok, HTTP 429 yok, kayıp yok (1.4.0 pilot sorunu) |
-| DlpUsb | S3 | **ELLE** (VMware'den bir USB cihaz bağlanır): takma / dosya kopyalama / çıkarma olayları. `-Scenario DlpUsb` ile çalışır, otomatik sıraya girmez |
+| DlpUsb | S3 | **ELLE** (VMware'den bir USB cihaz bağlanır): takma / dosya oluşturma-yeniden adlandırma-silme (kopyalama olarak raporlanmaz) / çıkarma olayları. `-Scenario DlpUsb` ile çalışır, otomatik sıraya girmez |
 
 DLP senaryoları yerel bir sahte yazıcı (dosya portu) oluşturup siler; gerçek yazıcıya veya kağıda dokunulmaz.
 
