@@ -35,7 +35,7 @@ function Short($p) { $fso = New-Object -ComObject Scripting.FileSystemObject; if
 
 Step "Publishing LiderCollector $Version (Release / win-x64 / self-contained / single file)"
 dotnet publish "$CollectorDir\LiderCollector.csproj" -c Release -r win-x64 --self-contained true `
-    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$Version
+    -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:Version=$Version -p:AssemblyVersion=$Version.0 -p:FileVersion=$Version.0
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed" }
 $exe = Join-Path $PublishDir "LiderCollector.exe"
 if (-not (Test-Path $exe)) { throw "published exe missing: $exe" }

@@ -29,10 +29,12 @@ $ErrorActionPreference = 'Stop'
 $ownLibraryOnly = $LibraryOnly   # the dot-sourced library has its own -LibraryOnly and would overwrite this variable
 . (Join-Path $PSScriptRoot 'Pilot-Upgrade.ps1') -LibraryOnly -StopTimeoutSec 90 -StartTimeoutSec 90 -HealthWaitSec 5
 
+function Get-CertSha256([string]$Path) { $c = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $Path; ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($c.RawData)) -replace '-', '').ToUpper() }
+# the pin is the SHA-256 of the CERTIFICATE (DER), the same value every other LIDER tool prints - not of the PEM text file
 function Test-RootFile([string]$Path, [string]$Pin) {
     if (-not (Test-Path $Path)) { return "root certificate file not found: $Path" }
-    if ((Get-Sha256Shared $Path).ToUpper() -ne $Pin.ToUpper()) { return 'the root certificate file is not the pinned LIDER root (SHA-256 differs)' }
     try { $c = New-Object Security.Cryptography.X509Certificates.X509Certificate2 $Path } catch { return "not a certificate: $($_.Exception.Message)" }
+    if ((Get-CertSha256 $Path) -ne $Pin.ToUpper()) { return 'the root certificate is not the pinned LIDER root (SHA-256 differs)' }
     $bc = $c.Extensions | Where-Object { $_ -is [Security.Cryptography.X509Certificates.X509BasicConstraintsExtension] }
     if (-not $bc -or -not $bc.CertificateAuthority) { return 'the file is not a CA certificate' }
     if ((Get-Date) -lt $c.NotBefore -or (Get-Date) -gt $c.NotAfter) { return 'the root certificate is not valid now' }

@@ -46,6 +46,12 @@ $Pin = @{
 $Service = 'LiderITONECollector'
 $Data = Join-Path $env:ProgramData 'LiderCollector'
 $Here = if ($PSScriptRoot) { $PSScriptRoot } else { (Get-Location).Path }
+# a bundle built by Build-PilotBundle.ps1 carries its own pins (covered by SHA256SUMS.txt like every other file in it)
+$pinFile = Join-Path $Here 'pilot-pin.json'
+if (Test-Path $pinFile) {
+    $pj = Get-Content $pinFile -Raw | ConvertFrom-Json
+    foreach ($k in 'MsiName', 'MsiSha256', 'FromVersion', 'ToVersion', 'SignerSha1', 'RootSha256') { if ($pj.PSObject.Properties[$k] -and $pj.$k) { $Pin[$k] = [string]$pj.$k } }
+}
 $script:Report = New-Object System.Collections.Generic.List[string]
 function Say($m, $c = 'Gray') { Write-Host $m -ForegroundColor $c; $script:Report.Add($m) }
 function Pass($m) { Say "  [ OK ] $m" 'Green' }

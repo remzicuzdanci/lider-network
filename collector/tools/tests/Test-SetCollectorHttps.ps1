@@ -8,7 +8,7 @@ function Check([string]$n, $c) { if ($c) { $script:pass++; Write-Host "  ok   $n
 $root = Join-Path ([IO.Path]::GetTempPath()) ("https-test-" + [guid]::NewGuid().ToString('N').Substring(0, 8)); New-Item -ItemType Directory $root | Out-Null
 $Data = Join-Path $root 'LiderCollector'; $BackupRoot = Join-Path $root 'bk'
 $RealRoot = Join-Path $tools 'pki\lider-root-ca.pem'; $Leaf = Join-Path $tools 'pki\lider-codesign-public.pem'
-$RealPin = (Get-FileHash $RealRoot -Algorithm SHA256).Hash
+$RealPin = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash((New-Object Security.Cryptography.X509Certificates.X509Certificate2 $RealRoot).RawData)) -replace '-', '')
 . (Join-Path $tools 'Set-CollectorHttps.ps1') -LibraryOnly -RootPem $RealRoot -RootSha256 $RealPin -WaitMinutes 1
 $StopTimeoutSec = 1; $StartTimeoutSec = 3
 
@@ -47,7 +47,8 @@ Write-Host '== happy path'
 New-World; $rc = Run; $c = Cfg
 Check 'exit 0' ($rc -eq 0)
 Check 'server_url is https and custom_ca_cert_path points at the copied root' ($c.server_url -eq 'https://192.168.20.61' -and $c.custom_ca_cert_path -eq (Join-Path $Data 'lider-root-ca.pem'))
-Check 'the copied root is byte-identical to the pinned root' ((Get-Sha256Shared (Join-Path $Data 'lider-root-ca.pem')) -eq $RealPin.ToLower())
+Check 'the copied root is byte-identical to the source file' ((Get-Sha256Shared (Join-Path $Data 'lider-root-ca.pem')) -eq (Get-Sha256Shared $RealRoot))
+Check 'the REAL pin in the script equals the SHA-256 of the real LIDER root certificate' ((Get-CertSha256 $RealRoot) -eq '21E94EC9750C21E2442E0818107BE870BE6C83AD1369D8DAAEACBE6D4EC733E2')
 Check 'every other key is preserved' ($c.collector_id -eq 4 -and $c.enrolled_bios_uuid -eq 'B-1' -and $c.heartbeat_interval_seconds -eq 300 -and $c.delta_sync_enabled -eq $true -and $c.allow_http -eq $true)
 Check 'service running; secure.dat and queue.db untouched' ($F.svc -eq 'Running' -and (Get-Sha256Shared (Join-Path $Data 'secure.dat')) -eq $sec -and (Get-Sha256Shared (Join-Path $Data 'queue.db')) -eq $q)
 Check 'a backup of the old collector.json exists' (@(Get-ChildItem $Data -Filter 'collector.json.before-https-*').Count -eq 1)
@@ -56,7 +57,7 @@ Check 'the service was stopped before the file was changed' (($F.calls -join ','
 Write-Host '== refusals change nothing'
 New-World @{ ver = '1.3.0' }; Check '1.3.0 is refused (cannot verify a private CA)' ((Run) -eq 2 -and (Untouched) -and $F.calls.Count -eq 0)
 New-World; $RootSha256 = ('0' * 64); Check 'a root that is not the pinned one is refused' ((Run) -eq 2 -and (Untouched))
-New-World; $RootPem = $Leaf; $RootSha256 = (Get-FileHash $Leaf -Algorithm SHA256).Hash; Check 'a file that is not a CA certificate is refused' ((Run) -eq 2 -and (Untouched))
+New-World; $RootPem = $Leaf; $RootSha256 = ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash((New-Object Security.Cryptography.X509Certificates.X509Certificate2 $Leaf).RawData)) -replace '-', ''); Check 'a file that is not a CA certificate is refused' ((Run) -eq 2 -and (Untouched))
 New-World; $ServerUrl = 'http://192.168.20.61'; Check 'an http address is refused' ((Run) -eq 2 -and (Untouched))
 New-World @{ port = $false }; Check 'an unreachable HTTPS port is refused before anything is stopped' ((Run) -eq 2 -and (Untouched) -and $F.calls.Count -eq 0)
 New-World @{ stopWorks = $false }; Check 'a service that will not stop: nothing changed, service still running' ((Run) -eq 2 -and (Untouched) -and $F.svc -eq 'Running')
