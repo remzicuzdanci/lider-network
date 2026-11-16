@@ -248,3 +248,48 @@ public class UsbSourceTests
         Assert.Equal(10, Make(e).ReadNew(0, 10, Cfg()).Count);
     }
 }
+
+public class DlpPolicyTests
+{
+    private static DlpPolicyDto Dto(bool on, bool print, string? name, bool usb, bool files = true) => new() { Enabled = on, Print = new() { Enabled = print, DocumentName = name }, Usb = new() { Enabled = usb, FileEvents = files } };
+
+    [Fact] public void A_policy_switches_the_sources_and_reports_that_something_changed()
+    {
+        var c = new DlpConfig(); Assert.True(DlpPolicy.Apply(c, Dto(true, true, "hash", false)));
+        Assert.True(c.Enabled); Assert.True(c.Print.Enabled); Assert.Equal("hash", c.Print.DocumentName); Assert.False(c.Usb.Enabled);
+        Assert.False(DlpPolicy.Apply(c, Dto(true, true, "hash", false)));   // same policy again: no change, nothing to log or store
+    }
+
+    [Fact] public void The_master_switch_off_forces_every_source_off()
+    {
+        var c = new DlpConfig(); DlpPolicy.Apply(c, Dto(true, true, "full", true)); Assert.True(c.Usb.Enabled);
+        DlpPolicy.Apply(c, Dto(false, true, "full", true)); Assert.False(c.Enabled); Assert.False(c.Print.Enabled); Assert.False(c.Usb.Enabled);
+    }
+
+    [Fact] public void Unknown_values_are_ignored_and_a_missing_policy_changes_nothing()
+    {
+        var c = new DlpConfig(); Assert.False(DlpPolicy.Apply(c, null));
+        DlpPolicy.Apply(c, Dto(true, true, "everything-please", false)); Assert.Equal("full", c.Print.DocumentName);
+        var off = new DlpConfig(); Assert.False(DlpPolicy.Apply(off, new DlpPolicyDto { Enabled = false })); Assert.False(off.Enabled);   // an all-off policy on an all-off config: nothing changed
+    }
+
+    [Fact] public void The_policy_survives_a_restart_atomically_and_garbage_is_ignored()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "dlpp-" + Guid.NewGuid().ToString("N")[..8]); Directory.CreateDirectory(dir);
+        try
+        {
+            Assert.Null(DlpPolicy.Load(dir)); DlpPolicy.Save(dir, Dto(true, true, "extension", true, false));
+            var back = DlpPolicy.Load(dir)!; var c = new DlpConfig(); DlpPolicy.Apply(c, back);
+            Assert.True(c.Print.Enabled); Assert.Equal("extension", c.Print.DocumentName); Assert.True(c.Usb.Enabled); Assert.False(c.Usb.FileEvents); Assert.Empty(Directory.GetFiles(dir, "*.tmp"));
+            File.WriteAllText(Path.Combine(dir, DlpPolicy.FileName), "{ not json"); Assert.Null(DlpPolicy.Load(dir));
+        }
+        finally { Directory.Delete(dir, true); }
+    }
+
+    [Fact] public void The_server_answer_with_a_dlp_block_is_parsed_and_one_without_it_is_not()
+    {
+        var with = JsonSerializer.Deserialize<ApiClient.CheckinResponse>("""{"sync_interval":900,"dlp":{"enabled":true,"print":{"enabled":true,"document_name":"hash"},"usb":{"enabled":false,"file_events":true}}}""")!;
+        Assert.True(with.Dlp!.Enabled); Assert.Equal("hash", with.Dlp.Print!.DocumentName);
+        Assert.Null(JsonSerializer.Deserialize<ApiClient.CheckinResponse>("""{"sync_interval":900}""")!.Dlp);
+    }
+}

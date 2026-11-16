@@ -360,6 +360,8 @@ public sealed class ApiClient : IDisposable
         [JsonPropertyName("config_updated")] public bool ConfigUpdated { get; set; }
         // Update availability — set by server when a newer agent version is available for this collector's channel
         [JsonPropertyName("update_available")] public bool UpdateAvailable { get; set; }
+        /// <summary>DLP policy of this customer (absent = no policy: keep the local settings, OFF by default).</summary>
+        [JsonPropertyName("dlp")] public LiderCollector.Dlp.DlpPolicyDto? Dlp { get; set; }
         [JsonPropertyName("manifest_version")] public string? ManifestVersion { get; set; }
         // Revocation signal — set when the server has explicitly revoked this API key
         [JsonPropertyName("re_enroll_required")] public bool ReEnrollRequired { get; set; }

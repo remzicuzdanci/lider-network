@@ -69,8 +69,9 @@ public sealed class CollectorWorker : BackgroundService
         _secure = secure;
         _queue = queue;
         _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
-        if (config.Dlp.Enabled)
-            _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
+        // the last policy the server sent survives a restart; the DLP collector always exists, it just does nothing while the master switch is off
+        LiderCollector.Dlp.DlpPolicy.Apply(config.Dlp, LiderCollector.Dlp.DlpPolicy.Load(config.DataPath));
+        _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
         _identity = identity;
         _api = api;
         _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
@@ -454,6 +455,11 @@ public sealed class CollectorWorker : BackgroundService
                     {
                         _config.InventorySyncIntervalSeconds = resp.SyncInterval;
                         _config.Save();
+                    }
+                    if (resp.Dlp != null && LiderCollector.Dlp.DlpPolicy.Apply(_config.Dlp, resp.Dlp))
+                    {
+                        try { LiderCollector.Dlp.DlpPolicy.Save(_config.DataPath, resp.Dlp); } catch (Exception ex) { _log.LogWarning(ex, "Could not store the DLP policy"); }
+                        _log.LogInformation("DLP policy updated by the server: enabled={On}, print={Print}, usb={Usb}.", _config.Dlp.Enabled, _config.Dlp.Print.Enabled, _config.Dlp.Usb.Enabled);
                     }
                     PendingUpdateInfo? update = null;
                     if (resp.UpdateAvailable && !string.IsNullOrEmpty(resp.ManifestVersion))
