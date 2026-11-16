@@ -51,7 +51,11 @@ function Say($m, $c = 'Gray') { Write-Host $m -ForegroundColor $c; $script:Repor
 function Pass($m) { Say "  [ OK ] $m" 'Green' }
 function Warn($m) { Say "  [warn] $m" 'Yellow' }
 function Fail($m) { Say "  [FAIL] $m" 'Red' }
-function Sha256($p) { (Get-FileHash -LiteralPath $p -Algorithm SHA256).Hash.ToLower() }
+# shared read: also works for files another process (the running service, SQLite) has open - Get-FileHash does not
+function Sha256($p) {
+    $fs = New-Object System.IO.FileStream($p, [IO.FileMode]::Open, [IO.FileAccess]::Read, ([IO.FileShare]'ReadWrite,Delete'))
+    try { ([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHash($fs)) -replace '-', '').ToLower() } finally { $fs.Dispose() }
+}
 
 # ── building blocks (also exercised by Test-RunPilotUpgrade.ps1) ─────────────────────────────────
 function Test-BundleIntegrity([string]$Dir, [hashtable]$P) {
@@ -187,8 +191,14 @@ try {
         $t0 = [datetimeoffset]::Now
         & $up -Mode Upgrade -Msi (Join-Path $Here $Pin.MsiName) -ExpectedSha256 $Pin.MsiSha256 *>&1 | ForEach-Object { Say "  $_" }
         $upRc = $LASTEXITCODE
-        Say "  Pilot-Upgrade.ps1 exit code: $upRc"
-    } else { $t0 = [datetimeoffset]::Now.AddMinutes(-30) }
+        Say "  Pilot-Upgrade.ps1 exit code: $upRc  (0 = upgraded and healthy, 1 = failed - it tried an automatic rollback, 2 = backup failed - nothing was installed)"
+        if ($upRc -eq 2) {
+            $s = Get-Service $Service -ErrorAction SilentlyContinue; $iv = Get-InstalledCollector
+            Say "`nVERDICT: NOT UPGRADED - the backup step failed, so nothing was installed. Installed: $($iv.Version); service: $($s.Status). Nothing is lost; read the lines above, fix the cause, run this script again." 'Yellow'
+            if ($s -and $s.Status -ne 'Running') { Fail 'the service is NOT running - start it: Start-Service LiderITONECollector' } else { Pass 'old version untouched, service running' }
+            exit 2
+        }
+    } else { $t0 = [datetimeoffset]::Now.AddMinutes(-30); $upRc = 0 }
 
     Say "`n== 5. Verification after the upgrade"
     $verdictOk = $true
@@ -211,7 +221,10 @@ try {
     if ($verdictOk) { Say "`nVERDICT: PASS - Collector $($Pin.ToVersion) is running with the unchanged identity. Tell the assistant: it now checks the server side (device, collector, inventory, motherboard, last user, duplicates)." 'Green' }
     else {
         Say "`nVERDICT: FAIL - see the red lines above." 'Red'; $exit = 2
-        $go = $AutoRollback; if (-not $go) { $a = Read-Host 'Roll back to the saved 1.2.0 now? Type ROLLBACK (anything else leaves things as they are)'; $go = ($a -ceq 'ROLLBACK') }
+        $cur = Get-InstalledCollector; $sv = Get-Service $Service -ErrorAction SilentlyContinue
+        $alreadyBack = ($upRc -eq 1) -and $cur -and ($cur.Version -like "$($Pin.FromVersion)*") -and $sv -and ($sv.Status -eq 'Running')
+        if ($alreadyBack) { Say "Pilot-Upgrade.ps1 already rolled back automatically: $($cur.Version) is installed and the service is running. No further rollback needed." 'Yellow' }
+        $go = $AutoRollback -and -not $alreadyBack; if (-not $go -and -not $alreadyBack) { $a = Read-Host 'Roll back to the saved 1.2.0 now? Type ROLLBACK (anything else leaves things as they are)'; $go = ($a -ceq 'ROLLBACK') }
         if ($go) {
             Say "`n== ROLLBACK (Pilot-Upgrade.ps1 -Mode Rollback)"; $t1 = [datetimeoffset]::Now
             & $up -Mode Rollback *>&1 | ForEach-Object { Say "  $_" }
