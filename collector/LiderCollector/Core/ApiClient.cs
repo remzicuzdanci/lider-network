@@ -266,17 +266,27 @@ public sealed class ApiClient : IDisposable
         return _http;
     }
 
-    private static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>
-        BuildCustomCaValidator(string caCertPath)
+    internal static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>
+        BuildCustomCaValidator(string caCertPath) => BuildCustomCaValidator(new X509Certificate2(caCertPath));
+
+    internal static Func<HttpRequestMessage, X509Certificate2?, X509Chain?, SslPolicyErrors, bool>
+        BuildCustomCaValidator(X509Certificate2 caCert)
     {
-        var caCert = new X509Certificate2(caCertPath);
-        return (_, cert, chain, _) =>
+        return (_, cert, chain, errors) =>
         {
             if (cert == null || chain == null) return false;
+            // The custom CA only replaces "who is trusted" (chain). It never waives "is this the server I asked for": a certificate for another name is refused.
+            if ((errors & SslPolicyErrors.RemoteCertificateNameMismatch) != 0) return false;
+            if ((errors & SslPolicyErrors.RemoteCertificateNotAvailable) != 0) return false;
 
-            chain.ChainPolicy.ExtraStore.Add(caCert);
-            chain.ChainPolicy.VerificationFlags = X509VerificationFlags.AllowUnknownCertificateAuthority;
+            // The configured CA is the ONLY trust anchor (CustomRootTrust): nothing is added to the Windows certificate store, and - unlike the former
+            // "allow unknown CA" flag - the chain counts as trusted, so the revocation list is really evaluated (an untrusted chain reports "revocation unknown").
+            chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+            chain.ChainPolicy.CustomTrustStore.Clear();
+            chain.ChainPolicy.CustomTrustStore.Add(caCert);
             chain.ChainPolicy.RevocationMode = X509RevocationMode.Online;
+            chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
+            chain.ChainPolicy.UrlRetrievalTimeout = TimeSpan.FromSeconds(10);
 
             bool valid = chain.Build(cert);
             if (!valid) return false;
