@@ -53,7 +53,7 @@ $pf = Join-Path $WorkRoot "preflight-$stamp.txt"
 $rc = Child (Join-Path $PackageDir 'Get-PilotPreflight.ps1') @('-ReportDir', "`"$WorkRoot`"") $PackageDir $pf
 Get-Content $pf | Where-Object { $_ -match '\[(WARN|BLOCK)\]|RESULT:' } | ForEach-Object { W $_ }
 if ($rc -eq 2) { Stop-Here 'the pre-flight found a blocking item (see above)' }
-$pending = (Get-Content $pf | Where-Object { $_ -match 'reboot is pending' }).Count -gt 0
+$pending = @(Get-Content $pf | Where-Object { $_ -match 'reboot is pending' }).Count -gt 0
 if ($pending) {
     W "`n  A Windows restart is pending on this computer. This pilot does NOT restart it and does not depend on it." 'Yellow'
     W '  Best: restart it yourself when convenient, then run this file again. Or type CONTINUE to go on without restarting.' 'Yellow'
@@ -78,23 +78,23 @@ Show-Tail $ulog 70
 W "  Run-PilotUpgrade exit code: $rc" $(if ($rc -eq 0) { 'Green' } else { 'Red' })
 $inst2 = Installed
 if ($rc -ne 0) {
-    W "`nThe upgrade did NOT pass. Installed version now: $($inst2.Version); service: $((Get-Service $Expect.Service -ErrorAction SilentlyContinue).Status). Rollback to the saved version was attempted automatically (see lines above)." 'Red'
+    W "`nThe upgrade did NOT pass. Installed version now: $(if ($inst2) { $inst2.Version } else { 'none' }); service: $((Get-Service $Expect.Service -ErrorAction SilentlyContinue).Status). Rollback to the saved version was attempted automatically (see lines above)." 'Red'
     W "Backup folder: C:\ProgramData\LiderCollector-pilot-backup   Do not delete it. Send this report." 'Yellow'
     Finish 2
 }
 
 # ── 4 final check ────────────────────────────────────────────────────────
 W "`n== 4. Final check (the connection stays on plain http: this pilot does NOT switch to HTTPS)" 'Cyan'
-$cfg2 = Cfg; $svc2 = Get-Service $Expect.Service -ErrorAction SilentlyContinue; $inst3 = Installed
+$cfg2 = Cfg; $svc2 = Get-Service $Expect.Service -ErrorAction SilentlyContinue; $inst3 = Installed; $v3 = if ($inst3) { [string]$inst3.Version } else { '' }; $id3 = if ($cfg2 -and $cfg2.PSObject.Properties['collector_id']) { [int]$cfg2.collector_id } else { -1 }; $bios3 = [bool]($cfg2 -and $cfg2.PSObject.Properties['enrolled_bios_uuid'] -and $cfg2.enrolled_bios_uuid); $url3 = if ($cfg2 -and $cfg2.PSObject.Properties['server_url']) { [string]$cfg2.server_url } else { '' }
 $allOk = $true
 function Chk([string]$m, [bool]$ok) { if ($ok) { W "  [ OK ] $m" 'Green' } else { $script:allOk = $false; W "  [FAIL] $m" 'Red' } }
-Chk "installed version is $($Expect.To)" ($inst3.Version -like "$($Expect.To)*")
+Chk "installed version is $($Expect.To)" ($v3 -like "$($Expect.To)*")
 Chk 'service running' ($svc2 -and $svc2.Status -eq 'Running')
-Chk "collector_id is still $($Expect.CollectorId)" ([int]$cfg2.collector_id -eq $Expect.CollectorId)
-Chk 'device identity (BIOS UUID) still recorded' ([bool]$cfg2.enrolled_bios_uuid)
+Chk "collector_id is still $($Expect.CollectorId)" ($id3 -eq $Expect.CollectorId)
+Chk 'device identity (BIOS UUID) still recorded' $bios3
 Chk 'secure.dat (protected API key) byte-identical' ((Get-FileHash (Join-Path $Data 'secure.dat') -Algorithm SHA256).Hash -eq $idBefore.secure)
-W "  server address now: $($cfg2.server_url)"
-Chk "server address unchanged ($($cfg.server_url))" ([string]$cfg2.server_url -eq [string]$cfg.server_url)
+W "  server address now: $url3"
+Chk "server address unchanged ($($cfg.server_url))" ($url3 -eq [string]$cfg.server_url)
 $inv = 0; $miss = 0; foreach ($f in @(Get-ChildItem (Join-Path $Data 'logs') -Filter 'collector-*.log' -ErrorAction SilentlyContinue | Sort-Object LastWriteTime | Select-Object -Last 2)) { $fs = New-Object IO.FileStream($f.FullName, 'Open', 'Read', 'ReadWrite'); $sr = New-Object IO.StreamReader($fs); try { while (-not $sr.EndOfStream) { $l = $sr.ReadLine(); if ($l -match '^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})' -and [datetime]::ParseExact($Matches[1], 'yyyy-MM-dd HH:mm:ss', $null) -ge $t0) { if ($l -match 'Inventory sync sent') { $inv++ }; if ($l -match 'Heartbeat missed') { $miss++ } } } } finally { $sr.Dispose() } }
 Chk "inventory accepted by the server since the upgrade started ($inv time(s))" ($inv -gt 0)
 Chk "no missed heartbeat since the upgrade started ($miss)" ($miss -eq 0)
