@@ -177,3 +177,74 @@ public class DlpCollectorTests
         finally { Directory.Delete(dir, true); }
     }
 }
+
+public class UsbSourceTests
+{
+    private sealed class Env : IUsbEnvironment
+    {
+        public List<UsbVolume> Vols = new(); public List<UsbFile> Files = new();
+        public IReadOnlyList<UsbVolume> Snapshot() => Vols.ToList();
+        public IReadOnlyList<UsbFile> DrainFileEvents(int max) { var r = Files.Take(max).ToList(); Files.RemoveRange(0, r.Count); return r; }
+    }
+    private static readonly UsbVolume Stick = new("E:", "BACKUP", "FAT32", 16_000_000_000, "Kingston", "DataTraveler", "abc123abc123abc123abc123");
+    private static DlpConfig Cfg(Action<DlpConfig>? t = null) { var c = new DlpConfig { Enabled = true, Usb = { Enabled = true } }; t?.Invoke(c); return c; }
+    private static UsbSource Make(Env e) => new(e, () => new DateTime(2026, 11, 16, 12, 0, 0, DateTimeKind.Utc), "PC01");
+
+    [Fact] public void Sticks_that_are_already_in_are_only_a_baseline_not_events()
+    {
+        var e = new Env { Vols = { Stick } }; var s = Make(e);
+        Assert.Empty(s.ReadNew(0, 100, Cfg()));
+    }
+
+    [Fact] public void Plug_and_unplug_become_events_with_the_volume_metadata_and_a_hashed_serial()
+    {
+        var e = new Env(); var s = Make(e); s.ReadNew(0, 100, Cfg());
+        e.Vols.Add(Stick); var plug = s.ReadNew(0, 100, Cfg()); Assert.Single(plug);
+        var ev = plug[0].Event; Assert.Equal("usb_connected", ev.Type); Assert.Equal("E:", ev.Data["drive"]); Assert.Equal("BACKUP", ev.Data["label"]); Assert.Equal("Kingston", ev.Data["vendor"]); Assert.Equal(16_000_000_000, ev.Data["size_bytes"]);
+        Assert.Equal("abc123abc123abc123abc123", ev.Data["serial_hash"]);
+        e.Vols.Clear(); var unplug = s.ReadNew(plug[0].Position, 100, Cfg()); Assert.Single(unplug); Assert.Equal("usb_disconnected", unplug[0].Event.Type); Assert.True(unplug[0].Position > plug[0].Position);
+    }
+
+    [Fact] public void An_unchanged_snapshot_produces_nothing_and_a_replaced_stick_on_the_same_letter_is_both_events()
+    {
+        var e = new Env { Vols = { Stick } }; var s = Make(e); s.ReadNew(0, 100, Cfg());
+        Assert.Empty(s.ReadNew(0, 100, Cfg()));
+        e.Vols[0] = Stick with { SerialHash = "ffffffffffffffffffffffff", Label = "OTHER" };
+        var r = s.ReadNew(0, 100, Cfg()); Assert.Equal(new[] { "usb_connected", "usb_disconnected" }, r.Select(x => x.Event.Type).OrderBy(x => x, StringComparer.Ordinal).ToArray());
+    }
+
+    [Fact] public void File_activity_on_a_removable_drive_is_reported_by_name_extension_and_size_only()
+    {
+        var e = new Env { Files = { new UsbFile("E:", "Musteri Listesi.XLSX", 123456, "created", new DateTime(2026, 11, 16, 12, 0, 1, DateTimeKind.Utc)) } };
+        var s = Make(e); var r = s.ReadNew(0, 100, Cfg()); Assert.Single(r);
+        var ev = r[0].Event; Assert.Equal("file_copied_to_usb", ev.Type); Assert.Equal("Musteri Listesi.XLSX", ev.Data["name"]); Assert.Equal("xlsx", ev.Data["extension"]); Assert.Equal(123456L, ev.Data["size_bytes"]); Assert.Equal("created", ev.Data["action"]);
+        Assert.DoesNotContain("path", ev.Data.Keys); Assert.DoesNotContain("content", ev.Data.Keys);
+    }
+
+    [Fact] public void The_file_name_follows_the_same_privacy_mode_as_the_print_document_name()
+    {
+        var e = new Env { Files = { new UsbFile("E:", "plan.docx", 1, "created", DateTime.UtcNow) } };
+        var r = Make(e).ReadNew(0, 100, Cfg(c => c.Print.DocumentName = "extension")); Assert.Equal("*.docx", r[0].Event.Data["name"]);
+    }
+
+    [Fact] public void File_events_can_be_switched_off_while_plug_events_stay_on()
+    {
+        var e = new Env { Files = { new UsbFile("E:", "a.txt", 1, "created", DateTime.UtcNow) } }; var s = Make(e);
+        Assert.Empty(s.ReadNew(0, 100, Cfg(c => c.Usb.FileEvents = false))); Assert.Single(e.Files);   // not even drained
+    }
+
+    [Fact] public void Positions_only_grow_so_a_restart_cannot_replay_old_events_and_after_position_filters()
+    {
+        var e = new Env(); var s = Make(e); s.ReadNew(0, 100, Cfg());
+        e.Files.Add(new UsbFile("E:", "a.txt", 1, "created", DateTime.UtcNow)); e.Files.Add(new UsbFile("E:", "b.txt", 2, "created", DateTime.UtcNow));
+        var r = s.ReadNew(0, 100, Cfg()); Assert.Equal(2, r.Count); Assert.True(r[1].Position > r[0].Position);
+        e.Files.Add(new UsbFile("E:", "c.txt", 3, "created", DateTime.UtcNow));
+        var r2 = s.ReadNew(r[1].Position, 100, Cfg()); Assert.Single(r2); Assert.Equal("c.txt", r2[0].Event.Data["name"]);
+    }
+
+    [Fact] public void The_per_poll_limit_applies()
+    {
+        var e = new Env(); for (int i = 0; i < 50; i++) e.Files.Add(new UsbFile("E:", $"f{i}.txt", i, "created", DateTime.UtcNow));
+        Assert.Equal(10, Make(e).ReadNew(0, 10, Cfg()).Count);
+    }
+}

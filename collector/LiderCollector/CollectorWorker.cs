@@ -70,7 +70,7 @@ public sealed class CollectorWorker : BackgroundService
         _queue = queue;
         _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
         if (config.Dlp.Enabled)
-            _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource() }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
+            _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
         _identity = identity;
         _api = api;
         _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
