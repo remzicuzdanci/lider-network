@@ -57,7 +57,9 @@ function Set-GwCrl([string]$State) { $r = Invoke-Gw POST 'crl' @{ state = $State
 function Publish-GwUpdate([string]$Version) { Invoke-Gw POST 'publish' @{ version = $Version } }
 function Remove-GwUpdate([string]$Version) { Invoke-Gw POST 'withdraw' @{ version = $Version } }
 function Send-GwResult([string]$Name, $Obj) { Invoke-Gw POST 'result' @{ name = $Name } -Body ($Obj | ConvertTo-Json -Depth 8 -Compress) }
-function Get-GwResults { $r = Invoke-Gw GET 'results'; if ($r -and $r.ok) { return @($r.results) }; return @() }
+function Set-GwDlpPolicy([bool]$Enabled, [bool]$Print, [string]$Name = 'hash', [bool]$Usb = $false, [bool]$Files = $true) { Invoke-Gw POST 'dlp-policy' @{ enabled = [int]$Enabled; print = [int]$Print; name = $Name; usb = [int]$Usb; files = [int]$Files } }
+ function Get-GwDlpEvents { Invoke-Gw GET 'dlp-events' }
+ function Get-GwResults { $r = Invoke-Gw GET 'results'; if ($r -and $r.ok) { return @($r.results) }; return @() }
 
 # ───────────────────────────── safety ─────────────────────────────
 function Test-VmSafety {
@@ -274,14 +276,27 @@ function Complete-Result($R) {
 
 # ───────────────────────────── pure decision logic (unit tested) ─────────────────────────────
 function Get-VmStage([string]$InstalledVersion, [string]$ServerUrl) {
-    # S0 clean, S1 baseline 1.3.x, S1b 1.4.x over http (after the manual upgrade), S2 1.4.x over https
+    # S0 clean, S1 baseline 1.3.x, S1b 1.4.x over http (after the manual upgrade), S2 1.4.0 over https, S3 1.4.1 over https
     if (-not $InstalledVersion) { return 'S0' }
     if ($InstalledVersion -like '1.3.*') { return 'S1' }
-    if ($InstalledVersion -like '1.4.*') { if ($ServerUrl -like 'https://*') { return 'S2' } else { return 'S1b' } }
+    if ($InstalledVersion -like '1.4.0*') { if ($ServerUrl -like 'https://*') { return 'S2' } else { return 'S1b' } }
+    if ($InstalledVersion -match '^1\.4\.[1-9]') { if ($ServerUrl -like 'https://*') { return 'S3' } else { return 'S1b' } }   # S3 = 1.4.1+ over https (after the automatic update): the DLP / queue scenarios start here
     return 'Unknown'
 }
 function Get-NextScenario([string]$Stage, $Catalog, [string[]]$Passed) {
-    foreach ($s in $Catalog) { if ($s.Stage -eq $Stage -and $Passed -notcontains $s.Name) { return $s } }
+    foreach ($s in $Catalog) { $manual = ($s.PSObject.Properties['Manual'] -and $s.Manual); if ($s.Stage -eq $Stage -and -not $manual -and $Passed -notcontains $s.Name) { return $s } }
     return $null
 }
 function Test-ResultStatusMatches([string]$Actual, [string[]]$Expected) { return ($Expected -contains $Actual) }
+
+# â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ queue helpers (private rows in the Collector's own queue table) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+function Add-QueueRows([string]$QueueDb, [int]$Count, [string]$Printer = 'BACKLOG') {
+    # Valid DLP events as the Collector would have queued them while offline (service stopped while this runs). The server stores each uid once, so delivery can be counted exactly.
+    $now = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+    for ($i = 1; $i -le $Count; $i++) {
+        $uid = ('vmtest-backlog-{0:D5}-{1}' -f $i, [guid]::NewGuid().ToString('N').Substring(0, 6))
+        $payload = '{"events":[{"uid":"' + $uid + '","type":"print_job","occurred_at":"' + $now + '","host":"' + $env:COMPUTERNAME + '","data":{"printer":"' + $Printer + '","document":"x","pages":1,"user":"VMTEST"}}]}'
+        [void][WSqlite]::Run($QueueDb, "INSERT INTO queue (endpoint, payload) VALUES ('dlp-events', '$payload')", 2)
+    }
+}
+function Get-QueueCount([string]$QueueDb) { try { [int]([WSqlite]::Run($QueueDb, 'SELECT count(*) FROM queue', 1) | Select-Object -First 1) } catch { -1 } }

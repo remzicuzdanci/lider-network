@@ -267,7 +267,7 @@ function Run-UpdateHappy {
     Check 'Windows Installer stopped the service while the update worker stayed alive' ($f.StoppedSeen -and $f.WorkerWhileStopped) "service stopped seen: $($f.StoppedSeen), worker alive meanwhile: $($f.WorkerWhileStopped)"
     Test-TaskGone
     Check 'the new version is the TEST-PKI build too' ((Get-LogText ([datetimeoffset]$c.T0) | Where-Object { $_ -match 'TEST-PKI BUILD' }).Count -gt 0)
-    Show-Revert 'S2' 'the VM is now at 1.4.1'
+    Show-Revert 'S3' 'TAKE snapshot S3 now (1.4.1 over https): the DLP / queue scenarios start there; for the next UPDATE scenario revert to S2'
 }
 function Run-UpdateKillUpdater {
     $c = Initialize-UpdateScenario 'UpdateKillUpdater'; Publish-Update '1.4.1'
@@ -383,6 +383,114 @@ function Run-UpdateCrlUnavailable {
 }
 
 # ───────────────────────────── catalog ─────────────────────────────
+function Initialize-S3Scenario {
+    if ((Get-StageNow) -ne 'S3') { throw 'this scenario starts from snapshot S3 (Collector 1.4.1 over https, taken after UpdateHappy)' }
+    if ((Get-CollectorVersion) -notlike '1.4.1*') { throw "installed version is $(Get-CollectorVersion), expected 1.4.1 (revert to S3)" }
+    Set-GwCrl 'valid'
+    $marker = Get-Markers; Test-Markers $marker
+    $hb = Get-HeartbeatMark; Check 'baseline: the Collector talks to the test server' (Wait-ServerHeartbeat $hb ($HB * 3 + 60))
+    return [pscustomobject]@{ T0 = (Get-Date).ToUniversalTime(); IdBefore = (Get-IdentitySnapshot $script:Data); Marker = $marker }
+}
+$PrinterName = 'LIDER-VMTEST-Printer'
+function New-TestPrinter {
+    # a local printer that writes to a FILE port (no dialog, no paper): Windows still logs the PrintService event 307 for every job
+    $port = Join-Path $script:Work 'print-out.prn'
+    if (-not (Get-PrinterPort -Name $port -ErrorAction SilentlyContinue)) { Add-PrinterPort -Name $port }
+    if (-not (Get-Printer -Name $PrinterName -ErrorAction SilentlyContinue)) { Add-Printer -Name $PrinterName -DriverName 'Generic / Text Only' -PortName $port }
+}
+function Remove-TestPrinter { $port = Join-Path $script:Work 'print-out.prn'; Remove-Printer -Name $PrinterName -ErrorAction SilentlyContinue; Remove-PrinterPort -Name $port -ErrorAction SilentlyContinue }
+function Get-PrintEvents { $e = Get-GwDlpEvents; if ($e -and $e.ok) { @($e.events | Where-Object { $_.type -eq 'print_job' -and $_.subject -eq $PrinterName }) } else { @() } }
+function Enable-DlpPolicy([string]$NameMode) {
+    $t0 = [datetimeoffset]::Now
+    $r = Set-GwDlpPolicy $true $true $NameMode; Check "server policy stored (print on, document name mode '$NameMode')" ([bool]($r -and $r.ok)) "$($r.error)"
+    Check 'the Collector applied the policy at its next heartbeat' (Wait-Until { (Get-LogText $t0 | Where-Object { $_ -match 'DLP policy updated by the server' }).Count -gt 0 } ($HB * 3 + 60) 5)
+    Start-Sleep -Seconds 75      # the Collector switches the print-service log on at its first DLP poll (<= 30 s): wait before printing
+}
+function Measure-Collector { $p = Get-Process -Name 'LiderCollector' -ErrorAction SilentlyContinue | Select-Object -First 1; if ($p) { [pscustomobject]@{ WorkingSetMB = [math]::Round($p.WorkingSet64 / 1MB, 1); CpuSec = [math]::Round($p.TotalProcessorTime.TotalSeconds, 1) } } }
+
+function Run-DlpPrint {
+    $c = Initialize-S3Scenario; $m0 = Measure-Collector
+    try {
+        New-TestPrinter; Enable-DlpPolicy 'full'
+        $before = @(Get-PrintEvents).Count
+        'LIDER VM test page one' | Out-Printer -Name $PrinterName; Start-Sleep -Seconds 5; 'LIDER VM test page two' | Out-Printer -Name $PrinterName
+        $got = Wait-Until { @(Get-PrintEvents).Count -ge $before + 2 } 300 10
+        Check 'both print jobs reached the test server as print_job events (event 307 -> DLP -> server)' $got "events seen: $(@(Get-PrintEvents).Count - $before)"
+        $ev = @(Get-PrintEvents) | Select-Object -First 1
+        if ($ev) {
+            $d = $ev.data | ConvertFrom-Json
+            Check 'computer is this VM' ($ev.host -like "$env:COMPUTERNAME*") "host=$($ev.host)"
+            Check 'user is the person who printed' ([string]$ev.actor -like "*$env:USERNAME*") "actor=$($ev.actor)"
+            Check 'printer, page count and job size are present' (($ev.subject -eq $PrinterName) -and ([int]$ev.quantity -ge 1) -and ([int64]$ev.size_bytes -gt 0)) "pages=$($ev.quantity) bytes=$($ev.size_bytes)"
+            Check 'event id 307, the Windows record number and the job id are carried' (($d.event_id -eq 307) -and ($d.record_id -gt 0) -and ($d.job_id -ge 0)) "record_id=$($d.record_id) job_id=$($d.job_id)"
+            Check "document name present in 'full' mode" ([bool]$ev.title -and [string]$ev.title -notlike 'sha256:*') "title=$($ev.title)"
+        }
+        $n1 = @(Get-PrintEvents).Count; Restart-Collector; Start-Sleep -Seconds ($HB * 2 + 60)
+        Check 'no duplicates after a service restart (same events are not stored twice)' (@(Get-PrintEvents).Count -eq $n1) "before $n1, after $(@(Get-PrintEvents).Count)"
+        $m1 = Measure-Collector; if ($m1) { Say "resource use of the service process: working set $($m1.WorkingSetMB) MB (before $($m0.WorkingSetMB)), CPU $($m1.CpuSec) s total"; Check 'service memory stays below 300 MB' ($m1.WorkingSetMB -lt 300) }
+    } finally { Remove-TestPrinter }
+    Test-Identity $c.IdBefore; Test-Markers $c.Marker
+    Show-Revert 'S3' 'a test printer was created and removed; the policy stays on the test server only'
+}
+function Run-DlpPrivacy {
+    $c = Initialize-S3Scenario
+    try {
+        New-TestPrinter
+        foreach ($mode in 'hash', 'extension', 'none') {
+            Enable-DlpPolicy $mode
+            $n = @(Get-PrintEvents).Count; "LIDER privacy test $mode" | Out-Printer -Name $PrinterName
+            $ok = Wait-Until { @(Get-PrintEvents).Count -gt $n } 240 10; Check "a print job was delivered in mode '$mode'" $ok
+            $ev = @(Get-PrintEvents) | Select-Object -First 1
+            if ($ev) {
+                switch ($mode) {
+                    'hash' { Check 'hash mode: the document name is a sha256 token, never readable' ([string]$ev.title -match '^sha256:[0-9a-f]{16}') "title=$($ev.title)" }
+                    'extension' { Check 'extension mode: only "*" or "*.ext" is sent' ([string]$ev.title -match '^\*(\.[a-z0-9]+)?$') "title=$($ev.title)" }
+                    'none' { Check 'none mode: no document name at all' ([string]::IsNullOrEmpty([string]$ev.title)) "title=$($ev.title)" }
+                }
+            }
+        }
+    } finally { Remove-TestPrinter }
+    Test-Identity $c.IdBefore; Test-Markers $c.Marker
+    Show-Revert 'S3' 'clean state'
+}
+function Run-QueueBacklog {
+    $c = Initialize-S3Scenario; $db = Get-QueueDb; $rows = 150
+    $t0s = [datetimeoffset]::Now
+    Stop-Service $script:Svc -Force; [void](Wait-Until { (Get-SvcState) -eq 'Stopped' } 60 1)
+    Add-QueueRows $db $rows 'BACKLOG'; Check "queue.db now holds $rows pending events (more than the server's 60 requests/minute limit)" ((Get-QueueCount $db) -ge $rows) "rows: $(Get-QueueCount $db)"
+    $t0 = [datetimeoffset]::Now; Start-Service $script:Svc
+    Check 'service running' (Wait-Until { (Get-SvcState) -eq 'Running' } 60 1)
+    Start-Sleep -Seconds 240
+    $log = Get-LogText $t0
+    Check 'NO "Heartbeat missed" while the backlog drains (the 1.4.0 burst problem)' (@($log | Where-Object { $_ -match 'Heartbeat missed' }).Count -eq 0) (($log | Where-Object { $_ -match 'Heartbeat missed' } | Select-Object -First 1))
+    Check 'the server never had to answer HTTP 429' (@($log | Where-Object { $_ -match 'HTTP 429' }).Count -eq 0) (($log | Where-Object { $_ -match 'HTTP 429' } | Select-Object -First 1))
+    $flushes = @($log | Where-Object { $_ -match 'Flushed (\d+) queued items' } | ForEach-Object { [int]([regex]::Match($_, 'Flushed (\d+)').Groups[1].Value) })
+    Check 'the queue is drained in small paced batches (never more than 20 per tick)' (($flushes.Count -ge 2) -and (($flushes | Measure-Object -Maximum).Maximum -le 20)) "batches: $($flushes -join ',')"
+    $drained = Wait-Until { (Get-QueueCount $db) -le 0 } 420 15
+    Check 'the whole backlog is delivered in the end (queue empty)' $drained "rows left: $(Get-QueueCount $db)"
+    $e = Get-GwDlpEvents; $got = @($e.events | Where-Object { $_.subject -eq 'BACKLOG' }).Count
+    Check 'the server stored every backlog event exactly once (list shows the latest 40: at least 40 present)' ($got -ge 40) "BACKLOG events visible: $got, total on server: $($e.count)"
+    Check 'the total count on the server is at least the number queued' ([int]$e.count -ge $rows) "server count: $($e.count)"
+    Test-Identity $c.IdBefore; Test-Markers $c.Marker
+    Show-Revert 'S3' 'the backlog was delivered; test events stay on the TEST server only'
+}
+function Run-DlpUsb {
+    $c = Initialize-S3Scenario
+    $r = Set-GwDlpPolicy $true $false 'hash' $true $true; Check 'server policy: USB + file events on' ([bool]($r -and $r.ok))
+    Check 'the Collector applied the policy' (Wait-Until { (Get-LogText ([datetimeoffset]::Now.AddMinutes(-5)) | Where-Object { $_ -match 'DLP policy updated' }).Count -gt 0 } ($HB * 3 + 60) 5)
+    Write-Host "`n>>> MANUAL STEP: in VMware attach a USB stick (or a USB disk) to THIS VM now, wait for the drive letter, then copy any small file onto it. Waiting up to 6 minutes ..." -ForegroundColor Yellow
+    $ok = Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'usb_connected' }).Count -gt 0) } 360 10
+    Check 'a usb_connected event reached the test server' $ok
+    $ev = @((Get-GwDlpEvents).events | Where-Object { $_.type -eq 'usb_connected' }) | Select-Object -First 1
+    if ($ev) { $d = $ev.data | ConvertFrom-Json; Check 'drive letter and size are present, the serial number is only a hash' (($ev.subject -match '^[A-Z]:$') -and ([int64]$ev.size_bytes -gt 0) -and ([string]$d.serial_hash -notmatch '[^0-9a-f]')) "drive=$($ev.subject) size=$($ev.size_bytes)" }
+    $fok = Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'file_copied_to_usb' }).Count -gt 0) } 180 10
+    Check 'a file_copied_to_usb event (name, extension, size - never content) reached the server' $fok
+    Write-Host '>>> now remove the USB device from the VM (VMware: VM > Removable Devices > Disconnect); waiting up to 3 minutes ...' -ForegroundColor Yellow
+    Check 'a usb_disconnected event reached the test server' (Wait-Until { $e = Get-GwDlpEvents; $e -and $e.ok -and (@($e.events | Where-Object { $_.type -eq 'usb_disconnected' }).Count -gt 0) } 180 10)
+    Test-Identity $c.IdBefore; Test-Markers $c.Marker
+    Show-Revert 'S3' 'manual scenario finished'
+}
+
 $Catalog = @(
     [pscustomobject]@{ Name = 'Baseline';              Stage = 'S0';  Run = { Run-Baseline };              Why = 'install 1.3.0 from the test server, enrol, queue markers' }
     [pscustomobject]@{ Name = 'ManualUpgrade';         Stage = 'S1';  Run = { Run-ManualUpgrade };         Why = 'real MSI service upgrade 1.3.0 -> 1.4.0 with pre-checks, identity + queue preserved' }
@@ -402,6 +510,10 @@ $Catalog = @(
     [pscustomobject]@{ Name = 'UpdateCrlRevokedSigner';Stage = 'S2';  Run = { Run-UpdateCrlRevokedSigner };Why = 'signer certificate revoked: update refused' }
     [pscustomobject]@{ Name = 'UpdateCrlUnavailable';  Stage = 'S2';  Run = { Run-UpdateCrlUnavailable };  Why = 'CRL expired / unreachable during an offered update: nothing installed' }
     [pscustomobject]@{ Name = 'UpdateInstallerBusy';   Stage = 'S2';  Run = { Run-UpdateInstallerBusy };   Why = 'Windows Installer busy: no install attempted' }
+    [pscustomobject]@{ Name = 'DlpPrint';             Stage = 'S3';  Run = { Run-DlpPrint };             Why = 'real print jobs (event 307) arrive as DLP events: user, computer, printer, pages, bytes, job/record id; no duplicates after a restart; resource use' }
+    [pscustomobject]@{ Name = 'DlpPrivacy';           Stage = 'S3';  Run = { Run-DlpPrivacy };           Why = 'document name privacy modes hash / extension / none on real print jobs' }
+    [pscustomobject]@{ Name = 'QueueBacklog';         Stage = 'S3';  Run = { Run-QueueBacklog };         Why = '150 queued events: paced drain, no missed heartbeat, no HTTP 429, nothing lost (the 1.4.0 pilot problem)' }
+    [pscustomobject]@{ Name = 'DlpUsb';               Stage = 'S3';  Manual = $true; Run = { Run-DlpUsb }; Why = 'MANUAL (needs a USB device attached through VMware): plug / file copy / unplug events' }
 )
 $ScenarioNeedsSnapshot = @{ Baseline = 'S0'; ManualUpgrade = 'S1'; ManualInstallFails = 'S1'; ManualUnhealthy = 'S1'; Https = 'S1b' }
 

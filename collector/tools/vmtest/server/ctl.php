@@ -87,6 +87,19 @@ switch ($action) {
             '--min-from' => '1.3.0', '--activate' => true, '--notes' => 'VM test package (TEST PKI)']);
         out(['ok' => $rc === 0, 'artisan' => trim(Artisan::output())], $rc === 0 ? 0 : 2);
 
+    case 'dlp-policy':     // the TEST customer's DLP policy (json: enabled, print, usb, name, files)
+        $j = json_decode($arg, true); if (! is_array($j)) { bad('bad policy json'); }
+        [$t, $c] = seed();
+        $name = in_array($j['name'] ?? 'hash', ['hash', 'full', 'extension', 'none'], true) ? $j['name'] : 'hash';
+        $row = ['enabled' => (bool) ($j['enabled'] ?? false), 'print_enabled' => (bool) ($j['print'] ?? false), 'print_document_name' => $name, 'usb_enabled' => (bool) ($j['usb'] ?? false), 'usb_file_events' => (bool) ($j['files'] ?? true), 'updated_at' => now()];
+        $q = DB::table('dlp_policies')->where('tenant_id', $t)->whereNull('company_id');
+        if ($q->exists()) { $q->update($row); } else { DB::table('dlp_policies')->insert($row + ['tenant_id' => $t, 'company_id' => null, 'created_at' => now()]); }
+        out(['ok' => true, 'policy' => $row]);
+
+    case 'dlp-events':
+        $rows = DB::table('dlp_events')->orderByDesc('id')->limit(40)->get(['id', 'type', 'host', 'actor', 'subject', 'title', 'quantity', 'size_bytes', 'occurred_at', 'event_uid', 'data'])->map(fn ($r) => (array) $r)->all();
+        out(['ok' => true, 'count' => DB::table('dlp_events')->count(), 'events' => $rows]);
+
     case 'withdraw':
         if (! preg_match('/^\d+\.\d+\.\d+$/', $arg)) { bad('bad version'); }
         $n = DB::table('collector_update_manifests')->where('version', $arg)->update(['status' => 'draft', 'updated_at' => now()]);

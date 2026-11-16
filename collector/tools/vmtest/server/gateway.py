@@ -111,6 +111,13 @@ class H(BaseHTTPRequestHandler):
                 if not re.fullmatch(r'\d+\.\d+\.\d+', v): return self.send_bytes(400, b'{"ok":false,"error":"version"}')
                 rc, o, e = run_ctl(a, v); log('%s %s rc=%d' % (a, v, rc))
                 return self.send_bytes(200 if rc == 0 else 422, (o or json.dumps({'ok': False, 'error': e.strip()})).encode())
+            if a == 'dlp-policy' and self.command == 'POST':
+                pol = {'enabled': (q.get('enabled') or ['0'])[0] == '1', 'print': (q.get('print') or ['0'])[0] == '1', 'usb': (q.get('usb') or ['0'])[0] == '1',
+                       'files': (q.get('files') or ['1'])[0] == '1', 'name': (q.get('name') or ['hash'])[0]}
+                rc, o, e = run_ctl('dlp-policy', json.dumps(pol)); log('dlp-policy %s rc=%d' % (pol, rc))
+                return self.send_bytes(200 if rc == 0 else 422, (o or json.dumps({'ok': False, 'error': e.strip()})).encode())
+            if a == 'dlp-events' and self.command == 'GET':
+                rc, o, e = run_ctl('dlp-events'); return self.send_bytes(200 if rc == 0 else 500, (o or json.dumps({'ok': False, 'error': e.strip()})).encode())
             if a == 'reset' and self.command == 'POST':
                 rc, o, e = run_ctl('reset'); log('reset rc=%d' % rc)
                 return self.send_bytes(200 if rc == 0 else 422, (o or json.dumps({'ok': False, 'error': e.strip()})).encode())

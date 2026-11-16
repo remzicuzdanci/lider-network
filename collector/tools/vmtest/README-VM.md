@@ -19,6 +19,7 @@ Bu paket MIKRO-PC'de, müşteri makinelerinde veya domain'e bağlı bir makinede
 1. **S0** – temiz Windows, Collector kurulu değil. *İlk çalıştırmadan önce alın.*
 2. **S1** – `Baseline` senaryosundan sonra (Collector 1.3.0 kurulu ve test sunucusuna kayıtlı). Betik "şimdi alın" der.
 3. **S2** – `ManualUpgrade` ve `Https` senaryolarından sonra (Collector 1.4.0, HTTPS, özel test CA). Betik "şimdi alın" der.
+4. **S3** – `UpdateHappy` senaryosundan sonra (Collector **1.4.1**, HTTPS). DLP ve kuyruk senaryoları buradan başlar. Sonraki *güncelleme* senaryosu için S2'ye dönün.
 
 Her senaryodan sonra betik hangi snapshot'a dönmeniz gerektiğini yazar. Sonuç defteri **test sunucusunda** tutulur; snapshot'a dönmek sonuçları silmez.
 
@@ -50,6 +51,12 @@ Diğer kullanım: `-List` (senaryolar ve defter), `-Check` (yalnızca ön kontro
 | UpdateCrlRevokedSigner | S2 | İmza sertifikası iptal edildi: güncelleme reddedilir |
 | UpdateCrlUnavailable | S2 | CRL süresi dolmuş/ulaşılamaz iken güncelleme teklifi: hiçbir şey kurulmaz |
 | UpdateInstallerBusy | S2 | Windows Installer meşgul: kurulum denenmez |
+| DlpPrint | S3 | Gerçek yazdırma işleri (olay 307) DLP olayı olarak test sunucusuna gelir: kullanıcı, bilgisayar, yazıcı, sayfa, boyut, iş/kayıt kimliği; yeniden başlatmada çift kayıt yok; servis bellek/CPU ölçümü |
+| DlpPrivacy | S3 | Belge adı gizlilik kipleri (hash varsayılan, extension, none) gerçek işlerde |
+| QueueBacklog | S3 | 150 bekleyen olay: sıralı boşaltma, kaçan heartbeat yok, HTTP 429 yok, kayıp yok (1.4.0 pilot sorunu) |
+| DlpUsb | S3 | **ELLE** (VMware'den bir USB cihaz bağlanır): takma / dosya kopyalama / çıkarma olayları. `-Scenario DlpUsb` ile çalışır, otomatik sıraya girmez |
+
+DLP senaryoları yerel bir sahte yazıcı (dosya portu) oluşturup siler; gerçek yazıcıya veya kağıda dokunulmaz.
 
 ## Her senaryoda otomatik denetlenenler
 Servis çalışıyor mu · `collector_id`, BIOS UUID, sunucu adresi ve DPAPI anahtar deposu (`secure.dat`) aynı mı · `queue.db` bütün mü (`PRAGMA integrity_check`) ve içine yazılan özel işaretçi satırları duruyor mu (kuyruk sıfırlanmış/yeniden oluşturulmuşsa kaybolur) · updater/journal artığı var mı · test sunucusundaki güncelleme kaydı · sunucuda tek Collector kaydı var mı.
