@@ -127,10 +127,14 @@ public sealed class ApiClient : IDisposable
     /// <summary>Sends one queued item and tells the flusher WHY it failed (429 is not a failure of the item).</summary>
     public async Task<(SendOutcome Outcome, TimeSpan? RetryAfter)> SendQueuedAsync(string endpoint, object payload, CancellationToken ct = default)
     {
-        var (result, status) = await PostAsyncWithStatus<ApiResult>(endpoint == "inventory" ? "inventory" : "events", payload, authorized: true, ct);
+        var (result, status) = await PostAsyncWithStatus<ApiResult>(endpoint is "inventory" or "dlp-events" ? endpoint : "events", payload, authorized: true, ct);
         if (status == System.Net.HttpStatusCode.TooManyRequests) return (SendOutcome.RateLimited, LastRetryAfter);
         return (result?.Success == true ? SendOutcome.Ok : SendOutcome.Failed, null);
     }
+
+    /// <summary>Delivers a batch of DLP events (metadata only). 429 is reported as RateLimited, not as a failure of the events.</summary>
+    public async Task<SendOutcome> SendDlpEventsAsync(IReadOnlyList<LiderCollector.Dlp.DlpEvent> events, CancellationToken ct = default)
+        => (await SendQueuedAsync("dlp-events", new { events = events.Select(e => e.ToWire()).ToList() }, ct)).Outcome;
 
     /// <summary>Retry-After of the last rate-limited response (seconds form only), else null.</summary>
     public TimeSpan? LastRetryAfter { get; private set; }

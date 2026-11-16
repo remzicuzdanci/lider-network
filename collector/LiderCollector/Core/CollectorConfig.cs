@@ -73,6 +73,9 @@ public sealed class CollectorConfig
     // ── Modules ─────────────────────────────────────────────────────────────
     public ModulesConfig Modules { get; set; } = new();
 
+    /// <summary>DLP (metadata-only monitoring: print jobs, USB, file movement). OFF by default; each source is switchable on its own.</summary>
+    public LiderCollector.Dlp.DlpConfig Dlp { get; set; } = new();
+
     // ── Auto-update ─────────────────────────────────────────────────────────
     /// <summary>Running agent version. Sent in heartbeat so server can target updates.</summary>
     public string AgentVersion { get; set; } = AppVersion.Current;

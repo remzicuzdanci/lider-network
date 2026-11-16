@@ -29,6 +29,7 @@ public sealed class CollectorWorker : BackgroundService
     private readonly LocalQueue _queue;
     private readonly QueueFlusher _flusher;
     private bool _serverBusyCycle;
+    private readonly LiderCollector.Dlp.DlpCollector? _dlp;
     private readonly DeviceIdentity _identity;
     private readonly ApiClient _api;
     private readonly LiderCollector.Update.UpdateCoordinator _update;
@@ -68,6 +69,8 @@ public sealed class CollectorWorker : BackgroundService
         _secure = secure;
         _queue = queue;
         _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
+        if (config.Dlp.Enabled)
+            _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource() }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
         _identity = identity;
         _api = api;
         _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
@@ -133,6 +136,7 @@ public sealed class CollectorWorker : BackgroundService
         DateTime nextInventory = DateTime.UtcNow; // Run immediately on first start
         DateTime nextPerf     = DateTime.UtcNow;
         DateTime nextEventLog = DateTime.UtcNow;
+        DateTime nextDlp = DateTime.UtcNow.AddSeconds(15);
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -208,6 +212,15 @@ public sealed class CollectorWorker : BackgroundService
                 {
                     await RunEventLogAsync(identity, stoppingToken);
                     nextEventLog = DateTime.UtcNow.AddSeconds(_config.EventLogIntervalSeconds);
+                }
+
+                // DLP sources (print jobs now; USB / files next). Off unless dlp.enabled; metadata only; failures never stop the loop.
+                if (_dlp != null && DateTime.UtcNow >= nextDlp)
+                {
+                    try { await _dlp.RunAsync(_lastOnline, stoppingToken); }
+                    catch (OperationCanceledException) { throw; }
+                    catch (Exception ex) { _log.LogWarning(ex, "DLP cycle failed (will retry)"); }
+                    nextDlp = DateTime.UtcNow.AddSeconds(_config.Dlp.EffectivePollSeconds);
                 }
             }
             catch (OperationCanceledException) { break; }
