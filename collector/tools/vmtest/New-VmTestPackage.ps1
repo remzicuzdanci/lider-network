@@ -50,10 +50,32 @@ foreach ($b in 'upgrade', 'fault') {   # the bundles must not carry the producti
 }
 Remove-Item $tmp -Recurse -Force
 
+# Collector 1.4.3 = offline-queue health in the heartbeat. The TEST-signed MSI and its manifest signature go in as a separate folder (the existing scenarios still use 1.4.0 / 1.4.1 / 1.4.2).
+$qv = '1.4.3'; $qSigned = Join-Path $dist "signed\LiderITONECollector-$qv-testpki-signed.msi"
+if (Test-Path $qSigned) {
+    $qd = Join-Path $stage "queue-health-$qv"; New-Item -ItemType Directory -Force $qd | Out-Null
+    Copy-Item $qSigned $qd; Copy-Item (Join-Path $dist "LiderITONECollector-$qv-testpki.manifest.json") $qd
+    Get-ChildItem (Join-Path $dist 'signed') -Filter "LiderITONECollector-$qv-testpki.*.sig" | ForEach-Object { Copy-Item $_.FullName $qd }
+    @"
+Collector $qv - offline queue health in the heartbeat (TEST-PKI build, isolated VM only)
+
+What is new: every heartbeat carries queue_status = { depth, oldest_age_seconds, last_flush_ok, last_error (fixed code), last_error_at, consecutive_failures, state }.
+No payload content, URL or host name is sent. state: ok | backlog | rate_limited | stalled.
+
+How to check on the isolated VM (TEST BEKLIYOR - not run on a real Windows machine yet):
+ 1. Install/update to $qv (same way as the 1.4.1 update scenario: publish through the test control channel).
+ 2. Server panel > Agent management > this Collector > "Cevrimdisi kuyruk sagligi": state "Bos (saglikli)", depth 0.
+ 3. Block the VM's route to the test server for ~10 minutes (disconnect the NIC); inventory/events queue up locally.
+ 4. Reconnect: the first heartbeats show depth > 0 with state backlog, then it drains (30 per minute) and returns to depth 0; "Son basarili gonderim" moves forward.
+ 5. Keep it disconnected for >30 minutes with items waiting: state becomes stalled and last_error = server_unreachable; the server raises one "Collector kuyrugu birikti" alarm.
+Expected on the server: alarm resolves by itself after the queue is empty. Nothing in the panel may show a file name, user name or URL.
+"@ | Set-Content (Join-Path $qd 'README-QUEUE-HEALTH.txt') -Encoding UTF8
+}
+
 [ordered]@{
     ServerIp = $pins.server_names[0]; HttpPort = $pins.http_port; HttpsPort = $pins.https_port; ControlToken = $ControlToken; HeartbeatSeconds = $HeartbeatSeconds
     Pins = [ordered]@{ SignerSha1 = $pins.signer_sha1; RootSha256 = $pins.root_sha256 }
-    Versions = [ordered]@{ Baseline = '1.3.0'; Target = '1.4.0'; Update = '1.4.1'; FaultUpdate = '1.4.2' }
+    Versions = [ordered]@{ Baseline = '1.3.0'; Target = '1.4.0'; Update = '1.4.1'; FaultUpdate = '1.4.2'; QueueHealth = '1.4.3' }
     Kind = 'LIDER VMTEST - throw-away test PKI and test server; NOT production'
 } | ConvertTo-Json -Depth 5 | Set-Content (Join-Path $stage 'vmtest-config.json') -Encoding UTF8
 Copy-Item (Join-Path $here 'README-VM.md') (Join-Path $stage 'README-VM.md') -ErrorAction SilentlyContinue
