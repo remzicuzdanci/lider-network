@@ -244,7 +244,7 @@ public sealed class FileActivitySource : IDlpSource
     internal static bool Glob(string name, string pattern)
     {
         var rx = "^" + System.Text.RegularExpressions.Regex.Escape(pattern).Replace("\\*", ".*").Replace("\\?", ".") + "$";
-        return System.Text.RegularExpressions.Regex.IsMatch(name, rx, System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+        return System.Text.RegularExpressions.Regex.IsMatch(name, rx, System.Text.RegularExpressions.RegexOptions.IgnoreCase | System.Text.RegularExpressions.RegexOptions.CultureInvariant);
     }
 
     private long NextSeq(DateTime at) { _seq = Math.Max(_seq + 1, Math.Max(at.Ticks, _now().Ticks)); return _seq; }

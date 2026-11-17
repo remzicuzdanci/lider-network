@@ -177,3 +177,51 @@ public class DlpFileActivityTests
         var (s, _, _) = Make(); Assert.False(s.IsEnabled(c));
     }
 }
+
+public class DlpUsbCorrelationTests
+{
+    private sealed class Env : IUsbEnvironment
+    {
+        public List<UsbVolume> Vols = new(); public List<UsbFile> Files = new();
+        public IReadOnlyList<UsbVolume> Snapshot() => Vols.ToList();
+        public IReadOnlyList<UsbFile> DrainFileEvents(int max) { var r = Files.Take(max).ToList(); Files.RemoveRange(0, r.Count); return r; }
+    }
+    private static readonly DateTime T0 = new(2026, 11, 18, 9, 0, 0, DateTimeKind.Utc);
+
+    [Fact]
+    public void A_file_that_appears_on_the_usb_drive_with_the_name_and_size_of_a_recently_seen_watched_file_is_a_probable_copy_never_a_certain_one()
+    {
+        var idx = new FileIndex(); idx.Set(@"C:\PilotTest\Plan.docx", new FileStamp(2048, T0), T0.AddMinutes(1));
+        var env = new Env(); var src = new UsbSource(env, () => T0.AddMinutes(2), "PC01", idx, () => "UCI\\ahmet"); var cfg = new DlpConfig { Enabled = true }; cfg.Usb.Enabled = true; cfg.Usb.FileEvents = true;
+        src.ReadNew(0, 10, cfg);
+        env.Files.Add(new UsbFile("E:", "Plan.docx", 2048, "created", T0.AddMinutes(2), @"E:\Plan.docx")); env.Files.Add(new UsbFile("E:", "Other.docx", 10, "created", T0.AddMinutes(2), @"E:\Other.docx")); env.Files.Add(new UsbFile("E:", "Plan.docx", 0, "deleted", T0.AddMinutes(3)));
+        var r = src.ReadNew(0, 10, cfg).Select(x => x.Event).ToList();
+        var copy = r.Single(e => e.Type == "file_copied_to_usb"); Assert.Equal(@"C:\PilotTest\Plan.docx", copy.Data["source_path"]); Assert.Equal("name_size", copy.Data["confidence"]); Assert.Equal(@"E:\Plan.docx", copy.Data["path"]);
+        Assert.Equal("UCI\\ahmet", copy.Data["user"]); Assert.Equal("session", copy.Data["user_source"]);
+        Assert.Equal(2, r.Count(e => e.Type == "usb_file_event"));   // the unmatched file and the delete stay what they are: activity on a removable drive
+    }
+
+    [Fact]
+    public void Without_an_index_or_a_match_nothing_is_called_a_copy_and_connect_events_carry_the_user_and_ids()
+    {
+        var env = new Env(); var src = new UsbSource(env, () => T0, "PC01", null, () => "UCI\\ahmet"); var cfg = new DlpConfig { Enabled = true }; cfg.Usb.Enabled = true;
+        src.ReadNew(0, 10, cfg); env.Vols.Add(new UsbVolume("E:", "USBDISK", "NTFS", 1000, "SanDisk", "Ultra", "abc123", "0781", "5581", "usb_removable"));
+        var c = src.ReadNew(0, 10, cfg).Single().Event; Assert.Equal("usb_connected", c.Type); Assert.Equal("0781", c.Data["vid"]); Assert.Equal("5581", c.Data["pid"]); Assert.Equal("usb_removable", c.Data["bus"]); Assert.Equal("UCI\\ahmet", c.Data["user"]);
+        env.Files.Add(new UsbFile("E:", "x.docx", 5, "created", T0)); cfg.Usb.FileEvents = true;
+        Assert.DoesNotContain(src.ReadNew(0, 10, cfg), r => r.Event.Type == "file_copied_to_usb");
+    }
+
+    [Theory]
+    [InlineData(@"USB\VID_0781&PID_5581\4C530001230613106372", "0781", "5581")]
+    [InlineData(@"USB\vid_058f&pid_6387\5E2C1A", "058F", "6387")]
+    [InlineData(@"HID\GARBAGE", null, null)]
+    [InlineData(null, null, null)]
+    public void Vendor_and_product_ids_are_read_from_the_device_id(string? pnp, string? vid, string? pid) => Assert.Equal((vid, pid), UsbIds.FromPnp(pnp));
+
+    [Theory]
+    [InlineData(@"USBSTOR\DISK&VEN_SANDISK&PROD_ULTRA&REV_1.00\4C530001230613106372&0", "4C530001230613106372")]
+    [InlineData(@"USBSTOR\DISK&VEN_X&PROD_Y&REV_1\SERIAL1234", "SERIAL1234")]
+    [InlineData(@"USBSTOR\DISK&VEN_X\", null)]
+    [InlineData(null, null)]
+    public void The_serial_is_read_from_the_disk_device_id(string? pnp, string? serial) => Assert.Equal(serial, UsbIds.SerialFromDiskPnp(pnp));
+}
