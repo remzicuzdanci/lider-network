@@ -20,6 +20,39 @@ public sealed class DlpConfig
     public int MaxQueuedRows { get; set; } = 5000;
     public PrintConfig Print { get; set; } = new();
     public UsbConfig Usb { get; set; } = new();
+    public FilesConfig Files { get; set; } = new();
+    public AppUsageConfig AppUsage { get; set; } = new();
+
+    /// <summary>File activity in the folders the customer policy names (never the whole disk by default). Metadata only.</summary>
+    public sealed class FilesConfig
+    {
+        public bool Enabled { get; set; } = false;
+        /// <summary>Absolute folders to watch (local, removable or UNC). Empty = nothing is watched.</summary>
+        public List<string> Paths { get; set; } = new();
+        /// <summary>full | folder | hash - how much of a path is sent (the file name is hashed unless "full").</summary>
+        public string PathMode { get; set; } = "full";
+        public List<string> Exclude { get; set; } = new() { "*.tmp", "~$*", "*.crdownload", "*.part", "Thumbs.db", "desktop.ini", "*.lnk" };
+        /// <summary>Several writes of one save become one "modified" event within this many seconds.</summary>
+        public int DebounceSeconds { get; set; } = 5;
+        public int MaxIndexEntries { get; set; } = 50000;
+        public const int MaxRoots = 20;
+
+        /// <summary>The configured folders that are valid: absolute, no control characters, no drive-wide root, de-duplicated, at most <see cref="MaxRoots"/>.</summary>
+        public List<string> EffectiveRoots() => Paths.Where(p => !string.IsNullOrWhiteSpace(p) && p.Trim().Length > 3 && !p.Any(char.IsControl) && System.IO.Path.IsPathRooted(p.Trim()))
+            .Select(p => p.Trim().TrimEnd('\\', '/')).Where(p => p.Length > 2).Distinct(StringComparer.OrdinalIgnoreCase).Take(MaxRoots).ToList();
+    }
+
+    /// <summary>Foreground application time of the signed-in user. Needs the per-session helper; the window title is NOT sent unless the policy says so.</summary>
+    public sealed class AppUsageConfig
+    {
+        public bool Enabled { get; set; } = false;
+        /// <summary>none (default: application name only) | hash | full</summary>
+        public string TitleMode { get; set; } = "none";
+        public int SampleSeconds { get; set; } = 5;
+        /// <summary>No keyboard/mouse input for this long = idle: the time is not counted as active use.</summary>
+        public int IdleThresholdSeconds { get; set; } = 120;
+        public int MaxIntervalSeconds { get; set; } = 300;
+    }
 
     public sealed class PrintConfig
     {
@@ -37,6 +70,8 @@ public sealed class DlpConfig
         public bool Enabled { get; set; } = false;
         /// <summary>Report file creations/changes on removable drives (names, sizes, extensions - never content).</summary>
         public bool FileEvents { get; set; } = true;
+        /// <summary>monitor is the only mode this Collector implements: nothing is ever blocked. Anything else in a policy is ignored.</summary>
+        public string Mode { get; set; } = "monitor";
     }
 
     public int EffectivePollSeconds => Math.Clamp(PollSeconds, 10, 3600);
