@@ -113,6 +113,18 @@ public sealed class LocalQueue : IDisposable, IQueueStore, LiderCollector.Dlp.IQ
         }
     }
 
+    /// <summary>Unix time the oldest waiting item was queued, or null when the queue is empty.</summary>
+    public long? OldestCreated()
+    {
+        lock (_lock)
+        {
+            var cmd = _conn.CreateCommand();
+            cmd.CommandText = "SELECT MIN(created) FROM queue;";
+            var v = cmd.ExecuteScalar();
+            return v is null or DBNull ? null : Convert.ToInt64(v);
+        }
+    }
+
     private void Execute(string sql)
     {
         using var cmd = _conn.CreateCommand();

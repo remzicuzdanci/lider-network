@@ -74,6 +74,9 @@ public sealed class ApiClient : IDisposable
     /// <summary>Set by the worker: the DLP source states (no event content) sent with every heartbeat while DLP is on.</summary>
     public Func<object?>? DlpStatusProvider { get; set; }
 
+    /// <summary>Set by the worker: offline queue depth, age, last good flush, last fixed error code and a health state (no payload content).</summary>
+    public Func<object?>? QueueStatusProvider { get; set; }
+
     public async Task<(CheckinResponse? Response, HeartbeatStatus Status)> CheckinAsync(
         DeviceIdentity.IdentityPayload identity, CancellationToken ct = default)
     {
@@ -86,6 +89,7 @@ public sealed class ApiClient : IDisposable
             ["timestamp"] = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
         };
         try { if (DlpStatusProvider?.Invoke() is { } dlp) body["dlp_status"] = dlp; } catch { /* informational only */ }
+        try { if (QueueStatusProvider?.Invoke() is { } qs) body["queue_status"] = qs; } catch { /* informational only */ }
         var (resp, httpStatus) = await PostAsyncWithStatus<CheckinResponse>("checkin", body, authorized: true, ct);
 
         if (httpStatus == System.Net.HttpStatusCode.OK)

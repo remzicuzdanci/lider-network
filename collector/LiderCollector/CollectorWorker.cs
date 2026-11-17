@@ -28,6 +28,7 @@ public sealed class CollectorWorker : BackgroundService
     private readonly SecureStorage _secure;
     private readonly LocalQueue _queue;
     private readonly QueueFlusher _flusher;
+    private readonly QueueHealthTracker _queueHealth;
     private bool _serverBusyCycle;
     private readonly LiderCollector.Dlp.DlpCollector? _dlp;
     private readonly DeviceIdentity _identity;
@@ -69,6 +70,8 @@ public sealed class CollectorWorker : BackgroundService
         _secure = secure;
         _queue = queue;
         _flusher = new QueueFlusher(queue, SendQueuedItemAsync);
+        _queueHealth = new QueueHealthTracker();
+        api.QueueStatusProvider = () => QueueHealthTracker.ToPayload(_queueHealth.Snapshot(queue.Count(), queue.OldestCreated()));
         // the last policy the server sent survives a restart; the DLP collector always exists, it just does nothing while the master switch is off
         LiderCollector.Dlp.DlpPolicy.Apply(config.Dlp, LiderCollector.Dlp.DlpPolicy.Load(config.DataPath));
         api.DlpStatusProvider = () => _dlp?.Status().Select(s => new { source = s.Source, state = s.State, message = s.Message, at = s.AtUtc.ToString("O") }).ToList() is { Count: > 0 } l ? l : null;
@@ -673,6 +676,7 @@ public sealed class CollectorWorker : BackgroundService
     {
         _queue.PurgeExceeded(maxAttempts: 20);
         var st = await _flusher.FlushAsync(ct);   // paced (<= 30/min, <= 20 per call); HTTP 429 backs off instead of counting as a failure
+        _queueHealth.Record(st);
         if (st.Delivered > 0) _log.LogInformation("Flushed {Count} queued items ({Left} left).", st.Delivered, _queue.Count());
         if (st.RateLimited) _log.LogInformation("The server is rate limiting this address; the queue resumes after {Until:HH:mm:ss} UTC.", _flusher.BackoffUntil);
     }

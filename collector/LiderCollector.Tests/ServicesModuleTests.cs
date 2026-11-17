@@ -116,6 +116,6 @@ public sealed class ServicesModuleTests
     [Fact]
     public void Version_IsTheCurrentRelease()
     {
-        Assert.Equal(new Version(1, 4, 1, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.4.1 = 1.4.0 + paced queue flush / 429 handling
+        Assert.Equal(new Version(1, 4, 3, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.4.3 = 1.4.1 + queue health in the heartbeat
     }
 }
