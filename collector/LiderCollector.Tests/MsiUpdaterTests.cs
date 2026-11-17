@@ -56,7 +56,7 @@ public sealed class MsiUpdaterTests : IDisposable
     private sealed class FakeEnv : IUpdateEnvironment
     {
         public string DataPath { get; init; } = "";
-        public DateTime UtcNow { get; private set; } = new(2026, 11, 15, 10, 0, 0, DateTimeKind.Utc);
+        public DateTime UtcNow { get; private set; } = DateTime.UtcNow;   // relative to the real clock: the test PKI is valid from "now - 2 days", a fixed date would expire as a time bomb
         public InstalledProduct? Installed;
         public SvcState Svc = SvcState.Running;
         public string ExeVersion = "1.3.0.0";

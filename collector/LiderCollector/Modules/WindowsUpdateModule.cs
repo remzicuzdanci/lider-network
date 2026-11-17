@@ -17,27 +17,44 @@ namespace LiderCollector.Modules;
 ///      If the COM server is unavailable (e.g. WU service disabled) the call is
 ///      silently swallowed and pending_count is reported as 0.
 ///
-///   3. Registry keys — reboot-required flag, last scan timestamp, last error code.
+///   3. Registry keys — reboot-required flag, last error code.
+///   4. Last successful scan time (1.4.4): WUA Microsoft.Update.AutoUpdate Results.LastSearchSuccessDate first, the legacy registry value as fallback;
+///      source and status are reported, never estimated (see WuLastScan).
 /// </summary>
-public sealed class WindowsUpdateModule : ICollectorModule
+public sealed class WindowsUpdateModule : IReportingModule
 {
     private readonly ILogger<WindowsUpdateModule> _log;
+    private readonly IWuScanSource _scan;
+    private readonly Func<DateTime> _now;
     public string Name => "windows_update";
+    public ModuleReport? LastReport { get; private set; }
 
     private const int MaxInstalled  = 100;
     private const int LookbackDays  = 90;
     private const int MaxPending    = 20;
 
-    public WindowsUpdateModule(ILogger<WindowsUpdateModule> log) => _log = log;
+    public WindowsUpdateModule(ILogger<WindowsUpdateModule> log, IWuScanSource? scan = null, Func<DateTime>? now = null)
+    {
+        _log = log; _scan = scan ?? new WindowsWuScanSource(); _now = now ?? (() => DateTime.UtcNow);
+    }
 
     public Task<object?> RunAsync(CancellationToken ct)
     {
         try
         {
             var payload = new WindowsUpdatePayload();
-            CollectInstalledUpdates(payload);
+            var t = new SourceTracker();
+            t.Run("InstalledUpdates", () => CollectInstalledUpdates(payload), required: false, _log);
             CollectPendingUpdates(payload);
+            t.Note("PendingUpdates", payload.PendingQueryStatus ?? "unknown");
+            if (payload.PendingQueryStatus is "unavailable" or "error") t.Warn($"pending updates not readable ({payload.PendingQueryStatus})");
             CollectRegistryStatus(payload);
+            var scan = WuLastScan.Resolve(_scan, _now());
+            payload.LastScanAt = scan.Utc?.ToString("yyyy-MM-ddTHH:mm:ssZ");
+            payload.LastScanSource = scan.Source; payload.LastScanStatus = scan.Status;
+            t.Note("LastScan", scan.Status == WuScanResult.Ok ? $"ok ({scan.Source})" : $"{scan.Status}{(scan.Detail is null ? "" : ": " + scan.Detail)}");
+            if (scan.Status != WuScanResult.Ok) t.Warn($"last scan date not available ({scan.Status}); the Collector does not estimate it");
+            LastReport = t.Finish();
             return Task.FromResult<object?>(payload);
         }
         catch (Exception ex)
@@ -153,16 +170,6 @@ public sealed class WindowsUpdateModule : ICollectorModule
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(
-                @"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\Results\Detect",
-                writable: false);
-            if (key?.GetValue("LastSuccessTime") is string ts && !string.IsNullOrEmpty(ts))
-                p.LastScanAt = ts;
-        }
-        catch { }
-
-        try
-        {
-            using var key = Registry.LocalMachine.OpenSubKey(
                 @"SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update\Results\Install",
                 writable: false);
             if (key?.GetValue("LastError") is int code)
@@ -183,6 +190,9 @@ public sealed class WindowsUpdateModule : ICollectorModule
         [JsonPropertyName("pending_updates")]      public List<PendingUpdate>?  PendingUpdates     { get; set; }
         [JsonPropertyName("reboot_required")]      public bool                  RebootRequired     { get; set; }
         [JsonPropertyName("last_scan_at")]         public string?               LastScanAt         { get; set; }
+        /// <summary>1.4.4: where last_scan_at came from (wua_autoupdate | registry_detect | none) and the plain status (ok | never_scanned | unavailable | error).</summary>
+        [JsonPropertyName("last_scan_source")]     public string?               LastScanSource     { get; set; }
+        [JsonPropertyName("last_scan_status")]     public string?               LastScanStatus     { get; set; }
         [JsonPropertyName("last_install_result")]  public int?                  LastInstallResult  { get; set; }
     }
 

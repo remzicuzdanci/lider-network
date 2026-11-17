@@ -55,6 +55,9 @@ public sealed class SourceTracker
 
     public void Warn(string text) => _report.Warnings.Add(text);
 
+    /// <summary>Records a per-source fact (e.g. where a value came from) without it being a failure or a warning.</summary>
+    public void Note(string source, string value) => _report.Sources[source] = value;
+
     public ModuleReport Finish()
     {
         _report.DurationMs = (int)_sw.ElapsedMilliseconds;
