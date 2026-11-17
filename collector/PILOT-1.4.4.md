@@ -38,3 +38,6 @@ Before touching a pilot machine (one at a time, ITMANAGAMENT first, MIKRO-PC onl
 ## Not done / not approved
 * No production signing: the production code-signing key was NOT used. `dist\LiderITONECollector-1.4.4.msi` is production-pinned but **unsigned**; a pilot on real machines needs it signed by the owner (key on the application server, see `docs/code-signing-key-custody.md`).
 * Nothing published to the server (no release catalogue entry, no update manifest, no allow-list). ITMANAGAMENT and MIKRO-PC keep running 1.4.0 / 1.3.0.
+
+## Kurulum ve yükseltme prosedürleri
+Panel "Kurulum Paketleri" bölümü ve doğrulanacak prosedürler: `envanter/docs/collector-installation-procedures.md` (yeni kurulum, yükseltme, GPO, doğrulama, geri alma). Betik: `envanter/scripts/gpo/Upgrade-LiderCollector.ps1`.
