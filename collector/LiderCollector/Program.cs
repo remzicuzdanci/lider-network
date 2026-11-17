@@ -45,6 +45,14 @@ try
         return;
     }
 
+    // "--user-agent <servicePid> <sampleSeconds>": the application-usage helper, started by the service INSIDE a user session (a service cannot see any desktop). Metadata only; exits when the service is gone.
+    if (args.Length >= 1 && args[0].Equals("--user-agent", StringComparison.OrdinalIgnoreCase))
+    {
+        int pid = args.Length > 1 && int.TryParse(args[1], out var p1) ? p1 : 0, every = args.Length > 2 && int.TryParse(args[2], out var p2) ? p2 : 5;
+        Environment.ExitCode = await LiderCollector.Dlp.AppUsageAgent.RunAsync(every, pid, CancellationToken.None);
+        return;
+    }
+
     // "diag": inspect this machine's inventory without starting the service or contacting the server
     if (args.Length > 0 && args[0].Equals("diag", StringComparison.OrdinalIgnoreCase))
     {

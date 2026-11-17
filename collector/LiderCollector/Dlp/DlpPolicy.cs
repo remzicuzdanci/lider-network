@@ -9,13 +9,19 @@ public sealed class DlpPolicyDto
     [JsonPropertyName("enabled")] public bool Enabled { get; set; }
     [JsonPropertyName("print")] public PrintDto? Print { get; set; }
     [JsonPropertyName("usb")] public UsbDto? Usb { get; set; }
+    [JsonPropertyName("files")] public FilesDto? Files { get; set; }
+    [JsonPropertyName("app_usage")] public AppUsageDto? AppUsage { get; set; }
     public sealed class PrintDto { [JsonPropertyName("enabled")] public bool Enabled { get; set; } [JsonPropertyName("document_name")] public string? DocumentName { get; set; } }
-    public sealed class UsbDto { [JsonPropertyName("enabled")] public bool Enabled { get; set; } [JsonPropertyName("file_events")] public bool FileEvents { get; set; } = true; }
+    public sealed class UsbDto { [JsonPropertyName("enabled")] public bool Enabled { get; set; } [JsonPropertyName("file_events")] public bool FileEvents { get; set; } = true; [JsonPropertyName("mode")] public string? Mode { get; set; } }
+    public sealed class FilesDto { [JsonPropertyName("enabled")] public bool Enabled { get; set; } [JsonPropertyName("paths")] public List<string>? Paths { get; set; } [JsonPropertyName("path_mode")] public string? PathMode { get; set; } }
+    public sealed class AppUsageDto { [JsonPropertyName("enabled")] public bool Enabled { get; set; } [JsonPropertyName("title_mode")] public string? TitleMode { get; set; } }
 }
 
 public static class DlpPolicy
 {
     private static readonly string[] NameModes = { "full", "extension", "hash", "none" };
+    private static readonly string[] PathModes = { "full", "folder", "hash" };
+    private static readonly string[] TitleModes = { "none", "hash", "full" };
     public const string FileName = "dlp-policy.json";
 
     /// <summary>Applies a policy to the running settings. Unknown / invalid values are ignored (never guessed); a source can only be ON when the master switch is ON. Returns true when something changed.</summary>
@@ -28,10 +34,16 @@ public static class DlpPolicy
         if (p.Print?.DocumentName is { } m && NameModes.Contains(m)) cfg.Print.DocumentName = m;
         cfg.Usb.Enabled = p.Enabled && p.Usb?.Enabled == true;
         if (p.Usb is not null) cfg.Usb.FileEvents = p.Usb.FileEvents;
+        cfg.Usb.Mode = "monitor";   // the only mode this Collector implements: a policy asking for anything else is ignored, nothing is ever blocked
+        cfg.Files.Enabled = p.Enabled && p.Files?.Enabled == true;
+        if (p.Files?.Paths is { } paths) cfg.Files.Paths = paths.Where(x => !string.IsNullOrWhiteSpace(x)).Take(DlpConfig.FilesConfig.MaxRoots).ToList();
+        if (p.Files?.PathMode is { } pm && PathModes.Contains(pm)) cfg.Files.PathMode = pm;
+        cfg.AppUsage.Enabled = p.Enabled && p.AppUsage?.Enabled == true;
+        if (p.AppUsage?.TitleMode is { } tm && TitleModes.Contains(tm)) cfg.AppUsage.TitleMode = tm;
         return before != State(cfg);
     }
 
-    private static (bool, bool, string, bool, bool) State(DlpConfig c) => (c.Enabled, c.Print.Enabled, c.Print.DocumentName, c.Usb.Enabled, c.Usb.FileEvents);
+    private static string State(DlpConfig c) => string.Join("|", c.Enabled, c.Print.Enabled, c.Print.DocumentName, c.Usb.Enabled, c.Usb.FileEvents, c.Files.Enabled, c.Files.PathMode, string.Join(";", c.Files.Paths), c.AppUsage.Enabled, c.AppUsage.TitleMode);
 
     public static void Save(string dataPath, DlpPolicyDto p)
     {

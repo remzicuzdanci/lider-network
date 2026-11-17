@@ -31,6 +31,11 @@ public sealed class CollectorWorker : BackgroundService
     private readonly QueueHealthTracker _queueHealth;
     private bool _serverBusyCycle;
     private readonly LiderCollector.Dlp.DlpCollector? _dlp;
+    private readonly LiderCollector.Dlp.FileIndex _fileIndex = new();
+    private readonly LiderCollector.Dlp.AppSampleBuffer _appSamples = new();
+    private LiderCollector.Dlp.AppUsagePipeServer? _appPipe;
+    private readonly LiderCollector.Dlp.SessionAgentLauncher _agentLauncher = new();
+    private DateTime _nextAgentCheck = DateTime.MinValue;
     private readonly DeviceIdentity _identity;
     private readonly ApiClient _api;
     private readonly LiderCollector.Update.UpdateCoordinator _update;
@@ -75,7 +80,7 @@ public sealed class CollectorWorker : BackgroundService
         // the last policy the server sent survives a restart; the DLP collector always exists, it just does nothing while the master switch is off
         LiderCollector.Dlp.DlpPolicy.Apply(config.Dlp, LiderCollector.Dlp.DlpPolicy.Load(config.DataPath));
         api.DlpStatusProvider = () => _dlp?.Status().Select(s => new { source = s.Source, state = s.State, message = s.Message, at = s.AtUtc.ToString("O") }).ToList() is { Count: > 0 } l ? l : null;
-        _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
+        _dlp = new LiderCollector.Dlp.DlpCollector(config.Dlp, new LiderCollector.Dlp.IDlpSource[] { new LiderCollector.Dlp.WindowsPrintSource(), new LiderCollector.Dlp.UsbSource(new LiderCollector.Dlp.WindowsUsbEnvironment(config.Dlp.Usb.FileEvents), host: Environment.MachineName, index: _fileIndex, user: () => LiderCollector.Dlp.SessionInfo.ActiveUser()), new LiderCollector.Dlp.FileActivitySource(new LiderCollector.Dlp.WindowsFileEnvironment(), _fileIndex, host: Environment.MachineName), new LiderCollector.Dlp.AppUsageSource(_appSamples, host: Environment.MachineName) }, new LiderCollector.Dlp.FileDlpState(config.DataPath), (ev, ct) => api.SendDlpEventsAsync(ev, ct), queue, log);
         _identity = identity;
         _api = api;
         _update = new LiderCollector.Update.UpdateCoordinator(api, config.DataPath, log);
@@ -220,6 +225,13 @@ public sealed class CollectorWorker : BackgroundService
                 }
 
                 // DLP sources (print jobs now; USB / files next). Off unless dlp.enabled; metadata only; failures never stop the loop.
+                if (DateTime.UtcNow >= _nextAgentCheck)
+                {
+                    // the helper that sees the user's desktop runs only while application-usage monitoring is switched on (never otherwise)
+                    try { if (_config.Dlp.Enabled && _config.Dlp.AppUsage.Enabled) { _appPipe ??= new LiderCollector.Dlp.AppUsagePipeServer(_appSamples); _appPipe.Start(); } _agentLauncher.Reconcile(_config.Dlp.Enabled && _config.Dlp.AppUsage.Enabled, _config.Dlp.AppUsage.SampleSeconds, _log); }
+                    catch (Exception ex) { _log.LogWarning(ex, "Application-usage helper check failed (will retry)"); }
+                    _nextAgentCheck = DateTime.UtcNow.AddSeconds(30);
+                }
                 if (_dlp != null && DateTime.UtcNow >= nextDlp)
                 {
                     try { await _dlp.RunAsync(_lastOnline, stoppingToken); }

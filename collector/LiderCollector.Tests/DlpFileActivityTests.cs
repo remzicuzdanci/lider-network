@@ -225,3 +225,29 @@ public class DlpUsbCorrelationTests
     [InlineData(null, null)]
     public void The_serial_is_read_from_the_disk_device_id(string? pnp, string? serial) => Assert.Equal(serial, UsbIds.SerialFromDiskPnp(pnp));
 }
+
+public class DlpPolicyExtensionTests
+{
+    [Fact]
+    public void The_server_policy_switches_files_and_application_usage_on_only_under_the_master_switch_and_ignores_invalid_values()
+    {
+        var cfg = new DlpConfig();
+        var p = new DlpPolicyDto { Enabled = true, Print = new() { Enabled = true }, Usb = new() { Enabled = true, FileEvents = true, Mode = "block" },
+            Files = new() { Enabled = true, Paths = new() { @"C:\PilotTest", "", "  " }, PathMode = "bogus" }, AppUsage = new() { Enabled = true, TitleMode = "everything" } };
+        Assert.True(DlpPolicy.Apply(cfg, p));
+        Assert.True(cfg.Files.Enabled); Assert.Equal(new[] { @"C:\PilotTest" }, cfg.Files.Paths); Assert.Equal("full", cfg.Files.PathMode);   // invalid mode: the default stays
+        Assert.True(cfg.AppUsage.Enabled); Assert.Equal("none", cfg.AppUsage.TitleMode);
+        Assert.Equal("monitor", cfg.Usb.Mode);   // "block" is ignored: nothing is ever blocked
+        p.Enabled = false; Assert.True(DlpPolicy.Apply(cfg, p)); Assert.False(cfg.Files.Enabled); Assert.False(cfg.AppUsage.Enabled); Assert.False(cfg.Usb.Enabled);
+        Assert.False(DlpPolicy.Apply(cfg, p), "no change: reported as unchanged");
+        Assert.False(DlpPolicy.Apply(cfg, null));
+    }
+
+    [Fact]
+    public void A_policy_without_the_new_blocks_switches_the_new_sources_off()
+    {
+        var cfg = new DlpConfig(); DlpPolicy.Apply(cfg, new DlpPolicyDto { Enabled = true, Files = new() { Enabled = true, Paths = new() { @"C:\x1" } }, AppUsage = new() { Enabled = true } });
+        DlpPolicy.Apply(cfg, new DlpPolicyDto { Enabled = true, Print = new() { Enabled = true } });
+        Assert.False(cfg.Files.Enabled); Assert.False(cfg.AppUsage.Enabled); Assert.True(cfg.Print.Enabled);
+    }
+}
