@@ -51,10 +51,12 @@ public class DlpFileActivityRealWindowsTests : IDisposable
     {
         using var env = new WindowsFileEnvironment(() => null); var s = new FileActivitySource(env, new FileIndex(), host: "REALPC"); var c = Cfg();
         s.ReadNew(0, 10, c);
-        const int N = 6000;
+        const int N = 6000; var cpu0 = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime; long mem0 = GC.GetTotalMemory(true);
         Parallel.For(0, N, new ParallelOptions { MaxDegreeOfParallelism = 8 }, i => File.WriteAllBytes(Path.Combine(_root, $"burst-{i:D5}.dat"), new byte[] { 1 }));
         var ev = Collect(s, c, TimeSpan.FromSeconds(3), TimeSpan.FromSeconds(40));
         var seen = ev.Where(e => e.Type == "file_created").Select(e => Path.GetFileName((string)e.Data["path"]!)).ToHashSet();
+        var cpu = System.Diagnostics.Process.GetCurrentProcess().TotalProcessorTime - cpu0; long memMb = (GC.GetTotalMemory(false) - mem0) / 1048576;
+        Assert.True(cpu.TotalSeconds < 60, "cpu seconds used by writing AND monitoring 6000 files: " + cpu.TotalSeconds); Assert.True(memMb < 200, "memory growth MB: " + memMb);   // bounded: events are queued with a cap, the index has a cap
         Assert.Equal(N, seen.Count);   // every file is reported exactly once as created, whether the watcher or the rescan saw it
         Assert.Equal(seen.Count, ev.Where(e => e.Type == "file_created").Count());
     }
