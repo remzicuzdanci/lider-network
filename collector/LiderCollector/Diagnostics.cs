@@ -25,6 +25,7 @@ public static class Diagnostics
             new NetworkModule(lf.CreateLogger<NetworkModule>()),
             new SoftwareModule(lf.CreateLogger<SoftwareModule>()),
             new PerformanceModule(lf.CreateLogger<PerformanceModule>()),
+            new WindowsUpdateModule(lf.CreateLogger<WindowsUpdateModule>()),   // 1.4.4: shows the last-scan date, its source and status on THIS machine (read-only: cached WUA data, no search)
         };
 
         var data = new Dictionary<string, object?>();
