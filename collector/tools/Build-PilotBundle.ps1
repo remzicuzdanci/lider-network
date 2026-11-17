@@ -56,7 +56,7 @@ if (([BitConverter]::ToString([Security.Cryptography.SHA256]::Create().ComputeHa
 [ordered]@{ MsiName = $newName; MsiSha256 = (Sha256 (Join-Path $work $newName)); FromVersion = $From; ToVersion = $Version; SignerSha1 = $SignerSha1; RootSha256 = $RootSha256 } | ConvertTo-Json | Set-Content (Join-Path $work 'pilot-pin.json') -Encoding UTF8
 
 @"
-# MIKRO-PC pilot: Collector $From -> $Version (signed MSI, one time, manual)
+# Pilot computer upgrade: Collector $From -> $Version (signed MSI, one time, manual)
 
 Run on the pilot computer, as an administrator. Nothing is opened remotely. Do not touch other computers or GPOs.
 
