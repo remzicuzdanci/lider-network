@@ -116,6 +116,6 @@ public sealed class ServicesModuleTests
     [Fact]
     public void Version_IsTheCurrentRelease()
     {
-        Assert.Equal(new Version(1, 4, 4, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.4.4 = 1.4.3 (queue health) + reliable Windows Update last-scan date
+        Assert.Equal(new Version(1, 5, 0, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.4.4 = 1.4.3 (queue health) + reliable Windows Update last-scan date
     }
 }
