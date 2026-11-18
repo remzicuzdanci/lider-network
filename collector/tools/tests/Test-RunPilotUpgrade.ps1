@@ -50,6 +50,8 @@ try {
     Remove-Item (Join-Path $d 'secure.dat'); T 'a deleted secure.dat is detected' { (@(Compare-Identity $s1 (Get-IdentitySnapshot $d)) -join ';') -match 'is gone' }
 
     # ── log evidence ─────────────────────────────────────────────────────────────────────────────
+    # the log-evidence logic is tested on the CURRENT script: the 1.3.0 bundle copy loaded above predates the "Recovered" evidence (that stale copy, not the locale, made the recovery test fail)
+    . (Join-Path $PSScriptRoot '..\Run-PilotUpgrade.ps1') -LibraryOnly
     $ld = Join-Path $tmp 'logs'; New-Item -ItemType Directory $ld | Out-Null
     $since = [datetimeoffset]::Parse('2026-11-15 10:00:00 +03:00')
     @('2026-11-15 09:59:00.000 +03:00 [INF] Lider IT ONE Collector v1.2.0 starting...',
@@ -68,7 +70,7 @@ try {
     T 'an inventory sent by the OLD service while the upgrade was being prepared is not evidence for the new one' { $o = Get-LogEvidence $oldlog $since '1.3.0'; -not $o.Started -and -not $o.InventorySent -and $o.HeartbeatMissed -eq 0 }
     Add-Content (Join-Path $ld 'collector-20261115.log') '2026-11-15 10:02:00.000 +03:00 [WRN] Heartbeat missed. Consecutive misses: 1/3'
     T 'a missed heartbeat after the upgrade is counted' { (Get-LogEvidence $ld $since).HeartbeatMissed -eq 1 }
-    $rl = Join-Path $tmp 'rec'; New-Item -ItemType Directory -Force $rl | Out-Null; $tz = (Get-Date).ToString('zzz'); $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff'); Set-Content (Join-Path $rl 'collector-x.log') ("$ts $tz [INF] Lider IT ONE Collector v1.3.0 starting...`n$ts $tz [WRN] Heartbeat missed. Consecutive misses: 1/3`n$ts $tz [INF] Connectivity restored. Flushing offline queue (3 items).")
+    $rl = Join-Path $tmp 'rec'; New-Item -ItemType Directory -Force $rl | Out-Null; $tz = (Get-Date).ToString('zzz'); $ts = (Get-Date).ToString('yyyy-MM-dd HH:mm:ss.fff', [Globalization.CultureInfo]::InvariantCulture); Set-Content (Join-Path $rl 'collector-x.log') ("$ts $tz [INF] Lider IT ONE Collector v1.3.0 starting...`n$ts $tz [WRN] Heartbeat missed. Consecutive misses: 1/3`n$ts $tz [INF] Connectivity restored. Flushing offline queue (3 items).")
     T 'a restored connection after a miss is recognised' { $r = Get-LogEvidence $rl $since '1.3.0'; $r.HeartbeatMissed -eq 1 -and $r.Recovered }
     Add-Content (Join-Path $ld 'collector-20261115.log') '2026-11-15 10:02:10.000 +03:00 [INF] Agent is not enrolled — running enrollment.'
     T 'a re-enrolment attempt is flagged' { (Get-LogEvidence $ld $since).ReEnrolled }
