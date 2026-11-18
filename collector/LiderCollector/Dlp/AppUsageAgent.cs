@@ -59,9 +59,13 @@ public static class ForegroundSampler
     public static AppSample Take(int sessionId, string? user)
     {
         bool locked = !InputDesktopAvailable(); var (p, t) = locked ? ((string?)null, (string?)null) : Foreground();
-        if (string.Equals(p, "LogonUI.exe", StringComparison.OrdinalIgnoreCase)) locked = true;
+        if (IsLockScreenProcess(p)) locked = true;   // Windows 10/11 draw the lock screen as LockApp.exe on the normal input desktop: the input desktop is still available, so the process name decides
         return new AppSample(DateTime.UtcNow, sessionId, user, locked ? null : p, t, IdleSeconds(), locked);
     }
+
+    /// <summary>The sign-in / lock screen processes (LogonUI.exe, LockApp.exe): a user looking at them is not using an application.</summary>
+    public static bool IsLockScreenProcess(string? process) =>
+        string.Equals(process, "LogonUI.exe", StringComparison.OrdinalIgnoreCase) || string.Equals(process, "LockApp.exe", StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>The wire form of one sample between the helper and the service (one JSON line). The USER and SESSION are not trusted from the line: the service takes them from the pipe client's identity.</summary>

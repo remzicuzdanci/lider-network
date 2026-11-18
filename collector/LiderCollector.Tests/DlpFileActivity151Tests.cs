@@ -194,3 +194,16 @@ public class DlpFileActivity151RealWindowsTests : IDisposable
         Assert.DoesNotContain(ev, e => e.Type == "file_modified" && ((string)e.Data["path"]!).EndsWith("T1b"));   // folder timestamp noise is gone
     }
 }
+
+public class DlpLockScreenTests
+{
+    [Theory]
+    [InlineData("LockApp.exe", true)]
+    [InlineData("lockapp.exe", true)]
+    [InlineData("LogonUI.exe", true)]
+    [InlineData("chrome.exe", false)]
+    [InlineData("explorer.exe", false)]
+    [InlineData(null, false)]
+    public void The_windows_lock_and_sign_in_screens_are_recognised_by_process_name(string? process, bool lockScreen) =>
+        Assert.Equal(lockScreen, ForegroundSampler.IsLockScreenProcess(process));
+}
