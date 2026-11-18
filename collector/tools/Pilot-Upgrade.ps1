@@ -71,13 +71,25 @@ function Invoke-Msiexec([string[]]$MsiArgs) { $p = Start-Process msiexec.exe -Ar
 function Get-SvcStatus { $s = Get-Service $Service -ErrorAction SilentlyContinue; if ($s) { return [string]$s.Status } else { return 'Missing' } }
 function Get-SvcPid { $w = Get-CimInstance Win32_Service -Filter "Name='$Service'" -ErrorAction SilentlyContinue; if ($w) { return [int]$w.ProcessId } else { return 0 } }
 
+# The application-usage helper ("LiderCollector.exe --user-agent <servicePid>") runs in the user's session and exits by itself within a few seconds once the service is gone; until then it keeps
+# LiderCollector.exe locked for the installer. Wait for it, then end any that is left (it only writes samples to the service pipe: nothing is lost that the service had not already queued).
+function Stop-UserHelpers([int]$WaitSec = 20) {
+    $find = { @(Get-CimInstance Win32_Process -Filter "Name='LiderCollector.exe'" -ErrorAction SilentlyContinue | Where-Object { $_.PSObject.Properties['CommandLine'] -and "$($_.CommandLine)" -match '--user-agent' }) }
+    $until = (Get-Date).AddSeconds($WaitSec)
+    while (@(& $find).Count -gt 0 -and (Get-Date) -lt $until) { Start-Sleep -Seconds 1 }
+    foreach ($h in @(& $find)) {
+        Info "ending the application-usage helper (pid $($h.ProcessId)) that still holds the Collector files"
+        try { Stop-Process -Id $h.ProcessId -Force -ErrorAction Stop } catch { Warn "could not end the helper $($h.ProcessId): $($_.Exception.Message)" }
+    }
+}
+
 function Stop-CollectorService([int]$TimeoutSec) {
-    if ((Get-SvcStatus) -in 'Stopped', 'Missing') { return $true }
+    if ((Get-SvcStatus) -in 'Stopped', 'Missing') { Stop-UserHelpers; return $true }
     $pid0 = Get-SvcPid
     try { Stop-Service $Service -ErrorAction Stop } catch { Info "Stop-Service: $($_.Exception.Message)" }
     $deadline = (Get-Date).AddSeconds($TimeoutSec)
     while ((Get-Date) -lt $deadline) {
-        if ((Get-SvcStatus) -eq 'Stopped' -and (-not $pid0 -or -not (Get-Process -Id $pid0 -ErrorAction SilentlyContinue))) { return $true }
+        if ((Get-SvcStatus) -eq 'Stopped' -and (-not $pid0 -or -not (Get-Process -Id $pid0 -ErrorAction SilentlyContinue))) { Stop-UserHelpers; return $true }
         Start-Sleep -Seconds 1
     }
     return $false
