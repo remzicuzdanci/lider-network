@@ -6,7 +6,12 @@ namespace LiderCollector.Dlp;
 public sealed record AppSample(DateTime AtUtc, int SessionId, string? User, string? Process, string? Title, int IdleSeconds, bool Locked);
 
 /// <summary>A finished stretch of use of one application by one user. <see cref="ActiveSeconds"/> counts only time with the application in front AND recent input AND an unlocked screen.</summary>
-public sealed record AppInterval(DateTime StartUtc, DateTime EndUtc, string User, int SessionId, string Process, string? Title, int ActiveSeconds, int IdleSeconds);
+/// <param name="Locked">true for a stretch with the screen locked (no application in front: <c>Process</c> is then null).</param>
+public sealed record AppInterval(DateTime StartUtc, DateTime EndUtc, string User, int SessionId, string? Process, string? Title, int ActiveSeconds, int IdleSeconds, bool Locked = false)
+{
+    /// <summary>active = the application was in front with recent input; idle = it was in front but nobody touched the computer; locked = the screen was locked.</summary>
+    public string State => Locked ? "locked" : ActiveSeconds > 0 ? "active" : "idle";
+}
 
 /// <summary>
 /// Turns samples into usage intervals. Pure (no clock, no Windows): the rules are tested one by one.
@@ -51,8 +56,11 @@ public sealed class AppUsageAggregator
 
     private void Close(Open o, DateTime end, List<AppInterval> into)
     {
-        if (o.Active <= 0 || o.First.Process is null || o.First.User is null) return;   // nothing actively used: not worth an event
-        into.Add(new AppInterval(o.Start, end, o.First.User, o.First.SessionId, o.First.Process, Title(o.First.Title), o.Active, o.Idle));
+        if (o.First.User is null) return;
+        if (o.Active > 0 && o.First.Process is not null) { into.Add(new AppInterval(o.Start, end, o.First.User, o.First.SessionId, o.First.Process, Title(o.First.Title), o.Active, o.Idle)); return; }
+        // A stretch that was NOT active is reported as such (active_seconds 0, idle_seconds = its length), so that "in front but untouched" and "screen locked" can be shown next to the
+        // active time and never be mixed up with it. 1.5.0/1.5.1 dropped these stretches, which is why idle_seconds was always 0.
+        if (o.Idle > 0) into.Add(new AppInterval(o.Start, end, o.First.User, o.First.SessionId, o.First.Locked ? null : o.First.Process, null, 0, o.Idle, o.First.Locked));
     }
 
     private string? Title(string? t)
@@ -87,11 +95,11 @@ public sealed class AppUsageSource : IDlpSource
         var res = new List<(long, DlpEvent)>();
         foreach (var i in intervals)
         {
-            string name = i.Process.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? i.Process[..^4] : i.Process;
+            string? name = i.Process is null ? null : i.Process.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) ? i.Process[..^4] : i.Process;
             var d = new Dictionary<string, object?>
             {
                 ["process"] = i.Process, ["app"] = name, ["user"] = i.User, ["session_id"] = (long)i.SessionId, ["start"] = i.StartUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"), ["end"] = i.EndUtc.ToString("yyyy-MM-ddTHH:mm:ss.fffZ"),
-                ["active_seconds"] = (long)i.ActiveSeconds, ["idle_seconds"] = (long)i.IdleSeconds, ["title"] = i.Title, ["is_browser"] = Browsers.Contains(name) ? "yes" : "no",
+                ["active_seconds"] = (long)i.ActiveSeconds, ["idle_seconds"] = (long)i.IdleSeconds, ["title"] = i.Title, ["is_browser"] = name is not null && Browsers.Contains(name) ? "yes" : "no", ["state"] = i.State,
             };
             string uid = DlpEvent.MakeUid("app", _host, i.User, i.Process, i.StartUtc.Ticks, i.EndUtc.Ticks);
             _seq = Math.Max(_seq + 1, Math.Max(i.StartUtc.Ticks, _now().Ticks));

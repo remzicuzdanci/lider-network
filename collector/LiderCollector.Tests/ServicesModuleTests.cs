@@ -116,6 +116,6 @@ public sealed class ServicesModuleTests
     [Fact]
     public void Version_IsTheCurrentRelease()
     {
-        Assert.Equal(new Version(1, 5, 1, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.5.1 = 1.5.0 (DLP pilot) + WTS Unicode user name, size read at event time, folder marker
+        Assert.Equal(new Version(1, 5, 2, 0), typeof(ServicesModule).Assembly.GetName().Version);   // 1.5.2 = 1.5.1 (WTS Unicode user name, size read at event time, folder marker) + lock screen is not application usage
     }
 }

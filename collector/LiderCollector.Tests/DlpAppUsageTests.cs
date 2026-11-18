@@ -25,8 +25,12 @@ public class DlpAppUsageTests
     {
         var a = new AppUsageAggregator(Cfg());
         var done = Feed(a, S(0, "excel.exe"), S(5, "excel.exe"), S(10, "excel.exe", idle: 130), S(15, "excel.exe", idle: 140), S(20, null, locked: true), S(25, null, locked: true), S(30, "excel.exe", idle: 1));
-        // active 0..10 (10 s); the idle stretch and the locked stretch produce no interval at all (zero active time)
-        var one = Assert.Single(done); Assert.Equal(10, one.ActiveSeconds); Assert.Equal("excel.exe", one.Process);
+        // 1.5.2: active 0..10 (10 s); the idle stretch (excel in front, untouched) and the locked stretch are REPORTED, but with zero active seconds: they are shown next to the active time, never added to it
+        Assert.Equal(3, done.Count);
+        var active = done[0]; Assert.Equal((10, 0, "active", "excel.exe"), (active.ActiveSeconds, active.IdleSeconds, active.State, active.Process));
+        var idle = done[1]; Assert.Equal((0, 10, "idle", "excel.exe"), (idle.ActiveSeconds, idle.IdleSeconds, idle.State, idle.Process));
+        var locked = done[2]; Assert.Equal((0, 10, "locked", (string?)null), (locked.ActiveSeconds, locked.IdleSeconds, locked.State, locked.Process));
+        Assert.Equal(10, done.Sum(d => d.ActiveSeconds));   // the total ACTIVE time is exactly what it was before
     }
 
     [Fact]
