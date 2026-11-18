@@ -39,7 +39,8 @@ public class DlpFileActivityRealWindowsTests : IDisposable
         var ev = Collect(s, c, TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(15));
         var types = ev.Select(e => e.Type).ToList();
         var seq = string.Join(",", types); foreach (var t in new[] { "file_created", "file_modified", "file_renamed", "file_moved", "file_deleted" }) Assert.True(types.Contains(t), "missing " + t + " in: " + seq);
-        var created = ev.First(e => e.Type == "file_created"); Assert.Equal("Plan.docx", created.Data["name"]); Assert.Equal("local", created.Data["root_kind"]);
+        Assert.Contains(ev, e => e.Type == "file_created" && Equals(e.Data["name"], "Arsiv") && Equals(e.Data["is_directory"], true));   // 1.5.1: the folder is reported too, marked as a folder
+        var created = ev.First(e => e.Type == "file_created" && Equals(e.Data["name"], "Plan.docx")); Assert.Equal(false, created.Data["is_directory"]); Assert.Equal("local", created.Data["root_kind"]);
         Assert.False(string.IsNullOrEmpty((string?)created.Data["user"])); Assert.Contains((string)created.Data["user_source"]!, new[] { "file_owner", "session" });   // the real owner from the file ACL; an administrator-created file is owned by the Administrators group, then the signed-in user is used
         var moved = ev.First(e => e.Type == "file_moved"); Assert.EndsWith("Plan-2.docx", (string)moved.Data["old_path"]!); Assert.Contains("Arsiv", (string)moved.Data["path"]!);
         Assert.All(ev, e => Assert.DoesNotContain("içerik", System.Text.Json.JsonSerializer.Serialize(e.ToWire())));   // never the content

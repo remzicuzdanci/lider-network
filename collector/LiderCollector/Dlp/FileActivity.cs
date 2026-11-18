@@ -6,7 +6,12 @@ namespace LiderCollector.Dlp;
 /// <summary>What happened to a file, as the operating system reported it (before any privacy rule is applied).</summary>
 public enum RawFileKind { Created, Changed, Deleted, Renamed, Overflow }
 
-public sealed record RawFileEvent(RawFileKind Kind, string Path, string? OldPath, DateTime AtUtc, string Root);
+/// <summary>
+/// <paramref name="Stamp"/> = size and last write read AT THE MOMENT the event arrived (null = could not be read, e.g. the file was already gone - never a guessed 0).
+/// <paramref name="IsDirectory"/> = true / false when known at that moment, null when it could not be determined (a deleted path cannot be asked).
+/// Both are optional so that older callers and queued data keep working.
+/// </summary>
+public sealed record RawFileEvent(RawFileKind Kind, string Path, string? OldPath, DateTime AtUtc, string Root, FileStamp? Stamp = null, bool? IsDirectory = null);
 
 /// <summary>A file seen under a watched folder (name, size, last write - never the content).</summary>
 public sealed record FileStamp(long Size, DateTime LastWriteUtc);
@@ -73,6 +78,7 @@ public sealed class FileActivitySource : IDlpSource
     private readonly IFileEnvironment _env; private readonly FileIndex _index; private readonly Func<DateTime> _now; private readonly string? _host;
     private readonly Dictionary<string, DateTime> _lastChanged = new(StringComparer.OrdinalIgnoreCase);
     private readonly HashSet<string> _indexed = new(StringComparer.OrdinalIgnoreCase);
+    private readonly HashSet<string> _dirs = new(StringComparer.OrdinalIgnoreCase);   // folders seen being created / renamed here: lets a later delete (which cannot be asked) be labelled a folder
     private long _seq;
 
     public FileActivitySource(IFileEnvironment env, FileIndex index, Func<DateTime>? now = null, string? host = null)
@@ -122,7 +128,7 @@ public sealed class FileActivitySource : IDlpSource
                 if (!string.Equals(System.IO.Path.GetFileName(raw[j].Path), name, StringComparison.OrdinalIgnoreCase)) continue;
                 if (string.Equals(System.IO.Path.GetDirectoryName(raw[j].Path), System.IO.Path.GetDirectoryName(raw[i].Path), StringComparison.OrdinalIgnoreCase)) continue;
                 if (Math.Abs((raw[j].AtUtc - raw[i].AtUtc).TotalSeconds) > 2) continue;
-                dropped.Add(i); dropped.Add(j); moves[Math.Min(i, j)] = new RawFileEvent(RawFileKind.Renamed, raw[j].Path, raw[i].Path, raw[j].AtUtc, raw[j].Root); break;
+                dropped.Add(i); dropped.Add(j); moves[Math.Min(i, j)] = new RawFileEvent(RawFileKind.Renamed, raw[j].Path, raw[i].Path, raw[j].AtUtc, raw[j].Root, raw[j].Stamp, raw[j].IsDirectory); break;
             }
         }
         var res = new List<RawFileEvent>();
@@ -135,6 +141,16 @@ public sealed class FileActivitySource : IDlpSource
         try { foreach (var (p, st) in _env.Scan(root, cfg.Files.MaxIndexEntries)) if (!Ignored(p, cfg)) _index.Set(p, st, _now()); } catch { /* an unreadable folder is reported by the watcher, not here */ }
     }
 
+    /// <summary>The size to report: the one read when the event ARRIVED wins; the state at processing time is only a fallback (the file may be gone by then); null = unknown. Never 0 as a placeholder.</summary>
+    private (FileStamp? Stamp, string? Source) Observe(RawFileEvent raw, string path)
+    {
+        if (raw.Stamp is not null) return (raw.Stamp, "event");
+        var st = _env.Stat(path);
+        return st is not null ? (st, "processing") : (null, null);
+    }
+
+    private void RememberDir(string path) { if (_dirs.Count > 20000) _dirs.Clear(); _dirs.Add(path); }
+
     private DlpEvent? Map(RawFileEvent raw, DlpConfig cfg)
     {
         string path = raw.Path; var kind = _env.RootKind(path);
@@ -142,32 +158,43 @@ public sealed class FileActivitySource : IDlpSource
         {
             case RawFileKind.Created:
             {
-                var st = _env.Stat(path);
-                if (st is null && string.IsNullOrEmpty(System.IO.Path.GetExtension(path))) return null;   // a folder (or a nameless file that is already gone): not a file event
-                _index.Set(path, st ?? new FileStamp(0, raw.AtUtc), raw.AtUtc);
-                return Make("file_created", raw.AtUtc, path, null, st?.Size, _env.Owner(path), kind, cfg, "fsw");
+                if (raw.IsDirectory == true) { RememberDir(path); return Make("file_created", raw.AtUtc, path, null, null, _env.Owner(path), kind, cfg, "fsw", isDirectory: true); }
+                var (st, src) = Observe(raw, path);
+                if (st is null && raw.IsDirectory is null && string.IsNullOrEmpty(System.IO.Path.GetExtension(path))) return null;   // a folder (or a nameless file that is already gone): cannot be told apart
+                if (st is not null) _index.Set(path, st, raw.AtUtc);   // only a size that was really read is remembered
+                return Make("file_created", raw.AtUtc, path, null, st?.Size, _env.Owner(path), kind, cfg, "fsw", isDirectory: st is not null ? false : raw.IsDirectory, sizeSource: src);
             }
             case RawFileKind.Changed:
             {
+                if (raw.IsDirectory == true || _dirs.Contains(path)) return null;   // the timestamp of a folder changes whenever something inside it changes: noise
+                var (st, src) = Observe(raw, path); var known = _index.Get(path);
+                if (st is not null) _index.Set(path, st, raw.AtUtc);   // the last-known size is refreshed by EVERY change, also by the ones folded into one event below
                 if (_lastChanged.TryGetValue(path, out var last) && (raw.AtUtc - last).TotalSeconds < Math.Max(1, cfg.Files.DebounceSeconds)) return null;   // a save is several writes: one event
                 _lastChanged[path] = raw.AtUtc; if (_lastChanged.Count > 20000) _lastChanged.Clear();
-                var st = _env.Stat(path); var known = _index.Get(path);
-                if (st is null && known is null) return null;            // a folder's own change, or a file we never saw: nothing reliable to report
-                if (st is not null) _index.Set(path, st, raw.AtUtc);      // (a file that is gone by now is still reported: the history stays complete, size = last known)
-                return Make("file_modified", raw.AtUtc, path, null, st?.Size ?? known?.Size, st is null ? null : _env.Owner(path), kind, cfg, "fsw");
+                if (st is null && known is null) return null;            // a file we never saw and cannot see now: nothing reliable to report
+                return Make("file_modified", raw.AtUtc, path, null, st?.Size ?? known?.Size, st is null ? null : _env.Owner(path), kind, cfg, "fsw", isDirectory: false, sizeSource: st is not null ? src : "last_known");
             }
             case RawFileKind.Deleted:
             {
                 var known = _index.Get(path); _index.Remove(path);
-                if (known is null && string.IsNullOrEmpty(System.IO.Path.GetExtension(path))) return null;   // most likely a folder
-                return Make("file_deleted", raw.AtUtc, path, null, known?.Size, null, kind, cfg, "fsw");   // the owner of a deleted file cannot be read: the session user is used
+                if (_dirs.Remove(path)) return Make("file_deleted", raw.AtUtc, path, null, null, null, kind, cfg, "fsw", isDirectory: true);   // a folder; what was inside is not reported one by one by Windows
+                if (known is null && string.IsNullOrEmpty(System.IO.Path.GetExtension(path))) return null;   // most likely a folder we never saw
+                return Make("file_deleted", raw.AtUtc, path, null, known?.Size, null, kind, cfg, "fsw", isDirectory: known is not null ? false : null, sizeSource: known is not null ? "last_known" : null);   // the owner of a deleted file cannot be read: the session user is used
             }
             case RawFileKind.Renamed:
             {
-                string old = raw.OldPath ?? ""; var known = old.Length > 0 ? _index.Get(old) : null; if (old.Length > 0) _index.Remove(old);
-                var st = _env.Stat(path); _index.Set(path, st ?? known ?? new FileStamp(0, raw.AtUtc), raw.AtUtc);
+                string old = raw.OldPath ?? "";
                 bool moved = old.Length > 0 && !string.Equals(System.IO.Path.GetDirectoryName(old), System.IO.Path.GetDirectoryName(path), StringComparison.OrdinalIgnoreCase);
-                return Make(moved ? "file_moved" : "file_renamed", raw.AtUtc, path, old, st?.Size ?? known?.Size, _env.Owner(path), kind, cfg, "fsw");
+                if (raw.IsDirectory == true || (old.Length > 0 && _dirs.Contains(old)))
+                {
+                    if (old.Length > 0) _dirs.Remove(old);
+                    RememberDir(path);
+                    return Make(moved ? "file_moved" : "file_renamed", raw.AtUtc, path, old, null, _env.Owner(path), kind, cfg, "fsw", isDirectory: true);
+                }
+                var known = old.Length > 0 ? _index.Get(old) : null; if (old.Length > 0) _index.Remove(old);
+                var (st, src) = Observe(raw, path);
+                var best = st ?? known; if (best is not null) _index.Set(path, best, raw.AtUtc);   // no placeholder entry when nothing is known
+                return Make(moved ? "file_moved" : "file_renamed", raw.AtUtc, path, old, st?.Size ?? known?.Size, _env.Owner(path), kind, cfg, "fsw", isDirectory: best is not null ? false : raw.IsDirectory, sizeSource: st is not null ? src : (known is not null ? "last_known" : null));
             }
         }
         return null;
@@ -183,13 +210,13 @@ public sealed class FileActivitySource : IDlpSource
         {
             if (res.Count >= max) break; if (Ignored(p, cfg)) continue;
             var known = _index.Get(p);
-            if (known is null) { created++; _index.Set(p, st, now); res.Add(Add("file_created", now, p, null, st.Size, cfg, "rescan")); }
-            else if (known.Size != st.Size || known.LastWriteUtc != st.LastWriteUtc) { modified++; _index.Set(p, st, now); res.Add(Add("file_modified", now, p, null, st.Size, cfg, "rescan")); }
+            if (known is null) { created++; _index.Set(p, st, now); res.Add(Add("file_created", now, p, null, st.Size, cfg, "rescan", false, "rescan")); }
+            else if (known.Size != st.Size || known.LastWriteUtc != st.LastWriteUtc) { modified++; _index.Set(p, st, now); res.Add(Add("file_modified", now, p, null, st.Size, cfg, "rescan", false, "rescan")); }
         }
         foreach (var p in _index.Under(marker.Root))
         {
             if (res.Count >= max) break; if (disk.ContainsKey(p)) continue;
-            deleted++; var known = _index.Get(p); _index.Remove(p); res.Add(Add("file_deleted", now, p, null, known?.Size, cfg, "rescan"));
+            deleted++; var known = _index.Get(p); _index.Remove(p); res.Add(Add("file_deleted", now, p, null, known?.Size, cfg, "rescan", false, known is not null ? "last_known" : null));
         }
         var gap = new DlpEvent(DlpEvent.MakeUid("filegap", _host, marker.Root, marker.AtUtc.Ticks), "file_activity_gap", marker.AtUtc, _host,
             new Dictionary<string, object?> { ["root_kind"] = _env.RootKind(marker.Root), ["created"] = (long)created, ["modified"] = (long)modified, ["deleted"] = (long)deleted, ["source"] = "fsw_overflow",
@@ -197,10 +224,10 @@ public sealed class FileActivitySource : IDlpSource
         res.Add((NextSeq(marker.AtUtc), gap));
     }
 
-    private (long, DlpEvent) Add(string type, DateTime at, string path, string? old, long? size, DlpConfig cfg, string source)
-    { var e = Make(type, at, path, old, size, null, _env.RootKind(path), cfg, source)!; return (NextSeq(at), e); }
+    private (long, DlpEvent) Add(string type, DateTime at, string path, string? old, long? size, DlpConfig cfg, string source, bool? isDirectory = null, string? sizeSource = null)
+    { var e = Make(type, at, path, old, size, null, _env.RootKind(path), cfg, source, isDirectory, sizeSource)!; return (NextSeq(at), e); }
 
-    private DlpEvent? Make(string type, DateTime at, string path, string? oldPath, long? size, string? owner, string rootKind, DlpConfig cfg, string source)
+    private DlpEvent? Make(string type, DateTime at, string path, string? oldPath, long? size, string? owner, string rootKind, DlpConfig cfg, string source, bool? isDirectory = null, string? sizeSource = null)
     {
         string mode = cfg.Files.PathMode; string name = System.IO.Path.GetFileName(path);
         string? user = Clean(owner), userSource = null;
@@ -211,6 +238,8 @@ public sealed class FileActivitySource : IDlpSource
             ["name"] = DlpPrivacy.Name(name, mode == "full" ? "full" : "hash", 260), ["extension"] = Ext(name), ["path"] = Shape(path, mode, folderOnly: false),
             ["size_bytes"] = size, ["user"] = user, ["user_source"] = userSource, ["root_kind"] = rootKind, ["source"] = source,
         };
+        if (isDirectory is not null) d["is_directory"] = isDirectory.Value;   // true = a folder, false = a file; absent = could not be told (e.g. already deleted)
+        if (size is not null && sizeSource is not null) d["size_source"] = sizeSource;   // event | processing | last_known | rescan: where the number comes from
         if (oldPath is { Length: > 0 }) { d["old_path"] = Shape(oldPath, mode, folderOnly: false); d["old_name"] = DlpPrivacy.Name(System.IO.Path.GetFileName(oldPath), mode == "full" ? "full" : "hash", 260); }
         string uid = DlpEvent.MakeUid("file", _host, type, path, oldPath, at.Ticks, size);
         return new DlpEvent(uid, type, at, _host, d);
@@ -269,15 +298,27 @@ public sealed class WindowsFileEnvironment : IFileEnvironment, IDisposable
             {
                 var w = new FileSystemWatcher(root) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName | NotifyFilters.DirectoryName | NotifyFilters.Size | NotifyFilters.LastWrite, InternalBufferSize = 64 * 1024 };
                 string r = root;
-                w.Created += (_, e) => Push(new RawFileEvent(RawFileKind.Created, e.FullPath, null, DateTime.UtcNow, r));
-                w.Changed += (_, e) => Push(new RawFileEvent(RawFileKind.Changed, e.FullPath, null, DateTime.UtcNow, r));
-                w.Deleted += (_, e) => Push(new RawFileEvent(RawFileKind.Deleted, e.FullPath, null, DateTime.UtcNow, r));
-                w.Renamed += (_, e) => Push(new RawFileEvent(RawFileKind.Renamed, e.FullPath, e.OldFullPath, DateTime.UtcNow, r));
+                // size and folder-ness are read NOW, while the file usually still exists: events are processed later (up to a poll interval), by when a short-lived file is gone
+                w.Created += (_, e) => { var (st, dir) = Probe(e.FullPath); Push(new RawFileEvent(RawFileKind.Created, e.FullPath, null, DateTime.UtcNow, r, st, dir)); };
+                w.Changed += (_, e) => { var (st, dir) = Probe(e.FullPath); Push(new RawFileEvent(RawFileKind.Changed, e.FullPath, null, DateTime.UtcNow, r, st, dir)); };
+                w.Deleted += (_, e) => Push(new RawFileEvent(RawFileKind.Deleted, e.FullPath, null, DateTime.UtcNow, r));   // gone: nothing to read
+                w.Renamed += (_, e) => { var (st, dir) = Probe(e.FullPath); Push(new RawFileEvent(RawFileKind.Renamed, e.FullPath, e.OldFullPath, DateTime.UtcNow, r, st, dir)); };
                 w.Error += (_, _) => _q.Enqueue(new RawFileEvent(RawFileKind.Overflow, r, null, DateTime.UtcNow, r));   // events were lost: a rescan follows
                 w.EnableRaisingEvents = true; _w[root] = w;
             }
             catch { /* unreadable root: reported as 'no folder' by the source */ }
         }
+    }
+
+    /// <summary>Size / last write of a file, or "is a folder", read right now. (null, null) = it cannot be read (already gone, no access): unknown, not zero.</summary>
+    internal static (FileStamp? Stamp, bool? IsDirectory) Probe(string path)
+    {
+        try
+        {
+            if ((File.GetAttributes(path) & FileAttributes.Directory) != 0) return (null, true);
+            var f = new FileInfo(path); return (new FileStamp(f.Length, f.LastWriteTimeUtc), false);
+        }
+        catch { return (null, null); }
     }
 
     private void Push(RawFileEvent e)

@@ -16,9 +16,10 @@ public sealed record SessionDesc(int Id, int State, string? User, string? Statio
 public static class SessionInfo
 {
     [StructLayout(LayoutKind.Sequential)] private struct WTS_SESSION_INFO { public int SessionId; public IntPtr pWinStationName; public int State; }
-    [DllImport("wtsapi32.dll", SetLastError = true)] private static extern bool WTSEnumerateSessions(IntPtr hServer, int reserved, int version, out IntPtr ppSessionInfo, out int count);
+    // CharSet.Unicode selects the *W functions. Without it the runtime binds the ANSI (*A) functions, whose strings were then read as UTF-16 (user "UCI\lider" became CJK garbage in 1.5.0).
+    [DllImport("wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool WTSEnumerateSessions(IntPtr hServer, int reserved, int version, out IntPtr ppSessionInfo, out int count);
     [DllImport("wtsapi32.dll")] private static extern void WTSFreeMemory(IntPtr p);
-    [DllImport("wtsapi32.dll", SetLastError = true)] private static extern bool WTSQuerySessionInformation(IntPtr hServer, int sessionId, int infoClass, out IntPtr buffer, out int bytes);
+    [DllImport("wtsapi32.dll", CharSet = CharSet.Unicode, SetLastError = true)] private static extern bool WTSQuerySessionInformation(IntPtr hServer, int sessionId, int infoClass, out IntPtr buffer, out int bytes);
     private const int WTSUserName = 5, WTSDomainName = 7;
 
     public static IReadOnlyList<SessionDesc> Sessions()
