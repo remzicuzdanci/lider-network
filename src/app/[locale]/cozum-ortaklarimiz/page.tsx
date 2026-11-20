@@ -126,7 +126,6 @@ const categories = [
     descEn: "IP camera, NVR, VMS and access control systems",
     partners: [
       { name: "Hikvision",           abbr: "Hkv", slug: null,    color: "#cc0000" },
-      { name: "Dahua Technology",    abbr: "Dah", slug: null,    color: "#e63946" },
       { name: "Axis Communications", abbr: "Axs", slug: null,    color: "#003057" },
       { name: "Bosch Security",      abbr: "Bch", slug: "bosch", color: "#ea0016" },
     ],
